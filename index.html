@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Granny Boom — Siege Tactics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="preload" href="assets/field.png" as="image" type="image/png" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="brand-title">Granny Boom</span>
+      <span class="brand-sub">Siege Tactics</span>
+    </div>
+    <div class="topbar-stats">
+      <span id="topbar-name">Recruit</span>
+      <span class="forge-xp-pill" title="Unlocks new turrets forever"><span id="topbar-xp">0</span> Forge XP</span>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-sound">Sound on</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-howto">How to Play</button>
+      <a class="btn btn-ghost btn-sm" href="https://grannyboom.com" target="_blank" rel="noopener">Granny Boom</a>
+    </div>
+  </header>
+
+  <main id="app">
+    <section id="screen-welcome" class="screen active">
+      <div class="panel welcome-panel">
+        <div class="splash-squircle">
+          <img src="assets/splash.png" width="1024" height="768" alt="Granny Boom — Siege Tactics" />
+        </div>
+        <p class="hook">They've landed. Hold the line.</p>
+        <p class="hero-copy">Forge the maths. Place turrets. Survive 60 seconds.</p>
+        <label class="name-label" for="player-name">Your name</label>
+        <input id="player-name" class="name-input" type="text" maxlength="24" autocomplete="nickname" placeholder="Alex" />
+        <button type="button" class="btn btn-primary btn-lg" id="btn-welcome-go">Let's go</button>
+      </div>
+    </section>
+
+    <section id="screen-forge" class="screen">
+      <div id="forge-host"></div>
+    </section>
+
+    <section id="screen-siege" class="screen">
+      <div class="siege-layout">
+        <div class="siege-canvas-wrap">
+          <canvas id="siege-canvas" aria-label="Siege field"></canvas>
+          <div class="wave-controls">
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-pause">Pause</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-speed" data-speed="1">1×</button>
+          </div>
+          <div id="siege-countdown" class="siege-countdown" hidden aria-live="polite">
+            <span id="siege-countdown-num" class="siege-countdown-num">3</span>
+            <span class="siege-countdown-hint">Deploy turrets…</span>
+          </div>
+        </div>
+        <div class="siege-command-bar">
+          <div id="nuke-cache-panel" class="nuke-cache-panel" hidden>
+            <div class="nuke-cache-visual" id="nuke-cache-visual" style="--fill: 0%">
+              <img class="nuke-cache-img nuke-cache-ghost" src="assets/cupcake-missile.png" width="66" height="89" alt="" />
+              <img class="nuke-cache-img nuke-cache-lit" id="nuke-cache-lit" src="assets/cupcake-missile.png" width="66" height="89" alt="" />
+            </div>
+            <div class="nuke-cache-info">
+              <span class="nuke-cache-title">Nuke cache</span>
+              <span id="nuke-cache-progress" class="nuke-cache-progress">0 / 50</span>
+              <span id="nuke-cache-stock" class="nuke-cache-stock">0 stocked</span>
+            </div>
+            <div class="nuke-cache-actions">
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-stock-cache" disabled>Stock cache</button>
+              <button type="button" class="btn btn-primary btn-sm" id="btn-summon-granny" disabled>Summon Granny</button>
+              <button type="button" class="btn btn-primary btn-sm btn-cupcakes" id="btn-cupcakes" hidden disabled>Cupcakes!</button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary btn-launch" id="btn-start-wave">Launch attack</button>
+        </div>
+        <div id="shop-bar" class="shop-bar"></div>
+      </div>
+    </section>
+
+    <section id="screen-results" class="screen">
+      <div class="panel results-panel brag-panel">
+        <p class="brag-eyebrow">Siege debrief</p>
+        <h2 class="brag-headline" id="results-headline">Minute survived!</h2>
+        <p class="granny-line" id="results-subline">Granny counted every blast from the porch.</p>
+
+        <div class="brag-hero-stat">
+          <span class="stat-num" id="results-kills">0</span>
+          <span class="stat-label">aliens blasted this siege</span>
+        </div>
+
+        <div class="results-badges" id="results-badges" aria-label="Military badges earned this run"></div>
+
+        <div class="results-stats results-stats-compact">
+          <div class="stat-box">
+            <span class="stat-num stat-num-sm" id="results-leaks">0</span>
+            <span class="stat-label">Leaked (max <span id="results-max-leaks">10</span>)</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num stat-num-sm" id="results-forge-xp">0</span>
+            <span class="stat-label">Forge XP earned</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num stat-num-sm" id="results-coins-left">0</span>
+            <span class="stat-label">Siege coins banked</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num stat-num-sm" id="results-best">0</span>
+            <span class="stat-label">Your best blasts</span>
+          </div>
+        </div>
+
+        <div class="next-goal-card" id="results-next-goal" aria-label="Your next goal"></div>
+
+        <button type="button" class="btn btn-primary btn-lg" id="btn-results-done">Forge again</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
