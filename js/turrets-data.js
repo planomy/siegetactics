@@ -27,7 +27,7 @@
  */
 
 /** @type {TurretType[]} */
-export const STARTER_TURRETS = ['granny-blaster', 'zap-sprinkler'];
+export const STARTER_TURRETS = ['granny-blaster', 'zap-sprinkler', 'boom-gnome', 'plasma-daisy'];
 
 /** @type {Record<TurretType, TurretDef>} */
 export const TURRETS = {
@@ -79,7 +79,7 @@ export const TURRETS = {
     id: 'plasma-daisy',
     name: 'Plasma Daisy',
     sprite: 'assets/turrets/plasma-daisy.png',
-    unlockXp: 600,
+    unlockXp: 0,
     placementCost: 25,
     color: '#ff6bcb',
     desc: 'Plasma seed bursts',
@@ -93,7 +93,7 @@ export const TURRETS = {
     id: 'boom-gnome',
     name: 'Boom Gnome',
     sprite: 'assets/turrets/boom-gnome.png',
-    unlockXp: 900,
+    unlockXp: 0,
     placementCost: 28,
     color: '#ff6b35',
     desc: 'Explosive pop shots',

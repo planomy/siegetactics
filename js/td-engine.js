@@ -3,7 +3,7 @@ import { AMMO, loadAmmoSprites } from './ammo-data.js';
 import { FIELD_LAYOUT, targetPathsForRow } from './field-layout.js';
 import { drawAlienPortalVfx } from './portal-vfx.js';
 import { buildPlacementCells, pickPlacementCell } from './placement-grid.js';
-import { loadEnemySprites, spriteKeyForEnemy, spriteSizeForEnemy } from './enemies-data.js';
+import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy } from './enemies-data.js';
 import { getFieldImage, preloadField } from './preload.js';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
 import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC } from './waves-data.js';
@@ -37,6 +37,7 @@ const { ENEMY_PATHS, TURRET_ROWS } = FIELD_LAYOUT;
  * @property {number} speed
  * @property {boolean} isBoss
  * @property {'mothership'|'granddaddy'|null} bossKind
+ * @property {import('./enemies-data.js').EnemySpriteKey|null} [mothershipSprite]
  * @property {number} bobPhase
  * @property {number} bobSpeed
  * @property {number} bobAmp
@@ -386,6 +387,7 @@ export function createTDEngine(canvas, opts) {
       speed,
       isBoss: bossKind !== null,
       bossKind,
+      mothershipSprite: bossKind === 'mothership' ? pickMothershipSprite() : null,
       bobPhase: Math.random() * Math.PI * 2,
       bobSpeed: 4.8 + Math.random() * 3.6,
       bobAmp: bobBase * (0.3 + Math.random() * 0.35) * sizeScale,

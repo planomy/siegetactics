@@ -1,6 +1,7 @@
 import { getMission, SLICE_MISSION_ID } from './missions-data.js';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js';
+import { renderArmory, nextUnlockableTurret } from './armory.js';
 import { createTDEngine } from './td-engine.js';
 import { TURRETS, STARTER_TURRETS } from './turrets-data.js';
 import { createAudio } from './audio.js';
@@ -12,10 +13,24 @@ import { computeStars, renderStarBadges } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
 import { preloadField, preloadDeployAssets, runDeployCountdown, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
+import { renderHome, renderTopbarBadges } from './home.js';
+import { initTimesTables } from './times-tables.js';
+import { initMeasurementLength } from './measurement-length.js';
+import { getTopic } from './topics-data.js';
+import {
+  defaultTrainingGate,
+  normalizeTrainingGate,
+  isGateOpen,
+  recordTimesTable,
+  recordTopicUnit,
+  resetTrainingGate,
+  isUnitDone,
+  isTopicDone,
+} from './training-gate.js';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 
-/** @typedef {{ version: number, playerName: string, xp: number, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, settings: { sound: boolean } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, settings: { sound: boolean } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -31,6 +46,7 @@ const defaultSave = {
   granddaddySiegeTarget: null,
   granddaddySeen: false,
   grannyUnlocked: false,
+  trainingGate: defaultTrainingGate(),
   settings: { sound: true },
 };
 
@@ -68,14 +84,20 @@ let shopState = {
 
 const screens = {
   welcome: document.getElementById('screen-welcome'),
+  home: document.getElementById('screen-home'),
+  timesTables: document.getElementById('screen-times-tables'),
+  measurement: document.getElementById('screen-measurement'),
   forge: document.getElementById('screen-forge'),
+  armory: document.getElementById('screen-armory'),
   siege: document.getElementById('screen-siege'),
   results: document.getElementById('screen-results'),
 };
 
 const toastEl = document.getElementById('toast');
 const xpDisplay = document.getElementById('topbar-xp');
-const nameDisplay = document.getElementById('topbar-name');
+
+/** @type {keyof typeof screens} */
+let armoryReturnScreen = 'home';
 
 function loadSave() {
   try {
@@ -84,8 +106,13 @@ function loadSave() {
     const data = { ...defaultSave, ...JSON.parse(raw) };
     if (!data.unlockedTurrets?.length) {
       data.unlockedTurrets = [...STARTER_TURRETS];
+    } else {
+      for (const id of STARTER_TURRETS) {
+        if (!data.unlockedTurrets.includes(id)) data.unlockedTurrets.push(id);
+      }
     }
     if (!data.bestStars) data.bestStars = {};
+    data.trainingGate = normalizeTrainingGate(data.trainingGate);
     if (DEV.enabled && DEV.unlockAll) {
       data.unlockedTurrets = Object.keys(TURRETS);
       data.xp = Math.max(data.xp, 9999);
@@ -126,7 +153,10 @@ function showScreen(id) {
 
 function refreshSoundButton() {
   const btn = document.getElementById('btn-sound');
-  if (btn) btn.textContent = save.settings.sound ? 'Sound on' : 'Sound off';
+  if (btn) {
+    btn.textContent = save.settings.sound ? '🔊' : '🔇';
+    btn.title = save.settings.sound ? 'Sound on' : 'Sound off';
+  }
 }
 
 function toggleSound() {
@@ -139,8 +169,45 @@ function toggleSound() {
 
 function refreshTopbar() {
   if (xpDisplay) xpDisplay.textContent = save.xp.toLocaleString();
-  if (nameDisplay) nameDisplay.textContent = save.playerName || 'Recruit';
   refreshSoundButton();
+  renderTopbarBadges(document.getElementById('topbar-badges'), save.bestStars, SLICE_MISSION_ID);
+  const armoryBtn = document.getElementById('btn-armory');
+  if (armoryBtn) {
+    armoryBtn.classList.toggle('topbar-armory-ready', Boolean(nextUnlockableTurret(save.xp, getUnlockedSet())));
+  }
+}
+
+function renderArmoryScreen() {
+  const host = document.getElementById('armory-host');
+  if (!host) return;
+  renderArmory(host, {
+    xp: save.xp,
+    unlocked: getUnlockedSet(),
+    onUnlock(id) {
+      const ok = tryUnlockTurret(id);
+      if (ok) renderArmoryScreen();
+      return ok;
+    },
+    onBack: closeArmory,
+    showToast,
+  });
+}
+
+function openArmory() {
+  const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'));
+  const key = active?.[0] ?? 'home';
+  armoryReturnScreen = key === 'welcome' || key === 'armory' ? 'home' : key;
+  renderArmoryScreen();
+  showScreen('armory');
+}
+
+function closeArmory() {
+  if (armoryReturnScreen === 'home') {
+    showHome();
+  } else {
+    showScreen(armoryReturnScreen);
+    if (armoryReturnScreen === 'siege') refreshShopBarFromSave();
+  }
 }
 
 function getUnlockedSet() {
@@ -157,7 +224,8 @@ function tryUnlockTurret(id) {
   }
   save.unlockedTurrets.push(id);
   persistSave();
-  shopState.unlocked = getUnlockedSet();
+  refreshShopBarFromSave();
+  refreshTopbar();
   return true;
 }
 
@@ -174,6 +242,13 @@ function refreshShop() {
   shopState.persistentXp = save.xp;
   shopState.unlocked = getUnlockedSet();
   if (shopBarEl) updateShopBar(shopBarEl, shopState);
+}
+
+function refreshShopBarFromSave() {
+  if (!shopBarEl) return;
+  shopState.persistentXp = save.xp;
+  shopState.unlocked = getUnlockedSet();
+  renderShopBar(shopBarEl, shopState);
 }
 
 function setShopActive(active) {
@@ -250,6 +325,148 @@ function updateFireNukesButton() {
   btn.textContent = salvoActive ? 'Nukes inbound…' : 'Fire nukes';
 }
 
+function awardForgeXp(amount, reason) {
+  if (amount <= 0) return;
+  save.xp += amount;
+  persistSave();
+  if (reason) {
+    showToast(`+${amount} ${ECONOMY.forgeXpLabel} · ${reason}`, { variant: 'success' });
+  }
+}
+
+function persistGate(nextGate) {
+  save.trainingGate = nextGate;
+  persistSave();
+}
+
+function showHome() {
+  const host = document.getElementById('home-host');
+  if (!host) return;
+  renderHome(host, {
+    playerName: save.playerName || 'Recruit',
+    xp: save.xp,
+    siegesCompleted: save.siegesCompleted,
+    bestKills: save.bestKills[SLICE_MISSION_ID] ?? 0,
+    bestStars: save.bestStars,
+    primaryMissionId: SLICE_MISSION_ID,
+    gate: save.trainingGate,
+    onTopic(topicId) {
+      const topic = getTopic(topicId);
+      if (!topic?.available) {
+        showToast('Granny is still forging that topic!');
+        return;
+      }
+      if (topicId === 'times-tables') {
+        showTimesTables();
+        return;
+      }
+      if (topic.trainingMode === 'forge' && topic.unitId) {
+        showForgeTraining(topic);
+        return;
+      }
+      if (topic.trainingMode === 'drill' && topicId === 'measurement-length') {
+        showMeasurementLength();
+        return;
+      }
+      showToast('That training is still in the forge.');
+    },
+    onHoldTheLine() {
+      if (!DEV.skipForge && !isGateOpen(save.trainingGate)) {
+        showToast('Train more — the attack is still incoming!');
+        return;
+      }
+      beginMission();
+    },
+    showToast,
+  });
+  renderTopbarBadges(document.getElementById('topbar-badges'), save.bestStars, SLICE_MISSION_ID);
+  showScreen('home');
+}
+
+function showTimesTables() {
+  const host = document.getElementById('times-tables-host');
+  if (!host) return;
+  initTimesTables(host, {
+    playerName: save.playerName || 'Recruit',
+    completedTables: save.trainingGate.timesTablesDone,
+    onAwardXp(amount) {
+      awardForgeXp(amount);
+    },
+    onSessionComplete({ table, accuracy, passed }) {
+      if (!passed) return { gateAdded: false };
+      const result = recordTimesTable(save.trainingGate, table, accuracy);
+      if (result.added) {
+        persistGate(result.gate);
+        showToast('Attack pushed back!', { variant: 'success' });
+        return { gateAdded: true };
+      }
+      return { gateAdded: false, reason: result.reason };
+    },
+    onHome: showHome,
+    showToast,
+  });
+  showScreen('timesTables');
+}
+
+function showMeasurementLength() {
+  const host = document.getElementById('measurement-host');
+  if (!host) return;
+  const topic = getTopic('measurement-length');
+  initMeasurementLength(host, {
+    unitDone: topic?.unitId ? isUnitDone(save.trainingGate, topic.unitId) : false,
+    onAwardXp(amount) {
+      awardForgeXp(amount);
+    },
+    onSessionComplete({ accuracy, passed }) {
+      if (!passed || !topic?.unitId) return;
+      const result = recordTopicUnit(save.trainingGate, topic.id, topic.unitId);
+      if (result.added) {
+        persistGate(result.gate);
+        showToast('Length Lab pushed the attack back!', { variant: 'success' });
+      }
+    },
+    onHome: showHome,
+    showToast,
+  });
+  showScreen('measurement');
+}
+
+/** @param {import('./topics-data.js').MathTopic} topic @returns {boolean} */
+function creditTopicTraining(topic) {
+  if (!topic.unitId) return false;
+  const result = recordTopicUnit(save.trainingGate, topic.id, topic.unitId);
+  if (result.added) {
+    persistGate(result.gate);
+    return true;
+  }
+  return false;
+}
+
+/** @param {import('./topics-data.js').MathTopic} topic */
+function showForgeTraining(topic) {
+  if (isTopicDone(save.trainingGate, topic.id)) {
+    showToast(`${topic.title} already counts this cycle — pick another topic or table!`);
+    return;
+  }
+  const forgeHost = document.getElementById('forge-host');
+  if (!forgeHost) return;
+  initForge(forgeHost, {
+    trainingMode: true,
+    onBack: showHome,
+    showToast,
+    onSuccess(rewards) {
+      awardForgeXp(rewards.forgeXp, 'Place Value Patrol');
+      if (creditTopicTraining(topic)) {
+        showToast('Place Value pushed the attack back!', { variant: 'success' });
+      } else if (!isTopicDone(save.trainingGate, topic.id)) {
+        showToast('Training finished, but it did not count toward the gate — try again.', { variant: 'shop' });
+      }
+      showHome();
+    },
+  });
+  showScreen('forge');
+}
+
 function startWelcome() {
   const input = document.getElementById('player-name');
   if (input && save.playerName) input.value = save.playerName;
@@ -261,6 +478,12 @@ function startWelcome() {
 let firstSiegeDeploy = true;
 
 function beginMission() {
+  if (!DEV.skipForge && !isGateOpen(save.trainingGate)) {
+    showToast('The attack is still coming — finish your drills first!');
+    showHome();
+    return;
+  }
+
   run = {
     waveBudget: 0,
     runForgeXpEarned: 0,
@@ -268,14 +491,19 @@ function beginMission() {
     selectedTurret: null,
     cacheProgress: 0,
   };
-  if (DEV.skipForge) {
+
+  const placeValueTopic = getTopic('place-value-siege');
+  const forgeAlreadyDone = placeValueTopic ? isTopicDone(save.trainingGate, placeValueTopic.id) : false;
+
+  if (DEV.skipForge || forgeAlreadyDone) {
     const mission = getMission(SLICE_MISSION_ID);
     onForgeSuccess({
-      forgeXp: mission?.rewards.forgeXp ?? 40,
+      forgeXp: forgeAlreadyDone ? 0 : (mission?.rewards.forgeXp ?? 40),
       placementBudget: (mission?.rewards.placementBudget ?? 90) + DEV.extraBudget,
     });
     return;
   }
+
   const forgeHost = document.getElementById('forge-host');
   if (forgeHost) {
     initForge(forgeHost, { onSuccess: onForgeSuccess, showToast });
@@ -292,11 +520,19 @@ function onForgeSuccess(rewards) {
   run.startCoins = placementBudget;
   run.runForgeXpEarned = forgeXp;
   run.selectedTurret = null;
-  save.xp += forgeXp;
-  persistSave();
-  showToast(
-    `+${forgeXp} ${ECONOMY.forgeXpLabel} (unlocks gear) · ${placementBudget} ${ECONOMY.siegeCoinsLabel} for this fight.`
-  );
+  if (forgeXp > 0) {
+    save.xp += forgeXp;
+    persistSave();
+  }
+  const placeValueTopic = getTopic('place-value-siege');
+  if (placeValueTopic) {
+    creditTopicTraining(placeValueTopic);
+  }
+  const xpLine =
+    forgeXp > 0
+      ? `+${forgeXp} ${ECONOMY.forgeXpLabel} (unlocks gear) · `
+      : 'Forge already done this cycle · ';
+  showToast(`${xpLine}${placementBudget} ${ECONOMY.siegeCoinsLabel} for this fight.`);
   if (save.grannyUnlocked) {
     addCacheProgress(GRANNY_CACHE.forgeBonusPoints);
   }
@@ -489,6 +725,7 @@ function finishRun(stats) {
     save.completedMissions.push(missionId);
   }
   save.siegesCompleted += 1;
+  save.trainingGate = resetTrainingGate(save.trainingGate);
   persistSave();
 
   const headlineEl = document.getElementById('results-headline');
@@ -561,7 +798,7 @@ function bindUI() {
   save.playerName = name;
   persistSave();
   preloadDeployAssets({ unlocked: getUnlockedSet(), grannyUnlocked: save.grannyUnlocked });
-  beginMission();
+  showHome();
   });
 
   document.getElementById('btn-start-wave')?.addEventListener('click', () => {
@@ -599,7 +836,7 @@ function bindUI() {
   });
 
   document.getElementById('btn-results-done')?.addEventListener('click', () => {
-    beginMission();
+    showHome();
   });
 
   document.getElementById('btn-sound')?.addEventListener('click', () => {
@@ -609,8 +846,12 @@ function bindUI() {
 
   document.getElementById('btn-howto')?.addEventListener('click', () => {
     showToast(
-      `${ECONOMY.forgeXpLabel} unlocks gear forever · ${ECONOMY.siegeCoinsLabel} place turrets · blast aliens to earn more coins!`
+      `${ECONOMY.forgeXpLabel} unlocks turrets in the Armory · ${ECONOMY.siegeCoinsLabel} place them during a siege!`
     );
+  });
+
+  document.getElementById('btn-armory')?.addEventListener('click', () => {
+    openArmory();
   });
 
   if (DEV.enabled) {
@@ -620,4 +861,9 @@ function bindUI() {
 }
 
 bindUI();
-startWelcome();
+if (save.playerName) {
+  preloadDeployAssets({ unlocked: getUnlockedSet(), grannyUnlocked: save.grannyUnlocked });
+  showHome();
+} else {
+  startWelcome();
+}

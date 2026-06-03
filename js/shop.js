@@ -11,7 +11,7 @@ let popoverAnchor = null;
 let globalListenersBound = false;
 
 /** @param {number} xp */
-function formatUnlockXp(xp) {
+export function formatUnlockXp(xp) {
   if (xp === 0) return 'Free';
   if (xp >= 1000) return `${xp % 1000 === 0 ? xp / 1000 : (xp / 1000).toFixed(1)}k XP`;
   return `${xp} XP`;
@@ -55,7 +55,7 @@ function turretStatus(t, state) {
 }
 
 /** @param {import('./turrets-data.js').TurretDef} t */
-function turretStatLine(t) {
+export function turretStatLine(t) {
   if (t.role === 'decoy') return 'Distracts alien fire';
   if (t.role === 'magnet') return `+${t.magnetBonus ?? 1} coin on nearby kills`;
   if (t.role === 'repair') return `Heals turrets within ${t.repairRadius ?? 90}px`;
@@ -177,32 +177,35 @@ export function renderShopBar(barEl, state) {
 
   barEl.innerHTML = `
     <div class="shop-budget">${ECONOMY.siegeCoinsLabel}: <strong id="shop-budget">${state.budget}</strong></div>
-    <p class="shop-hint">${ECONOMY.forgeXpLabel} unlocks turrets forever · ${ECONOMY.siegeCoinsLabel} place them this fight · drag onto grass lanes.</p>
+    <p class="shop-hint">Unlocked turrets only · ${ECONOMY.siegeCoinsLabel} place them this fight · unlock more at HQ Armory.</p>
     <div class="shop-turrets" id="shop-turrets"></div>
   `;
 
   const turretsEl = barEl.querySelector('#shop-turrets');
-  TURRET_ORDER.forEach((id) => {
+  const deployIds = TURRET_ORDER.filter((id) => state.unlocked.has(id));
+  if (deployIds.length === 0) {
+    turretsEl.innerHTML = `<p class="shop-empty">No turrets unlocked — visit the Armory at HQ.</p>`;
+    return;
+  }
+
+  deployIds.forEach((id) => {
     const t = TURRETS[id];
-    const isUnlocked = state.unlocked.has(id);
-    const canUnlock = !isUnlocked && state.persistentXp >= t.unlockXp;
-    const canPlace = isUnlocked && state.budget >= t.placementCost;
+    const isUnlocked = true;
+    const canPlace = state.budget >= t.placementCost;
 
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'shop-buy-btn';
-    if (state.selectedId === id && isUnlocked) btn.classList.add('selected');
-    if (!isUnlocked) btn.classList.add('locked');
-    if (isUnlocked && !canPlace) btn.classList.add('cant-afford');
-    if (!isUnlocked && !canUnlock) btn.classList.add('cant-unlock');
+    if (state.selectedId === id) btn.classList.add('selected');
+    if (!canPlace) btn.classList.add('cant-afford');
     if (t.flipX) btn.classList.add('flip-x');
     btn.style.setProperty('--turret-color', t.color);
     btn.dataset.turretId = id;
 
-    const priceLabel = isUnlocked ? String(t.placementCost) : formatUnlockXp(t.unlockXp);
+    const priceLabel = String(t.placementCost);
 
     btn.innerHTML = `
-      <span class="price-tag ${isUnlocked ? 'price-place' : 'price-unlock'}">${isUnlocked ? priceLabel : `🔒 ${priceLabel}`}</span>
+      <span class="price-tag price-place">${priceLabel}</span>
       <img src="${t.sprite}" alt="" />
       <span class="turret-name">${t.name}</span>
     `;
@@ -210,14 +213,8 @@ export function renderShopBar(barEl, state) {
     bindShopPopover(btn, t, state);
 
     btn.addEventListener('click', () => {
-      if (!isUnlocked) {
-        if (canUnlock) {
-          state.onUnlock(id);
-          state.showToast(`${t.name} unlocked — drag onto the grass!`, { variant: 'success' });
-          renderShopBar(barEl, state);
-        } else {
-          showShopPopover(btn, t, state, { pulse: true });
-        }
+      if (!canPlace) {
+        showShopPopover(btn, t, state, { pulse: true });
         return;
       }
       hideShopPopover();
@@ -240,13 +237,10 @@ export function updateShopBar(barEl, state) {
     const id = btn.dataset.turretId;
     if (!id) return;
     const t = TURRETS[id];
-    const isUnlocked = state.unlocked.has(id);
-    const canUnlock = !isUnlocked && state.persistentXp >= t.unlockXp;
-    const canPlace = isUnlocked && state.budget >= t.placementCost;
+    const canPlace = state.budget >= t.placementCost;
 
-    btn.classList.toggle('selected', state.selectedId === id && isUnlocked);
-    btn.classList.toggle('locked', !isUnlocked);
-    btn.classList.toggle('cant-afford', isUnlocked && !canPlace);
-    btn.classList.toggle('cant-unlock', !isUnlocked && !canUnlock);
+    btn.classList.toggle('selected', state.selectedId === id);
+    btn.classList.toggle('cant-afford', !canPlace);
+    btn.classList.remove('locked', 'cant-unlock');
   });
 }

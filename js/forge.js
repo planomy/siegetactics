@@ -2,7 +2,12 @@ import { getMission, SLICE_MISSION_ID } from './missions-data.js';
 
 /**
  * @param {HTMLElement} container
- * @param {{ onSuccess: (rewards: { forgeXp: number, placementBudget: number }) => void, showToast: (msg: string) => void }} callbacks
+ * @param {{
+ *   onSuccess: (rewards: { forgeXp: number, placementBudget: number }) => void,
+ *   showToast: (msg: string) => void,
+ *   trainingMode?: boolean,
+ *   onBack?: () => void,
+ * }} callbacks
  */
 export function initForge(container, callbacks) {
   const mission = getMission(SLICE_MISSION_ID);
@@ -13,17 +18,22 @@ export function initForge(container, callbacks) {
 
   container.innerHTML = `
     <div class="panel forge-panel">
-      <p class="mission-tag">${mission.strand.toUpperCase()} · Level ${mission.level}</p>
+      ${callbacks.onBack ? '<button type="button" class="btn btn-ghost btn-sm times-back" id="forge-back">← Home</button>' : ''}
+      <p class="mission-tag">${mission.strand.toUpperCase()} · Level ${mission.level}${callbacks.trainingMode ? ' · Prep drill' : ''}</p>
       <h2 class="panel-title">${mission.title}</h2>
-      <p class="granny-line">${mission.opener}</p>
+      <p class="granny-line">${callbacks.trainingMode ? 'Forge the digits to push the attack back — no siege yet.' : mission.opener}</p>
       <div class="forge-slots" id="forge-slots"></div>
       <div class="lock-in-row">
         <label for="lock-in-input">Total headcount</label>
         <input id="lock-in-input" type="number" inputmode="numeric" placeholder="?" autocomplete="off" />
       </div>
-      <button type="button" class="btn btn-primary" id="forge-check">CHECK</button>
+      <button type="button" class="btn btn-primary" id="forge-check">${callbacks.trainingMode ? 'Complete training' : 'CHECK'}</button>
     </div>
   `;
+
+  container.querySelector('#forge-back')?.addEventListener('click', () => {
+    callbacks.onBack?.();
+  });
 
   const slotsEl = container.querySelector('#forge-slots');
   mission.slots.forEach((slot, slotIndex) => {

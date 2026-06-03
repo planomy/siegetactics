@@ -6,24 +6,32 @@
   <title>Granny Boom — Siege Tactics</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/home-gb.css" />
   <link rel="preload" href="assets/field.png" as="image" type="image/png" />
+  <link rel="preload" href="assets/home/hero-village.png" as="image" type="image/png" />
 </head>
 <body>
-  <header class="topbar">
+  <header class="topbar gb-topbar">
     <div class="topbar-brand">
-      <span class="brand-title">Granny Boom</span>
-      <span class="brand-sub">Siege Tactics</span>
+      <img class="brand-granny" src="assets/home/granny-header.png" width="1024" height="1024" alt="" />
+      <div class="topbar-brand-text">
+        <span class="brand-title">Granny Boom</span>
+        <span class="brand-sub">Siege Tactics</span>
+      </div>
     </div>
     <div class="topbar-stats">
-      <span id="topbar-name">Recruit</span>
-      <span class="forge-xp-pill" title="Unlocks new turrets forever"><span id="topbar-xp">0</span> Forge XP</span>
+      <div class="topbar-badges" id="topbar-badges" aria-label="Military badges earned"></div>
+      <button type="button" class="topbar-armory-btn" id="btn-armory" title="Turret armory" aria-label="Open turret armory">
+        <img class="topbar-armory-icon" src="assets/armory-icon.png" width="64" height="64" alt="" />
+      </button>
+      <span class="forge-xp-pill" title="Unlocks new turrets forever"><span id="topbar-xp">0</span> XP</span>
     </div>
     <div class="topbar-actions">
-      <button type="button" class="btn btn-ghost btn-sm" id="btn-sound">Sound on</button>
-      <button type="button" class="btn btn-ghost btn-sm" id="btn-howto">How to Play</button>
-      <a class="btn btn-ghost btn-sm" href="https://grannyboom.com" target="_blank" rel="noopener">Granny Boom</a>
+      <button type="button" class="btn btn-ghost btn-sm topbar-icon-btn" id="btn-sound" title="Sound">🔊</button>
+      <button type="button" class="btn btn-ghost btn-sm topbar-icon-btn" id="btn-howto" title="How to play">?</button>
+      <a class="btn btn-ghost btn-sm" href="https://grannyboom.com" target="_blank" rel="noopener">GB</a>
     </div>
   </header>
 
@@ -41,8 +49,24 @@
       </div>
     </section>
 
+    <section id="screen-home" class="screen">
+      <div id="home-host"></div>
+    </section>
+
+    <section id="screen-times-tables" class="screen">
+      <div id="times-tables-host"></div>
+    </section>
+
+    <section id="screen-measurement" class="screen">
+      <div id="measurement-host"></div>
+    </section>
+
     <section id="screen-forge" class="screen">
       <div id="forge-host"></div>
+    </section>
+
+    <section id="screen-armory" class="screen">
+      <div id="armory-host"></div>
     </section>
 
     <section id="screen-siege" class="screen">
@@ -111,7 +135,7 @@
 
         <div class="next-goal-card" id="results-next-goal" aria-label="Your next goal"></div>
 
-        <button type="button" class="btn btn-primary btn-lg" id="btn-results-done">Forge again</button>
+        <button type="button" class="btn btn-primary btn-lg" id="btn-results-done">Back to HQ</button>
       </div>
     </section>
   </main>

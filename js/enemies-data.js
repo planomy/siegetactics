@@ -1,4 +1,4 @@
-/** @typedef {'monster1'|'monster2'|'monster3'|'monster4'|'monster5'|'mothership'|'granddaddy'} EnemySpriteKey */
+/** @typedef {'monster1'|'monster2'|'monster3'|'monster4'|'monster5'|'mothership'|'mothership2'|'mothership3'|'mothership4'|'granddaddy'} EnemySpriteKey */
 
 /** @type {Record<EnemySpriteKey, string>} */
 export const ENEMY_SPRITE_SRC = {
@@ -8,8 +8,19 @@ export const ENEMY_SPRITE_SRC = {
   monster4: 'assets/enemies/monster4.png',
   monster5: 'assets/enemies/monster5.png',
   mothership: 'assets/enemies/mothership.png',
+  mothership2: 'assets/enemies/mothership2.png',
+  mothership3: 'assets/enemies/mothership3.png',
+  mothership4: 'assets/enemies/mothership4.png',
   granddaddy: 'assets/enemies/granddaddy.png',
 };
+
+/** Random mothership art picked per boss spawn. */
+export const MOTHERSHIP_SPRITE_KEYS = /** @type {EnemySpriteKey[]} */ ([
+  'mothership',
+  'mothership2',
+  'mothership3',
+  'mothership4',
+]);
 
 /** Each dirt path gets its own ship design (wraps if path count exceeds art). */
 const PATH_SHIPS = /** @type {EnemySpriteKey[]} */ ([
@@ -21,13 +32,22 @@ const PATH_SHIPS = /** @type {EnemySpriteKey[]} */ ([
   'monster5',
 ]);
 
+/** @returns {EnemySpriteKey} */
+export function pickMothershipSprite() {
+  return MOTHERSHIP_SPRITE_KEYS[Math.floor(Math.random() * MOTHERSHIP_SPRITE_KEYS.length)];
+}
+
 /**
- * @param {{ path: number, bossKind?: string|null }} enemy
+ * @param {{ path: number, bossKind?: string|null, mothershipSprite?: EnemySpriteKey|null }} enemy
  * @returns {EnemySpriteKey}
  */
 export function spriteKeyForEnemy(enemy) {
   if (enemy.bossKind === 'granddaddy') return 'granddaddy';
-  if (enemy.bossKind === 'mothership') return 'mothership';
+  if (enemy.bossKind === 'mothership') {
+    return enemy.mothershipSprite && ENEMY_SPRITE_SRC[enemy.mothershipSprite]
+      ? enemy.mothershipSprite
+      : 'mothership';
+  }
   return PATH_SHIPS[enemy.path] ?? 'monster1';
 }
 
