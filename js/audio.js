@@ -44,6 +44,8 @@ const TURRET_FIRE = {
   'rocket-rooster': { id: 'missile', volume: 0.55, gap: 0.38 },
   'laser-lantern': { id: 'lazer2', volume: 0.5, gap: 0.34 },
   'meteor-mortar': { id: 'lazer3', volume: 0.54, gap: 0.42 },
+  'glue-goo': { id: 'slime', volume: 0.44, gap: 0.32 },
+  'freeze-fridge': { id: 'electro', volume: 0.42, gap: 0.38 },
 };
 
 /**
@@ -56,7 +58,68 @@ export function createAudio(opts) {
   const lastPlayed = {};
   /** @type {HTMLAudioElement|null} */
   let scuttlingLoop = null;
+  /** @type {HTMLAudioElement|null} */
+  let mothershipLoop = null;
+  /** @type {number|null} */
+  let mothershipFadeRaf = null;
   let unlocked = false;
+
+  const MOTHERSHIP_VOLUME = 0.72;
+  const MOTHERSHIP_FADE_MS = 900;
+
+  function cancelMothershipFade() {
+    if (mothershipFadeRaf != null) {
+      cancelAnimationFrame(mothershipFadeRaf);
+      mothershipFadeRaf = null;
+    }
+  }
+
+  function startMothershipLoop() {
+    if (!opts.getEnabled()) return;
+    cancelMothershipFade();
+    if (mothershipLoop) {
+      mothershipLoop.volume = MOTHERSHIP_VOLUME;
+      if (mothershipLoop.paused) mothershipLoop.play().catch(() => {});
+      return;
+    }
+    const template = templates.mothership;
+    if (!template) return;
+    const loop = /** @type {HTMLAudioElement} */ (template.cloneNode());
+    loop.loop = true;
+    loop.volume = MOTHERSHIP_VOLUME;
+    mothershipLoop = loop;
+    loop.play().catch(() => {});
+  }
+
+  function fadeOutMothership(ms = MOTHERSHIP_FADE_MS) {
+    const clip = mothershipLoop;
+    if (!clip) return;
+    mothershipLoop = null;
+    cancelMothershipFade();
+    const startVol = clip.volume;
+    const start = performance.now();
+
+    function tick(now) {
+      const t = Math.min(1, (now - start) / ms);
+      clip.volume = Math.max(0, startVol * (1 - t));
+      if (t >= 1) {
+        clip.pause();
+        clip.currentTime = 0;
+        mothershipFadeRaf = null;
+        return;
+      }
+      mothershipFadeRaf = requestAnimationFrame(tick);
+    }
+    mothershipFadeRaf = requestAnimationFrame(tick);
+  }
+
+  function stopMothership() {
+    cancelMothershipFade();
+    if (!mothershipLoop) return;
+    mothershipLoop.pause();
+    mothershipLoop.currentTime = 0;
+    mothershipLoop = null;
+  }
 
   Object.entries(SOUND_SRC).forEach(([id, src]) => {
     const audio = new Audio(src);
@@ -124,8 +187,16 @@ export function createAudio(opts) {
 
     /** @param {'mothership'|'granddaddy'} kind */
     playBoss(kind) {
+      if (kind === 'mothership') {
+        startMothershipLoop();
+        return;
+      }
       play(kind, { volume: 0.72, gap: 8 });
     },
+
+    fadeOutMothership,
+
+    stopMothership,
 
     /** @param {number} waveNum */
     playWaveWarning(waveNum) {

@@ -20,6 +20,7 @@ export const AMMO = {
   'meteor-mortar': { sprite: 'assets/ammo/meteor-mortar.png', forwardAngle: Math.PI / 4, size: 28 },
   'laser-lantern': { sprite: 'assets/ammo/laser-lantern.png', size: 24 },
   'thunder-bucket': { sprite: 'assets/ammo/thunder-bucket.png', forwardAngle: Math.PI / 2, size: 26 },
+  'freeze-fridge': { sprite: 'assets/ammo/slime-spitter.png', forwardAngle: Math.PI / 2, size: 20 },
 };
 
 /**

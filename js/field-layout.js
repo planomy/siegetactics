@@ -82,10 +82,28 @@ export const FIELD_LAYOUT = {
     baseY: 0.528,
     flipX: true,
     /** Barrel opening on granny-porch.png (unflipped source, 0–1). */
-    muzzle: { x: 0.28, y: 0.07 },
+    muzzle: { x: 0.38, y: 0.07 },
+  },
+  /** Standing nuke pose when Fire nukes is active (faces left, no flip). */
+  grannyNuke: {
+    rightX: 0.905,
+    baseY: 0.545,
+    flipX: false,
+    heightScale: 0.21,
+    /** Launcher muzzle on granny-nuke.png (unflipped, 0–1). */
+    muzzle: { x: 0.1, y: 0.36 },
   },
   pathStartX: PATH_START_X,
   pathEndX: PATH_END_X,
+  /** Alien spawn portal (left side of field.png) — VFX overlay anchor. */
+  alienPortal: {
+    cx: 0.048,
+    cy: 0.43,
+    radius: 0.092,
+    socketCount: 8,
+    /** Socket indices that pulse dim (charging up). */
+    inactiveSockets: [5, 6],
+  },
 };
 
 /** Dirt paths a turret row can fire at (row sits on grass between/adjacent paths). */

@@ -11,6 +11,7 @@ import { ECONOMY, bankBonusForgeXp } from './economy.js';
 import { computeStars, renderStarBadges } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
 import { preloadField, preloadDeployAssets, runDeployCountdown, getFieldImage } from './preload.js';
+import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 
@@ -36,14 +37,13 @@ const defaultSave = {
 /** @type {SaveData} */
 let save = loadSave();
 
-/** @type {{ waveBudget: number, runForgeXpEarned: number, startCoins: number, selectedTurret: string|null, cacheProgress: number, cacheStock: number }} */
+/** @type {{ waveBudget: number, runForgeXpEarned: number, startCoins: number, selectedTurret: string|null, cacheProgress: number }} */
 let run = {
   waveBudget: 0,
   runForgeXpEarned: 0,
   startCoins: 0,
   selectedTurret: null,
   cacheProgress: 0,
-  cacheStock: 0,
 };
 
 /** @type {ReturnType<typeof createTDEngine>|null} */
@@ -108,12 +108,13 @@ function isUnlocked(id) {
   return save.unlockedTurrets.includes(id);
 }
 
-function showToast(msg) {
+function showToast(msg, opts = {}) {
   if (!toastEl) return;
   toastEl.textContent = msg;
+  toastEl.dataset.variant = opts.variant || 'info';
   toastEl.classList.add('visible');
   clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => toastEl.classList.remove('visible'), 2800);
+  showToast._t = setTimeout(() => toastEl.classList.remove('visible'), opts.duration ?? 3200);
 }
 
 function showScreen(id) {
@@ -213,45 +214,46 @@ function updateNukeCachePanel() {
   const progressEl = document.getElementById('nuke-cache-progress');
   if (progressEl) progressEl.textContent = `${shown} / ${cost}`;
 
-  const stockEl = document.getElementById('nuke-cache-stock');
-  if (stockEl) {
-    stockEl.textContent = run.cacheStock === 1 ? '1 stocked' : `${run.cacheStock} stocked`;
-    stockEl.classList.toggle('has-stock', run.cacheStock > 0);
+  const statusEl = document.getElementById('nuke-cache-status');
+  const salvoActive = tdEngine?.isCupcakeActive?.() ?? false;
+  const cacheReady = run.cacheProgress >= cost;
+  if (statusEl) {
+    if (salvoActive) statusEl.textContent = 'Cupcakes inbound…';
+    else if (cacheReady) statusEl.textContent = 'Ready — Fire nukes!';
+    else statusEl.textContent = 'Blast aliens to fill';
+    statusEl.classList.toggle('is-ready', cacheReady && !salvoActive);
   }
 
-  panel.classList.toggle('nuke-cache-ready', run.cacheProgress >= cost || run.cacheStock > 0);
+  panel.classList.toggle('nuke-cache-ready', cacheReady);
 
-  const stockBtn = document.getElementById('btn-stock-cache');
-  if (stockBtn) stockBtn.disabled = run.cacheProgress < cost;
-
-  const summonBtn = document.getElementById('btn-summon-granny');
-  const onField = tdEngine?.isGrannyOnField?.() ?? false;
-  const inWave = tdEngine?.getPhase?.() === 'wave';
-  if (summonBtn) {
-    summonBtn.disabled = run.cacheStock < 1 || onField || !inWave;
-  }
-
-  updateCupcakeButton();
+  updateFireNukesButton();
 }
 
-function updateCupcakeButton() {
-  const btn = document.getElementById('btn-cupcakes');
+function updateFireNukesButton() {
+  const btn = document.getElementById('btn-fire-nukes');
   if (!btn) return;
-  const onField = tdEngine?.isGrannyOnField?.() ?? false;
-  btn.hidden = !onField;
-  if (!onField) return;
-  const canFire = tdEngine?.canFireCupcakes() ?? false;
-  const active = tdEngine?.isCupcakeActive?.() ?? false;
-  btn.disabled = !canFire;
-  if (canFire) btn.textContent = 'Cupcakes!';
-  else if (active) btn.textContent = 'Cupcakes inbound…';
-  else btn.textContent = 'Cupcakes spent';
+  const unlocked = save.grannyUnlocked;
+  btn.hidden = !unlocked;
+  if (!unlocked) return;
+
+  const { cost } = GRANNY_CACHE;
+  const inWave = tdEngine?.getPhase?.() === 'wave';
+  const cacheReady = run.cacheProgress >= cost;
+  const salvoActive = tdEngine?.isCupcakeActive?.() ?? false;
+  const canFire = tdEngine?.canFireNukes?.() ?? false;
+  const showArmed = inWave && cacheReady && !salvoActive;
+  const canClick = showArmed && canFire;
+
+  btn.disabled = !canClick;
+  btn.classList.toggle('is-armed', showArmed);
+  btn.classList.toggle('is-inbound', salvoActive);
+  btn.textContent = salvoActive ? 'Nukes inbound…' : 'Fire nukes';
 }
 
 function startWelcome() {
   const input = document.getElementById('player-name');
   if (input && save.playerName) input.value = save.playerName;
-  preloadDeployAssets({ unlocked: getUnlockedSet() });
+  preloadDeployAssets({ unlocked: getUnlockedSet(), grannyUnlocked: save.grannyUnlocked });
   showScreen('welcome');
 }
 
@@ -265,7 +267,6 @@ function beginMission() {
     startCoins: 0,
     selectedTurret: null,
     cacheProgress: 0,
-    cacheStock: 0,
   };
   if (DEV.skipForge) {
     const mission = getMission(SLICE_MISSION_ID);
@@ -303,7 +304,12 @@ function onForgeSuccess(rewards) {
   initSiegeScreen();
 }
 
-function initSiegeScreen() {
+function hideDeployOverlay() {
+  const overlay = document.getElementById('siege-countdown');
+  if (overlay) overlay.hidden = true;
+}
+
+async function initSiegeScreen() {
   tdEngine?.destroy();
   tdEngine = null;
 
@@ -327,18 +333,29 @@ function initSiegeScreen() {
   const overlay = document.getElementById('siege-countdown');
   const numEl = document.getElementById('siege-countdown-num');
   const showCountdown = firstSiegeDeploy && overlay && numEl;
-  if (showCountdown) {
-    firstSiegeDeploy = false;
-    overlay.hidden = false;
-  }
 
-  preloadField().then(async () => {
-    mountTDEngine(canvas, mission);
-    if (showCountdown && numEl && overlay) {
-      await runDeployCountdown(numEl);
-      overlay.hidden = true;
+  try {
+    if (showCountdown) {
+      firstSiegeDeploy = false;
+      overlay.hidden = false;
+      numEl.textContent = '3';
+    } else {
+      hideDeployOverlay();
     }
-  });
+
+    const countdownTask = showCountdown ? runDeployCountdown(numEl) : Promise.resolve();
+
+    try {
+      await preloadField();
+    } catch {
+      /* field fallback gradient still playable */
+    }
+
+    mountTDEngine(canvas, mission);
+    await countdownTask;
+  } finally {
+    hideDeployOverlay();
+  }
 }
 
 function mountTDEngine(canvas, mission) {
@@ -351,16 +368,9 @@ function mountTDEngine(canvas, mission) {
     onGranddaddySpawn() {
       onGranddaddySpawned(save);
       persistSave();
-      showToast('Granddaddy?! Stock nuke caches, then summon Granny from the porch!');
+      showToast('Granddaddy?! Fill the nuke cache, then hit Fire nukes!');
       updateNukeCachePanel();
       tdEngine?.relayout?.();
-    },
-    onGrannySummoned() {
-      updateNukeCachePanel();
-    },
-    onGrannyDeparted() {
-      showToast('Granny heads back inside.');
-      updateNukeCachePanel();
     },
     onCupcakeUsed() {
       updateNukeCachePanel();
@@ -368,15 +378,18 @@ function mountTDEngine(canvas, mission) {
     onCupcakeFinished() {
       updateNukeCachePanel();
     },
+    onNukeStateChange() {
+      updateNukeCachePanel();
+    },
     getBudget: () => run.waveBudget,
     trySpend: (type) => {
       if (!isUnlocked(type)) {
-        showToast(`Unlock that turret with ${ECONOMY.forgeXpLabel} first.`);
+        showToast(`Unlock that turret with ${ECONOMY.forgeXpLabel} first.`, { variant: 'shop' });
         return false;
       }
       const cost = TURRETS[type]?.placementCost ?? 0;
       if (run.waveBudget < cost) {
-        showToast(`Need ${cost} ${ECONOMY.siegeCoinsLabel} to place that.`);
+        showToast(`Need ${cost} ${ECONOMY.siegeCoinsLabel} to place that.`, { variant: 'warn' });
         return false;
       }
       run.waveBudget -= cost;
@@ -393,7 +406,9 @@ function mountTDEngine(canvas, mission) {
       run.waveBudget += bonus;
       refreshShop();
       addCacheProgress(GRANNY_CACHE.waveClearPoints);
-      showToast(`Wave ${wave} cleared! +${bonus} ${ECONOMY.siegeCoinsLabel} — reinforce the lawn!`);
+      showToast(`Wave ${wave} cleared! +${bonus} ${ECONOMY.siegeCoinsLabel} — reinforce the lawn!`, {
+        variant: 'success',
+      });
     },
     onPauseChange(paused) {
       const pauseBtn = document.getElementById('btn-pause');
@@ -436,7 +451,9 @@ function mountTDEngine(canvas, mission) {
   }
   updateNukeCachePanel();
   if (getFieldImage()) {
-    showToast(`${ECONOMY.forgeXpLabel} unlocks turrets forever. ${ECONOMY.siegeCoinsLabel} only last this siege!`);
+    showToast(`${ECONOMY.forgeXpLabel} unlocks turrets forever. ${ECONOMY.siegeCoinsLabel} only last this siege!`, {
+      variant: 'shop',
+    });
   }
 }
 
@@ -488,24 +505,48 @@ function finishRun(stats) {
   const badgesEl = document.getElementById('results-badges');
   if (badgesEl) renderStarBadges(badgesEl, starResult);
 
-  document.getElementById('results-kills').textContent = String(stats.kills);
-  document.getElementById('results-leaks').textContent = String(stats.leaks);
-  document.getElementById('results-forge-xp').textContent = String(run.runForgeXpEarned);
-  document.getElementById('results-coins-left').textContent = String(bankedCoins);
   const maxLeaksEl = document.getElementById('results-max-leaks');
-  if (maxLeaksEl) maxLeaksEl.textContent = String(stats.maxLeaks);
+  if (maxLeaksEl) maxLeaksEl.textContent = '0';
+
+  document.getElementById('results-kills').textContent = '0';
+  document.getElementById('results-leaks').textContent = '0';
+  document.getElementById('results-forge-xp').textContent = '0';
+  document.getElementById('results-coins-left').textContent = '0';
   const bestEl = document.getElementById('results-best');
-  if (bestEl) bestEl.textContent = String(save.bestKills[missionId]);
+  if (bestEl) bestEl.textContent = '0';
 
   const nextGoalEl = document.getElementById('results-next-goal');
+  const nextGoal = computeNextGoal({ save, missionId, stats });
   if (nextGoalEl) {
-    renderNextGoal(
-      nextGoalEl,
-      computeNextGoal({ save, missionId, stats })
-    );
+    renderNextGoal(nextGoalEl, nextGoal);
   }
 
   showScreen('results');
+
+  animateResultsStats({
+    kills: stats.kills,
+    leaks: stats.leaks,
+    forgeXp: run.runForgeXpEarned,
+    coins: bankedCoins,
+    best: save.bestKills[missionId],
+    maxLeaks: stats.maxLeaks,
+  });
+
+  if (nextGoalEl) {
+    const fillEl = nextGoalEl.querySelector('.next-goal-progress-fill');
+    const progressText = nextGoalEl.querySelector('.next-goal-progress-text');
+    animateProgressFill(fillEl, nextGoal.progress, { delay: 720, duration: 950 });
+
+    const pairMatch = nextGoal.progressLabel.match(/^([\d,]+)\s*\/\s*([\d,]+)(.*)$/);
+    if (pairMatch && progressText) {
+      animateTallyPair(
+        progressText,
+        Number(pairMatch[1].replace(/,/g, '')),
+        Number(pairMatch[2].replace(/,/g, '')),
+        { delay: 720, duration: 950, suffix: pairMatch[3] ?? '' }
+      );
+    }
+  }
 }
 
 function bindUI() {
@@ -519,7 +560,7 @@ function bindUI() {
     }
   save.playerName = name;
   persistSave();
-  preloadDeployAssets({ unlocked: getUnlockedSet() });
+  preloadDeployAssets({ unlocked: getUnlockedSet(), grannyUnlocked: save.grannyUnlocked });
   beginMission();
   });
 
@@ -529,25 +570,14 @@ function bindUI() {
     }
   });
 
-  document.getElementById('btn-cupcakes')?.addEventListener('click', () => {
-    if (tdEngine?.fireCupcakes()) {
-      updateNukeCachePanel();
+  document.getElementById('btn-fire-nukes')?.addEventListener('click', () => {
+    if (run.cacheProgress < GRANNY_CACHE.cost) {
+      showToast('Nuke cache not full yet — keep blasting!');
+      return;
     }
-  });
-
-  document.getElementById('btn-stock-cache')?.addEventListener('click', () => {
-    if (run.cacheProgress < GRANNY_CACHE.cost) return;
-    run.cacheProgress -= GRANNY_CACHE.cost;
-    run.cacheStock += 1;
-    showToast('Nuke cache stocked! Summon Granny when the line breaks.');
-    updateNukeCachePanel();
-  });
-
-  document.getElementById('btn-summon-granny')?.addEventListener('click', () => {
-    if (run.cacheStock < 1) return;
-    if (tdEngine?.summonGranny()) {
-      run.cacheStock -= 1;
-      showToast('Granny\'s on the porch — she\'ll frost anything near the house!');
+    if (tdEngine?.fireNukes()) {
+      run.cacheProgress -= GRANNY_CACHE.cost;
+      showToast('Nukes away!', { variant: 'success' });
       updateNukeCachePanel();
     }
   });

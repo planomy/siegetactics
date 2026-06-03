@@ -176,8 +176,8 @@ export function renderNextGoal(container, goal) {
       <div class="next-goal-copy">
         <strong class="next-goal-title">${goal.title}</strong>
         <p class="next-goal-detail">${goal.detail}</p>
-        <div class="next-goal-progress" role="progressbar" aria-valuenow="${Math.round(goal.progress * 100)}" aria-valuemin="0" aria-valuemax="100">
-          <div class="next-goal-progress-fill" style="width: ${Math.round(goal.progress * 100)}%"></div>
+        <div class="next-goal-progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+          <div class="next-goal-progress-fill" style="width: 0%"></div>
         </div>
         <span class="next-goal-progress-text">${goal.progressLabel}</span>
       </div>

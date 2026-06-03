@@ -1,4 +1,4 @@
-/** @typedef {'granny-blaster'|'zap-sprinkler'|'boom-gnome'|'plasma-daisy'|'rocket-rooster'|'sonic-slicer'|'slime-spitter'|'meteor-mortar'|'laser-lantern'|'thunder-bucket'} TurretType */
+/** @typedef {'granny-blaster'|'zap-sprinkler'|'boom-gnome'|'plasma-daisy'|'rocket-rooster'|'sonic-slicer'|'slime-spitter'|'meteor-mortar'|'laser-lantern'|'thunder-bucket'|'glue-goo'|'freeze-fridge'|'decoy-gnome'|'xp-magnet'|'repair-shed'} TurretType */
 
 /**
  * @typedef {Object} TurretDef
@@ -16,7 +16,14 @@
  * @property {number} boltSpeed
  * @property {number} [aoe]
  * @property {number} [slow]
+ * @property {number} [slowDuration]
+ * @property {number} [freezeDuration]
  * @property {boolean} [flipX] - Mirror sprite (face left toward aliens)
+ * @property {'decoy'|'magnet'|'repair'|'glue'|'freeze'} [role]
+ * @property {number} [magnetRadius]
+ * @property {number} [magnetBonus]
+ * @property {number} [repairRadius]
+ * @property {number} [repairHpPerSec]
  */
 
 /** @type {TurretType[]} */
@@ -171,6 +178,90 @@ export const TURRETS = {
     boltSpeed: 260,
     aoe: 52,
   },
+  'glue-goo': {
+    id: 'glue-goo',
+    name: 'Glue Goo Pot',
+    sprite: 'assets/turrets/glue-goo.png',
+    flipX: true,
+    unlockXp: 5500,
+    placementCost: 24,
+    color: '#b565ff',
+    desc: 'Splashes lane — aliens crawl',
+    role: 'glue',
+    damage: 0,
+    range: 88,
+    fireRate: 1.65,
+    boltSize: 0,
+    boltSpeed: 0,
+    slowDuration: 3.5,
+  },
+  'freeze-fridge': {
+    id: 'freeze-fridge',
+    name: 'Freeze Fridge',
+    sprite: 'assets/turrets/freeze-fridge.png',
+    flipX: true,
+    unlockXp: 6200,
+    placementCost: 26,
+    color: '#5ce1ff',
+    desc: 'Icy blast — stop right there',
+    role: 'freeze',
+    damage: 10,
+    range: 72,
+    fireRate: 2.65,
+    boltSize: 5,
+    boltSpeed: 260,
+    aoe: 32,
+    freezeDuration: 1.45,
+  },
+  'decoy-gnome': {
+    id: 'decoy-gnome',
+    name: 'Decoy Gnome',
+    sprite: 'assets/turrets/decoy-gnome.png',
+    unlockXp: 7000,
+    placementCost: 20,
+    color: '#ff6bcb',
+    desc: 'Aliens attack the gnome',
+    role: 'decoy',
+    damage: 0,
+    range: 0,
+    fireRate: 999,
+    boltSize: 0,
+    boltSpeed: 0,
+  },
+  'xp-magnet': {
+    id: 'xp-magnet',
+    name: 'XP Magnet Dish',
+    sprite: 'assets/turrets/xp-magnet.png',
+    unlockXp: 7800,
+    placementCost: 30,
+    color: '#ffd166',
+    desc: 'Extra coins from nearby kills',
+    role: 'magnet',
+    damage: 0,
+    range: 0,
+    fireRate: 999,
+    boltSize: 0,
+    boltSpeed: 0,
+    magnetRadius: 115,
+    magnetBonus: 1,
+  },
+  'repair-shed': {
+    id: 'repair-shed',
+    name: 'Repair Shed',
+    sprite: 'assets/turrets/repair-shed.png',
+    unlockXp: 8500,
+    placementCost: 32,
+    color: '#ef233c',
+    desc: 'Heals nearby turrets',
+    role: 'repair',
+    damage: 0,
+    range: 0,
+    fireRate: 999,
+    boltSize: 0,
+    boltSpeed: 0,
+    repairRadius: 100,
+    repairHpPerSec: 6,
+  },
 };
 
 export const TURRET_ORDER = /** @type {TurretType[]} */ ([
@@ -184,6 +275,11 @@ export const TURRET_ORDER = /** @type {TurretType[]} */ ([
   'rocket-rooster',
   'laser-lantern',
   'meteor-mortar',
+  'glue-goo',
+  'freeze-fridge',
+  'decoy-gnome',
+  'xp-magnet',
+  'repair-shed',
 ]);
 
 /** HP before aliens wreck the turret (scales with tier). */
@@ -198,6 +294,11 @@ export const TURRET_MAX_HP = /** @type {Record<TurretType, number>} */ ({
   'rocket-rooster': 125,
   'laser-lantern': 135,
   'meteor-mortar': 145,
+  'glue-goo': 90,
+  'freeze-fridge': 100,
+  'decoy-gnome': 130,
+  'xp-magnet': 85,
+  'repair-shed': 120,
 });
 
 /** @param {TurretType} id */
@@ -232,7 +333,7 @@ export function loadWreckedTurretSprites() {
         new Promise((resolve, reject) => {
           const img = new Image();
           img.onload = () => resolve([id, img]);
-          img.onerror = () => reject(new Error(`Failed to load ${wreckedSpritePath(id)}`));
+          img.onerror = () => resolve([id, null]);
           img.src = wreckedSpritePath(id);
         })
     )

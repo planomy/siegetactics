@@ -16,7 +16,10 @@ export function preloadField() {
       fieldCache = img;
       resolve(img);
     };
-    img.onerror = () => reject(new Error(`Failed to load ${FIELD_SRC}`));
+    img.onerror = () => {
+      fieldPromise = null;
+      reject(new Error(`Failed to load ${FIELD_SRC}`));
+    };
     img.src = FIELD_SRC;
   });
   return fieldPromise;
@@ -32,7 +35,7 @@ preloadField();
 
 /**
  * Load gameplay sprites in the background while the player is in forge / welcome.
- * @param {{ unlocked?: Set<string> }} [opts]
+ * @param {{ unlocked?: Set<string>, grannyUnlocked?: boolean }} [opts]
  */
 export function preloadDeployAssets(opts = {}) {
   preloadField();
@@ -49,6 +52,20 @@ export function preloadDeployAssets(opts = {}) {
   import('./enemies-data.js').then(({ loadEnemySprites }) => {
     loadEnemySprites().catch(() => {});
   });
+  if (opts.grannyUnlocked) {
+    ['assets/granny-porch.png', 'assets/granny-nuke.png', 'assets/cupcake-missile.png'].forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }
+}
+
+/**
+ * @param {number} ms
+ * @returns {Promise<void>}
+ */
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -56,19 +73,17 @@ export function preloadDeployAssets(opts = {}) {
  * @returns {Promise<void>}
  */
 export function runDeployCountdown(numEl) {
-  const steps = ['3', '2', '1', 'Go!'];
-  let i = 0;
-  numEl.textContent = steps[0];
-  return new Promise((resolve) => {
-    function tick() {
-      i += 1;
-      if (i >= steps.length) {
-        resolve();
-        return;
-      }
-      numEl.textContent = steps[i];
-      setTimeout(tick, i === steps.length - 1 ? 550 : 900);
+  const steps = [
+    { label: '3', ms: 1000 },
+    { label: '2', ms: 1000 },
+    { label: '1', ms: 1000 },
+    { label: 'Go!', ms: 650 },
+  ];
+
+  return (async () => {
+    for (const step of steps) {
+      numEl.textContent = step.label;
+      await delay(step.ms);
     }
-    setTimeout(tick, 900);
-  });
+  })();
 }

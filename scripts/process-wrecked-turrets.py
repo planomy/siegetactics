@@ -17,6 +17,11 @@ MAPPING = [
     ("ChatGPT_Image_Jun_3__2026__11_21_31_AM__8_-b545d606-a2e7-41c1-a709-d32ad64fe847.png", "meteor-mortar.png"),
     ("ChatGPT_Image_Jun_3__2026__11_21_31_AM__9_-204ec214-209f-411c-9bd8-ed74fc2b3271.png", "laser-lantern.png"),
     ("ChatGPT_Image_Jun_3__2026__11_21_31_AM__10_-15283274-1a69-4e28-9b07-cd4121f17fb6.png", "thunder-bucket.png"),
+    ("ChatGPT_Image_Jun_3__2026__03_21_28_PM__1_-827a17e9-552d-4038-af5f-b0b0242143e7.png", "repair-shed.png"),
+    ("ChatGPT_Image_Jun_3__2026__03_21_28_PM__2_-1d09f12c-b1e7-4319-8401-f166198c2ff3.png", "xp-magnet.png"),
+    ("ChatGPT_Image_Jun_3__2026__03_21_28_PM__3_-9c516458-51fa-49cd-aa11-a2349c990aab.png", "glue-goo.png"),
+    ("ChatGPT_Image_Jun_3__2026__03_21_28_PM__4_-ca5f050d-da1c-423e-8b05-e3c04db47e17.png", "freeze-fridge.png"),
+    ("ChatGPT_Image_Jun_3__2026__03_21_28_PM__5_-b17d3473-119c-40e8-9410-0a269122fdac.png", "decoy-gnome.png"),
 ]
 
 
