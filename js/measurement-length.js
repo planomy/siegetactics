@@ -1,5 +1,8 @@
 import { ECONOMY } from './economy.js';
 import { GATE } from './training-gate.js';
+import { difficultyTrainingTag } from './difficulty.js';
+
+/** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
 
 export const LENGTH_LAB = {
   questionsPerSession: 8,
@@ -8,11 +11,133 @@ export const LENGTH_LAB = {
   topicId: 'measurement-length',
 };
 
+/** @param {DifficultyLevel} level */
+function sessionSize(level) {
+  if (level === 1) return 6;
+  if (level === 2) return 8;
+  return 10;
+}
+
 /**
+ * @param {DifficultyLevel} level
  * @returns {{ prompt: string, answer: number, options: { label: string, value: number }[] }}
  */
-function makeQuestion() {
-  const kind = pick(['compare-cm', 'compare-m', 'convert-simple']);
+function makeQuestion(level) {
+  if (level === 1) {
+    const kind = pick(['compare-cm-small', 'compare-m-whole', 'longer-or-shorter']);
+    if (kind === 'compare-m-whole') {
+      const a = pick([1, 2, 3]);
+      const b = a + pick([1, 2]);
+      const longer = Math.max(a, b);
+      const shorter = Math.min(a, b);
+      return {
+        prompt: `Which is longer: ${shorter} m or ${longer} m?`,
+        answer: longer,
+        options: shuffle([
+          { label: `${shorter} m`, value: shorter },
+          { label: `${longer} m`, value: longer },
+        ]),
+      };
+    }
+    if (kind === 'longer-or-shorter') {
+      const items = pick([
+        [{ name: 'pencil', cm: 12 }, { name: 'ruler', cm: 30 }],
+        [{ name: 'book', cm: 22 }, { name: 'eraser', cm: 5 }],
+        [{ name: 'stick', cm: 45 }, { name: 'coin', cm: 2 }],
+      ]);
+      const longer = items[0].cm > items[1].cm ? items[0] : items[1];
+      return {
+        prompt: `Which is longer — the ${items[0].name} (${items[0].cm} cm) or the ${items[1].name} (${items[1].cm} cm)?`,
+        answer: longer.cm,
+        options: shuffle([
+          { label: `${items[0].name} (${items[0].cm} cm)`, value: items[0].cm },
+          { label: `${items[1].name} (${items[1].cm} cm)`, value: items[1].cm },
+        ]),
+      };
+    }
+    const a = pick([8, 12, 15, 18, 22, 25]);
+      const b = a + pick([3, 5, 7]);
+      const longer = Math.max(a, b);
+      const shorter = Math.min(a, b);
+      const askLonger = Math.random() > 0.5;
+      const answer = askLonger ? longer : shorter;
+      const prompt = askLonger
+        ? `Which is longer: ${shorter} cm or ${longer} cm?`
+        : `Which is shorter: ${shorter} cm or ${longer} cm?`;
+      return {
+        prompt,
+        answer,
+        options: shuffle([
+          { label: `${shorter} cm`, value: shorter },
+          { label: `${longer} cm`, value: longer },
+        ]),
+      };
+  }
+
+  if (level === 2) {
+    const kind = pick(['compare-cm', 'compare-m', 'convert-simple', 'mm-to-cm']);
+    if (kind === 'compare-cm') {
+      const a = pick([25, 34, 45, 56, 67]);
+      const b = a + pick([8, 11, 14]);
+      const longer = Math.max(a, b);
+      const shorter = Math.min(a, b);
+      const askLonger = Math.random() > 0.5;
+      const answer = askLonger ? longer : shorter;
+      const prompt = askLonger
+        ? `Which is longer: ${shorter} cm or ${longer} cm?`
+        : `Which is shorter: ${shorter} cm or ${longer} cm?`;
+      return {
+        prompt,
+        answer,
+        options: shuffle([
+          { label: `${shorter} cm`, value: shorter },
+          { label: `${longer} cm`, value: longer },
+        ]),
+      };
+    }
+    if (kind === 'compare-m') {
+      const a = pick([2, 3, 4, 5]);
+      const b = a + pick([1, 2]);
+      const longer = Math.max(a, b);
+      const shorter = Math.min(a, b);
+      return {
+        prompt: `Which is longer: ${shorter} m or ${longer} m?`,
+        answer: longer,
+        options: shuffle([
+          { label: `${shorter} m`, value: shorter },
+          { label: `${longer} m`, value: longer },
+        ]),
+      };
+    }
+    if (kind === 'mm-to-cm') {
+      const cm = pick([2, 3, 4, 5, 6]);
+      const mm = cm * 10;
+      return {
+        prompt: `${mm} mm = ? cm`,
+        answer: cm,
+        options: shuffle([
+          { label: `${cm} cm`, value: cm },
+          { label: `${cm + 1} cm`, value: cm + 1 },
+          { label: `${Math.max(1, cm - 1)} cm`, value: Math.max(1, cm - 1) },
+        ]),
+      };
+    }
+    const metres = pick([1, 2, 3, 4]);
+    const cm = metres * 100;
+    const wrong1 = cm + pick([10, 20]);
+    const wrong2 = Math.max(10, cm - pick([10, 25]));
+    return {
+      prompt: `${metres} m = ? cm`,
+      answer: cm,
+      options: shuffle([
+        { label: `${cm} cm`, value: cm },
+        { label: `${wrong1} cm`, value: wrong1 },
+        { label: `${wrong2} cm`, value: wrong2 },
+      ]),
+    };
+  }
+
+  const kind = pick(['compare-cm', 'compare-m', 'convert-simple', 'convert-hard', 'perimeter-rect']);
   if (kind === 'compare-cm') {
     const a = pick([12, 15, 23, 34, 45, 56, 67, 78, 89]);
     const b = a + pick([5, 8, 11, 14]);
@@ -33,8 +158,8 @@ function makeQuestion() {
     };
   }
   if (kind === 'compare-m') {
-    const a = pick([2, 3, 4, 5]);
-    const b = a + pick([1, 2]);
+    const a = pick([2, 3, 4, 5, 6]);
+    const b = a + pick([1, 2, 3]);
     const longer = Math.max(a, b);
     const shorter = Math.min(a, b);
     return {
@@ -43,6 +168,35 @@ function makeQuestion() {
       options: shuffle([
         { label: `${shorter} m`, value: shorter },
         { label: `${longer} m`, value: longer },
+      ]),
+    };
+  }
+  if (kind === 'convert-hard') {
+    const cm = pick([150, 250, 350, 450, 550]);
+    const metres = cm / 100;
+    const wrong1 = metres + 1;
+    const wrong2 = Math.max(1, metres - 1);
+    return {
+      prompt: `${cm} cm = ? m`,
+      answer: metres,
+      options: shuffle([
+        { label: `${metres} m`, value: metres },
+        { label: `${wrong1} m`, value: wrong1 },
+        { label: `${wrong2} m`, value: wrong2 },
+      ]),
+    };
+  }
+  if (kind === 'perimeter-rect') {
+    const w = pick([3, 4, 5, 6, 7]);
+    const h = pick([2, 3, 4, 5]);
+    const p = 2 * (w + h);
+    return {
+      prompt: `A rectangle is ${w} cm long and ${h} cm wide. What is its perimeter?`,
+      answer: p,
+      options: shuffle([
+        { label: `${p} cm`, value: p },
+        { label: `${p + 4} cm`, value: p + 4 },
+        { label: `${Math.max(4, p - 4)} cm`, value: Math.max(4, p - 4) },
       ]),
     };
   }
@@ -79,6 +233,7 @@ function pick(arr) {
 /**
  * @param {HTMLElement} host
  * @param {{
+ *   difficultyLevel: DifficultyLevel,
  *   onAwardXp: (amount: number) => void,
  *   onSessionComplete: (result: { accuracy: number, passed: boolean }) => void,
  *   onHome: () => void,
@@ -98,8 +253,9 @@ export function initMeasurementLength(host, callbacks) {
 
   function startSession() {
     deck = [];
-    for (let i = 0; i < LENGTH_LAB.questionsPerSession; i++) {
-      deck.push(makeQuestion());
+    const count = sessionSize(callbacks.difficultyLevel);
+    for (let i = 0; i < count; i++) {
+      deck.push(makeQuestion(callbacks.difficultyLevel));
     }
     index = 0;
     correct = 0;
@@ -126,7 +282,7 @@ export function initMeasurementLength(host, callbacks) {
     host.innerHTML = `
       <div class="panel times-panel length-panel">
         <button type="button" class="btn btn-ghost btn-sm times-back" id="length-home">← Home</button>
-        <p class="mission-tag">Measurement · Length</p>
+        <p class="mission-tag">Measurement · Length · ${difficultyTrainingTag(callbacks.difficultyLevel)}</p>
         <h2 class="panel-title">Length Lab</h2>
         <div class="times-quiz-header">
           <span class="times-quiz-tag">Compare & convert</span>

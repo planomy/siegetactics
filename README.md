@@ -88,12 +88,16 @@ Shared-key strategy with main Granny Boom can be documented here if we later syn
 
 ## Dev mode
 
-Append `?dev` to the URL to unlock:
+Append query params to the URL:
 
-- All missions
-- Skip forge (grant default budget)
-- Fast-forward wave timer
-- Infinite lives
+| URL | Effect |
+|-----|--------|
+| `?dev=siege` | **Straight to siege** — skips welcome/home/forge, +200 coins, all turrets unlocked, no 3-2-1 countdown |
+| `?dev&siege` | Same as `?dev=siege` |
+| `?dev` | Dev perks on normal flow: skip forge, +200 coins, unlock all turrets, Granny nukes on |
+| `?dev=fast` | Dev perks + fast wave timer (when wired) |
+
+While `?dev` is active, a **Test siege** button appears in the top bar to reload the fight from anywhere.
 
 ---
 

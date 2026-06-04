@@ -10,16 +10,19 @@
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/home-gb.css" />
   <link rel="preload" href="assets/field.png" as="image" type="image/png" />
+  <link rel="preload" href="assets/home/granny-boom-siege-logo.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/hero-village.png" as="image" type="image/png" />
 </head>
 <body>
   <header class="topbar gb-topbar">
     <div class="topbar-brand">
-      <img class="brand-granny" src="assets/home/granny-header.png" width="1024" height="1024" alt="" />
-      <div class="topbar-brand-text">
-        <span class="brand-title">Granny Boom</span>
-        <span class="brand-sub">Siege Tactics</span>
-      </div>
+      <img
+        class="brand-logo"
+        src="assets/home/granny-boom-siege-logo.png"
+        width="1024"
+        height="438"
+        alt="Granny Boom — Siege Tactics"
+      />
     </div>
     <div class="topbar-stats">
       <div class="topbar-badges" id="topbar-badges" aria-label="Military badges earned"></div>
@@ -61,6 +64,18 @@
       <div id="measurement-host"></div>
     </section>
 
+    <section id="screen-fractions" class="screen">
+      <div id="fractions-host"></div>
+    </section>
+
+    <section id="screen-angles" class="screen">
+      <div id="angles-host"></div>
+    </section>
+
+    <section id="screen-maths-quest" class="screen">
+      <div id="maths-quest-host"></div>
+    </section>
+
     <section id="screen-forge" class="screen">
       <div id="forge-host"></div>
     </section>
@@ -74,12 +89,11 @@
         <div class="siege-canvas-wrap">
           <canvas id="siege-canvas" aria-label="Siege field"></canvas>
           <div class="wave-controls">
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-pause">Pause</button>
             <button type="button" class="btn btn-ghost btn-sm" id="btn-speed" data-speed="1">1×</button>
           </div>
           <div id="siege-countdown" class="siege-countdown" hidden aria-live="polite">
             <span id="siege-countdown-num" class="siege-countdown-num">3</span>
-            <span class="siege-countdown-hint">Deploy turrets…</span>
+            <span class="siege-countdown-hint">Place turrets — bigger ones take longer to build!</span>
           </div>
         </div>
         <div class="siege-command-bar">

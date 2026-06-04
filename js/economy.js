@@ -5,6 +5,8 @@ export const ECONOMY = {
   /** Unspent siege coins → Forge XP at end of run (1 XP per N coins). */
   bankCoinDivisor: 5,
   bankMaxBonus: 25,
+  /** Siege coins lost when an alien leaks through (not Forge XP). */
+  leakCoinPenalty: 10,
 };
 
 /** @param {number} unspentCoins */

@@ -7,6 +7,12 @@ import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeFo
 import { getFieldImage, preloadField } from './preload.js';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
 import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC } from './waves-data.js';
+import { ECONOMY } from './economy.js';
+
+/** Build time in seconds — cost ÷ 10, minimum 1s. */
+export function buildTimeForPlacementCost(cost) {
+  return Math.max(1, cost / 10);
+}
 
 const { ENEMY_PATHS, TURRET_ROWS } = FIELD_LAYOUT;
 
@@ -25,6 +31,8 @@ const { ENEMY_PATHS, TURRET_ROWS } = FIELD_LAYOUT;
  * @property {number} hp
  * @property {number} maxHp
  * @property {boolean} wrecked
+ * @property {number} buildRemaining - Seconds until turret is operational
+ * @property {number} buildTotal
  */
 
 /**
@@ -93,10 +101,10 @@ const { ENEMY_PATHS, TURRET_ROWS } = FIELD_LAYOUT;
  *   getBudget: () => number,
  *   trySpend: (type: string) => boolean,
  *   onMissionEnd: (stats: { kills: number, leaks: number, won: boolean, maxLeaks: number, wavesCleared: number }) => void,
- *   onKillReward?: (info: { isBoss: boolean }) => void,
+ *   onKillReward?: (info: { isBoss: boolean, xp: number }) => void,
  *   onWaveCleared?: (info: { wave: number, nextWave: number|null }) => void,
+ *   onLeak?: (info: { leaks: number, maxLeaks: number, penalty: number }) => void,
  *   onPhaseChange?: (phase: 'deploy'|'announce'|'wave'|'done') => void,
- *   onPauseChange?: (paused: boolean) => void,
  *   audio?: {
  *     playTurretFire: (type: string) => void,
  *     playNukeFire: () => void,
@@ -187,7 +195,7 @@ export function createTDEngine(canvas, opts) {
   let phase = /** @type {'deploy'|'announce'|'wave'|'done'} */ ('deploy');
   let waveTime = 0;
   let speedMult = 1;
-  let paused = false;
+  let goLive = false;
   let waveKills = 0;
   let totalKills = 0;
   let totalLeaks = 0;
@@ -210,13 +218,26 @@ export function createTDEngine(canvas, opts) {
 
   const siegeDuration =
     (opts.mission.siegeDurationSec ?? SIEGE_DURATION_SEC) + (opts.bonusSiegeSec ?? 0);
-  const maxLeaks = opts.mission.maxLeaks ?? 10;
+  const maxLeaks = opts.mission.maxLeaks ?? 5;
+  const leakCoinPenalty = opts.mission.leakCoinPenalty ?? ECONOMY.leakCoinPenalty;
   const killBudgetXp = opts.mission.killBudgetXp ?? 1;
   const bossKillBudgetXp = opts.mission.bossKillBudgetXp ?? 4;
   let defeated = false;
 
   function updateCanvasCursor() {
     canvas.style.cursor = selectedType && canPlaceTurrets() ? 'none' : '';
+  }
+
+  function isTowerOperational(t) {
+    return !t.wrecked && t.buildRemaining <= 0;
+  }
+
+  function tickBuildTimers(dt) {
+    for (const t of towers) {
+      if (t.buildRemaining > 0) {
+        t.buildRemaining = Math.max(0, t.buildRemaining - dt);
+      }
+    }
   }
 
   function setPhase(next) {
@@ -478,7 +499,7 @@ export function createTDEngine(canvas, opts) {
   }
 
   function fireTower(tower, dt) {
-    if (tower.wrecked) return;
+    if (tower.wrecked || tower.buildRemaining > 0) return;
     const def = TURRETS[/** @type {keyof typeof TURRETS} */ (tower.type)];
     if (def.role === 'decoy' || def.role === 'magnet' || def.role === 'repair') return;
 
@@ -527,7 +548,7 @@ export function createTDEngine(canvas, opts) {
     let best = null;
     let bestDist = Infinity;
     for (const t of towers) {
-      if (t.wrecked) continue;
+      if (t.wrecked || t.buildRemaining > 0) continue;
       if (!targetPathsForRow(t.row).has(enemy.path)) continue;
       const dist = Math.hypot(pos.x - t.x, pos.y - t.y);
       if (dist > enemy.attackRange) continue;
@@ -548,7 +569,7 @@ export function createTDEngine(canvas, opts) {
   function enemyLuredByDecoy(enemy) {
     const pos = enemyWorldPos(enemy);
     for (const t of towers) {
-      if (t.wrecked) continue;
+      if (t.wrecked || t.buildRemaining > 0) continue;
       const def = TURRETS[/** @type {keyof typeof TURRETS} */ (t.type)];
       if (def.role !== 'decoy') continue;
       if (!targetPathsForRow(t.row).has(enemy.path)) continue;
@@ -599,7 +620,7 @@ export function createTDEngine(canvas, opts) {
 
   function updateRepairTowers(dt) {
     for (const shed of towers) {
-      if (shed.wrecked) continue;
+      if (!isTowerOperational(shed)) continue;
       const def = TURRETS[/** @type {keyof typeof TURRETS} */ (shed.type)];
       if (def.role !== 'repair') continue;
       for (const t of towers) {
@@ -967,7 +988,7 @@ export function createTDEngine(canvas, opts) {
       for (const t of towers) {
         if (t.wrecked) continue;
         const def = TURRETS[/** @type {keyof typeof TURRETS} */ (t.type)];
-        if (def.role !== 'magnet') continue;
+        if (def.role !== 'magnet' || !isTowerOperational(t)) continue;
         if (Math.hypot(x - t.x, y - t.y) <= (def.magnetRadius ?? 100)) {
           xp += def.magnetBonus ?? 1;
         }
@@ -1024,12 +1045,14 @@ export function createTDEngine(canvas, opts) {
 
   function update(dt) {
     if (phase === 'deploy') {
+      tickBuildTimers(dt);
       tickPortalAnim(dt);
       tickGrannyRock(dt);
       return;
     }
 
     if (phase === 'announce') {
+      tickBuildTimers(dt);
       tickPortalAnim(dt);
       tickGrannyRock(dt);
       splash.time += dt;
@@ -1042,11 +1065,12 @@ export function createTDEngine(canvas, opts) {
 
     if (phase === 'wave') {
       tickPortalAnim(dt);
-      if (paused) return;
       tickGrannyRock(dt);
     } else {
       return;
     }
+
+    tickBuildTimers(dt * speedMult);
 
     siegeTimeLeft = Math.max(0, siegeTimeLeft - dt);
     if (siegeTimeLeft <= 0 && !siegeTimerEnded) {
@@ -1068,6 +1092,7 @@ export function createTDEngine(canvas, opts) {
     enemies = enemies.filter((e) => {
       if (e.progress >= 1) {
         totalLeaks += 1;
+        opts.onLeak?.({ leaks: totalLeaks, maxLeaks, penalty: leakCoinPenalty });
         return false;
       }
       return true;
@@ -1137,12 +1162,7 @@ export function createTDEngine(canvas, opts) {
   }
 
   function showWaveSplash(waveNum) {
-    if (paused) {
-      paused = false;
-      opts.onPauseChange?.(false);
-    }
     splash = { active: true, waveNum, time: 0, duration: ANNOUNCE_SPLASH_SEC };
-    opts.audio?.playWaveWarning(waveNum);
     setPhase('announce');
     lastTs = 0;
     cancelAnimationFrame(rafId);
@@ -1171,7 +1191,35 @@ export function createTDEngine(canvas, opts) {
   }
 
   function canPlaceTurrets() {
-    return phase === 'deploy' || (phase === 'wave' && paused);
+    return phase === 'deploy' || phase === 'wave' || phase === 'announce';
+  }
+
+  function startWave() {
+    if (phase !== 'deploy') return false;
+    if (wavesCompleted === 0 && towers.length === 0) {
+      opts.showToast('Place at least one turret first.');
+      return false;
+    }
+    if (wavesCompleted === 0) {
+      totalKills = 0;
+      totalLeaks = 0;
+      defeated = false;
+      siegeTimeLeft = siegeDuration;
+      siegeTimerEnded = false;
+      granddaddySpawnedThisSiege = false;
+    }
+    currentWaveIndex = wavesCompleted;
+    showWaveSplash(wavesCompleted + 1);
+    return true;
+  }
+
+  function tryAutoStartWave() {
+    if (!goLive || phase !== 'deploy') return;
+    if (towers.length === 0) {
+      opts.showToast('Place a turret — aliens incoming!');
+      return;
+    }
+    startWave();
   }
 
   function finishCurrentWave() {
@@ -1281,11 +1329,43 @@ export function createTDEngine(canvas, opts) {
     });
   }
 
+  function drawBuildRing(t) {
+    if (t.buildRemaining <= 0 || t.wrecked) return;
+    const sz = Math.max(36, cellRadius() * 2.6);
+    const anchorY = FIELD_LAYOUT.turretAnchorY;
+    const progress = 1 - t.buildRemaining / t.buildTotal;
+    const r = Math.max(22, cellRadius() * 1.15);
+    const cy = t.y - sz * anchorY * 0.55;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 50, 45, 0.28)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(t.x, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = '#ff3b30';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(t.x, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   function drawTowers() {
     const sz = Math.max(36, cellRadius() * 2.6);
     const anchorY = FIELD_LAYOUT.turretAnchorY;
     towers.forEach((t) => {
-      drawTurretAt(t.type, t.x, t.y, { wrecked: t.wrecked });
+      const building = t.buildRemaining > 0 && !t.wrecked;
+      if (building) {
+        ctx.save();
+        ctx.globalAlpha = 0.72;
+        drawTurretAt(t.type, t.x, t.y, { wrecked: t.wrecked });
+        ctx.restore();
+      } else {
+        drawTurretAt(t.type, t.x, t.y, { wrecked: t.wrecked });
+      }
+      drawBuildRing(t);
 
       if (!t.wrecked && t.hp < t.maxHp) {
         const barW = sz * 0.85;
@@ -1418,13 +1498,8 @@ export function createTDEngine(canvas, opts) {
       const timeLabel = phase === 'wave' ? formatSiegeTime(siegeTimeLeft) : formatSiegeTime(siegeDuration);
       ctx.fillText(`Time ${timeLabel}`, 12, 24);
       ctx.fillText(`Wave ${waveNum}`, 118, 24);
-      if (phase === 'wave' && paused) {
-        ctx.fillStyle = '#7cfc00';
-        ctx.fillText('PAUSED', 200, 24);
-        ctx.fillStyle = '#ffb347';
-      }
-      ctx.fillText(`Blasted: ${totalKills}`, phase === 'wave' && paused ? 290 : 200, 24);
-      ctx.fillText(`Leaked: ${totalLeaks}/${maxLeaks}`, phase === 'wave' && paused ? 410 : 320, 24);
+      ctx.fillText(`Blasted: ${totalKills}`, 200, 24);
+      ctx.fillText(`Leaked: ${totalLeaks}/${maxLeaks}`, 320, 24);
       ctx.fillText(`Coins: ${budget}`, width - 110, 24);
     } else if (phase === 'deploy') {
       ctx.fillText('Pick turret → place on grass', 12, 24);
@@ -1485,7 +1560,9 @@ export function createTDEngine(canvas, opts) {
       return;
     }
     if (!opts.trySpend(selectedType)) return;
+    const def = TURRETS[/** @type {keyof typeof TURRETS} */ (selectedType)];
     const maxHp = TURRET_MAX_HP[/** @type {keyof typeof TURRET_MAX_HP} */ (selectedType)] ?? 80;
+    const buildTotal = buildTimeForPlacementCost(def?.placementCost ?? 15);
     towers.push({
       type: selectedType,
       row: pick.cell.row,
@@ -1496,7 +1573,10 @@ export function createTDEngine(canvas, opts) {
       hp: maxHp,
       maxHp,
       wrecked: false,
+      buildRemaining: buildTotal,
+      buildTotal,
     });
+    tryAutoStartWave();
     render();
   }
 
@@ -1567,40 +1647,15 @@ export function createTDEngine(canvas, opts) {
       updateCanvasCursor();
       render();
     },
-    startWave() {
-      if (phase !== 'deploy') return false;
-      if (wavesCompleted === 0 && towers.length === 0) {
-        opts.showToast('Place at least one turret first.');
-        return false;
-      }
-      if (wavesCompleted === 0) {
-        totalKills = 0;
-        totalLeaks = 0;
-        defeated = false;
-        siegeTimeLeft = siegeDuration;
-        siegeTimerEnded = false;
-        granddaddySpawnedThisSiege = false;
-      }
-      currentWaveIndex = wavesCompleted;
-      showWaveSplash(wavesCompleted + 1);
-      return true;
-    },
+    startWave,
     getWavesCompleted: () => wavesCompleted,
     setSpeed(mult) {
       speedMult = mult;
     },
-    togglePause() {
-      if (phase !== 'wave') return paused;
-      paused = !paused;
-      if (paused) opts.audio?.pauseScuttling();
-      else opts.audio?.resumeScuttling();
-      opts.onPauseChange?.(paused);
-      if (!paused) lastTs = 0;
-      updateCanvasCursor();
-      render();
-      return paused;
+    setGoLive(live) {
+      goLive = live;
+      tryAutoStartWave();
     },
-    isPaused: () => paused,
     getPhase: () => phase,
     canFireNukes() {
       if (phase !== 'wave') return false;

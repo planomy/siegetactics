@@ -1,5 +1,8 @@
 import { ECONOMY } from './economy.js';
 import { GATE, tableKey } from './training-gate.js';
+import { difficultyTrainingTag } from './difficulty.js';
+
+/** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
 
 /** @typedef {'pick'|'quiz'|'done'} TimesPhase */
 
@@ -15,13 +18,29 @@ export const TIMES_TABLES = {
 };
 
 /**
+ * @param {DifficultyLevel} level
+ * @returns {{ tables: number[], multMin: number, multMax: number, showMixed: boolean }}
+ */
+export function timesConfigForLevel(level) {
+  if (level === 1) {
+    return { tables: [2, 3, 4, 5], multMin: 2, multMax: 5, showMixed: false };
+  }
+  if (level === 2) {
+    return { tables: [2, 3, 4, 5, 6, 7, 8, 9], multMin: 2, multMax: 9, showMixed: true };
+  }
+  return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], multMin: 2, multMax: 12, showMixed: true };
+}
+
+/**
  * @param {number} table 2–12, or 0 for mixed
+ * @param {DifficultyLevel} level
  * @returns {{ a: number, b: number, answer: number }}
  */
-export function makeTimesQuestion(table) {
+export function makeTimesQuestion(table, level = 3) {
+  const cfg = timesConfigForLevel(level);
   const pick = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
-  const a = table > 0 ? table : pick(2, 12);
-  const b = pick(2, 12);
+  const a = table > 0 ? table : pick(cfg.tables[0], cfg.tables[cfg.tables.length - 1]);
+  const b = pick(cfg.multMin, cfg.multMax);
   return { a, b, answer: a * b };
 }
 
@@ -61,9 +80,11 @@ function pick(arr) {
  *   onHome: () => void,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
  *   completedTables: string[],
+ *   difficultyLevel: DifficultyLevel,
  * }} callbacks
  */
 export function initTimesTables(host, callbacks) {
+  const levelCfg = timesConfigForLevel(callbacks.difficultyLevel);
   /** @type {TimesPhase} */
   let phase = 'pick';
   /** @type {number} 0 = mixed */
@@ -84,7 +105,7 @@ export function initTimesTables(host, callbacks) {
 
   function renderPick() {
     const done = new Set(callbacks.completedTables ?? []);
-    const tableBtns = TIMES_TABLES.tables.map((n) => {
+    const tableBtns = levelCfg.tables.map((n) => {
       const key = tableKey(n);
       const counted = done.has(key);
       return `<button type="button" class="times-table-btn${counted ? ' times-table-done' : ''}" data-table="${n}">
@@ -93,20 +114,23 @@ export function initTimesTables(host, callbacks) {
       </button>`;
     });
     const mixedDone = done.has('mixed');
+    const mixedBtn = levelCfg.showMixed
+      ? `<button type="button" class="times-table-btn times-table-mixed${mixedDone ? ' times-table-done' : ''}" data-table="0">
+          <span class="times-table-num">Mixed</span>
+          <span class="times-table-sub">All tables</span>
+          ${mixedDone ? '<span class="times-table-check" aria-label="Counted toward gate">✓</span>' : ''}
+        </button>`
+      : '';
     host.innerHTML = `
       <div class="panel times-panel">
         <button type="button" class="btn btn-ghost btn-sm times-back" id="times-home">← Home</button>
-        <p class="mission-tag">Number · Fluency</p>
+        <p class="mission-tag">Number · Fluency · ${difficultyTrainingTag(callbacks.difficultyLevel)}</p>
         <h2 class="panel-title">Times Tables</h2>
         <p class="granny-line">Drill ${GATE.requiredTables} different tables at ${Math.round(GATE.passAccuracy * 100)}%+ to push the attack back. Every correct answer earns ${ECONOMY.forgeXpLabel}.</p>
         <p class="times-gate-progress">${done.size} / ${GATE.requiredTables} drills bought time</p>
         <div class="times-table-grid">
           ${tableBtns.join('')}
-          <button type="button" class="times-table-btn times-table-mixed${mixedDone ? ' times-table-done' : ''}" data-table="0">
-            <span class="times-table-num">Mixed</span>
-            <span class="times-table-sub">All tables</span>
-            ${mixedDone ? '<span class="times-table-check" aria-label="Counted toward gate">✓</span>' : ''}
-          </button>
+          ${mixedBtn}
         </div>
       </div>
     `;
@@ -122,7 +146,7 @@ export function initTimesTables(host, callbacks) {
   function startSession() {
     deck = [];
     for (let i = 0; i < TIMES_TABLES.questionsPerSession; i++) {
-      const q = makeTimesQuestion(chosenTable);
+      const q = makeTimesQuestion(chosenTable, callbacks.difficultyLevel);
       deck.push({ ...q, options: makeOptions(q.answer) });
     }
     index = 0;

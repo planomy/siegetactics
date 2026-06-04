@@ -1,9 +1,9 @@
 /**
  * Maths topic categories on the home screen.
- * @typedef {'times-tables'|'place-value-siege'|'measurement-length'|'coming-soon'} TopicId
+ * @typedef {'times-tables'|'place-value-siege'|'measurement-length'|'maths-quest'|'coming-soon'} TopicId
  */
 
-/** @typedef {'forge'|'drill'|'siege'} TrainingMode */
+/** @typedef {'forge'|'drill'|'siege'|'quest'} TrainingMode */
 
 /**
  * @typedef {{
@@ -26,7 +26,7 @@ export const MATH_TOPICS = [
   {
     id: 'times-tables',
     title: 'Times Tables',
-    subtitle: '5 drills push the attack back',
+    subtitle: '2 drills push the attack back',
     emoji: '×',
     strand: 'Number',
     available: true,
@@ -63,24 +63,41 @@ export const MATH_TOPICS = [
   {
     id: 'fractions',
     title: 'Fractions',
-    subtitle: 'Coming soon',
+    subtitle: 'Compare & order fractions',
     emoji: '½',
     strand: 'Number',
-    available: false,
-    earnsXp: false,
-    gateEligible: false,
+    available: true,
+    earnsXp: true,
+    gateEligible: true,
+    unitId: 'fractions-fence',
+    trainingMode: 'drill',
     moduleArt: 'assets/topics/fractions.png',
   },
   {
     id: 'angles',
     title: 'Angles & Shapes',
-    subtitle: 'Coming soon',
+    subtitle: 'Measure angles & shapes',
     emoji: '∠',
     strand: 'Space',
-    available: false,
-    earnsXp: false,
-    gateEligible: false,
+    available: true,
+    earnsXp: true,
+    gateEligible: true,
+    unitId: 'angles-shapes-lab',
+    trainingMode: 'drill',
     moduleArt: 'assets/topics/angles.png',
+  },
+  {
+    id: 'maths-quest',
+    title: 'Maths Quest',
+    subtitle: '10-problem problem sets',
+    emoji: '🧩',
+    strand: 'Problem solving',
+    available: true,
+    earnsXp: true,
+    gateEligible: true,
+    unitId: 'maths-quest-set',
+    trainingMode: 'quest',
+    moduleArt: 'assets/topics/maths-quest.png',
   },
 ];
 
@@ -89,7 +106,7 @@ export function getTopic(id) {
   return MATH_TOPICS.find((t) => t.id === id) ?? null;
 }
 
-/** @returns {MathTopic[]} */
+/** @returns {MathTopic[]} All modules except times tables that count toward deployment readiness. */
 export function getGateTopics() {
-  return MATH_TOPICS.filter((t) => t.gateEligible && t.available);
+  return MATH_TOPICS.filter((t) => t.available && t.id !== 'times-tables' && t.unitId);
 }

@@ -39,6 +39,11 @@ body {
   font-family: var(--font-body);
 }
 
+body.dev-mode .topbar-actions .dev-play-btn {
+  color: var(--gold);
+  border: 1px solid rgba(255, 179, 71, 0.45);
+}
+
 body.dev-mode .topbar::after {
   content: 'DEV';
   position: absolute;
@@ -59,10 +64,15 @@ body.dev-mode .topbar::after {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
-  padding: 10px 14px;
+  padding: 10px 14px 12px;
   background: rgba(12, 10, 20, 0.94);
   border-bottom: 2px solid rgba(201, 162, 39, 0.35);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+  overflow: visible;
+}
+
+.topbar > :not(.topbar-brand) {
+  align-self: center;
 }
 
 .gb-topbar {
@@ -103,40 +113,23 @@ body.dev-mode .topbar::after {
 .topbar-brand {
   display: flex;
   align-items: flex-end;
-  gap: 10px;
-  line-height: 1.05;
+  flex-shrink: 0;
+  min-width: 0;
+  align-self: flex-end;
+  position: relative;
+  z-index: 12;
+  margin-bottom: -48px;
 }
 
-.brand-granny {
+.brand-logo {
+  display: block;
   width: auto;
-  height: 116px;
+  height: clamp(110px, 30vw, 155px);
+  max-width: min(900px, 96vw);
   object-fit: contain;
   object-position: left bottom;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
-}
-
-.topbar-brand-text {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding-bottom: 6px;
-}
-
-.brand-title {
-  font-family: var(--font-display);
-  font-size: 2.7rem;
-  color: var(--gold);
-  letter-spacing: 0.06em;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
-  line-height: 1;
-}
-
-.brand-sub {
-  font-size: 1.24rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.55));
+  pointer-events: none;
 }
 
 .topbar-portals {
@@ -262,7 +255,7 @@ body.dev-mode .topbar::after {
 #app {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 34px 16px 16px;
 }
 
 .screen {
@@ -644,6 +637,80 @@ body.dev-mode .topbar::after {
   gap: 10px;
 }
 
+.quest-set-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.quest-set-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--panel-border);
+  border-radius: 12px;
+  background: rgba(12, 10, 20, 0.92);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.12s;
+}
+
+.quest-set-btn:hover {
+  border-color: rgba(201, 162, 39, 0.55);
+  transform: translateY(-2px);
+}
+
+.quest-set-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+}
+
+.quest-set-sub {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.quest-set-meta {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(93, 255, 138, 0.85);
+}
+
+.quest-prompt {
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
+
+.quest-numeric-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.quest-numeric-input {
+  flex: 1 1 160px;
+  max-width: 220px;
+  text-align: center;
+}
+
+.quest-numeric-input.is-correct {
+  border-color: var(--success);
+}
+
+.quest-numeric-input.is-wrong {
+  border-color: var(--danger);
+}
+
 .forge-slot {
   margin-bottom: 14px;
 }
@@ -758,6 +825,7 @@ body.dev-mode .topbar::after {
   gap: 8px;
   background: rgba(8, 14, 10, 0.82);
   backdrop-filter: blur(2px);
+  pointer-events: none;
 }
 
 .siege-countdown-num {

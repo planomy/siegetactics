@@ -1,25 +1,31 @@
-import { getMission, SLICE_MISSION_ID } from './missions-data.js';
-
 /**
  * @param {HTMLElement} container
  * @param {{
+ *   mission: import('./missions-data.js').Mission,
  *   onSuccess: (rewards: { forgeXp: number, placementBudget: number }) => void,
  *   showToast: (msg: string) => void,
  *   trainingMode?: boolean,
+ *   difficultyLevel?: import('./difficulty.js').DifficultyLevel,
  *   onBack?: () => void,
  * }} callbacks
  */
 export function initForge(container, callbacks) {
-  const mission = getMission(SLICE_MISSION_ID);
+  const mission = callbacks.mission;
   if (!mission) return;
 
   /** @type {(number|null)[]} */
   const picks = mission.slots.map(() => null);
 
+  const levelTag = callbacks.difficultyLevel
+    ? ` · ${callbacks.difficultyLevel}`
+    : mission.level
+      ? ` · Level ${mission.level}`
+      : '';
+
   container.innerHTML = `
     <div class="panel forge-panel">
       ${callbacks.onBack ? '<button type="button" class="btn btn-ghost btn-sm times-back" id="forge-back">← Home</button>' : ''}
-      <p class="mission-tag">${mission.strand.toUpperCase()} · Level ${mission.level}${callbacks.trainingMode ? ' · Prep drill' : ''}</p>
+      <p class="mission-tag">${mission.strand.toUpperCase()}${levelTag}${callbacks.trainingMode ? ' · Prep drill' : ''}</p>
       <h2 class="panel-title">${mission.title}</h2>
       <p class="granny-line">${callbacks.trainingMode ? 'Forge the digits to push the attack back — no siege yet.' : mission.opener}</p>
       <div class="forge-slots" id="forge-slots"></div>

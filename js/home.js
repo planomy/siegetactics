@@ -6,16 +6,18 @@ import {
 } from './training-gate.js';
 import { STAR_LABELS, STAR_HINTS, summarizeBadgeCollection, renderStarBadges } from './stars.js';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js';
-import { animateTally } from './tally.js';
+import { renderModuleLevelPips } from './level-mastery.js';
+import { xpMultiplierLabel } from './difficulty.js';
 
-/** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
-function renderTrainingCards(gate, attack) {
+/** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack @param {import('./level-mastery.js').LevelMasterySave} levelMastery */
+function renderTrainingCards(gate, attack, levelMastery) {
   return MATH_TOPICS.map((topic) => {
     const locked = !topic.available;
     const complete =
       topic.id === 'times-tables'
         ? attack.tables >= GATE.requiredTables
-        : topic.gateEligible && isTopicDone(gate, topic.id);
+        : Boolean(topic.unitId) && isTopicDone(gate, topic.id);
+    const pips = !locked ? renderModuleLevelPips(levelMastery, topic.id) : '';
     const artClass = `gb-story-art gb-story-art-${topic.id.replace(/[^a-z-]/g, '')}`;
     const artInner = topic.moduleArt
       ? `<img class="gb-story-art-img" src="${topic.moduleArt}" alt="" width="400" height="400" loading="lazy" />`
@@ -31,8 +33,8 @@ function renderTrainingCards(gate, attack) {
           ${artInner}
         </div>
         ${complete ? '<span class="gb-story-badge gb-story-badge-done">Done</span>' : ''}
-        ${locked ? '<span class="gb-story-badge">Soon</span>' : ''}
         <span class="gb-story-title">${topic.title}</span>
+        ${pips ? `<span class="gb-module-level-pips" aria-hidden="true">${pips}</span>` : ''}
       </button>
     `;
   }).join('');
@@ -41,25 +43,22 @@ function renderTrainingCards(gate, attack) {
 /** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
 function renderPrepChecklist(gate, attack) {
   const gateTopics = getGateTopics();
-  const items = [
-    { code: 'TT-01', label: '1× table drill', status: 'Phase 1 clear', done: attack.tables >= 1 },
-    { code: 'TT-02', label: '2× table drills', status: 'Range qualified', done: attack.tables >= 2 },
-    { code: 'TT-03', label: '3× table drills', status: 'Marksmanship', done: attack.tables >= 3 },
-    { code: 'TT-04', label: '4× table drills', status: 'Suppressing fire', done: attack.tables >= 4 },
-    { code: 'TT-05', label: '5× table drills', status: 'Tables secured', done: attack.tables >= 5 },
-    {
-      code: 'TP-01',
-      label: gateTopics[0] ? `1× ${gateTopics[0].title.toLowerCase()}` : '1× topic drill',
-      status: 'Topic verified',
-      done: attack.topics >= 1 || (gateTopics[0] ? isTopicDone(gate, gateTopics[0].id) : false),
-    },
-    {
-      code: 'TP-02',
-      label: gateTopics[1] ? `1× ${gateTopics[1].title.toLowerCase()}` : '2× topic drills',
-      status: attack.open ? 'Cleared to engage' : 'Topic verified',
-      done: attack.open || (gateTopics[1] ? isTopicDone(gate, gateTopics[1].id) : attack.topics >= 2),
-    },
-  ];
+  const tableItems = Array.from({ length: GATE.requiredTables }, (_, i) => ({
+    code: `TT-${String(i + 1).padStart(2, '0')}`,
+    label: `${i + 1}× table drill${i === 0 ? '' : 's'}`,
+    status: i === 0 ? 'Tables warming up' : 'Tables secured',
+    done: attack.tables >= i + 1,
+  }));
+  const moduleItems = gateTopics.map((topic, i) => ({
+    code: `M-${String(i + 1).padStart(2, '0')}`,
+    label: topic.title,
+    status: 'Module verified',
+    done: isTopicDone(gate, topic.id),
+  }));
+  const items = [...tableItems, ...moduleItems];
+  if (items.length > 0) {
+    items[items.length - 1].status = attack.open ? 'Cleared to engage' : items[items.length - 1].status;
+  }
   return items
     .map(
       (item) => `
@@ -358,6 +357,10 @@ let threatDossierCleanup = null;
  *   bestStars: Record<string, number>,
  *   primaryMissionId: string,
  *   gate: import('./training-gate.js').TrainingGate,
+ *   levelMastery: import('./level-mastery.js').LevelMasterySave,
+ *   difficultyLevel: import('./difficulty.js').DifficultyLevel,
+ *   recommendedLevel: import('./difficulty.js').DifficultyLevel,
+ *   onDifficultyChange: (level: import('./difficulty.js').DifficultyLevel) => void,
  *   onTopic: (topicId: string) => void,
  *   onHoldTheLine: () => void,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
@@ -379,8 +382,28 @@ export function renderHome(host, state) {
       <div class="gb-home-grid">
         <div class="gb-home-main">
           <section class="gb-training" aria-label="Training modules">
-            <h2 class="gb-gallery-title"><span class="gb-gallery-icon" aria-hidden="true">×</span> Select a training module</h2>
-            <div class="gb-story-grid">${renderTrainingCards(state.gate, attack)}</div>
+            <div class="gb-training-head">
+              <h2 class="gb-gallery-title"><span class="gb-gallery-icon" aria-hidden="true">×</span> Select a training module</h2>
+              <div class="gb-level-control">
+                <span class="gb-level-label">Level</span>
+                <div class="gb-level-picker" role="group" aria-label="Difficulty level">
+                  ${[1, 2, 3]
+                    .map(
+                      (n) => `
+                    <button
+                      type="button"
+                      class="gb-level-btn${state.difficultyLevel === n ? ' is-active' : ''}${state.recommendedLevel === n && state.difficultyLevel !== n ? ' is-recommended' : ''}"
+                      data-level="${n}"
+                      aria-pressed="${state.difficultyLevel === n}"
+                      ${state.recommendedLevel === n ? `title="Granny recommends Level ${n} · ${xpMultiplierLabel(/** @type {1|2|3} */ (n))}"` : ''}
+                    >${n}</button>`
+                    )
+                    .join('')}
+                </div>
+              </div>
+            </div>
+            <p class="gb-level-xp-hint">Level ${state.difficultyLevel} pays ${xpMultiplierLabel(state.difficultyLevel)} · qualify at 80%+ to earn level badges</p>
+            <div class="gb-story-grid">${renderTrainingCards(state.gate, attack, state.levelMastery)}</div>
           </section>
         </div>
 
@@ -404,6 +427,15 @@ export function renderHome(host, state) {
       const id = btn.getAttribute('data-topic');
       if (!id || btn.hasAttribute('disabled')) return;
       state.onTopic(id);
+    });
+  });
+
+  host.querySelectorAll('[data-level]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const level = Number(btn.getAttribute('data-level'));
+      if (level !== 1 && level !== 2 && level !== 3) return;
+      if (level === state.difficultyLevel) return;
+      state.onDifficultyChange(/** @type {1|2|3} */ (level));
     });
   });
 

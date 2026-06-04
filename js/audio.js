@@ -198,14 +198,16 @@ export function createAudio(opts) {
 
     stopMothership,
 
-    /** @param {number} waveNum */
-    playWaveWarning(waveNum) {
-      const id = WAVE_WARNINGS[waveNum];
-      if (id) play(id, { volume: 0.68, gap: 3 });
-    },
+    /** @deprecated wave warnings removed — siren plays on nuke cache ready instead */
+    playWaveWarning(_waveNum) {},
 
     playGranddaddyWarning() {
       play('granddaddywarning', { volume: 0.75, gap: 8 });
+    },
+
+    /** Air-raid siren when the nuke cache hits full. */
+    playNukeReady() {
+      play('wave1warning', { volume: 0.68, gap: 2.5 });
     },
 
     playNukeFire() {
