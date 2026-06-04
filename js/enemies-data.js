@@ -14,6 +14,42 @@ export const ENEMY_SPRITE_SRC = {
   granddaddy: 'assets/enemies/granddaddy.png',
 };
 
+/** @typedef {'monster1'|'monster2'|'monster3'|'monster4'|'monster5'} GruntSpriteKey */
+
+/** Per-alien combat stats — each ship class has its own HP and pace. */
+export const GRUNT_STATS = {
+  monster1: { hp: 22, speed: 0.052, codename: 'Scout Skiff' },
+  monster2: { hp: 38, speed: 0.047, codename: 'Skirmisher' },
+  monster3: { hp: 58, speed: 0.043, codename: 'Raider' },
+  monster4: { hp: 88, speed: 0.038, codename: 'Bruiser' },
+  monster5: { hp: 128, speed: 0.033, codename: 'Heavy Cruiser' },
+};
+
+export const BOSS_STATS = {
+  mothership: { hp: 420, speed: 0.028, codename: 'Mothership' },
+  granddaddy: { hp: 720, speed: 0.025, codename: 'Granddaddy' },
+};
+
+/**
+ * @param {GruntSpriteKey|'mothership'|'granddaddy'} key
+ * @param {number} waveScale
+ * @param {number} [ramp]
+ */
+export function scaledHp(key, waveScale, ramp = 1) {
+  const base = GRUNT_STATS[key]?.hp ?? BOSS_STATS[key]?.hp ?? 30;
+  return Math.round(base * waveScale * ramp);
+}
+
+/**
+ * @param {GruntSpriteKey|'mothership'|'granddaddy'} key
+ * @param {number} speedMul
+ * @param {number} [rushMul]
+ */
+export function scaledSpeed(key, speedMul, rushMul = 1) {
+  const base = GRUNT_STATS[key]?.speed ?? BOSS_STATS[key]?.speed ?? 0.042;
+  return base * speedMul * rushMul;
+}
+
 /** Random mothership art picked per boss spawn. */
 export const MOTHERSHIP_SPRITE_KEYS = /** @type {EnemySpriteKey[]} */ ([
   'mothership',
@@ -42,6 +78,7 @@ export function pickMothershipSprite() {
  * @returns {EnemySpriteKey}
  */
 export function spriteKeyForEnemy(enemy) {
+  if (enemy.spriteKey && ENEMY_SPRITE_SRC[enemy.spriteKey]) return enemy.spriteKey;
   if (enemy.bossKind === 'granddaddy') return 'granddaddy';
   if (enemy.bossKind === 'mothership') {
     return enemy.mothershipSprite && ENEMY_SPRITE_SRC[enemy.mothershipSprite]

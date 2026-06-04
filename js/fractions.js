@@ -10,8 +10,6 @@ export const FRACTIONS_LAB = {
 
 /** @param {DifficultyLevel} level */
 export function sessionSize(level) {
-  if (level === 1) return 6;
-  if (level === 2) return 8;
   return 10;
 }
 

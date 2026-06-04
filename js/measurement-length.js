@@ -5,7 +5,7 @@ import { difficultyTrainingTag } from './difficulty.js';
 /** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
 
 export const LENGTH_LAB = {
-  questionsPerSession: 8,
+  questionsPerSession: 10,
   xpPerCorrect: 4,
   unitId: 'measurement-length-lab',
   topicId: 'measurement-length',
@@ -13,8 +13,6 @@ export const LENGTH_LAB = {
 
 /** @param {DifficultyLevel} level */
 function sessionSize(level) {
-  if (level === 1) return 6;
-  if (level === 2) return 8;
   return 10;
 }
 

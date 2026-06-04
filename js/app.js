@@ -11,9 +11,10 @@ import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
 import { ECONOMY, bankBonusForgeXp } from './economy.js';
 import { computeStars, renderStarBadges } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
-import { preloadField, preloadDeployAssets, runDeployCountdown, getFieldImage } from './preload.js';
+import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
 import { renderHome, renderTopbarBadges } from './home.js';
+import { initHowToPlay } from './how-to-play.js';
 import { initTimesTables } from './times-tables.js';
 import { initMeasurementLength } from './measurement-length.js';
 import { initFractions } from './fractions.js';
@@ -23,10 +24,12 @@ import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './
 import {
   normalizeLevelMastery,
   defaultLevelMastery,
-  recordLevelQualification,
+  recordTrainingProgress,
   recommendModuleLevel,
   recommendGlobalLevel,
+  MAP_PASSES_REQUIRED,
 } from './level-mastery.js';
+import { defaultMapProgress, normalizeMapProgress } from './map-progress.js';
 import { getTopic } from './topics-data.js';
 import {
   defaultTrainingGate,
@@ -42,7 +45,7 @@ import {
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 
-/** @typedef {{ version: number, playerName: string, xp: number, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, levelMastery: import('./level-mastery.js').LevelMasterySave, settings: { sound: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, settings: { sound: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -53,6 +56,7 @@ const defaultSave = {
   unlockedMissions: [SLICE_MISSION_ID],
   completedMissions: [],
   bestKills: {},
+  bestBankedCoins: {},
   bestStars: {},
   siegesCompleted: 0,
   granddaddySiegeTarget: null,
@@ -60,6 +64,7 @@ const defaultSave = {
   grannyUnlocked: false,
   trainingGate: defaultTrainingGate(),
   levelMastery: defaultLevelMastery(),
+  mapProgress: defaultMapProgress(),
   settings: { sound: true, difficultyLevel: 3 },
 };
 
@@ -108,6 +113,7 @@ const screens = {
   mathsQuest: document.getElementById('screen-maths-quest'),
   forge: document.getElementById('screen-forge'),
   armory: document.getElementById('screen-armory'),
+  howto: document.getElementById('screen-howto'),
   siege: document.getElementById('screen-siege'),
   results: document.getElementById('screen-results'),
 };
@@ -117,6 +123,9 @@ const xpDisplay = document.getElementById('topbar-xp');
 
 /** @type {keyof typeof screens} */
 let armoryReturnScreen = 'home';
+
+/** @type {keyof typeof screens} */
+let howtoReturnScreen = 'home';
 
 function loadSave() {
   try {
@@ -131,12 +140,14 @@ function loadSave() {
       }
     }
     if (!data.bestStars) data.bestStars = {};
+    if (!data.bestBankedCoins) data.bestBankedCoins = {};
     data.settings = {
       sound: data.settings?.sound !== false,
       difficultyLevel: normalizeDifficultyLevel(data.settings?.difficultyLevel),
     };
     data.trainingGate = normalizeTrainingGate(data.trainingGate);
     data.levelMastery = normalizeLevelMastery(data.levelMastery);
+    data.mapProgress = normalizeMapProgress(data.mapProgress);
     if (DEV.enabled && DEV.unlockAll) {
       data.unlockedTurrets = Object.keys(TURRETS);
       data.xp = Math.max(data.xp, 9999);
@@ -178,8 +189,9 @@ function showScreen(id) {
 function refreshSoundButton() {
   const btn = document.getElementById('btn-sound');
   if (btn) {
-    btn.textContent = save.settings.sound ? '🔊' : '🔇';
+    btn.classList.toggle('is-muted', !save.settings.sound);
     btn.title = save.settings.sound ? 'Sound on' : 'Sound off';
+    btn.setAttribute('aria-label', save.settings.sound ? 'Mute sound' : 'Unmute sound');
   }
 }
 
@@ -234,6 +246,29 @@ function closeArmory() {
   }
 }
 
+function renderHowToScreen() {
+  const host = document.getElementById('howto-host');
+  if (!host) return;
+  initHowToPlay(host, { onBack: closeHowTo });
+}
+
+function openHowTo() {
+  const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'));
+  const key = active?.[0] ?? 'home';
+  howtoReturnScreen = key === 'welcome' || key === 'howto' ? 'home' : key;
+  renderHowToScreen();
+  showScreen('howto');
+}
+
+function closeHowTo() {
+  if (howtoReturnScreen === 'home') {
+    showHome();
+  } else {
+    showScreen(howtoReturnScreen);
+    if (howtoReturnScreen === 'siege') refreshShopBarFromSave();
+  }
+}
+
 function getUnlockedSet() {
   return new Set(save.unlockedTurrets);
 }
@@ -279,12 +314,6 @@ function setShopActive(active) {
   if (!shopBarEl) return;
   shopBarEl.style.opacity = active ? '' : '0.45';
   shopBarEl.style.pointerEvents = active ? '' : 'none';
-}
-
-function updateStartButton() {
-  const btn = document.getElementById('btn-start-wave');
-  if (!btn || !tdEngine) return;
-  btn.disabled = tdEngine.getPhase() !== 'deploy';
 }
 
 function addCacheProgress(amount) {
@@ -378,20 +407,44 @@ function awardScaledTrainingXp(baseAmount, level) {
  * @param {number} accuracy 0–1
  */
 function completeTrainingSession(moduleId, level, accuracy) {
-  const result = recordLevelQualification(save.levelMastery, moduleId, level, accuracy);
+  const result = recordTrainingProgress(
+    save.levelMastery,
+    save.mapProgress,
+    moduleId,
+    level,
+    accuracy
+  );
   save.levelMastery = result.mastery;
+  save.mapProgress = result.mapProgress;
   persistSave();
 
-  if (result.firstClearBonus > 0) {
-    save.xp += result.firstClearBonus;
-    persistSave();
-    showToast(
-      `Level ${level} qualified! +${result.firstClearBonus} bonus ${ECONOMY.forgeXpLabel}`,
-      { variant: 'success', duration: 4000 }
+  if (result.shieldEarned) {
+    if (result.firstClearBonus > 0) {
+      save.xp += result.firstClearBonus;
+      persistSave();
+      showToast(
+        `Perfect! Level ${level} shield earned · +${result.firstClearBonus} ${ECONOMY.forgeXpLabel}`,
+        { variant: 'success', duration: 4000 }
+      );
+    } else {
+      showToast(`Perfect! Level ${level} shield earned!`, { variant: 'success', duration: 4000 });
+    }
+  }
+
+  if (result.mapPieceEarned) {
+    window.setTimeout(
+      () =>
+        showToast(`Map piece recovered! Sector charted (${MAP_PASSES_REQUIRED}/${MAP_PASSES_REQUIRED}).`, {
+          variant: 'success',
+          duration: 4500,
+        }),
+      result.shieldEarned ? 800 : 0
     );
   }
+
   if (result.nudge) {
-    window.setTimeout(() => showToast(result.nudge, { variant: 'shop', duration: 4500 }), 700);
+    const delay = result.shieldEarned || result.mapPieceEarned ? 900 : 700;
+    window.setTimeout(() => showToast(result.nudge, { variant: 'shop', duration: 4500 }), delay);
   }
   return result;
 }
@@ -449,10 +502,12 @@ function showHome() {
     xp: save.xp,
     siegesCompleted: save.siegesCompleted,
     bestKills: save.bestKills[SLICE_MISSION_ID] ?? 0,
+    bestBankedCoins: save.bestBankedCoins[SLICE_MISSION_ID] ?? 0,
     bestStars: save.bestStars,
     primaryMissionId: SLICE_MISSION_ID,
     gate: save.trainingGate,
     levelMastery: save.levelMastery,
+    mapProgress: save.mapProgress,
     difficultyLevel: getDifficultyLevel(),
     recommendedLevel: recommendGlobalLevel(save.levelMastery),
     onDifficultyChange(level) {
@@ -654,10 +709,37 @@ function startWelcome() {
   showScreen('welcome');
 }
 
-/** First siege deploy this session gets a 3-2-1 overlay while assets finish. */
-let firstSiegeDeploy = true;
+function initSiegeScreen() {
+  tdEngine?.destroy();
+  tdEngine = null;
+
+  shopBarEl = document.getElementById('shop-bar');
+  const canvas = /** @type {HTMLCanvasElement|null} */ (document.getElementById('siege-canvas'));
+  const mission = getActiveMission();
+  if (!shopBarEl || !canvas || !mission) return;
+
+  shopState = {
+    budget: run.waveBudget,
+    persistentXp: save.xp,
+    unlocked: getUnlockedSet(),
+    selectedId: run.selectedTurret,
+    onSelect: selectTurret,
+    onUnlock: tryUnlockTurret,
+    showToast,
+  };
+
+  renderShopBar(shopBarEl, shopState);
+  mountTDEngine(canvas, mission);
+  preloadField()
+    .then(() => tdEngine?.relayout?.())
+    .catch(() => {});
+
+  tdEngine?.setGoLive(true);
+  tdEngine?.startWave();
+}
 
 function beginMission() {
+  audio.warmUp();
   if (!DEV.skipForge && !isGateOpen(save.trainingGate)) {
     showToast('The attack is still coming — finish your drills first!');
     showHome();
@@ -747,66 +829,11 @@ function launchTestSiege() {
   initSiegeScreen();
 }
 
-function hideDeployOverlay() {
-  const overlay = document.getElementById('siege-countdown');
-  if (overlay) overlay.hidden = true;
-}
-
-async function initSiegeScreen() {
-  tdEngine?.destroy();
-  tdEngine = null;
-
-  shopBarEl = document.getElementById('shop-bar');
-  const canvas = /** @type {HTMLCanvasElement|null} */ (document.getElementById('siege-canvas'));
-  const mission = getActiveMission();
-  if (!shopBarEl || !canvas || !mission) return;
-
-  shopState = {
-    budget: run.waveBudget,
-    persistentXp: save.xp,
-    unlocked: getUnlockedSet(),
-    selectedId: run.selectedTurret,
-    onSelect: selectTurret,
-    onUnlock: tryUnlockTurret,
-    showToast,
-  };
-
-  renderShopBar(shopBarEl, shopState);
-
-  const overlay = document.getElementById('siege-countdown');
-  const numEl = document.getElementById('siege-countdown-num');
-  const showCountdown = firstSiegeDeploy && overlay && numEl && !DEV.skipCountdown;
-
-  try {
-    if (showCountdown) {
-      firstSiegeDeploy = false;
-      overlay.hidden = false;
-      numEl.textContent = '3';
-    } else {
-      hideDeployOverlay();
-    }
-
-    const countdownTask = showCountdown ? runDeployCountdown(numEl) : Promise.resolve();
-
-    try {
-      await preloadField();
-    } catch {
-      /* field fallback gradient still playable */
-    }
-
-    mountTDEngine(canvas, mission);
-    await countdownTask;
-  } finally {
-    hideDeployOverlay();
-    if (showCountdown || DEV.skipToSiege) {
-      tdEngine?.setGoLive(true);
-    }
-  }
-}
-
 function mountTDEngine(canvas, mission) {
   if (tdEngine) return;
 
+  audio.warmUp();
+  nukeCacheWasReady = false;
   tdEngine = createTDEngine(canvas, {
     mission,
     spawnGranddaddy: shouldSpawnGranddaddy(save),
@@ -864,10 +891,8 @@ function mountTDEngine(canvas, mission) {
     onPhaseChange(phase) {
       if (phase === 'deploy' || phase === 'wave' || phase === 'announce') {
         setShopActive(true);
-        updateStartButton();
       } else if (phase === 'done') {
         setShopActive(false);
-        updateStartButton();
       }
       updateNukeCachePanel();
     },
@@ -883,12 +908,6 @@ function mountTDEngine(canvas, mission) {
   }
 
   setShopActive(true);
-
-  const startBtn = document.getElementById('btn-start-wave');
-  if (startBtn) {
-    startBtn.disabled = false;
-    startBtn.textContent = 'Launch attack';
-  }
   updateNukeCachePanel();
   if (getFieldImage()) {
     showToast(`${ECONOMY.forgeXpLabel} unlocks turrets forever. ${ECONOMY.siegeCoinsLabel} only last this siege!`, {
@@ -925,6 +944,8 @@ function finishRun(stats) {
 
   if (starResult.stars > prevBestStars) save.bestStars[missionId] = starResult.stars;
   if (stats.kills > prevBestKills) save.bestKills[missionId] = stats.kills;
+  const prevBestBanked = save.bestBankedCoins[missionId] ?? 0;
+  if (bankedCoins > prevBestBanked) save.bestBankedCoins[missionId] = bankedCoins;
   if (stats.won && !save.completedMissions.includes(missionId)) {
     save.completedMissions.push(missionId);
   }
@@ -1005,13 +1026,8 @@ function bindUI() {
   showHome();
   });
 
-  document.getElementById('btn-start-wave')?.addEventListener('click', () => {
-    if (tdEngine?.startWave()) {
-      updateStartButton();
-    }
-  });
-
   document.getElementById('btn-fire-nukes')?.addEventListener('click', () => {
+    audio.warmUp();
     if (run.cacheProgress < GRANNY_CACHE.cost) {
       showToast('Nuke cache not full yet — keep blasting!');
       return;
@@ -1043,9 +1059,7 @@ function bindUI() {
   });
 
   document.getElementById('btn-howto')?.addEventListener('click', () => {
-    showToast(
-      `${ECONOMY.forgeXpLabel} unlocks turrets in the Armory · ${ECONOMY.siegeCoinsLabel} place them during a siege!`
-    );
+    openHowTo();
   });
 
   document.getElementById('btn-armory')?.addEventListener('click', () => {

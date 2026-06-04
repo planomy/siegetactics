@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/home-gb.css" />
+  <link rel="stylesheet" href="css/how-to-play.css" />
   <link rel="preload" href="assets/field.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/granny-boom-siege-logo.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/hero-village.png" as="image" type="image/png" />
@@ -26,15 +27,28 @@
     </div>
     <div class="topbar-stats">
       <div class="topbar-badges" id="topbar-badges" aria-label="Military badges earned"></div>
-      <button type="button" class="topbar-armory-btn" id="btn-armory" title="Turret armory" aria-label="Open turret armory">
-        <img class="topbar-armory-icon" src="assets/armory-icon.png" width="64" height="64" alt="" />
+      <button type="button" class="topbar-armory-btn" id="btn-armory" title="Turret shop" aria-label="Open turret shop">
+        <img class="topbar-armory-icon" src="assets/ui/topbar-shop.png" width="763" height="777" alt="" />
       </button>
       <span class="forge-xp-pill" title="Unlocks new turrets forever"><span id="topbar-xp">0</span> XP</span>
     </div>
     <div class="topbar-actions">
-      <button type="button" class="btn btn-ghost btn-sm topbar-icon-btn" id="btn-sound" title="Sound">🔊</button>
-      <button type="button" class="btn btn-ghost btn-sm topbar-icon-btn" id="btn-howto" title="How to play">?</button>
-      <a class="btn btn-ghost btn-sm" href="https://grannyboom.com" target="_blank" rel="noopener">GB</a>
+      <button type="button" class="topbar-action-btn" id="btn-sound" title="Sound on" aria-label="Mute sound">
+        <img class="topbar-action-icon" src="assets/ui/topbar-sound.png" width="269" height="276" alt="" />
+      </button>
+      <button type="button" class="topbar-action-btn" id="btn-howto" title="How to play" aria-label="How to play">
+        <img class="topbar-action-icon" src="assets/ui/topbar-howto.png" width="270" height="277" alt="" />
+      </button>
+      <a
+        class="topbar-action-btn"
+        href="https://grannyboom.com"
+        target="_blank"
+        rel="noopener"
+        title="Granny Boom main game"
+        aria-label="Granny Boom main game"
+      >
+        <img class="topbar-action-icon" src="assets/ui/topbar-gb.png" width="270" height="276" alt="" />
+      </a>
     </div>
   </header>
 
@@ -84,16 +98,16 @@
       <div id="armory-host"></div>
     </section>
 
+    <section id="screen-howto" class="screen">
+      <div id="howto-host"></div>
+    </section>
+
     <section id="screen-siege" class="screen">
       <div class="siege-layout">
         <div class="siege-canvas-wrap">
           <canvas id="siege-canvas" aria-label="Siege field"></canvas>
           <div class="wave-controls">
             <button type="button" class="btn btn-ghost btn-sm" id="btn-speed" data-speed="1">1×</button>
-          </div>
-          <div id="siege-countdown" class="siege-countdown" hidden aria-live="polite">
-            <span id="siege-countdown-num" class="siege-countdown-num">3</span>
-            <span class="siege-countdown-hint">Place turrets — bigger ones take longer to build!</span>
           </div>
         </div>
         <div class="siege-command-bar">
@@ -109,7 +123,6 @@
             </div>
           </div>
           <button type="button" class="btn btn-fire-nukes" id="btn-fire-nukes" hidden disabled>Fire nukes</button>
-          <button type="button" class="btn btn-primary btn-launch" id="btn-start-wave">Launch attack</button>
         </div>
         <div id="shop-bar" class="shop-bar"></div>
       </div>

@@ -25,11 +25,18 @@ const SOUND_SRC = {
   scuttling2: 'assets/sounds/scuttling2.mp3',
 };
 
-/** @type {Record<number, SoundId>} */
-const WAVE_WARNINGS = {
-  1: 'wave1warning',
-  2: 'wave2warning',
-  3: 'wave3warning',
+/** @type {Record<string, { id: SoundId, volume: number, rate: number, gap?: number }>} */
+const DEATH_BY_CRAFT = {
+  monster1: { id: 'death', volume: 0.28, rate: 1.06 },
+  monster2: { id: 'death', volume: 0.3, rate: 0.94 },
+  monster3: { id: 'death', volume: 0.27, rate: 1.14 },
+  monster4: { id: 'death', volume: 0.31, rate: 0.88 },
+  monster5: { id: 'death', volume: 0.29, rate: 1.02 },
+  mothership: { id: 'nukeExplosion', volume: 0.5, rate: 0.92, gap: 0.18 },
+  mothership2: { id: 'nukeExplosion', volume: 0.46, rate: 0.98, gap: 0.18 },
+  mothership3: { id: 'nukeExplosion', volume: 0.52, rate: 0.9, gap: 0.18 },
+  mothership4: { id: 'nukeExplosion', volume: 0.48, rate: 1.04, gap: 0.18 },
+  granddaddy: { id: 'nukeExplosion', volume: 0.74, rate: 0.84, gap: 0.32 },
 };
 
 /** @type {Record<string, { id: SoundId, volume: number, gap: number }>} */
@@ -129,21 +136,24 @@ export function createAudio(opts) {
 
   /**
    * @param {SoundId} id
-   * @param {{ volume?: number, gap?: number }} [cfg]
+   * @param {{ volume?: number, gap?: number, gapKey?: string, playbackRate?: number }} [cfg]
    */
   function play(id, cfg = {}) {
     if (!opts.getEnabled()) return;
     const volume = cfg.volume ?? 0.5;
     const gap = cfg.gap ?? 0;
+    const gapKey = cfg.gapKey ?? id;
     const now = performance.now();
-    if (gap > 0 && lastPlayed[id] && now - lastPlayed[id] < gap * 1000) return;
-    lastPlayed[id] = now;
+    if (gap > 0 && lastPlayed[gapKey] && now - lastPlayed[gapKey] < gap * 1000) return;
+    lastPlayed[gapKey] = now;
 
     const template = templates[id];
-    if (!template) return;
+    if (!template?.src) return;
 
-    const clip = template.cloneNode();
+    const clip = new Audio(template.src);
+    clip.preload = 'auto';
     clip.volume = Math.min(1, Math.max(0, volume));
+    if (cfg.playbackRate) clip.playbackRate = cfg.playbackRate;
     clip.play().catch(() => {});
   }
 
@@ -180,9 +190,17 @@ export function createAudio(opts) {
       if (cfg) play(cfg.id, { volume: cfg.volume, gap: cfg.gap });
     },
 
-    /** @param {{ isBoss?: boolean }} info */
+    /** @param {{ craft?: string, isBoss?: boolean, bossKind?: 'mothership'|'granddaddy'|null }} [info] */
     playDeath(info = {}) {
-      play('death', { volume: info.isBoss ? 0.58 : 0.26, gap: info.isBoss ? 0.35 : 0.13 });
+      const craft = info.craft ?? (info.bossKind === 'granddaddy' ? 'granddaddy' : info.bossKind === 'mothership' ? 'mothership' : 'monster1');
+      const profile = DEATH_BY_CRAFT[craft] ?? DEATH_BY_CRAFT.monster1;
+      const jitter = 0.93 + Math.random() * 0.14;
+      play(profile.id, {
+        volume: profile.volume,
+        gap: profile.gap ?? 0.06,
+        gapKey: `death-${craft}`,
+        playbackRate: profile.rate * jitter,
+      });
     },
 
     /** @param {'mothership'|'granddaddy'} kind */
@@ -198,16 +216,18 @@ export function createAudio(opts) {
 
     stopMothership,
 
-    /** @deprecated wave warnings removed — siren plays on nuke cache ready instead */
-    playWaveWarning(_waveNum) {},
+    /** Incoming wave siren during the WAVE N splash. */
+    playWaveWarning(_waveNum) {
+      play('wave1warning', { volume: 0.68, gap: 2 });
+    },
 
     playGranddaddyWarning() {
       play('granddaddywarning', { volume: 0.75, gap: 8 });
     },
 
-    /** Air-raid siren when the nuke cache hits full. */
+    /** Distinct siren when the nuke cache hits full. */
     playNukeReady() {
-      play('wave1warning', { volume: 0.68, gap: 2.5 });
+      play('wave3warning', { volume: 0.7, gap: 2.5, gapKey: 'nuke-ready' });
     },
 
     playNukeFire() {
@@ -225,9 +245,10 @@ export function createAudio(opts) {
       if (!opts.getEnabled()) return;
       const id = waveNum % 2 === 0 ? 'scuttling2' : 'scuttling1';
       const template = templates[id];
-      if (!template) return;
-      const loop = template.cloneNode();
+      if (!template?.src) return;
+      const loop = new Audio(template.src);
       loop.loop = true;
+      loop.preload = 'auto';
       loop.volume = 0.34;
       scuttlingLoop = loop;
       loop.play().catch(() => {});

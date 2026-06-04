@@ -59,31 +59,3 @@ export function preloadDeployAssets(opts = {}) {
     });
   }
 }
-
-/**
- * @param {number} ms
- * @returns {Promise<void>}
- */
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * @param {HTMLElement} numEl
- * @returns {Promise<void>}
- */
-export function runDeployCountdown(numEl) {
-  const steps = [
-    { label: '3', ms: 1000 },
-    { label: '2', ms: 1000 },
-    { label: '1', ms: 1000 },
-    { label: 'Go!', ms: 650 },
-  ];
-
-  return (async () => {
-    for (const step of steps) {
-      numEl.textContent = step.label;
-      await delay(step.ms);
-    }
-  })();
-}

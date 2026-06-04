@@ -1,0 +1,181 @@
+/* How to play — image left, copy right */
+
+.howto-panel {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 8px 12px 24px;
+}
+
+.howto-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.howto-back {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.howto-header-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.howto-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.howto-counter {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.howto-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(201, 162, 39, 0.22);
+}
+
+.howto-tab {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid rgba(201, 162, 39, 0.28);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.howto-tab:hover {
+  border-color: rgba(255, 213, 74, 0.45);
+  color: var(--text);
+}
+
+.howto-tab.is-active {
+  border-color: rgba(255, 213, 74, 0.65);
+  background: rgba(255, 213, 74, 0.12);
+  color: var(--gold);
+  box-shadow: 0 0 12px rgba(255, 213, 74, 0.15);
+}
+
+.howto-page {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 14px;
+  border: 2px solid var(--panel-border);
+  border-radius: 14px;
+  background:
+    linear-gradient(165deg, rgba(30, 24, 48, 0.98) 0%, rgba(18, 14, 28, 0.99) 100%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+@media (min-width: 720px) {
+  .howto-page {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    gap: 20px;
+    align-items: start;
+    min-height: 320px;
+  }
+}
+
+.howto-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(201, 162, 39, 0.2);
+  background:
+    radial-gradient(circle at 50% 40%, rgba(88, 56, 160, 0.22) 0%, rgba(8, 6, 14, 0.92) 72%);
+  overflow: hidden;
+}
+
+.howto-img {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 8px;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.45));
+}
+
+.howto-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.howto-step-label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 154, 46, 0.85);
+}
+
+.howto-page-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 3.2vw, 1.75rem);
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+  color: var(--text);
+}
+
+.howto-summary {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--gold);
+}
+
+.howto-points {
+  margin: 6px 0 0;
+  padding-left: 1.15em;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.howto-points li {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: rgba(245, 240, 255, 0.92);
+}
+
+.howto-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.howto-nav-btn {
+  min-width: 120px;
+}

@@ -12,8 +12,6 @@ export const DEV = {
   skipForge: params.has('dev'),
   /** Load straight into the siege screen (`?dev=siege` or `?dev&siege`). */
   skipToSiege: devFlag('siege'),
-  /** Skip the 3-2-1 deploy countdown (on with `?dev=siege`). */
-  skipCountdown: devFlag('siege', 'nocountdown'),
   fastWave: devFlag('fast'),
   extraBudget: params.has('dev') ? 200 : 0,
   unlockAll: params.has('dev'),

@@ -3,7 +3,7 @@ import { AMMO, loadAmmoSprites } from './ammo-data.js';
 import { FIELD_LAYOUT, targetPathsForRow } from './field-layout.js';
 import { drawAlienPortalVfx } from './portal-vfx.js';
 import { buildPlacementCells, pickPlacementCell } from './placement-grid.js';
-import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy } from './enemies-data.js';
+import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed } from './enemies-data.js';
 import { getFieldImage, preloadField } from './preload.js';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
 import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC } from './waves-data.js';
@@ -45,6 +45,7 @@ const { ENEMY_PATHS, TURRET_ROWS } = FIELD_LAYOUT;
  * @property {number} speed
  * @property {boolean} isBoss
  * @property {'mothership'|'granddaddy'|null} bossKind
+ * @property {import('./enemies-data.js').EnemySpriteKey|null} [spriteKey]
  * @property {import('./enemies-data.js').EnemySpriteKey|null} [mothershipSprite]
  * @property {number} bobPhase
  * @property {number} bobSpeed
@@ -109,7 +110,7 @@ const { ENEMY_PATHS, TURRET_ROWS } = FIELD_LAYOUT;
  *     playTurretFire: (type: string) => void,
  *     playNukeFire: () => void,
  *     playNukeExplosion: (info?: { isBoss?: boolean }) => void,
- *     playDeath: (info: { isBoss?: boolean }) => void,
+ *     playDeath: (info: { craft?: string, isBoss?: boolean, bossKind?: 'mothership'|'granddaddy'|null }) => void,
  *     playBoss: (kind: 'mothership'|'granddaddy') => void,
  *     fadeOutMothership?: () => void,
  *     stopMothership?: () => void,
@@ -119,6 +120,7 @@ const { ENEMY_PATHS, TURRET_ROWS } = FIELD_LAYOUT;
  *     stopScuttling: () => void,
  *     pauseScuttling: () => void,
  *     resumeScuttling: () => void,
+ *     warmUp?: () => void,
  *   },
  *   showToast: (msg: string) => void,
  *   spawnGranddaddy?: boolean,
@@ -172,6 +174,7 @@ export function createTDEngine(canvas, opts) {
   let nukeUiSig = '';
   let siegeTimeLeft = 0;
   let siegeTimerEnded = false;
+  let siegeArmed = false;
 
   function syncNukeUi() {
     if (!opts.onNukeStateChange) return;
@@ -192,7 +195,9 @@ export function createTDEngine(canvas, opts) {
     return Boolean(opts.grannyEnabled);
   }
 
-  let phase = /** @type {'deploy'|'announce'|'wave'|'done'} */ ('deploy');
+  let phase = /** @type {'deploy'|'announce'|'wave'|'finale'|'done'} */ ('deploy');
+  /** @type {{ won: boolean, startedAt: number }|null} */
+  let pendingMissionEnd = null;
   let waveTime = 0;
   let speedMult = 1;
   let goLive = false;
@@ -210,8 +215,13 @@ export function createTDEngine(canvas, opts) {
   /** @type {{ spawned: number, nextSpawnAt: number, burstLeft: number }} */
   let spawner = { spawned: 0, nextSpawnAt: 0, burstLeft: 0 };
 
-  /** @type {{ active: boolean, waveNum: number, time: number, duration: number }} */
-  let splash = { active: false, waveNum: 1, time: 0, duration: ANNOUNCE_SPLASH_SEC };
+  /** @type {{ active: boolean, waveNum: number, codename: string, startMs: number, duration: number }} */
+  let splash = { active: false, waveNum: 1, codename: '', startMs: 0, duration: ANNOUNCE_SPLASH_SEC };
+
+  function splashProgress() {
+    if (!splash.active) return 0;
+    return Math.min(1, (performance.now() - splash.startMs) / (splash.duration * 1000));
+  }
 
   /** @type {Record<string, HTMLImageElement>} */
   let enemySprites = {};
@@ -382,17 +392,11 @@ export function createTDEngine(canvas, opts) {
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   }
 
-  function hpForSpawn(cfg, index) {
-    const tough = cfg.toughEvery && cfg.toughEvery > 0 && (index + 1) % cfg.toughEvery === 0;
-    const base = tough && cfg.toughHp ? cfg.toughHp : cfg.baseHp;
-    return Math.round(base * (1 + index * (cfg.hpRamp ?? 0)));
-  }
-
   function initSpawner() {
     spawner = { spawned: 0, nextSpawnAt: 0.4, burstLeft: 0 };
   }
 
-  function spawnEnemy(path, hp, speed, bossKind = null) {
+  function spawnEnemy(path, hp, speed, bossKind = null, spriteKey = null) {
     const bobBase = Math.max(2, height * 0.007);
     const sizeScale = bossKind === 'granddaddy' ? 0.35 : bossKind === 'mothership' ? 0.45 : 1;
     const attackRate =
@@ -408,6 +412,7 @@ export function createTDEngine(canvas, opts) {
       speed,
       isBoss: bossKind !== null,
       bossKind,
+      spriteKey,
       mothershipSprite: bossKind === 'mothership' ? pickMothershipSprite() : null,
       bobPhase: Math.random() * Math.PI * 2,
       bobSpeed: 4.8 + Math.random() * 3.6,
@@ -424,20 +429,30 @@ export function createTDEngine(canvas, opts) {
   }
 
   function spawnFromConfig(cfg, index) {
-    if (cfg.granddaddyAt >= 0 && cfg.granddaddyAt === index) {
-      spawnEnemy(2, Math.round(hpForSpawn(cfg, index) * 2.8), 0.026 * cfg.speedMul, 'granddaddy');
+    const slot = cfg.spawnQueue[index];
+    if (!slot) return;
+
+    const ramp = 1 + index * (cfg.hpRamp ?? 0.02);
+    const rush = index >= cfg.clumpAt ? 1.14 : 1;
+    const path = index % ENEMY_PATHS;
+
+    if (slot.unit === 'granddaddy') {
+      const hp = scaledHp('granddaddy', cfg.hpScale, ramp);
+      spawnEnemy(2, hp, scaledSpeed('granddaddy', cfg.speedMul, rush), 'granddaddy');
       granddaddySpawnedThisSiege = true;
       opts.onGranddaddySpawn?.();
       return;
     }
-    if (cfg.mothershipAt === index) {
-      spawnEnemy(2, Math.round(hpForSpawn(cfg, index) * 2.2), 0.03 * cfg.speedMul, 'mothership');
+
+    if (slot.unit === 'mothership') {
+      const hp = scaledHp('mothership', cfg.hpScale, ramp);
+      spawnEnemy(2, hp, scaledSpeed('mothership', cfg.speedMul, rush), 'mothership');
       return;
     }
-    const path = index % ENEMY_PATHS;
-    const hp = hpForSpawn(cfg, index);
-    const speed = (index >= cfg.clumpAt ? 0.052 : 0.044) * cfg.speedMul;
-    spawnEnemy(path, hp, speed);
+
+    const hp = scaledHp(slot.unit, cfg.hpScale, ramp);
+    const speed = scaledSpeed(slot.unit, cfg.speedMul, rush);
+    spawnEnemy(path, hp, speed, null, slot.unit);
   }
 
   function updateSpawner() {
@@ -478,6 +493,22 @@ export function createTDEngine(canvas, opts) {
     if (enemy.bossKind === 'mothership' && !enemies.some((e) => e.bossKind === 'mothership')) {
       opts.audio?.fadeOutMothership?.();
     }
+  }
+
+  function onEnemyDestroyed(enemy) {
+    const pos = enemyDrawPos(enemy);
+    const baseSize = Math.max(32, height * 0.082);
+    const size = spriteSizeForEnemy(enemy, baseSize);
+    spawnNukeKillBurst(pos.x, pos.y, enemy.isBoss, size / baseSize);
+    notifyEnemyKilled(enemy);
+    waveKills += 1;
+    totalKills += 1;
+    rewardKill(enemy.isBoss, pos.x, pos.y);
+    opts.audio?.playDeath({
+      craft: spriteKeyForEnemy(enemy),
+      isBoss: enemy.isBoss,
+      bossKind: enemy.bossKind,
+    });
   }
 
   function findTarget(tower) {
@@ -670,9 +701,11 @@ export function createTDEngine(canvas, opts) {
     const palette = isBoss
       ? ['rgba(255,107,53,0.95)', 'rgba(255,209,102,0.9)', 'rgba(255,69,0,0.85)', 'rgba(255,255,255,0.75)']
       : ['rgba(157,78,221,0.95)', 'rgba(124,252,0,0.9)', 'rgba(255,107,203,0.85)', 'rgba(199,125,255,0.8)', 'rgba(255,255,255,0.7)'];
-    const sparks = Array.from({ length: isBoss ? 10 : 8 }, (_, i) => ({
-      angle: (Math.PI * 2 * i) / (isBoss ? 10 : 8) + Math.random() * 0.45,
+    const sparkCount = isBoss ? 14 : 8;
+    const sparks = Array.from({ length: sparkCount }, (_, i) => ({
+      angle: (Math.PI * 2 * i) / sparkCount + Math.random() * 0.35,
       color: palette[i % palette.length],
+      spread: 0.42 + Math.random() * 0.35,
     }));
     nukeKillBursts.push({
       x,
@@ -701,15 +734,8 @@ export function createTDEngine(canvas, opts) {
     for (let i = enemies.length - 1; i >= 0; i--) {
       if (enemies[i].hp <= 0) {
         const e = enemies[i];
-        const pos = enemyWorldPos(e);
-        const baseSize = Math.max(32, height * 0.082);
-        const size = spriteSizeForEnemy(e, baseSize);
-        spawnNukeKillBurst(pos.x, pos.y, e.isBoss, size / baseSize);
         enemies.splice(i, 1);
-        notifyEnemyKilled(e);
-        waveKills += 1;
-        totalKills += 1;
-        rewardKill(e.isBoss, pos.x, pos.y);
+        onEnemyDestroyed(e);
       }
     }
   }
@@ -832,15 +858,7 @@ export function createTDEngine(canvas, opts) {
     });
     cupcakeMissiles = cupcakeMissiles.filter((m) => m.alive);
 
-    cupcakeBursts.forEach((b) => {
-      b.time += step;
-    });
-    cupcakeBursts = cupcakeBursts.filter((b) => b.time < b.duration);
-
-    nukeKillBursts.forEach((b) => {
-      b.time += step;
-    });
-    nukeKillBursts = nukeKillBursts.filter((b) => b.time < b.duration);
+    tickBurstEffects(step);
 
     if (
       cupcakeUsed &&
@@ -855,6 +873,17 @@ export function createTDEngine(canvas, opts) {
       grannyNukePose = false;
       opts.onCupcakeFinished?.();
     }
+  }
+
+  function tickBurstEffects(dt) {
+    nukeKillBursts.forEach((b) => {
+      b.time += dt;
+    });
+    nukeKillBursts = nukeKillBursts.filter((b) => b.time < b.duration);
+    cupcakeBursts.forEach((b) => {
+      b.time += dt;
+    });
+    cupcakeBursts = cupcakeBursts.filter((b) => b.time < b.duration);
   }
 
   function drawCupcakeMissiles() {
@@ -896,6 +925,10 @@ export function createTDEngine(canvas, opts) {
       ctx.restore();
     });
 
+    drawCupcakeBursts();
+  }
+
+  function drawCupcakeBursts() {
     cupcakeBursts.forEach((b) => {
       const t = b.time / b.duration;
       const alpha = (1 - t) * 0.75;
@@ -932,11 +965,21 @@ export function createTDEngine(canvas, opts) {
       ctx.arc(b.x, b.y, flashR, 0, Math.PI * 2);
       ctx.fill();
 
+      if (b.isBoss && t < 0.85) {
+        const ringR = b.size * (0.2 + t * 1.1);
+        ctx.strokeStyle = `rgba(255, 220, 140, ${alpha * (1 - t * 0.9)})`;
+        ctx.lineWidth = Math.max(2, b.size * 0.04 * (1 - t));
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, ringR, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
       b.sparks.forEach((s) => {
-        const dist = b.size * (0.15 + t * 1.55);
+        const spread = s.spread ?? 0.5;
+        const dist = b.size * (spread * (b.isBoss ? 0.55 : 0.25) + t * (b.isBoss ? 1.35 : 1.5));
         const px = b.x + Math.cos(s.angle) * dist;
         const py = b.y + Math.sin(s.angle) * dist;
-        const r = b.size * (b.isBoss ? 0.16 : 0.12) * (1 - t * 0.55);
+        const r = b.size * (b.isBoss ? 0.09 : 0.12) * (0.55 + (1 - t) * 0.45);
         ctx.save();
         ctx.globalAlpha = alpha * 0.9;
         ctx.fillStyle = s.color;
@@ -1014,13 +1057,8 @@ export function createTDEngine(canvas, opts) {
     for (let i = enemies.length - 1; i >= 0; i--) {
       if (enemies[i].hp <= 0) {
         const dead = enemies[i];
-        const pos = enemyWorldPos(dead);
         enemies.splice(i, 1);
-        notifyEnemyKilled(dead);
-        waveKills += 1;
-        totalKills += 1;
-        rewardKill(dead.isBoss, pos.x, pos.y);
-        opts.audio?.playDeath({ isBoss: dead.isBoss });
+        onEnemyDestroyed(dead);
       }
     }
   }
@@ -1038,12 +1076,31 @@ export function createTDEngine(canvas, opts) {
     if (isCacheUnlocked()) grannyRockTime += dt;
   }
 
+  function tickSiegeClock(dt) {
+    siegeTimeLeft = Math.max(0, siegeTimeLeft - dt);
+    if (siegeTimeLeft <= 0 && !siegeTimerEnded) {
+      siegeTimerEnded = true;
+      opts.showToast('Time! Blast what\'s left!');
+    }
+  }
+
   function shouldAnimate() {
-    if (phase === 'announce' || phase === 'wave' || phase === 'deploy') return true;
-    return false;
+    return phase === 'announce' || phase === 'wave' || phase === 'deploy' || phase === 'finale';
   }
 
   function update(dt) {
+    if (phase === 'finale') {
+      tickBurstEffects(dt);
+      if (
+        pendingMissionEnd &&
+        ((nukeKillBursts.length === 0 && cupcakeBursts.length === 0) ||
+          performance.now() - pendingMissionEnd.startedAt > 1200)
+      ) {
+        endMission(pendingMissionEnd.won);
+      }
+      return;
+    }
+
     if (phase === 'deploy') {
       tickBuildTimers(dt);
       tickPortalAnim(dt);
@@ -1055,8 +1112,8 @@ export function createTDEngine(canvas, opts) {
       tickBuildTimers(dt);
       tickPortalAnim(dt);
       tickGrannyRock(dt);
-      splash.time += dt;
-      if (splash.time >= splash.duration) {
+      if (siegeArmed) tickSiegeClock(dt);
+      if (splashProgress() >= 1) {
         splash.active = false;
         beginWaveCombat();
       }
@@ -1071,12 +1128,7 @@ export function createTDEngine(canvas, opts) {
     }
 
     tickBuildTimers(dt * speedMult);
-
-    siegeTimeLeft = Math.max(0, siegeTimeLeft - dt);
-    if (siegeTimeLeft <= 0 && !siegeTimerEnded) {
-      siegeTimerEnded = true;
-      opts.showToast('Time! Blast what\'s left!');
-    }
+    tickSiegeClock(dt);
 
     waveTime += dt;
     updateSpawner();
@@ -1099,7 +1151,7 @@ export function createTDEngine(canvas, opts) {
     });
 
     if (totalLeaks >= maxLeaks) {
-      endMission(false);
+      requestMissionEnd(false);
       return;
     }
 
@@ -1151,7 +1203,7 @@ export function createTDEngine(canvas, opts) {
 
     if (siegeTimerEnded || siegeTimeLeft <= 0) {
       if (enemies.length === 0) {
-        endMission(totalLeaks < maxLeaks);
+        requestMissionEnd(totalLeaks < maxLeaks);
       }
       return;
     }
@@ -1162,11 +1214,21 @@ export function createTDEngine(canvas, opts) {
   }
 
   function showWaveSplash(waveNum) {
-    splash = { active: true, waveNum, time: 0, duration: ANNOUNCE_SPLASH_SEC };
+    const cfg = getWaveConfig();
+    splash = {
+      active: true,
+      waveNum,
+      codename: cfg.codename,
+      startMs: performance.now(),
+      duration: ANNOUNCE_SPLASH_SEC,
+    };
+    opts.audio?.playWaveWarning(waveNum);
+    opts.audio?.startScuttling(waveNum);
     setPhase('announce');
-    lastTs = 0;
-    cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(loop);
+    if (!rafId) {
+      lastTs = 0;
+      rafId = requestAnimationFrame(loop);
+    }
   }
 
   function beginWaveCombat() {
@@ -1196,16 +1258,13 @@ export function createTDEngine(canvas, opts) {
 
   function startWave() {
     if (phase !== 'deploy') return false;
-    if (wavesCompleted === 0 && towers.length === 0) {
-      opts.showToast('Place at least one turret first.');
-      return false;
-    }
     if (wavesCompleted === 0) {
       totalKills = 0;
       totalLeaks = 0;
       defeated = false;
       siegeTimeLeft = siegeDuration;
       siegeTimerEnded = false;
+      siegeArmed = true;
       granddaddySpawnedThisSiege = false;
     }
     currentWaveIndex = wavesCompleted;
@@ -1215,10 +1274,6 @@ export function createTDEngine(canvas, opts) {
 
   function tryAutoStartWave() {
     if (!goLive || phase !== 'deploy') return;
-    if (towers.length === 0) {
-      opts.showToast('Place a turret — aliens incoming!');
-      return;
-    }
     startWave();
   }
 
@@ -1233,19 +1288,38 @@ export function createTDEngine(canvas, opts) {
     projectiles = [];
     enemyShots = [];
     if (siegeTimeLeft <= 0 || siegeTimerEnded) {
-      endMission(totalLeaks < maxLeaks);
+      requestMissionEnd(totalLeaks < maxLeaks);
       return;
     }
     showWaveSplash(wavesCompleted + 1);
   }
 
+  function requestMissionEnd(won) {
+    if (phase === 'done' || phase === 'finale') return;
+    if (nukeKillBursts.length > 0 || cupcakeBursts.length > 0) {
+      pendingMissionEnd = { won, startedAt: performance.now() };
+      enemies = [];
+      projectiles = [];
+      enemyShots = [];
+      setPhase('finale');
+      if (!rafId) {
+        lastTs = 0;
+        rafId = requestAnimationFrame(loop);
+      }
+      return;
+    }
+    endMission(won);
+  }
+
   function endMission(won) {
     if (phase === 'done') return;
+    pendingMissionEnd = null;
     opts.audio?.stopScuttling();
     opts.audio?.fadeOutMothership?.();
     defeated = !won;
     setPhase('done');
     cancelAnimationFrame(rafId);
+    rafId = 0;
     opts.onMissionEnd({ kills: totalKills, leaks: totalLeaks, won, maxLeaks, wavesCleared: wavesCompleted });
     if (won) {
       opts.showToast(`Time! ${wavesCompleted} wave${wavesCompleted === 1 ? '' : 's'} cleared.`);
@@ -1455,34 +1529,39 @@ export function createTDEngine(canvas, opts) {
     });
   }
 
-  function drawWaveSplash() {
-    if (!splash.active) return;
-    const t = splash.time / splash.duration;
-    const popIn = Math.min(1, t / 0.22);
-    const fadeOut = t > 0.72 ? 1 - (t - 0.72) / 0.28 : 1;
-    const alpha = fadeOut;
-    const scale = 0.35 + popIn * 0.65;
-    const pulse = 1 + Math.sin(t * 14) * 0.03 * popIn;
+  function drawWaveAnnounceBar() {
+    if (!splash.active || phase !== 'announce') return;
+    const t = splashProgress();
+    const margin = Math.max(14, width * 0.06);
+    const barW = width - margin * 2;
+    const barH = Math.max(7, height * 0.012);
+    const barX = margin;
+    const barY = 42;
+    const label = splash.codename
+      ? `Wave ${splash.waveNum} — ${splash.codename}`
+      : `Wave ${splash.waveNum} incoming`;
 
     ctx.save();
-    ctx.fillStyle = `rgba(0,0,0,${0.5 * alpha})`;
-    ctx.fillRect(0, 0, width, height);
-
-    const fontSize = Math.min(80, width * 0.16);
-    ctx.translate(width / 2, height / 2);
-    ctx.scale(scale * pulse, scale * pulse);
-    ctx.globalAlpha = alpha;
-    ctx.font = `bold ${fontSize}px Bangers, sans-serif`;
+    ctx.font = `bold ${Math.max(11, height * 0.022)}px Bangers, sans-serif`;
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.lineWidth = Math.max(3, fontSize * 0.06);
-    ctx.strokeStyle = '#ff6b35';
-    ctx.fillStyle = '#ffb347';
-    ctx.shadowColor = 'rgba(255,140,66,0.9)';
-    ctx.shadowBlur = 24;
-    const label = `WAVE ${splash.waveNum}`;
-    ctx.strokeText(label, 0, 0);
-    ctx.fillText(label, 0, 0);
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle = 'rgba(255, 213, 74, 0.92)';
+    ctx.fillText(label, width / 2, barY - 4);
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillRect(barX, barY, barW, barH);
+    ctx.strokeStyle = 'rgba(255, 140, 66, 0.55)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, barW, barH);
+
+    if (t > 0) {
+      const fillW = barW * t;
+      const grd = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+      grd.addColorStop(0, '#ff6b35');
+      grd.addColorStop(1, '#ffd54a');
+      ctx.fillStyle = grd;
+      ctx.fillRect(barX, barY, fillW, barH);
+    }
     ctx.restore();
   }
 
@@ -1495,31 +1574,34 @@ export function createTDEngine(canvas, opts) {
     const budget = opts.getBudget();
     if (phase === 'wave' || phase === 'announce') {
       const waveNum = phase === 'announce' ? splash.waveNum : wavesCompleted + 1;
-      const timeLabel = phase === 'wave' ? formatSiegeTime(siegeTimeLeft) : formatSiegeTime(siegeDuration);
+      const timeLabel = siegeArmed ? formatSiegeTime(siegeTimeLeft) : formatSiegeTime(siegeDuration);
       ctx.fillText(`Time ${timeLabel}`, 12, 24);
       ctx.fillText(`Wave ${waveNum}`, 118, 24);
       ctx.fillText(`Blasted: ${totalKills}`, 200, 24);
       ctx.fillText(`Leaked: ${totalLeaks}/${maxLeaks}`, 320, 24);
       ctx.fillText(`Coins: ${budget}`, width - 110, 24);
     } else if (phase === 'deploy') {
-      ctx.fillText('Pick turret → place on grass', 12, 24);
+      ctx.fillText('Place turrets — wave starting soon', 12, 24);
       ctx.fillText(`Coins: ${budget}`, width - 110, 24);
     }
   }
 
   function render() {
     drawField();
-    drawPortalVfx();
-    drawGranny();
-    drawTowers();
-    drawPlacementPreview();
-    drawEnemies();
+    if (phase !== 'finale') {
+      drawPortalVfx();
+      drawGranny();
+      drawTowers();
+      drawPlacementPreview();
+      drawEnemies();
+      drawProjectiles();
+      drawEnemyShots();
+      drawCupcakeMissiles();
+      drawHUD();
+      drawWaveAnnounceBar();
+    }
     drawNukeKillBursts();
-    drawProjectiles();
-    drawEnemyShots();
-    drawCupcakeMissiles();
-    drawHUD();
-    drawWaveSplash();
+    if (phase === 'finale') drawCupcakeBursts();
   }
 
   function loop(ts) {
@@ -1540,6 +1622,7 @@ export function createTDEngine(canvas, opts) {
   }
 
   function handleTap(clientX, clientY) {
+    ensureAudioUnlocked();
     if (!canPlaceTurrets()) return;
     if (!selectedType) {
       opts.showToast('Pick a turret below first.');
@@ -1583,14 +1666,14 @@ export function createTDEngine(canvas, opts) {
   function relayout() {
     layout();
     render();
-    if (shouldAnimate() && phase === 'deploy') {
-      lastTs = 0;
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(loop);
-    }
+  }
+
+  function ensureAudioUnlocked() {
+    opts.audio?.warmUp?.();
   }
 
   function onPointerMove(clientX, clientY) {
+    ensureAudioUnlocked();
     pointerActive = true;
     const { x, y } = canvasCoords(clientX, clientY);
     updatePlacementPreview(x, y);
@@ -1637,6 +1720,8 @@ export function createTDEngine(canvas, opts) {
 
   layout();
   render();
+  lastTs = 0;
+  rafId = requestAnimationFrame(loop);
   requestAnimationFrame(() => {
     relayout();
   });

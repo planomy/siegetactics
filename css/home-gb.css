@@ -17,7 +17,7 @@
   .gb-home-grid {
     grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
     gap: 18px;
-    align-items: start;
+    align-items: stretch;
   }
 }
 
@@ -41,6 +41,19 @@
 
 .gb-training {
   margin-bottom: 16px;
+}
+
+@media (min-width: 860px) {
+  .gb-home-main,
+  .gb-training {
+    height: 100%;
+  }
+
+  .gb-training {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 /* Attack hero — single countdown on Home HQ */
@@ -1141,15 +1154,152 @@
   color: var(--gold);
 }
 
-/* Sidebar — military field command panel */
+/* Sidebar — field command panel */
 .gb-home-sidebar {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 100%;
+}
+
+/* Interstellar nav chart — 2×3 shrouded table at bottom of Home HQ */
+.gb-map-panel {
+  font-family: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
+  margin-top: 20px;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: 8px;
+  background:
+    linear-gradient(165deg, rgba(10, 8, 18, 0.96) 0%, rgba(6, 5, 12, 0.98) 100%);
+  box-shadow:
+    inset 0 0 28px rgba(0, 0, 0, 0.45),
+    0 0 16px rgba(201, 162, 39, 0.08);
+  overflow: hidden;
+}
+
+.gb-map-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(201, 162, 39, 0.22);
+  background: rgba(0, 0, 0, 0.35);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gb-map-stamp {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: rgba(255, 213, 74, 0.9);
+}
+
+.gb-map-count {
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: rgba(255, 213, 74, 0.55);
+}
+
+.gb-map-viewport {
+  position: relative;
+  width: min(100%, 640px);
+  margin: 8px auto;
+  aspect-ratio: 16 / 9;
+  background: #05040a;
+}
+
+.gb-map-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.gb-map-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+  pointer-events: none;
+}
+
+.gb-map-cell {
+  position: relative;
+  overflow: hidden;
+}
+
+.gb-map-cell.is-charted {
+  box-shadow: inset 0 0 0 1px rgba(255, 213, 74, 0.25);
+}
+
+.gb-map-cell-shroud {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 4, 14, 0.88);
+  transition: opacity 0.55s ease;
+}
+
+.gb-map-cell-shroud.is-clear {
+  opacity: 0;
+}
+
+.gb-map-cell-ref {
+  position: absolute;
+  left: 5px;
+  bottom: 4px;
+  font-size: 0.48rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: rgba(255, 213, 74, 0.55);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  pointer-events: none;
+}
+
+.gb-map-cell.is-charted .gb-map-cell-ref {
+  color: rgba(255, 213, 74, 0.95);
+}
+
+.gb-map-home-shroud {
+  position: absolute;
+  left: 62%;
+  top: 49%;
+  width: 31.5%;
+  height: 41%;
+  border-radius: 4px;
+  background:
+    radial-gradient(circle at 50% 60%, rgba(90, 24, 130, 0.35) 0%, rgba(6, 4, 14, 0.9) 70%);
+  pointer-events: none;
+  transition: opacity 0.55s ease;
+}
+
+.gb-map-home-shroud.is-clear {
+  opacity: 0;
+}
+
+.gb-map-viewport.is-home-open .gb-map-img {
+  filter: saturate(1.05) brightness(1.03);
+}
+
+.gb-map-caption {
+  margin: 0;
+  padding: 8px 12px 10px;
+  font-size: 0.58rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.03em;
+  color: rgba(157, 148, 184, 0.92);
+  border-top: 1px solid rgba(201, 162, 39, 0.14);
+  background: rgba(0, 0, 0, 0.22);
 }
 
 .gb-command-panel {
   font-family: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
   border: 1px solid rgba(93, 255, 138, 0.32);
   border-radius: 6px;
   background:
@@ -1255,8 +1405,20 @@
   font-size: 1.35rem;
 }
 
+.gb-command-metrics-secondary {
+  border-top: 1px solid rgba(93, 255, 138, 0.1);
+}
+
+.gb-metric-val-sm {
+  font-size: 0.92rem;
+}
+
 .gb-readiness {
-  padding: 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  min-height: 0;
 }
 
 .gb-readiness-head {
@@ -1336,8 +1498,8 @@
 }
 
 .gb-readiness-state {
-  margin: 0 0 8px;
-  font-size: 0.5rem;
+  margin: 0 0 10px;
+  font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1345,22 +1507,34 @@
 }
 
 .gb-readiness-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   margin: 0;
-  padding: 0;
+  padding: 6px 0 0;
   list-style: none;
   border-top: 1px dashed rgba(93, 255, 138, 0.18);
+  min-height: 0;
 }
 
 .gb-readiness-item {
   display: grid;
   grid-template-columns: auto auto 1fr auto;
   align-items: center;
-  gap: 6px;
-  padding: 5px 0;
-  font-size: 0.5rem;
+  gap: 8px;
+  padding: 7px 0;
+  font-size: 0.62rem;
   letter-spacing: 0.03em;
   border-bottom: 1px solid rgba(93, 255, 138, 0.08);
   color: rgba(140, 150, 160, 0.85);
+}
+
+@media (min-width: 860px) {
+  .gb-readiness-item {
+    flex: 1;
+    padding: 4px 0;
+  }
 }
 
 .gb-readiness-item:last-child {
@@ -1369,8 +1543,8 @@
 
 .gb-readiness-tick {
   display: inline-block;
-  width: 9px;
-  height: 9px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: #ff6b5a;
   box-shadow: 0 0 8px rgba(255, 100, 60, 0.75);
@@ -1379,19 +1553,21 @@
 
 .gb-readiness-code {
   font-weight: 800;
+  font-size: 0.6rem;
   color: rgba(93, 255, 138, 0.4);
-  min-width: 2.4em;
+  min-width: 2.6em;
 }
 
 .gb-readiness-label {
   font-weight: 600;
+  font-size: 0.62rem;
   color: rgba(180, 190, 200, 0.75);
 }
 
 .gb-readiness-status {
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.46rem;
+  font-size: 0.56rem;
   color: rgba(100, 110, 120, 0.8);
   text-align: right;
 }
@@ -1503,6 +1679,24 @@
   gap: 2px;
   width: 100%;
   padding: 2px 4px 4px;
+}
+
+.gb-map-pass {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  margin-left: 6px;
+  padding-left: 6px;
+  border-left: 1px solid rgba(201, 162, 39, 0.22);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(157, 148, 184, 0.95);
+  white-space: nowrap;
+}
+
+.gb-map-pass.is-complete {
+  color: #ffd54a;
 }
 
 .gb-level-shield {

@@ -6,11 +6,14 @@ import {
 } from './training-gate.js';
 import { STAR_LABELS, STAR_HINTS, summarizeBadgeCollection, renderStarBadges } from './stars.js';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js';
-import { renderModuleLevelPips } from './level-mastery.js';
+import { renderModuleLevelPips, MAP_PASSES_REQUIRED } from './level-mastery.js';
+import { renderInterstellarMap, renderModuleMapProgress, mapPiecesEarned, TRAINING_MODULE_IDS } from './map-progress.js';
+import { getQualifiedLevels } from './level-mastery.js';
+import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel } from './difficulty.js';
 
-/** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack @param {import('./level-mastery.js').LevelMasterySave} levelMastery */
-function renderTrainingCards(gate, attack, levelMastery) {
+/** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack @param {import('./level-mastery.js').LevelMasterySave} levelMastery @param {import('./map-progress.js').MapProgressSave} mapProgress */
+function renderTrainingCards(gate, attack, levelMastery, mapProgress) {
   return MATH_TOPICS.map((topic) => {
     const locked = !topic.available;
     const complete =
@@ -18,6 +21,11 @@ function renderTrainingCards(gate, attack, levelMastery) {
         ? attack.tables >= GATE.requiredTables
         : Boolean(topic.unitId) && isTopicDone(gate, topic.id);
     const pips = !locked ? renderModuleLevelPips(levelMastery, topic.id) : '';
+    const mapPip = !locked ? renderModuleMapProgress(mapProgress, topic.id) : '';
+    const progressRow =
+      pips || mapPip
+        ? `<span class="gb-module-level-pips" aria-hidden="true">${pips}${mapPip}</span>`
+        : '';
     const artClass = `gb-story-art gb-story-art-${topic.id.replace(/[^a-z-]/g, '')}`;
     const artInner = topic.moduleArt
       ? `<img class="gb-story-art-img" src="${topic.moduleArt}" alt="" width="400" height="400" loading="lazy" />`
@@ -34,7 +42,7 @@ function renderTrainingCards(gate, attack, levelMastery) {
         </div>
         ${complete ? '<span class="gb-story-badge gb-story-badge-done">Done</span>' : ''}
         <span class="gb-story-title">${topic.title}</span>
-        ${pips ? `<span class="gb-module-level-pips" aria-hidden="true">${pips}</span>` : ''}
+        ${progressRow}
       </button>
     `;
   }).join('');
@@ -192,10 +200,21 @@ function playXpGrow(host, targetXp) {
   });
 }
 
-/** @param {{ xp: number, siegesCompleted: number, bestKills: number }} stats @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
+/** @param {import('./level-mastery.js').LevelMasterySave} mastery */
+function countShieldsEarned(mastery) {
+  return TRAINING_MODULE_IDS.reduce((n, id) => n + getQualifiedLevels(mastery, id).length, 0);
+}
+
+/** @param {{ xp: number, siegesCompleted: number, bestKills: number, bestBankedCoins: number, difficultyLevel: import('./difficulty.js').DifficultyLevel, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave }} stats @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
 function renderCommandSidebar(stats, gate, attack) {
   const readinessPct = attack.open ? 100 : Math.round(attack.pct * 100);
   const readinessLabel = attack.open ? 'CLEARED TO ENGAGE' : 'TRAINING IN PROGRESS';
+  const mapSectors = mapPiecesEarned(stats.mapProgress);
+  const shields = countShieldsEarned(stats.levelMastery);
+  const maxShields = TRAINING_MODULE_IDS.length * 3;
+  const checksDone = attack.done;
+  const checksTotal = attack.total;
+  const coinLabel = ECONOMY.siegeCoinsLabel;
 
   return `
     <section class="gb-command-panel" aria-label="Field command status">
@@ -213,9 +232,35 @@ function renderCommandSidebar(stats, gate, attack) {
           <span class="gb-metric-label">Sieges logged</span>
           <span class="gb-metric-val">${stats.siegesCompleted}</span>
         </div>
-        <div class="gb-metric gb-metric-wide">
+        <div class="gb-metric">
           <span class="gb-metric-label">Peak eliminations</span>
-          <span class="gb-metric-val">${stats.bestKills.toLocaleString()}</span>
+          <span class="gb-metric-val gb-metric-val-sm">${stats.bestKills.toLocaleString()}</span>
+        </div>
+        <div class="gb-metric">
+          <span class="gb-metric-label">Best banked</span>
+          <span
+            class="gb-metric-val gb-metric-val-sm"
+            title="Most ${coinLabel.toLowerCase()} left unspent at the end of a siege (bank for bonus Forge XP)"
+          >${stats.bestBankedCoins.toLocaleString()}</span>
+        </div>
+      </div>
+
+      <div class="gb-command-metrics gb-command-metrics-secondary">
+        <div class="gb-metric">
+          <span class="gb-metric-label">Map charted</span>
+          <span class="gb-metric-val gb-metric-val-sm">${mapSectors}/${TRAINING_MODULE_IDS.length}</span>
+        </div>
+        <div class="gb-metric">
+          <span class="gb-metric-label">Shields earned</span>
+          <span class="gb-metric-val gb-metric-val-sm">${shields}/${maxShields}</span>
+        </div>
+        <div class="gb-metric">
+          <span class="gb-metric-label">Prep checks</span>
+          <span class="gb-metric-val gb-metric-val-sm">${checksDone}/${checksTotal}</span>
+        </div>
+        <div class="gb-metric">
+          <span class="gb-metric-label">Training level</span>
+          <span class="gb-metric-val gb-metric-val-sm">L${stats.difficultyLevel}</span>
         </div>
       </div>
 
@@ -354,10 +399,12 @@ let threatDossierCleanup = null;
  *   xp: number,
  *   siegesCompleted: number,
  *   bestKills: number,
+ *   bestBankedCoins: number,
  *   bestStars: Record<string, number>,
  *   primaryMissionId: string,
  *   gate: import('./training-gate.js').TrainingGate,
  *   levelMastery: import('./level-mastery.js').LevelMasterySave,
+ *   mapProgress: import('./map-progress.js').MapProgressSave,
  *   difficultyLevel: import('./difficulty.js').DifficultyLevel,
  *   recommendedLevel: import('./difficulty.js').DifficultyLevel,
  *   onDifficultyChange: (level: import('./difficulty.js').DifficultyLevel) => void,
@@ -402,19 +449,29 @@ export function renderHome(host, state) {
                 </div>
               </div>
             </div>
-            <p class="gb-level-xp-hint">Level ${state.difficultyLevel} pays ${xpMultiplierLabel(state.difficultyLevel)} · qualify at 80%+ to earn level badges</p>
-            <div class="gb-story-grid">${renderTrainingCards(state.gate, attack, state.levelMastery)}</div>
+            <p class="gb-level-xp-hint">Level ${state.difficultyLevel} pays ${xpMultiplierLabel(state.difficultyLevel)} · 100% earns shields · ${MAP_PASSES_REQUIRED}× at 80%+ earns a map piece</p>
+            <div class="gb-story-grid">${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress)}</div>
           </section>
         </div>
 
         <aside class="gb-home-sidebar">
           ${renderCommandSidebar(
-            { xp: state.xp, siegesCompleted: state.siegesCompleted, bestKills: state.bestKills },
+            {
+              xp: state.xp,
+              siegesCompleted: state.siegesCompleted,
+              bestKills: state.bestKills,
+              bestBankedCoins: state.bestBankedCoins,
+              difficultyLevel: state.difficultyLevel,
+              levelMastery: state.levelMastery,
+              mapProgress: state.mapProgress,
+            },
             state.gate,
             attack
           )}
         </aside>
       </div>
+
+      ${renderInterstellarMap(state.mapProgress)}
     </div>
   `;
 

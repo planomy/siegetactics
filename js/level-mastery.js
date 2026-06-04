@@ -1,19 +1,11 @@
-/** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
+import { recordMapPass, MAP_PASS_ACCURACY, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS } from './map-progress.js';
 
-/** Modules that track per-level qualifications. */
-export const TRAINING_MODULE_IDS = [
-  'times-tables',
-  'place-value-siege',
-  'measurement-length',
-  'fractions',
-  'angles',
-  'maths-quest',
-];
+export { MAP_PASS_ACCURACY, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS };
 
-/** Accuracy (0–1) needed to qualify at a level. */
-export const QUALIFY_ACCURACY = 0.8;
+/** Perfect score (0–1) needed to earn a level shield. */
+export const SHIELD_ACCURACY = 1;
 
-/** One-time bonus when first qualifying at each level. */
+/** One-time bonus when first earning a shield at each level. */
 export const FIRST_CLEAR_BONUS = {
   1: 15,
   2: 25,
@@ -85,50 +77,63 @@ export function recommendGlobalLevel(mastery) {
  * @param {DifficultyLevel} level
  * @param {number} accuracy 0–1
  */
-export function recordLevelQualification(mastery, moduleId, level, accuracy) {
+export function recordShieldProgress(mastery, moduleId, level, accuracy) {
   const next = { ...mastery, [moduleId]: [...(mastery[moduleId] ?? [])] };
-  const qualified = accuracy >= QUALIFY_ACCURACY;
+  const perfect = accuracy >= SHIELD_ACCURACY;
   const already = next[moduleId].includes(level);
-  let newlyQualified = false;
+  let shieldEarned = false;
   let firstClearBonus = 0;
 
-  if (qualified && !already) {
+  if (perfect && !already) {
     next[moduleId] = [...next[moduleId], level].sort((a, b) => a - b);
-    newlyQualified = true;
+    shieldEarned = true;
     firstClearBonus = FIRST_CLEAR_BONUS[level] ?? 0;
   }
 
-  const nudge = buildNudge(next, moduleId, level, accuracy, newlyQualified);
-
   return {
     mastery: next,
-    qualified,
-    newlyQualified,
+    perfect,
+    shieldEarned,
     firstClearBonus,
-    nudge,
+    nudge: buildShieldNudge(level, accuracy, shieldEarned),
   };
 }
 
 /**
  * @param {LevelMasterySave} mastery
+ * @param {import('./map-progress.js').MapProgressSave} mapProgress
  * @param {string} moduleId
  * @param {DifficultyLevel} level
  * @param {number} accuracy
- * @param {boolean} newlyQualified
  */
-function buildNudge(mastery, moduleId, level, accuracy, newlyQualified) {
-  if (accuracy < QUALIFY_ACCURACY) return null;
-  if (level >= 3) {
-    return newlyQualified
-      ? 'Level 3 qualified — top marks, soldier!'
-      : null;
+export function recordTrainingProgress(mastery, mapProgress, moduleId, level, accuracy) {
+  const shield = recordShieldProgress(mastery, moduleId, level, accuracy);
+  const map = recordMapPass(mapProgress, moduleId, accuracy);
+  return {
+    ...shield,
+    mapProgress: map.progress,
+    mapPassAdded: map.added,
+    mapPasses: map.passes,
+    mapPieceEarned: map.pieceEarned,
+  };
+}
+
+/**
+ * @param {DifficultyLevel} level
+ * @param {number} accuracy
+ * @param {boolean} shieldEarned
+ */
+function buildShieldNudge(level, accuracy, shieldEarned) {
+  if (shieldEarned) {
+    if (level >= 3) return 'Perfect run — Level 3 shield earned!';
+    const nextLevel = /** @type {DifficultyLevel} */ (level + 1);
+    return `Perfect! Level ${level} shield earned. Try Level ${nextLevel} for bigger XP.`;
   }
-  const nextLevel = /** @type {DifficultyLevel} */ (level + 1);
-  if (newlyQualified) {
-    return `Level ${level} cleared! Bump to Level ${nextLevel} for bigger XP payouts.`;
+  if (accuracy >= MAP_PASS_ACCURACY && accuracy < SHIELD_ACCURACY) {
+    return 'Solid pass — a perfect run earns the level shield.';
   }
-  if (accuracy >= 0.9 && !isQualifiedAt(mastery, moduleId, nextLevel)) {
-    return `Sharp shooting at Level ${level}. Level ${nextLevel} earns more XP per answer.`;
+  if (accuracy >= 0.9 && accuracy < SHIELD_ACCURACY) {
+    return 'So close — 100% earns the shield.';
   }
   return null;
 }
@@ -144,7 +149,7 @@ export function renderModuleLevelPips(mastery, moduleId) {
       (n) => `
         <span
           class="gb-level-shield${qualified.has(n) ? ' is-earned' : ''}"
-          title="${qualified.has(n) ? `Qualified at level ${n}` : `Level ${n} not yet qualified`}"
+          title="${qualified.has(n) ? `Perfect at level ${n}` : `Level ${n} — need 100%`}"
         >
           <img class="gb-level-shield-img" src="${LEVEL_SHIELD_SRC}" width="64" height="72" alt="" aria-hidden="true" />
           <span class="gb-level-shield-num">${n}</span>
