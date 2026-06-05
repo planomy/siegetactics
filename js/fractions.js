@@ -266,9 +266,10 @@ function pick(arr) {
 /**
  * @param {HTMLElement} host
  * @param {Parameters<typeof initDrillSession>[1]} callbacks
+ * @returns {() => void}
  */
 export function initFractions(host, callbacks) {
-  initDrillSession(host, {
+  return initDrillSession(host, {
     title: 'Fractions',
     missionTag: 'Number · Fractions',
     quizTag: 'Compare, order & operate',

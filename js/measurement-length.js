@@ -238,6 +238,7 @@ function pick(arr) {
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
  *   unitDone: boolean,
  * }} callbacks
+ * @returns {() => void}
  */
 export function initMeasurementLength(host, callbacks) {
   /** @type {'quiz'|'done'} */
@@ -248,8 +249,29 @@ export function initMeasurementLength(host, callbacks) {
   let correct = 0;
   let sessionXp = 0;
   let answered = false;
+  let sessionReported = false;
+  /** @type {ReturnType<typeof setTimeout>|null} */
+  let answerTimer = null;
+  let lastDone = { accuracy: 0, passed: false };
+  let disposed = false;
+
+  function clearAnswerTimer() {
+    if (answerTimer != null) {
+      clearTimeout(answerTimer);
+      answerTimer = null;
+    }
+  }
+
+  function goHome() {
+    if (disposed) return;
+    clearAnswerTimer();
+    disposed = true;
+    callbacks.onHome();
+  }
 
   function startSession() {
+    clearAnswerTimer();
+    sessionReported = false;
     deck = [];
     const count = sessionSize(callbacks.difficultyLevel);
     for (let i = 0; i < count; i++) {
@@ -264,7 +286,7 @@ export function initMeasurementLength(host, callbacks) {
   }
 
   function render() {
-    if (phase === 'done') renderDone();
+    if (phase === 'done') renderDone(lastDone.accuracy, lastDone.passed);
     else renderQuiz();
   }
 
@@ -294,11 +316,11 @@ export function initMeasurementLength(host, callbacks) {
       </div>
     `;
 
-    host.querySelector('#length-home')?.addEventListener('click', callbacks.onHome);
+    host.querySelector('#length-home')?.addEventListener('click', goHome);
 
     host.querySelectorAll('.length-opt').forEach((btn) => {
       btn.addEventListener('click', () => {
-        if (answered) return;
+        if (answered || disposed) return;
         answered = true;
         const picked = Number(btn.getAttribute('data-value'));
         const right = picked === q.answer;
@@ -320,7 +342,10 @@ export function initMeasurementLength(host, callbacks) {
           });
         }
 
-        setTimeout(() => {
+        clearAnswerTimer();
+        answerTimer = setTimeout(() => {
+          answerTimer = null;
+          if (disposed) return;
           index += 1;
           if (index >= deck.length) finishSession();
           else {
@@ -333,9 +358,13 @@ export function initMeasurementLength(host, callbacks) {
   }
 
   function finishSession() {
+    if (sessionReported || disposed || deck.length === 0) return;
+    sessionReported = true;
+    clearAnswerTimer();
     const accuracy = correct / deck.length;
     const passed = accuracy >= GATE.passAccuracy;
     callbacks.onSessionComplete({ accuracy, passed });
+    lastDone = { accuracy, passed };
     phase = 'done';
     renderDone(accuracy, passed);
   }
@@ -364,8 +393,13 @@ export function initMeasurementLength(host, callbacks) {
       </div>
     `;
     host.querySelector('#length-again')?.addEventListener('click', startSession);
-    host.querySelector('#length-home-done')?.addEventListener('click', callbacks.onHome);
+    host.querySelector('#length-home-done')?.addEventListener('click', goHome);
   }
 
   startSession();
+
+  return () => {
+    disposed = true;
+    clearAnswerTimer();
+  };
 }

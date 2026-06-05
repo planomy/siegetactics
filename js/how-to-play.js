@@ -180,7 +180,7 @@ export function initHowToPlay(host, opts) {
         <header class="howto-header">
           <button type="button" class="btn btn-ghost btn-sm howto-back" id="howto-back">← Back</button>
           <div class="howto-header-main">
-            <h1 class="howto-title">How to play</h1>
+            <h1 class="howto-title" id="howto-modal-title">How to play</h1>
             <p class="howto-counter">${pageIndex + 1} / ${HOW_TO_PAGES.length}</p>
           </div>
         </header>

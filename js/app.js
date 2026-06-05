@@ -15,6 +15,7 @@ import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
 import { renderHome, renderTopbarBadges } from './home.js';
 import { initHowToPlay } from './how-to-play.js';
+import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js';
 import { initMeasurementLength } from './measurement-length.js';
 import { initFractions } from './fractions.js';
@@ -113,19 +114,14 @@ const screens = {
   mathsQuest: document.getElementById('screen-maths-quest'),
   forge: document.getElementById('screen-forge'),
   armory: document.getElementById('screen-armory'),
-  howto: document.getElementById('screen-howto'),
   siege: document.getElementById('screen-siege'),
   results: document.getElementById('screen-results'),
 };
 
-const toastEl = document.getElementById('toast');
 const xpDisplay = document.getElementById('topbar-xp');
 
 /** @type {keyof typeof screens} */
 let armoryReturnScreen = 'home';
-
-/** @type {keyof typeof screens} */
-let howtoReturnScreen = 'home';
 
 function loadSave() {
   try {
@@ -170,13 +166,18 @@ function isUnlocked(id) {
   return save.unlockedTurrets.includes(id);
 }
 
-function showToast(msg, opts = {}) {
-  if (!toastEl) return;
-  toastEl.textContent = msg;
-  toastEl.dataset.variant = opts.variant || 'info';
-  toastEl.classList.add('visible');
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => toastEl.classList.remove('visible'), opts.duration ?? 3200);
+function toggleSound() {
+  save.settings.sound = !save.settings.sound;
+  persistSave();
+  refreshSoundButton();
+  if (!save.settings.sound) audio.stopScuttling();
+  const btn = document.getElementById('btn-sound');
+  btn?.blur();
+  showToast(save.settings.sound ? 'Blasters, booms, and Granny\'s porch rock are on.' : 'Game sounds are off.', {
+    variant: 'info',
+    title: save.settings.sound ? 'Sound on' : 'Sound muted',
+    icon: save.settings.sound ? '🔊' : '🔇',
+  });
 }
 
 function showScreen(id) {
@@ -190,17 +191,8 @@ function refreshSoundButton() {
   const btn = document.getElementById('btn-sound');
   if (btn) {
     btn.classList.toggle('is-muted', !save.settings.sound);
-    btn.title = save.settings.sound ? 'Sound on' : 'Sound off';
     btn.setAttribute('aria-label', save.settings.sound ? 'Mute sound' : 'Unmute sound');
   }
-}
-
-function toggleSound() {
-  save.settings.sound = !save.settings.sound;
-  persistSave();
-  refreshSoundButton();
-  if (!save.settings.sound) audio.stopScuttling();
-  showToast(save.settings.sound ? 'Sound on.' : 'Sound muted.');
 }
 
 function refreshTopbar() {
@@ -253,20 +245,12 @@ function renderHowToScreen() {
 }
 
 function openHowTo() {
-  const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'));
-  const key = active?.[0] ?? 'home';
-  howtoReturnScreen = key === 'welcome' || key === 'howto' ? 'home' : key;
   renderHowToScreen();
-  showScreen('howto');
+  openModal('howto-modal');
 }
 
 function closeHowTo() {
-  if (howtoReturnScreen === 'home') {
-    showHome();
-  } else {
-    showScreen(howtoReturnScreen);
-    if (howtoReturnScreen === 'siege') refreshShopBarFromSave();
-  }
+  closeModal('howto-modal');
 }
 
 function getUnlockedSet() {
@@ -581,12 +565,23 @@ function showTimesTables() {
   showScreen('timesTables');
 }
 
+/** @type {(() => void)|null} */
+let disposeActiveTraining = null;
+
+function disposeTrainingAndGoHome(onHome) {
+  disposeActiveTraining?.();
+  disposeActiveTraining = null;
+  onHome();
+}
+
 function showMeasurementLength() {
   const host = document.getElementById('measurement-host');
   if (!host) return;
+  disposeActiveTraining?.();
+  disposeActiveTraining = null;
   const topic = getTopic('measurement-length');
   const training = createTrainingHandlers('measurement-length');
-  initMeasurementLength(host, {
+  disposeActiveTraining = initMeasurementLength(host, {
     difficultyLevel: training.difficultyLevel,
     unitDone: topic?.unitId ? isUnitDone(save.trainingGate, topic.unitId) : false,
     onAwardXp: training.onAwardXp,
@@ -594,7 +589,7 @@ function showMeasurementLength() {
       training.onSessionComplete(accuracy);
       if (passed) creditGateModule('measurement-length', accuracy);
     },
-    onHome: training.onHome,
+    onHome: () => disposeTrainingAndGoHome(training.onHome),
     showToast: training.showToast,
   });
   showScreen('measurement');
@@ -603,15 +598,17 @@ function showMeasurementLength() {
 function showFractions() {
   const host = document.getElementById('fractions-host');
   if (!host) return;
+  disposeActiveTraining?.();
+  disposeActiveTraining = null;
   const training = createTrainingHandlers('fractions');
-  initFractions(host, {
+  disposeActiveTraining = initFractions(host, {
     difficultyLevel: training.difficultyLevel,
     onAwardXp: training.onAwardXp,
     onSessionComplete({ accuracy }) {
       training.onSessionComplete(accuracy);
       creditGateModule('fractions', accuracy);
     },
-    onHome: training.onHome,
+    onHome: () => disposeTrainingAndGoHome(training.onHome),
     showToast: training.showToast,
   });
   showScreen('fractions');
@@ -620,15 +617,17 @@ function showFractions() {
 function showAnglesShapes() {
   const host = document.getElementById('angles-host');
   if (!host) return;
+  disposeActiveTraining?.();
+  disposeActiveTraining = null;
   const training = createTrainingHandlers('angles');
-  initAnglesShapes(host, {
+  disposeActiveTraining = initAnglesShapes(host, {
     difficultyLevel: training.difficultyLevel,
     onAwardXp: training.onAwardXp,
     onSessionComplete({ accuracy }) {
       training.onSessionComplete(accuracy);
       creditGateModule('angles', accuracy);
     },
-    onHome: training.onHome,
+    onHome: () => disposeTrainingAndGoHome(training.onHome),
     showToast: training.showToast,
   });
   showScreen('angles');
@@ -637,15 +636,17 @@ function showAnglesShapes() {
 function showMathsQuest() {
   const host = document.getElementById('maths-quest-host');
   if (!host) return;
+  disposeActiveTraining?.();
+  disposeActiveTraining = null;
   const training = createTrainingHandlers('maths-quest');
-  initMathsQuest(host, {
+  disposeActiveTraining = initMathsQuest(host, {
     difficultyLevel: training.difficultyLevel,
     onAwardXp: training.onAwardXp,
     onSessionComplete(accuracy) {
       training.onSessionComplete(accuracy);
       creditGateModule('maths-quest', accuracy);
     },
-    onHome: training.onHome,
+    onHome: () => disposeTrainingAndGoHome(training.onHome),
     showToast: training.showToast,
   });
   showScreen('mathsQuest');
@@ -1012,6 +1013,8 @@ function finishRun(stats) {
 }
 
 function bindUI() {
+  initPopups();
+
   document.getElementById('btn-welcome-go')?.addEventListener('click', () => {
     audio.warmUp();
     const input = /** @type {HTMLInputElement|null} */ (document.getElementById('player-name'));
@@ -1073,7 +1076,7 @@ function bindUI() {
     devBtn.type = 'button';
     devBtn.className = 'btn btn-ghost btn-sm dev-play-btn';
     devBtn.textContent = 'Test siege';
-    devBtn.title = 'Skip to siege (dev)';
+    devBtn.setAttribute('aria-label', 'Skip to siege (dev)');
     devBtn.addEventListener('click', () => {
       launchTestSiege();
       showToast('Dev: siege loaded.', { variant: 'success' });

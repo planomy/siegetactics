@@ -21,6 +21,7 @@ export const MATHS_QUEST = {
  *   onHome: () => void,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
  * }} callbacks
+ * @returns {() => void} Dispose — clears pending timers (call before re-init or leaving).
  */
 export function initMathsQuest(host, callbacks) {
   /** @type {QuestPhase} */
@@ -31,13 +32,32 @@ export function initMathsQuest(host, callbacks) {
   let correct = 0;
   let sessionXp = 0;
   let answered = false;
+  let sessionReported = false;
+  /** @type {ReturnType<typeof setTimeout>|null} */
+  let answerTimer = null;
+  let lastDone = { accuracy: 0, bonus: 0 };
+  let disposed = false;
 
   const sets = getQuestSetsForLevel(callbacks.difficultyLevel);
+
+  function clearAnswerTimer() {
+    if (answerTimer != null) {
+      clearTimeout(answerTimer);
+      answerTimer = null;
+    }
+  }
+
+  function goHome() {
+    if (disposed) return;
+    clearAnswerTimer();
+    disposed = true;
+    callbacks.onHome();
+  }
 
   function render() {
     if (phase === 'pick') renderPick();
     else if (phase === 'quiz') renderQuiz();
-    else renderDone();
+    else if (phase === 'done') renderDone(lastDone.accuracy, lastDone.bonus);
   }
 
   function renderPick() {
@@ -65,13 +85,15 @@ export function initMathsQuest(host, callbacks) {
       </div>
     `;
 
-    host.querySelector('#quest-home')?.addEventListener('click', callbacks.onHome);
+    host.querySelector('#quest-home')?.addEventListener('click', goHome);
     host.querySelectorAll('[data-set]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-set');
         if (!id) return;
         activeSet = getQuestSet(id);
         if (!activeSet) return;
+        clearAnswerTimer();
+        sessionReported = false;
         index = 0;
         correct = 0;
         sessionXp = 0;
@@ -120,6 +142,7 @@ export function initMathsQuest(host, callbacks) {
     `;
 
     host.querySelector('#quest-quit')?.addEventListener('click', () => {
+      clearAnswerTimer();
       phase = 'pick';
       activeSet = null;
       render();
@@ -194,7 +217,10 @@ export function initMathsQuest(host, callbacks) {
       callbacks.showToast(`Answer: ${shown}.${hint}`, { variant: 'shop' });
     }
 
-    setTimeout(() => {
+    clearAnswerTimer();
+    answerTimer = setTimeout(() => {
+      answerTimer = null;
+      if (disposed) return;
       index += 1;
       if (!activeSet || index >= activeSet.problems.length) finishSet();
       else {
@@ -205,7 +231,9 @@ export function initMathsQuest(host, callbacks) {
   }
 
   function finishSet() {
-    if (!activeSet) return;
+    if (!activeSet || sessionReported || disposed) return;
+    sessionReported = true;
+    clearAnswerTimer();
     const accuracy = correct / activeSet.problems.length;
     let bonus = 0;
     if (accuracy >= MATHS_QUEST.accuracyBonusThreshold) {
@@ -214,6 +242,7 @@ export function initMathsQuest(host, callbacks) {
       callbacks.onAwardXp(bonus);
     }
     callbacks.onSessionComplete?.(accuracy);
+    lastDone = { accuracy, bonus };
     phase = 'done';
     renderDone(accuracy, bonus);
   }
@@ -240,14 +269,21 @@ export function initMathsQuest(host, callbacks) {
       </div>
     `;
     host.querySelector('#quest-again')?.addEventListener('click', () => {
+      clearAnswerTimer();
+      sessionReported = false;
       phase = 'pick';
       activeSet = null;
       render();
     });
-    host.querySelector('#quest-home-done')?.addEventListener('click', callbacks.onHome);
+    host.querySelector('#quest-home-done')?.addEventListener('click', goHome);
   }
 
   render();
+
+  return () => {
+    disposed = true;
+    clearAnswerTimer();
+  };
 }
 
 /** @param {string|number} a @param {string|number} b */

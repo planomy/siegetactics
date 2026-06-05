@@ -15,11 +15,13 @@ import { difficultyTrainingTag } from './difficulty.js';
  *   makeQuestion: (level: import('./difficulty.js').DifficultyLevel) => { prompt: string, answer: number|string, options: { label: string, value: number|string }[] },
  *   onAwardXp: (amount: number) => void,
  *   onSessionComplete?: (result: { accuracy: number, passed: boolean }) => void,
+ *   onHome: () => void,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
  *   unitDone?: boolean,
  *   gatePassMessage?: string,
  *   optionClass?: string,
  * }} config
+ * @returns {() => void} Dispose — clears pending timers (call before re-init or leaving).
  */
 export function initDrillSession(host, config) {
   /** @type {'quiz'|'done'} */
@@ -30,9 +32,30 @@ export function initDrillSession(host, config) {
   let correct = 0;
   let sessionXp = 0;
   let answered = false;
+  let sessionReported = false;
+  /** @type {ReturnType<typeof setTimeout>|null} */
+  let answerTimer = null;
+  let lastDone = { accuracy: 0, passed: false };
+  let disposed = false;
   const optClass = config.optionClass ?? 'drill-opt';
 
+  function clearAnswerTimer() {
+    if (answerTimer != null) {
+      clearTimeout(answerTimer);
+      answerTimer = null;
+    }
+  }
+
+  function goHome() {
+    if (disposed) return;
+    clearAnswerTimer();
+    disposed = true;
+    config.onHome();
+  }
+
   function startSession() {
+    clearAnswerTimer();
+    sessionReported = false;
     deck = [];
     for (let i = 0; i < config.sessionSize; i++) {
       deck.push(config.makeQuestion(config.difficultyLevel));
@@ -46,7 +69,7 @@ export function initDrillSession(host, config) {
   }
 
   function render() {
-    if (phase === 'done') renderDone();
+    if (phase === 'done') renderDone(lastDone.accuracy, lastDone.passed);
     else renderQuiz();
   }
 
@@ -76,11 +99,11 @@ export function initDrillSession(host, config) {
       </div>
     `;
 
-    host.querySelector('#drill-home')?.addEventListener('click', config.onHome);
+    host.querySelector('#drill-home')?.addEventListener('click', goHome);
 
     host.querySelectorAll(`.${optClass}`).forEach((btn) => {
       btn.addEventListener('click', () => {
-        if (answered) return;
+        if (answered || disposed) return;
         answered = true;
         const picked = btn.getAttribute('data-value') ?? '';
         const right = valuesMatch(picked, q.answer);
@@ -101,7 +124,10 @@ export function initDrillSession(host, config) {
           config.showToast(`Correct: ${label}`, { variant: 'shop' });
         }
 
-        setTimeout(() => {
+        clearAnswerTimer();
+        answerTimer = setTimeout(() => {
+          answerTimer = null;
+          if (disposed) return;
           index += 1;
           if (index >= deck.length) finishSession();
           else {
@@ -114,9 +140,13 @@ export function initDrillSession(host, config) {
   }
 
   function finishSession() {
+    if (sessionReported || disposed || deck.length === 0) return;
+    sessionReported = true;
+    clearAnswerTimer();
     const accuracy = correct / deck.length;
     const passed = accuracy >= GATE.passAccuracy;
     config.onSessionComplete?.({ accuracy, passed });
+    lastDone = { accuracy, passed };
     phase = 'done';
     renderDone(accuracy, passed);
   }
@@ -148,10 +178,15 @@ export function initDrillSession(host, config) {
       </div>
     `;
     host.querySelector('#drill-again')?.addEventListener('click', startSession);
-    host.querySelector('#drill-home-done')?.addEventListener('click', config.onHome);
+    host.querySelector('#drill-home-done')?.addEventListener('click', goHome);
   }
 
   startSession();
+
+  return () => {
+    disposed = true;
+    clearAnswerTimer();
+  };
 }
 
 /** @param {string|number} a @param {string|number} b */

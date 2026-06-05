@@ -221,9 +221,10 @@ function pick(arr) {
  *   onHome: () => void,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
  * }} callbacks
+ * @returns {() => void}
  */
 export function initAnglesShapes(host, callbacks) {
-  initDrillSession(host, {
+  return initDrillSession(host, {
     title: 'Angles & Shapes',
     missionTag: 'Space · Geometry',
     quizTag: 'Angles, sides & symmetry',

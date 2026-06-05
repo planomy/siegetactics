@@ -11,9 +11,9 @@ OUT_DIR = ROOT / "assets/topics"
 MODULE_MAP = {
     "ChatGPT_Image_Jun_3__2026__10_47_01_PM__1_-77431073-a8f3-4558-bb4f-b6319c2ce58f.png": "times-tables",
     "ChatGPT_Image_Jun_3__2026__10_47_02_PM__2_-27573737-792d-4f63-8cc6-01db44ca4500.png": "place-value-siege",
-    "ChatGPT_Image_Jun_3__2026__10_47_05_PM__5_-8f03f83a-0ef8-4fe2-be5b-fe4cda6728c3.png": "measurement-length",
+    "ChatGPT_Image_Jun_3__2026__10_47_05_PM__5_-8f03f83a-0ef8-4fe2-be5b-fe4cda6728c3.png": "angles",
     "ChatGPT_Image_Jun_3__2026__10_47_04_PM__4_-34ff03b4-f2b7-4473-9f25-494f642f2bba.png": "fractions",
-    "ChatGPT_Image_Jun_3__2026__10_47_03_PM__3_-a5828cdd-7ea0-423a-b01a-299ce46ec173.png": "angles",
+    "ChatGPT_Image_Jun_3__2026__10_47_03_PM__3_-a5828cdd-7ea0-423a-b01a-299ce46ec173.png": "measurement-length",
 }
 
 
