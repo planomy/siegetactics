@@ -4,7 +4,7 @@
  * Add new sets to QUEST_SETS. Each set has exactly 10 problems.
  * Filter by `level` (1 = Year 3, 2 = Year 4, 3 = Years 5–6).
  *
- * @typedef {1|2|3} QuestLevel
+ * @typedef {1|2|3|4} QuestLevel
  * @typedef {'choice'|'numeric'} QuestKind
  *
  * @typedef {{
@@ -443,6 +443,7 @@ const QUEST_TITLES = {
   1: ['Fence Sweep', 'Cupcake Convoy', 'Backyard Patrol', 'Bolt Hunt'],
   2: ['Signal Scramble', 'Turret Workshop', 'Alien Intercept', 'Supply Run'],
   3: ['Porch Counterattack', 'Command Bunker', 'Final Defence', 'Night Siege'],
+  4: ['Deep Space Defence', 'Command Override', 'Final Frontier', 'Omega Siege'],
 };
 
 /**

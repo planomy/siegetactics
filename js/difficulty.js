@@ -1,20 +1,22 @@
-/** @typedef {1|2|3} DifficultyLevel */
+/** @typedef {1|2|3|4} DifficultyLevel */
 
 export const DIFFICULTY = {
   min: 1,
-  max: 3,
+  max: 4,
   default: 3,
   /** @type {Record<DifficultyLevel, number>} Forge XP multiplier per training level. */
   xpMultiplier: {
     1: 1,
     2: 1.5,
     3: 2,
+    4: 2.5,
   },
   /** @type {Record<DifficultyLevel, { grade: string, title: string }>} */
   labels: {
     1: { grade: 'Year 3', title: 'Level 1' },
     2: { grade: 'Year 4', title: 'Level 2' },
-    3: { grade: 'Years 5–6', title: 'Level 3' },
+    3: { grade: 'Year 5', title: 'Level 3' },
+    4: { grade: 'Year 6', title: 'Level 4' },
   },
 };
 
@@ -42,7 +44,7 @@ export function difficultyTrainingTag(level) {
 /** @param {unknown} raw @returns {DifficultyLevel} */
 export function normalizeDifficultyLevel(raw) {
   const n = typeof raw === 'number' ? raw : Number(raw);
-  if (n === 1 || n === 2 || n === 3) return n;
+  if (n === 1 || n === 2 || n === 3 || n === 4) return n;
   return DIFFICULTY.default;
 }
 

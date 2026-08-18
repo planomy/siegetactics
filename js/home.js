@@ -434,7 +434,7 @@ export function renderHome(host, state) {
               <div class="gb-level-control">
                 <span class="gb-level-label">Level</span>
                 <div class="gb-level-picker" role="group" aria-label="Difficulty level">
-                  ${[1, 2, 3]
+                  ${[1, 2, 3, 4]
                     .map(
                       (n) => `
                     <button
@@ -442,7 +442,7 @@ export function renderHome(host, state) {
                       class="gb-level-btn${state.difficultyLevel === n ? ' is-active' : ''}${state.recommendedLevel === n && state.difficultyLevel !== n ? ' is-recommended' : ''}"
                       data-level="${n}"
                       aria-pressed="${state.difficultyLevel === n}"
-                      ${state.recommendedLevel === n ? `title="Granny recommends Level ${n} · ${xpMultiplierLabel(/** @type {1|2|3} */ (n))}"` : ''}
+                      ${state.recommendedLevel === n ? `title="Granny recommends Level ${n} · ${xpMultiplierLabel(/** @type {1|2|3|4} */ (n))}"` : ''}
                     >${n}</button>`
                     )
                     .join('')}
@@ -490,9 +490,9 @@ export function renderHome(host, state) {
   host.querySelectorAll('[data-level]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const level = Number(btn.getAttribute('data-level'));
-      if (level !== 1 && level !== 2 && level !== 3) return;
+      if (level !== 1 && level !== 2 && level !== 3 && level !== 4) return;
       if (level === state.difficultyLevel) return;
-      state.onDifficultyChange(/** @type {1|2|3} */ (level));
+      state.onDifficultyChange(/** @type {1|2|3|4} */ (level));
     });
   });
 

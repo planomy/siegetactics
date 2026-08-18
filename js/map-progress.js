@@ -1,6 +1,6 @@
 /** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
 
-/** @typedef {'times-tables'|'place-value-siege'|'measurement-length'|'fractions'|'angles'|'maths-quest'} TrainingModuleId */
+/** @typedef {'times-tables'|'place-value-siege'|'measurement-length'|'fractions'|'angles'|'maths-quest'|'operations'|'decimals-percent'|'time'|'mass-capacity'} TrainingModuleId */
 
 /** Modules that earn map pieces and level shields. */
 export const TRAINING_MODULE_IDS = /** @type {TrainingModuleId[]} */ ([
@@ -10,6 +10,10 @@ export const TRAINING_MODULE_IDS = /** @type {TrainingModuleId[]} */ ([
   'fractions',
   'angles',
   'maths-quest',
+  'operations',
+  'decimals-percent',
+  'time',
+  'mass-capacity',
 ]);
 
 /** Accuracy (0–1) needed to count one pass toward a map piece. */
@@ -22,8 +26,8 @@ export const MAP_PASSES_REQUIRED = 10;
 export const MAP_IMAGE = 'assets/home/interstellar-map.jpg';
 
 /**
- * Sector tiles on the 2×3 nav chart (column 0–1, row 0–2).
- * @type {Array<{ moduleId: TrainingModuleId, code: string, ref: string, label: string, col: 0|1, row: 0|1|2 }>}
+ * Sector tiles on the 2×5 nav chart.
+ * @type {Array<{ moduleId: TrainingModuleId, code: string, ref: string, label: string, col: number, row: number }>}
  */
 export const MAP_SECTORS = [
   { moduleId: 'times-tables', code: 'SEC-Δ7', ref: '8842', label: 'Times Tables', col: 0, row: 0 },
@@ -32,6 +36,10 @@ export const MAP_SECTORS = [
   { moduleId: 'fractions', code: 'SEC-Θ2', ref: '3305', label: 'Fractions', col: 1, row: 1 },
   { moduleId: 'angles', code: 'SEC-Φ6', ref: '4417', label: 'Angles', col: 0, row: 2 },
   { moduleId: 'maths-quest', code: 'SEC-Ω9', ref: '9921', label: 'Maths Quest', col: 1, row: 2 },
+  { moduleId: 'operations', code: 'SEC-K4', ref: '5186', label: 'Operations', col: 0, row: 3 },
+  { moduleId: 'decimals-percent', code: 'SEC-P8', ref: '2743', label: 'Decimals & %', col: 1, row: 3 },
+  { moduleId: 'time', code: 'SEC-T5', ref: '1068', label: 'Time', col: 0, row: 4 },
+  { moduleId: 'mass-capacity', code: 'SEC-V2', ref: '7350', label: 'Supply Depot', col: 1, row: 4 },
 ];
 
 /** @typedef {Partial<Record<TrainingModuleId, number>>} MapProgressSave */

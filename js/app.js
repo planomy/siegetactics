@@ -21,6 +21,7 @@ import { initMeasurementLength } from './measurement-length.js';
 import { initFractions } from './fractions.js';
 import { initAnglesShapes } from './angles-shapes.js';
 import { initMathsQuest } from './maths-quest.js';
+import { initExpandedMath } from './expanded-maths.js';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js';
 import {
   normalizeLevelMastery,
@@ -112,6 +113,7 @@ const screens = {
   fractions: document.getElementById('screen-fractions'),
   angles: document.getElementById('screen-angles'),
   mathsQuest: document.getElementById('screen-maths-quest'),
+  expanded: document.getElementById('screen-expanded'),
   forge: document.getElementById('screen-forge'),
   armory: document.getElementById('screen-armory'),
   siege: document.getElementById('screen-siege'),
@@ -521,6 +523,7 @@ function showHome() {
         if (topicId === 'measurement-length') showMeasurementLength();
         else if (topicId === 'fractions') showFractions();
         else if (topicId === 'angles') showAnglesShapes();
+        else if (['operations', 'decimals-percent', 'time', 'mass-capacity'].includes(topicId)) showExpandedMath(topicId);
         else showToast('That training is still in the forge.');
         return;
       }
@@ -650,6 +653,26 @@ function showMathsQuest() {
     showToast: training.showToast,
   });
   showScreen('mathsQuest');
+}
+
+function showExpandedMath(topicId) {
+  const host = document.getElementById('expanded-host');
+  const topic = getTopic(topicId);
+  if (!host || !topic) return;
+  disposeActiveTraining?.();
+  disposeActiveTraining = null;
+  const training = createTrainingHandlers(topicId);
+  disposeActiveTraining = initExpandedMath(host, {
+    topicId,
+    difficultyLevel: training.difficultyLevel,
+    onAwardXp: training.onAwardXp,
+    onSessionComplete({ accuracy }) {
+      training.onSessionComplete(accuracy);
+    },
+    onHome: () => disposeTrainingAndGoHome(training.onHome),
+    showToast: training.showToast,
+  });
+  showScreen('expanded');
 }
 
 /** @param {string} topicId @param {number} accuracy 0–1 @returns {boolean} */

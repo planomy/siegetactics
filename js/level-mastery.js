@@ -10,6 +10,7 @@ export const FIRST_CLEAR_BONUS = {
   1: 15,
   2: 25,
   3: 40,
+  4: 55,
 };
 
 /** @typedef {Record<string, DifficultyLevel[]>} LevelMasterySave */
@@ -27,7 +28,7 @@ export function normalizeLevelMastery(raw) {
     if (!Array.isArray(levels)) continue;
     const parsed = levels
       .map((l) => Number(l))
-      .filter((l) => l === 1 || l === 2 || l === 3);
+      .filter((l) => l === 1 || l === 2 || l === 3 || l === 4);
     if (parsed.length) out[moduleId] = [...new Set(parsed)].sort((a, b) => a - b);
   }
   return out;
@@ -50,9 +51,10 @@ export function isQualifiedAt(mastery, moduleId, level) {
  */
 export function recommendModuleLevel(mastery, moduleId) {
   const q = getQualifiedLevels(mastery, moduleId);
+  if (q.includes(3) && !q.includes(4)) return 4;
   if (q.includes(2) && !q.includes(3)) return 3;
   if (q.includes(1) && !q.includes(2)) return 2;
-  if (q.includes(3)) return 3;
+  if (q.includes(4)) return 4;
   return 1;
 }
 
@@ -68,7 +70,7 @@ export function recommendGlobalLevel(mastery) {
     count += 1;
   }
   if (!count) return 1;
-  return /** @type {DifficultyLevel} */ (Math.min(3, Math.max(1, Math.round(total / count))));
+  return /** @type {DifficultyLevel} */ (Math.min(4, Math.max(1, Math.round(total / count))));
 }
 
 /**
@@ -125,7 +127,7 @@ export function recordTrainingProgress(mastery, mapProgress, moduleId, level, ac
  */
 function buildShieldNudge(level, accuracy, shieldEarned) {
   if (shieldEarned) {
-    if (level >= 3) return 'Perfect run — Level 3 shield earned!';
+    if (level >= 4) return 'Perfect run — Level 4 shield earned!';
     const nextLevel = /** @type {DifficultyLevel} */ (level + 1);
     return `Perfect! Level ${level} shield earned. Try Level ${nextLevel} for bigger XP.`;
   }
@@ -144,7 +146,7 @@ export const LEVEL_SHIELD_SRC = 'assets/badges/level-shield.png';
 /** @param {LevelMasterySave} mastery @param {string} moduleId */
 export function renderModuleLevelPips(mastery, moduleId) {
   const qualified = new Set(getQualifiedLevels(mastery, moduleId));
-  return [1, 2, 3]
+  return [1, 2, 3, 4]
     .map(
       (n) => `
         <span

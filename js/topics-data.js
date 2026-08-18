@@ -99,6 +99,54 @@ export const MATH_TOPICS = [
     trainingMode: 'quest',
     moduleArt: 'assets/topics/maths-quest.png',
   },
+  {
+    id: 'operations',
+    title: 'Operations HQ',
+    subtitle: 'Add, subtract, multiply & divide',
+    emoji: '➗',
+    strand: 'Number',
+    available: true,
+    earnsXp: true,
+    gateEligible: false,
+    unitId: 'operations-hq',
+    trainingMode: 'drill',
+  },
+  {
+    id: 'decimals-percent',
+    title: 'Decimals & %',
+    subtitle: 'Decimals, percentages & ratio',
+    emoji: '%',
+    strand: 'Number',
+    available: true,
+    earnsXp: true,
+    gateEligible: false,
+    unitId: 'decimals-percent-base',
+    trainingMode: 'drill',
+  },
+  {
+    id: 'time',
+    title: 'Time Command',
+    subtitle: 'Clocks, duration & timetables',
+    emoji: '⏱',
+    strand: 'Measurement',
+    available: true,
+    earnsXp: true,
+    gateEligible: false,
+    unitId: 'time-command',
+    trainingMode: 'drill',
+  },
+  {
+    id: 'mass-capacity',
+    title: 'Supply Depot',
+    subtitle: 'Mass, capacity & volume',
+    emoji: '⚖',
+    strand: 'Measurement',
+    available: true,
+    earnsXp: true,
+    gateEligible: false,
+    unitId: 'mass-capacity-depot',
+    trainingMode: 'drill',
+  },
 ];
 
 /** @param {string} id */
@@ -108,5 +156,5 @@ export function getTopic(id) {
 
 /** @returns {MathTopic[]} All modules except times tables that count toward deployment readiness. */
 export function getGateTopics() {
-  return MATH_TOPICS.filter((t) => t.available && t.id !== 'times-tables' && t.unitId);
+  return MATH_TOPICS.filter((t) => t.available && t.gateEligible && t.id !== 'times-tables' && t.unitId);
 }

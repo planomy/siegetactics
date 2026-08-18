@@ -147,6 +147,11 @@ const PLACE_VALUE_ROLES = {
     { role: 'Hundreds', multiplier: 100 },
     { role: 'Ones', multiplier: 1 },
   ],
+  4: [
+    { role: 'Ten-thousands', multiplier: 10000 },
+    { role: 'Thousands', multiplier: 1000 },
+    { role: 'Tens', multiplier: 10 },
+  ],
 };
 
 /** @param {unknown[]} values */
@@ -161,6 +166,7 @@ function shuffle(values) {
 
 /** @param {number} multiplier */
 function placeHint(multiplier) {
+  if (multiplier === 10000) return 'Ten-thousands are four places left of ones — multiply the digit by 10,000.';
   if (multiplier === 1000) return "Thousands are three places left of ones — multiply the digit by 1000.";
   if (multiplier === 100) return 'Hundreds are two places left of ones — multiply the digit by 100.';
   if (multiplier === 10) return 'Tens are one place left of ones — multiply the digit by 10.';
@@ -177,7 +183,9 @@ export function makePlaceValueVariant(level) {
   const digits = roles.map(() => 1 + Math.floor(Math.random() * 9));
   const slots = roles.map(({ role, multiplier }, index) => {
     const digit = digits[index];
-    const values = shuffle([digit, digit * 10, digit * 100, digit * 1000]);
+    const correct = digit * multiplier;
+    const distractors = shuffle([digit, digit * 10, digit * 100, digit * 1000, digit * 10000].filter((value) => value !== correct));
+    const values = shuffle([correct, ...distractors.slice(0, 3)]);
     return {
       role,
       options: values.map(String),
@@ -185,7 +193,7 @@ export function makePlaceValueVariant(level) {
     };
   });
   const value = roles.reduce((total, role, index) => total + digits[index] * role.multiplier, 0);
-  const base = PLACE_VALUE_BY_DIFFICULTY[level];
+  const base = PLACE_VALUE_BY_DIFFICULTY[level] ?? PLACE_VALUE_BY_DIFFICULTY[3];
   return {
     ...base,
     opener: `Alien squads are carrying the digits ${digits.join(', ')}. Forge each digit's place value, then enter the total headcount.`,
