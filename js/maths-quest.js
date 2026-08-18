@@ -1,6 +1,6 @@
 import { ECONOMY } from './economy.js';
 import { difficultyTrainingTag } from './difficulty.js';
-import { getQuestSet, getQuestSetsForLevel } from './maths-quest-data.js';
+import { createQuestSet, getQuestSetsForLevel } from './maths-quest-data.js';
 
 export const MATHS_QUEST = {
   problemsPerSet: 10,
@@ -38,7 +38,21 @@ export function initMathsQuest(host, callbacks) {
   let lastDone = { accuracy: 0, bonus: 0 };
   let disposed = false;
 
-  const sets = getQuestSetsForLevel(callbacks.difficultyLevel);
+  const classicSets = getQuestSetsForLevel(callbacks.difficultyLevel);
+  let generatedSet = createQuestSet(callbacks.difficultyLevel);
+
+  /** @param {import('./maths-quest-data.js').QuestSet} set */
+  function startSet(set) {
+    activeSet = set;
+    clearAnswerTimer();
+    sessionReported = false;
+    index = 0;
+    correct = 0;
+    sessionXp = 0;
+    phase = 'quiz';
+    answered = false;
+    render();
+  }
 
   function clearAnswerTimer() {
     if (answerTimer != null) {
@@ -61,6 +75,7 @@ export function initMathsQuest(host, callbacks) {
   }
 
   function renderPick() {
+    const sets = [generatedSet, ...classicSets];
     const setCards =
       sets.length > 0
         ? sets
@@ -90,16 +105,9 @@ export function initMathsQuest(host, callbacks) {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-set');
         if (!id) return;
-        activeSet = getQuestSet(id);
-        if (!activeSet) return;
-        clearAnswerTimer();
-        sessionReported = false;
-        index = 0;
-        correct = 0;
-        sessionXp = 0;
-        phase = 'quiz';
-        answered = false;
-        render();
+        const selectedSet = sets.find((set) => set.id === id);
+        if (!selectedSet) return;
+        startSet(selectedSet);
       });
     });
   }
@@ -269,11 +277,8 @@ export function initMathsQuest(host, callbacks) {
       </div>
     `;
     host.querySelector('#quest-again')?.addEventListener('click', () => {
-      clearAnswerTimer();
-      sessionReported = false;
-      phase = 'pick';
-      activeSet = null;
-      render();
+      generatedSet = createQuestSet(callbacks.difficultyLevel);
+      startSet(generatedSet);
     });
     host.querySelector('#quest-home-done')?.addEventListener('click', goHome);
   }

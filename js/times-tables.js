@@ -23,12 +23,12 @@ export const TIMES_TABLES = {
  */
 export function timesConfigForLevel(level) {
   if (level === 1) {
-    return { tables: [2, 3, 4, 5], multMin: 2, multMax: 5, showMixed: false };
+    return { tables: [2, 3, 4, 5], multMin: 1, multMax: 10, showMixed: false };
   }
   if (level === 2) {
-    return { tables: [2, 3, 4, 5, 6, 7, 8, 9], multMin: 2, multMax: 9, showMixed: true };
+    return { tables: [2, 3, 4, 5, 6, 7, 8, 9], multMin: 1, multMax: 10, showMixed: true };
   }
-  return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], multMin: 2, multMax: 12, showMixed: true };
+  return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], multMin: 1, multMax: 12, showMixed: true };
 }
 
 /**
@@ -145,8 +145,13 @@ export function initTimesTables(host, callbacks) {
 
   function startSession() {
     deck = [];
-    for (let i = 0; i < TIMES_TABLES.questionsPerSession; i++) {
+    const used = new Set();
+    let guard = 0;
+    while (deck.length < TIMES_TABLES.questionsPerSession && guard++ < 250) {
       const q = makeTimesQuestion(chosenTable, callbacks.difficultyLevel);
+      const key = `${q.a}x${q.b}`;
+      if (used.has(key)) continue;
+      used.add(key);
       deck.push({ ...q, options: makeOptions(q.answer) });
     }
     index = 0;

@@ -131,6 +131,73 @@ export const PLACE_VALUE_BY_DIFFICULTY = {
   },
 };
 
+const PLACE_VALUE_ROLES = {
+  1: [
+    { role: 'Hundreds', multiplier: 100 },
+    { role: 'Tens', multiplier: 10 },
+    { role: 'Ones', multiplier: 1 },
+  ],
+  2: [
+    { role: 'Thousands', multiplier: 1000 },
+    { role: 'Hundreds', multiplier: 100 },
+    { role: 'Tens', multiplier: 10 },
+  ],
+  3: [
+    { role: 'Thousands', multiplier: 1000 },
+    { role: 'Hundreds', multiplier: 100 },
+    { role: 'Ones', multiplier: 1 },
+  ],
+};
+
+/** @param {unknown[]} values */
+function shuffle(values) {
+  const copy = [...values];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+/** @param {number} multiplier */
+function placeHint(multiplier) {
+  if (multiplier === 1000) return "Thousands are three places left of ones — multiply the digit by 1000.";
+  if (multiplier === 100) return 'Hundreds are two places left of ones — multiply the digit by 100.';
+  if (multiplier === 10) return 'Tens are one place left of ones — multiply the digit by 10.';
+  return 'Ones are the doorstep digits — use the digit itself.';
+}
+
+/**
+ * Builds a fresh Place Value forge every time training starts. Each level has
+ * hundreds of possible totals while retaining the familiar three-row layout.
+ * @param {DifficultyLevel} level
+ */
+export function makePlaceValueVariant(level) {
+  const roles = PLACE_VALUE_ROLES[level];
+  const digits = roles.map(() => 1 + Math.floor(Math.random() * 9));
+  const slots = roles.map(({ role, multiplier }, index) => {
+    const digit = digits[index];
+    const values = shuffle([digit, digit * 10, digit * 100, digit * 1000]);
+    return {
+      role,
+      options: values.map(String),
+      correctIndex: values.indexOf(digit * multiplier),
+    };
+  });
+  const value = roles.reduce((total, role, index) => total + digits[index] * role.multiplier, 0);
+  const base = PLACE_VALUE_BY_DIFFICULTY[level];
+  return {
+    ...base,
+    opener: `Alien squads are carrying the digits ${digits.join(', ')}. Forge each digit's place value, then enter the total headcount.`,
+    slots,
+    lockIn: { type: 'exact', value },
+    grannyHints: {
+      slotWrong: roles.map((role) => placeHint(role.multiplier)),
+      lockInWrong: 'Add the three place values you forged. Check every zero before you lock it in.',
+    },
+  };
+}
+
 /**
  * @param {string} id
  * @param {DifficultyLevel|unknown} [difficultyLevel]
@@ -140,6 +207,6 @@ export function getMissionForDifficulty(id, difficultyLevel) {
   if (!base) return null;
   const level = normalizeDifficultyLevel(difficultyLevel);
   if (id !== SLICE_MISSION_ID) return base;
-  const variant = PLACE_VALUE_BY_DIFFICULTY[level];
+  const variant = makePlaceValueVariant(level);
   return { ...base, ...variant, level };
 }

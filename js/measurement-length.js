@@ -20,7 +20,7 @@ function sessionSize(level) {
  * @param {DifficultyLevel} level
  * @returns {{ prompt: string, answer: number, options: { label: string, value: number }[] }}
  */
-function makeQuestion(level) {
+export function makeLengthQuestion(level) {
   if (level === 1) {
     const kind = pick(['compare-cm-small', 'compare-m-whole', 'longer-or-shorter']);
     if (kind === 'compare-m-whole') {
@@ -274,8 +274,13 @@ export function initMeasurementLength(host, callbacks) {
     sessionReported = false;
     deck = [];
     const count = sessionSize(callbacks.difficultyLevel);
-    for (let i = 0; i < count; i++) {
-      deck.push(makeQuestion(callbacks.difficultyLevel));
+    const usedPrompts = new Set();
+    let guard = 0;
+    while (deck.length < count && guard++ < count * 40) {
+      const question = makeLengthQuestion(callbacks.difficultyLevel);
+      if (usedPrompts.has(question.prompt)) continue;
+      usedPrompts.add(question.prompt);
+      deck.push(question);
     }
     index = 0;
     correct = 0;

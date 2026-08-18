@@ -29,6 +29,8 @@ export function makeAnglesQuestion(level) {
         { name: 'square', sides: 4 },
         { name: 'pentagon', sides: 5 },
         { name: 'hexagon', sides: 6 },
+        { name: 'heptagon', sides: 7 },
+        { name: 'octagon', sides: 8 },
       ];
       const s = pick(shapes);
       return {

@@ -57,8 +57,13 @@ export function initDrillSession(host, config) {
     clearAnswerTimer();
     sessionReported = false;
     deck = [];
-    for (let i = 0; i < config.sessionSize; i++) {
-      deck.push(config.makeQuestion(config.difficultyLevel));
+    const usedPrompts = new Set();
+    let guard = 0;
+    while (deck.length < config.sessionSize && guard++ < config.sessionSize * 40) {
+      const question = config.makeQuestion(config.difficultyLevel);
+      if (usedPrompts.has(question.prompt)) continue;
+      usedPrompts.add(question.prompt);
+      deck.push(question);
     }
     index = 0;
     correct = 0;

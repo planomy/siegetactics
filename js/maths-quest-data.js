@@ -288,6 +288,181 @@ export const QUEST_SETS = [
   },
 ];
 
+/** @param {number} min @param {number} max */
+function rand(min, max) {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+/** @param {unknown[]} values */
+function shuffle(values) {
+  const copy = [...values];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+/** @param {string} prompt @param {number|string} answer @param {string} [hint] */
+function numeric(prompt, answer, hint) {
+  return { prompt, kind: 'numeric', answer, ...(hint ? { hint } : {}) };
+}
+
+/** @param {string} prompt @param {number} answer @param {number[]} wrongs @param {string} [hint] */
+function numericChoice(prompt, answer, wrongs, hint) {
+  const values = [...new Set([answer, ...wrongs])];
+  while (values.length < 4) values.push(answer + values.length + 1);
+  return {
+    prompt,
+    kind: 'choice',
+    options: shuffle(values.slice(0, 4).map((value) => ({ label: String(value), value }))),
+    answer,
+    ...(hint ? { hint } : {}),
+  };
+}
+
+/** @returns {QuestProblem[]} */
+function makeLevel1Pool() {
+  const a = rand(12, 48);
+  const b = rand(6, 35);
+  const large = rand(45, 99);
+  const small = rand(8, Math.min(39, large - 1));
+  const table = rand(2, 5);
+  const factor = rand(2, 10);
+  const divisor = rand(2, 5);
+  const quotient = rand(2, 10);
+  const half = rand(4, 20);
+  const quarter = rand(2, 12);
+  const side = rand(3, 12);
+  const dollars = rand(3, 18);
+  const hour = rand(1, 10);
+  const step = rand(2, 9);
+  const start = rand(1, 20);
+  const hundreds = rand(2, 9);
+  const tens = rand(1, 9);
+  const ones = rand(1, 9);
+  const metres = rand(1, 8);
+  return [
+    numeric(`Granny has ${a} bolts and finds ${b} more. How many bolts altogether?`, a + b),
+    numeric(`There are ${large} aliens. ${small} retreat. How many remain?`, large - small),
+    numericChoice(`${table} squads have ${factor} aliens each. How many aliens?`, table * factor, [table + factor, table * factor + table, table * factor - table]),
+    numeric(`${divisor * quotient} cupcakes are shared equally between ${divisor} defenders. How many each?`, quotient),
+    numeric(`What is half of ${half * 2}?`, half),
+    numericChoice(`What is one quarter of ${quarter * 4}?`, quarter, [quarter * 2, quarter + 4, quarter * 4]),
+    numeric(`A square shield has sides of ${side} cm. What is its perimeter in cm?`, side * 4, 'A square has four equal sides.'),
+    numeric(`A repair kit costs $${dollars}. Granny buys 3. What is the total cost in dollars?`, dollars * 3),
+    numericChoice(`Training starts at ${hour}:00 and lasts 2 hours. What hour does it finish?`, hour + 2, [hour + 1, hour + 3, hour + 4]),
+    numeric(`Continue the pattern: ${start}, ${start + step}, ${start + step * 2}, ${start + step * 3}, __`, start + step * 4, `Add ${step} each time.`),
+    numeric(`What number has ${hundreds} hundreds, ${tens} tens and ${ones} ones?`, hundreds * 100 + tens * 10 + ones),
+    numeric(`${metres} metres equals how many centimetres?`, metres * 100),
+  ];
+}
+
+/** @returns {QuestProblem[]} */
+function makeLevel2Pool() {
+  const a = rand(120, 480);
+  const b = rand(80, 390);
+  const large = rand(500, 999);
+  const small = rand(120, 490);
+  const table = rand(6, 9);
+  const factor = rand(4, 12);
+  const divisor = rand(3, 9);
+  const quotient = rand(5, 14);
+  const fractionDenom = [3, 4, 5][rand(0, 2)];
+  const fractionPart = rand(2, 10);
+  const width = rand(4, 12);
+  const height = rand(3, 9);
+  const startHour = rand(1, 8);
+  const metres = rand(2, 9);
+  const extraCm = rand(1, 9) * 10;
+  const roundBase = rand(12, 98) * 10 + rand(1, 9);
+  const patternStart = rand(2, 12);
+  const patternStep = rand(4, 12);
+  return [
+    numeric(`${a} defenders join ${b} defenders. How many are there altogether?`, a + b),
+    numeric(`${large} aliens were detected. ${small} were stopped. How many remain?`, large - small),
+    numericChoice(`${table} rows hold ${factor} traps each. How many traps?`, table * factor, [table + factor, table * factor + table, table * factor - table]),
+    numeric(`${divisor * quotient} coins are shared equally among ${divisor} teams. How many per team?`, quotient),
+    numeric(`What is 1/${fractionDenom} of ${fractionDenom * fractionPart}?`, fractionPart),
+    numericChoice(`Which numerator makes ?/8 equivalent to 1/2?`, 4, [2, 3, 6]),
+    numeric(`A rectangle is ${width} m by ${height} m. What is its perimeter in metres?`, 2 * (width + height)),
+    numeric(`A supply mat is ${width} m long and ${height} m wide. What is its area in square metres?`, width * height),
+    numericChoice(`Patrol begins at ${startHour}:15 and lasts 2 hours 30 minutes. What hour appears in the finish time?`, startHour + 2, [startHour + 1, startHour + 3, startHour + 4], 'The minutes finish at :45.'),
+    numeric(`${metres} m ${extraCm} cm equals how many centimetres?`, metres * 100 + extraCm),
+    numeric(`Continue the pattern: ${patternStart}, ${patternStart + patternStep}, ${patternStart + patternStep * 2}, __`, patternStart + patternStep * 3),
+    numeric(`Round ${roundBase} to the nearest hundred.`, Math.round(roundBase / 100) * 100),
+  ];
+}
+
+/** @returns {QuestProblem[]} */
+function makeLevel3Pool() {
+  const whole1 = rand(12, 89);
+  const tenths1 = rand(1, 9);
+  const whole2 = rand(5, 49);
+  const tenths2 = rand(1, 9);
+  const percentBase = rand(2, 12) * 20;
+  const fractionDenom = [3, 4, 5, 6][rand(0, 3)];
+  const fractionNumer = rand(1, fractionDenom - 1);
+  const fractionUnit = rand(3, 12);
+  const a = rand(4, 15);
+  const b = rand(3, 12);
+  const c = rand(2, 6);
+  const length = rand(5, 14);
+  const width = rand(3, 10);
+  const height = rand(2, 8);
+  const ratioA = rand(2, 5);
+  const ratioB = rand(2, 5);
+  const ratioUnit = rand(3, 10);
+  const scale = rand(2, 8);
+  const mapCm = rand(3, 12);
+  const mean = rand(5, 20);
+  const offsets = [rand(1, 4), rand(1, 4)];
+  const startMinutes = rand(1, 5) * 10;
+  const elapsed = rand(3, 8) * 10;
+  const decimalDigit = rand(1, 9);
+  const unknown = rand(4, 20);
+  const multiplier = rand(2, 6);
+  const add = rand(3, 15);
+  return [
+    numeric(`${whole1}.${tenths1} + ${whole2}.${tenths2} = ?`, Number((whole1 + tenths1 / 10 + whole2 + tenths2 / 10).toFixed(1))),
+    numeric(`What is 25% of ${percentBase}?`, percentBase / 4),
+    numeric(`What is ${fractionNumer}/${fractionDenom} of ${fractionDenom * fractionUnit}?`, fractionNumer * fractionUnit),
+    numeric(`Calculate ${a} + ${b} × ${c}.`, a + b * c, 'Multiply before adding.'),
+    numeric(`A rectangle is ${length} m by ${width} m. What is its area in square metres?`, length * width),
+    numeric(`A crate is ${length} cm long, ${width} cm wide and ${height} cm high. What is its volume in cubic centimetres?`, length * width * height),
+    numeric(`${(ratioA + ratioB) * ratioUnit} supplies are shared in the ratio ${ratioA}:${ratioB}. How many go to the first group?`, ratioA * ratioUnit),
+    numeric(`A map uses 1 cm : ${scale} m. Two points are ${mapCm} cm apart. What is the real distance in metres?`, scale * mapCm),
+    numeric(`The scores are ${mean - offsets[0]}, ${mean - offsets[1]}, ${mean + offsets[0]} and ${mean + offsets[1]}. What is the mean?`, mean),
+    numeric(`A drill starts at 9:${String(startMinutes).padStart(2, '0')} and lasts ${elapsed} minutes. How many minutes after 9:00 does it finish?`, startMinutes + elapsed),
+    numericChoice(`In 34.${decimalDigit}2, what is the value of the digit ${decimalDigit}?`, decimalDigit / 10, [decimalDigit, decimalDigit / 100, decimalDigit * 10]),
+    numeric(`A number is multiplied by ${multiplier}, then ${add} is added. The result is ${unknown * multiplier + add}. What was the number?`, unknown, `Subtract ${add}, then divide by ${multiplier}.`),
+  ];
+}
+
+const QUEST_TITLES = {
+  1: ['Fence Sweep', 'Cupcake Convoy', 'Backyard Patrol', 'Bolt Hunt'],
+  2: ['Signal Scramble', 'Turret Workshop', 'Alien Intercept', 'Supply Run'],
+  3: ['Porch Counterattack', 'Command Bunker', 'Final Defence', 'Night Siege'],
+};
+
+/**
+ * Creates a fresh ten-question mixed set from twelve generators. A template is
+ * used at most once per set, so students do not see duplicate question types.
+ * @param {QuestLevel} level
+ * @returns {QuestSet}
+ */
+export function createQuestSet(level) {
+  const pool = level === 1 ? makeLevel1Pool() : level === 2 ? makeLevel2Pool() : makeLevel3Pool();
+  const titleChoices = QUEST_TITLES[level];
+  return {
+    id: `quest-generated-${level}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    level,
+    title: titleChoices[rand(0, titleChoices.length - 1)],
+    subtitle: 'Fresh mixed mission · changes every run',
+    problems: shuffle(pool).slice(0, 10),
+  };
+}
+
 /** @param {QuestLevel} level */
 export function getQuestSetsForLevel(level) {
   return QUEST_SETS.filter((set) => set.level === level);
