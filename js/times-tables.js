@@ -23,10 +23,10 @@ export const TIMES_TABLES = {
  */
 export function timesConfigForLevel(level) {
   if (level === 1) {
-    return { tables: [2, 3, 4, 5], multMin: 1, multMax: 10, showMixed: false };
+    return { tables: [2, 3, 5, 10], multMin: 1, multMax: 10, showMixed: false };
   }
   if (level === 2) {
-    return { tables: [2, 3, 4, 5, 6, 7, 8, 9], multMin: 1, multMax: 10, showMixed: true };
+    return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10], multMin: 1, multMax: 10, showMixed: true };
   }
   return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], multMin: 1, multMax: 12, showMixed: true };
 }
@@ -110,7 +110,7 @@ export function initTimesTables(host, callbacks) {
       const counted = done.has(key);
       return `<button type="button" class="times-table-btn${counted ? ' times-table-done' : ''}" data-table="${n}">
         <span class="times-table-num">×${n}</span>
-        ${counted ? '<span class="times-table-check" aria-label="Attack pushed back">✓</span>' : ''}
+        ${counted ? '<span class="times-table-check" aria-label="Practised this cycle">✓</span>' : ''}
       </button>`;
     });
     const mixedDone = done.has('mixed');
@@ -118,7 +118,7 @@ export function initTimesTables(host, callbacks) {
       ? `<button type="button" class="times-table-btn times-table-mixed${mixedDone ? ' times-table-done' : ''}" data-table="0">
           <span class="times-table-num">Mixed</span>
           <span class="times-table-sub">All tables</span>
-          ${mixedDone ? '<span class="times-table-check" aria-label="Counted toward gate">✓</span>' : ''}
+          ${mixedDone ? '<span class="times-table-check" aria-label="Practised this cycle">✓</span>' : ''}
         </button>`
       : '';
     host.innerHTML = `
@@ -126,8 +126,8 @@ export function initTimesTables(host, callbacks) {
         <button type="button" class="btn btn-ghost btn-sm times-back" id="times-home">← Home</button>
         <p class="mission-tag">Number · Fluency · ${difficultyTrainingTag(callbacks.difficultyLevel)}</p>
         <h2 class="panel-title">Times Tables</h2>
-        <p class="granny-line">Drill ${GATE.requiredTables} different tables at ${Math.round(GATE.passAccuracy * 100)}%+ to push the attack back. Every correct answer earns ${ECONOMY.forgeXpLabel}.</p>
-        <p class="times-gate-progress">${done.size} / ${GATE.requiredTables} drills bought time</p>
+        <p class="granny-line">Choose a table and sharpen your rapid recall. Every correct answer earns ${ECONOMY.forgeXpLabel}.</p>
+        <p class="times-gate-progress">${done.size} practice set${done.size === 1 ? '' : 's'} logged this cycle</p>
         <div class="times-table-grid">
           ${tableBtns.join('')}
           ${mixedBtn}
@@ -278,11 +278,11 @@ export function initTimesTables(host, callbacks) {
     const label = chosenTable > 0 ? `×${chosenTable}` : 'Mixed';
     let gateNote = '';
     if (gateAdded) {
-      gateNote = `${label} pushed the attack back!`;
+      gateNote = `${label} practice logged!`;
     } else if (passed && gateReason) {
       gateNote = gateReason;
     } else if (!passed) {
-      gateNote = `Need ${Math.round(GATE.passAccuracy * 100)}%+ to push the attack back.`;
+      gateNote = `Keep practising — aim for ${Math.round(GATE.passAccuracy * 100)}%+.`;
     }
     host.innerHTML = `
       <div class="panel times-panel times-done">
@@ -294,7 +294,7 @@ export function initTimesTables(host, callbacks) {
           <span class="times-done-xp-label">${ECONOMY.forgeXpLabel}</span>
         </div>
         ${bonus > 0 ? `<p class="times-bonus-note">Accuracy bonus +${bonus} XP!</p>` : ''}
-        ${gateAdded ? '<p class="times-gate-added">Attack pushed back!</p>' : ''}
+        ${gateAdded ? '<p class="times-gate-added">Practice logged!</p>' : ''}
         <div class="times-done-actions">
           <button type="button" class="btn btn-primary" id="times-again">Drill again</button>
           <button type="button" class="btn btn-ghost" id="times-home-done">Home</button>

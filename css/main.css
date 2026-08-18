@@ -1867,3 +1867,41 @@ body.dev-mode .topbar::after {
   color: var(--muted);
   margin-top: 6px;
 }
+
+/* Guided Battle Prep */
+.prep-panel {
+  max-width: 620px;
+}
+
+.prep-panel .times-question {
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  line-height: 1.25;
+}
+
+.prep-track {
+  height: 8px;
+  margin: 14px 0 18px;
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.prep-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  transition: width 220ms ease;
+}
+
+.prep-summary-line {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.prep-done {
+  text-align: center;
+}

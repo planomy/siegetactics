@@ -22,6 +22,7 @@ import { initFractions } from './fractions.js';
 import { initAnglesShapes } from './angles-shapes.js';
 import { initMathsQuest } from './maths-quest.js';
 import { initExpandedMath } from './expanded-maths.js';
+import { initBattlePrep } from './battle-prep.js';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js';
 import {
   normalizeLevelMastery,
@@ -43,6 +44,7 @@ import {
   resetTrainingGate,
   isUnitDone,
   isTopicDone,
+  markBattlePrepComplete,
 } from './training-gate.js';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
@@ -82,6 +84,8 @@ let run = {
   cacheProgress: 0,
 };
 
+let battlePrepCoinBonus = 0;
+
 /** Tracks nuke-cache edge so the ready siren only fires once per fill. */
 let nukeCacheWasReady = false;
 
@@ -114,6 +118,7 @@ const screens = {
   angles: document.getElementById('screen-angles'),
   mathsQuest: document.getElementById('screen-maths-quest'),
   expanded: document.getElementById('screen-expanded'),
+  battlePrep: document.getElementById('screen-battle-prep'),
   forge: document.getElementById('screen-forge'),
   armory: document.getElementById('screen-armory'),
   siege: document.getElementById('screen-siege'),
@@ -531,7 +536,7 @@ function showHome() {
     },
     onHoldTheLine() {
       if (!DEV.skipForge && !isGateOpen(save.trainingGate)) {
-        showToast('Train more — the attack is still incoming!');
+        showBattlePrep();
         return;
       }
       beginMission();
@@ -540,6 +545,59 @@ function showHome() {
   });
   renderTopbarBadges(document.getElementById('topbar-badges'), save.bestStars, SLICE_MISSION_ID);
   showScreen('home');
+}
+
+function showBattlePrep() {
+  const host = document.getElementById('battle-prep-host');
+  if (!host) return;
+  disposeActiveTraining?.();
+  disposeActiveTraining = null;
+  const level = getDifficultyLevel();
+  let prepRecorded = false;
+  disposeActiveTraining = initBattlePrep(host, {
+    level,
+    cycle: save.trainingGate.cycle,
+    onAwardXp(baseAmount) {
+      awardScaledTrainingXp(baseAmount, level);
+    },
+    onFinished(moduleResults, overall) {
+      if (prepRecorded) return;
+      prepRecorded = true;
+      let mastery = save.levelMastery;
+      let mapProgress = save.mapProgress;
+      let shieldBonus = 0;
+      let shieldsEarned = 0;
+      let mapPiecesEarned = 0;
+      for (const [moduleId, stats] of Object.entries(moduleResults)) {
+        const result = recordTrainingProgress(mastery, mapProgress, moduleId, level, stats.accuracy);
+        mastery = result.mastery;
+        mapProgress = result.mapProgress;
+        shieldBonus += result.firstClearBonus;
+        if (result.shieldEarned) shieldsEarned += 1;
+        if (result.mapPieceEarned) mapPiecesEarned += 1;
+      }
+      save.levelMastery = mastery;
+      save.mapProgress = mapProgress;
+      save.trainingGate = markBattlePrepComplete(save.trainingGate);
+      if (shieldBonus > 0) save.xp += shieldBonus;
+      battlePrepCoinBonus = Math.round(overall * 25);
+      persistSave();
+      const rewards = [
+        `${battlePrepCoinBonus} bonus siege coins`,
+        shieldsEarned > 0 ? `${shieldsEarned} shield${shieldsEarned === 1 ? '' : 's'}` : '',
+        mapPiecesEarned > 0 ? `${mapPiecesEarned} map piece${mapPiecesEarned === 1 ? '' : 's'}` : '',
+      ].filter(Boolean).join(' · ');
+      showToast(`Battle Prep logged · ${rewards}`, { variant: 'success' });
+    },
+    onReady() {
+      disposeActiveTraining?.();
+      disposeActiveTraining = null;
+      beginMission();
+    },
+    onHome: () => disposeTrainingAndGoHome(showHome),
+    showToast,
+  });
+  showScreen('battlePrep');
 }
 
 function showTimesTables() {
@@ -557,10 +615,10 @@ function showTimesTables() {
       const result = recordTimesTable(save.trainingGate, table, accuracy);
       if (result.added) {
         persistGate(result.gate);
-        showToast('Attack pushed back!', { variant: 'success' });
+        showToast('Times Tables practice logged!', { variant: 'success' });
         return { gateAdded: true };
       }
-      return { gateAdded: false, reason: result.reason };
+      return { gateAdded: false, reason: 'Practice complete — Battle Prep opens the siege.' };
     },
     onHome: training.onHome,
     showToast: training.showToast,
@@ -786,7 +844,7 @@ function beginMission() {
     const mission = getActiveMission();
     onForgeSuccess({
       forgeXp: forgeAlreadyDone ? 0 : (mission?.rewards.forgeXp ?? 40),
-      placementBudget: (mission?.rewards.placementBudget ?? 90) + DEV.extraBudget,
+      placementBudget: (mission?.rewards.placementBudget ?? 90) + DEV.extraBudget + battlePrepCoinBonus,
     });
     return;
   }
@@ -810,6 +868,7 @@ function onForgeSuccess(rewards) {
   run.startCoins = placementBudget;
   run.runForgeXpEarned = forgeXp;
   run.selectedTurret = null;
+  battlePrepCoinBonus = 0;
   if (forgeXp > 0) {
     save.xp += forgeXp;
     persistSave();

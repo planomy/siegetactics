@@ -1,6 +1,6 @@
 import { getGateTopics } from './topics-data.js';
 
-/** @typedef {{ cycle: number, timesTablesDone: string[], topicsDone: string[], unitsDone: Record<string, boolean> }} TrainingGate */
+/** @typedef {{ cycle: number, battlePrepComplete: boolean, timesTablesDone: string[], topicsDone: string[], unitsDone: Record<string, boolean> }} TrainingGate */
 
 export const GATE = {
   requiredTables: 2,
@@ -17,6 +17,7 @@ export function requiredModuleDrills() {
 export function defaultTrainingGate() {
   return {
     cycle: 0,
+    battlePrepComplete: false,
     timesTablesDone: [],
     topicsDone: [],
     unitsDone: {},
@@ -42,8 +43,9 @@ export function normalizeTrainingGate(raw) {
   const base = defaultTrainingGate();
   if (!raw || typeof raw !== 'object') return base;
   const g = /** @type {Record<string, unknown>} */ (raw);
-  return repairTrainingGate({
+  const normalized = repairTrainingGate({
     cycle: typeof g.cycle === 'number' ? g.cycle : 0,
+    battlePrepComplete: Boolean(g.battlePrepComplete),
     timesTablesDone: Array.isArray(g.timesTablesDone)
       ? g.timesTablesDone.filter((k) => typeof k === 'string')
       : [],
@@ -55,32 +57,29 @@ export function normalizeTrainingGate(raw) {
         ? /** @type {Record<string, boolean>} */ ({ ...g.unitsDone })
         : {},
   });
+  const legacyReady =
+    normalized.timesTablesDone.length >= GATE.requiredTables &&
+    getGateTopics().every((topic) => normalized.topicsDone.includes(topic.id));
+  return { ...normalized, battlePrepComplete: normalized.battlePrepComplete || legacyReady };
 }
 
 /** @param {TrainingGate} gate */
 export function isGateOpen(gate) {
   const g = repairTrainingGate(gate);
-  const modules = getGateTopics();
-  const tablesReady = g.timesTablesDone.length >= GATE.requiredTables;
-  const modulesReady = modules.every((topic) => g.topicsDone.includes(topic.id));
-  return tablesReady && modulesReady;
+  return Boolean(g.battlePrepComplete);
 }
 
 /** @param {TrainingGate} gate */
 export function gateProgress(gate) {
   const g = repairTrainingGate(gate);
-  const modules = getGateTopics();
-  const tables = Math.min(g.timesTablesDone.length, GATE.requiredTables);
-  const topics = modules.filter((topic) => g.topicsDone.includes(topic.id)).length;
-  const total = GATE.requiredTables + modules.length;
-  const done = tables + topics;
+  const open = isGateOpen(g);
   return {
-    tables,
-    topics,
-    total,
-    done,
-    pct: total > 0 ? done / total : 0,
-    open: isGateOpen(gate),
+    tables: open ? 1 : 0,
+    topics: open ? 1 : 0,
+    total: 1,
+    done: open ? 1 : 0,
+    pct: open ? 1 : 0,
+    open,
   };
 }
 
@@ -103,9 +102,19 @@ export function attackStatus(gate) {
     countdown: p.open ? 'NOW' : String(remaining),
     subline: p.open
       ? 'Aliens are at the porch — deploy!'
-      : remaining === 1
-        ? '1 drill left before they hit'
-        : `${remaining} drills until the attack`,
+      : 'Complete Battle Prep to launch the siege',
+  };
+}
+
+/** Completes the guided curriculum run and opens the next siege. */
+export function markBattlePrepComplete(gate) {
+  const topics = getGateTopics();
+  return {
+    ...gate,
+    battlePrepComplete: true,
+    timesTablesDone: ['battle-prep'],
+    topicsDone: topics.map((topic) => topic.id),
+    unitsDone: Object.fromEntries(topics.filter((topic) => topic.unitId).map((topic) => [topic.unitId, true])),
   };
 }
 

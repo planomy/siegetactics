@@ -26,7 +26,7 @@ export const MATH_TOPICS = [
   {
     id: 'times-tables',
     title: 'Times Tables',
-    subtitle: '2 drills push the attack back',
+    subtitle: 'Build fast multiplication recall',
     emoji: '×',
     strand: 'Number',
     available: true,
@@ -37,7 +37,7 @@ export const MATH_TOPICS = [
   {
     id: 'place-value-siege',
     title: 'Place Value Patrol',
-    subtitle: 'Forge digits · buy prep time',
+    subtitle: 'Forge digits into place',
     emoji: '🔢',
     strand: 'Number',
     available: true,
@@ -94,7 +94,7 @@ export const MATH_TOPICS = [
     strand: 'Problem solving',
     available: true,
     earnsXp: true,
-    gateEligible: true,
+    gateEligible: false,
     unitId: 'maths-quest-set',
     trainingMode: 'quest',
     moduleArt: 'assets/topics/maths-quest.png',

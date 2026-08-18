@@ -1,6 +1,5 @@
-import { MATH_TOPICS, getGateTopics } from './topics-data.js';
+import { MATH_TOPICS } from './topics-data.js';
 import {
-  GATE,
   attackStatus,
   isTopicDone,
 } from './training-gate.js';
@@ -18,7 +17,7 @@ function renderTrainingCards(gate, attack, levelMastery, mapProgress) {
     const locked = !topic.available;
     const complete =
       topic.id === 'times-tables'
-        ? attack.tables >= GATE.requiredTables
+        ? attack.open
         : Boolean(topic.unitId) && isTopicDone(gate, topic.id);
     const pips = !locked ? renderModuleLevelPips(levelMastery, topic.id) : '';
     const mapPip = !locked ? renderModuleMapProgress(mapProgress, topic.id) : '';
@@ -50,23 +49,12 @@ function renderTrainingCards(gate, attack, levelMastery, mapProgress) {
 
 /** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
 function renderPrepChecklist(gate, attack) {
-  const gateTopics = getGateTopics();
-  const tableItems = Array.from({ length: GATE.requiredTables }, (_, i) => ({
-    code: `TT-${String(i + 1).padStart(2, '0')}`,
-    label: `${i + 1}× table drill${i === 0 ? '' : 's'}`,
-    status: i === 0 ? 'Tables warming up' : 'Tables secured',
-    done: attack.tables >= i + 1,
-  }));
-  const moduleItems = gateTopics.map((topic, i) => ({
-    code: `M-${String(i + 1).padStart(2, '0')}`,
-    label: topic.title,
-    status: 'Module verified',
-    done: isTopicDone(gate, topic.id),
-  }));
-  const items = [...tableItems, ...moduleItems];
-  if (items.length > 0) {
-    items[items.length - 1].status = attack.open ? 'Cleared to engage' : items[items.length - 1].status;
-  }
+  const items = [{
+    code: 'PREP-01',
+    label: 'Guided curriculum run',
+    status: attack.open ? 'Cleared to engage' : 'Required before deployment',
+    done: attack.open,
+  }];
   return items
     .map(
       (item) => `
@@ -334,8 +322,7 @@ function renderInboundRadar(attack, open) {
     `;
   }
 
-  const drillCaption =
-    attack.remaining === 1 ? 'drill to complete' : 'drills to complete';
+  const drillCaption = 'Battle Prep';
 
   return `
     <div class="inbound-radar inbound-radar-${attack.urgency}">
@@ -353,6 +340,7 @@ function renderInboundRadar(attack, open) {
         </div>
       </div>
       <p class="inbound-radar-label">Inbound alien signal · train to push back</p>
+      <button type="button" class="gb-forge-btn gb-attack-hero-cta" id="btn-hold-line">START BATTLE PREP</button>
     </div>
   `;
 }
@@ -368,7 +356,7 @@ function renderAttackHero(attack, gate, playerName) {
   return `
     <section
       class="gb-attack-hero gb-attack-${attack.urgency}${open ? ' gb-attack-hero-ready' : ''}"
-      aria-label="${escapeHtml(open ? 'Attack now — deploy to siege' : `${attack.remaining} drills until attack`)}"
+      aria-label="${escapeHtml(open ? 'Attack now — deploy to siege' : 'Battle Prep required before attack')}"
     >
       <div class="gb-attack-hero-bg" aria-hidden="true">
         <div class="gb-attack-hero-glow"></div>
@@ -430,7 +418,7 @@ export function renderHome(host, state) {
         <div class="gb-home-main">
           <section class="gb-training" aria-label="Training modules">
             <div class="gb-training-head">
-              <h2 class="gb-gallery-title"><span class="gb-gallery-icon" aria-hidden="true">×</span> Select a training module</h2>
+              <h2 class="gb-gallery-title"><span class="gb-gallery-icon" aria-hidden="true">×</span> Optional practice modules</h2>
               <div class="gb-level-control">
                 <span class="gb-level-label">Level</span>
                 <div class="gb-level-picker" role="group" aria-label="Difficulty level">
