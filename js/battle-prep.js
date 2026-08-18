@@ -7,15 +7,15 @@ import { makeExpandedQuestion } from './expanded-maths.js';
 import { difficultyTrainingTag } from './difficulty.js';
 
 export const PREP_MODULES = [
-  { id: 'times-tables', title: 'Target Times Table' },
-  { id: 'place-value-siege', title: 'Place Value' },
-  { id: 'operations', title: 'Operations' },
-  { id: 'fractions', title: 'Fractions' },
-  { id: 'decimals-percent', title: 'Decimals & %' },
-  { id: 'measurement-length', title: 'Length' },
-  { id: 'time', title: 'Time' },
-  { id: 'angles', title: 'Angles & Shapes' },
-  { id: 'mass-capacity', title: 'Supply Depot' },
+  { id: 'times-tables', title: 'Target Times Table', symbol: '×' },
+  { id: 'place-value-siege', title: 'Place Value', symbol: '10' },
+  { id: 'measurement-length', title: 'Length', symbol: 'cm' },
+  { id: 'fractions', title: 'Fractions', symbol: '½' },
+  { id: 'angles', title: 'Angles & Shapes', symbol: '∠' },
+  { id: 'mass-capacity', title: 'Mass Capacity Volume', symbol: 'kg' },
+  { id: 'operations', title: 'Operations', symbol: '+' },
+  { id: 'decimals-percent', title: 'Decimals & %', symbol: '%' },
+  { id: 'time', title: 'Time', symbol: '⏱' },
 ];
 
 /** @param {number} level */
@@ -148,6 +148,7 @@ export function buildBattlePrepDeck(level, cycle = 0) {
 export function initBattlePrep(host, callbacks) {
   let deck = buildBattlePrepDeck(callbacks.level, callbacks.cycle);
   const initialTotal = deck.length;
+  const coreQuestions = questionsPerCoreModule(callbacks.level);
   let index = 0;
   let totalCorrect = 0;
   let answered = false;
@@ -164,6 +165,24 @@ export function initBattlePrep(host, callbacks) {
   function renderQuestion() {
     const item = deck[index];
     const modulePosition = PREP_MODULES.findIndex((module) => module.id === item.moduleId) + 1;
+    const moduleTarget = item.moduleId === 'times-tables' ? 10 : coreQuestions;
+    const moduleQuestion = deck
+      .slice(0, index + 1)
+      .filter((question) => question.moduleId === item.moduleId && !question.rescue).length;
+    const answeredBefore = deck.slice(0, index);
+    const moduleRail = PREP_MODULES.map((module) => {
+      const answeredForModule = answeredBefore.filter(
+        (question) => question.moduleId === module.id && !question.rescue
+      ).length;
+      const target = module.id === 'times-tables' ? 10 : coreQuestions;
+      const current = module.id === item.moduleId;
+      const done = answeredForModule >= target && !current;
+      return `<span
+        class="prep-module-node${current ? ' is-current' : ''}${done ? ' is-done' : ''}"
+        title="${escapeAttr(module.title)}"
+        ${current ? 'aria-current="step"' : ''}
+      >${done ? '✓' : escapeHtml(module.symbol)}</span>`;
+    }).join('');
     const options = item.options.map((option) => `
       <button type="button" class="times-answer-btn prep-answer" data-value="${escapeAttr(String(option.value))}">${escapeHtml(String(option.label))}</button>
     `).join('');
@@ -172,14 +191,15 @@ export function initBattlePrep(host, callbacks) {
         <button type="button" class="btn btn-ghost btn-sm times-back" id="prep-home">← Home</button>
         <p class="mission-tag">Battle Prep · ${difficultyTrainingTag(callbacks.level)}</p>
         <h2 class="panel-title">${escapeHtml(item.moduleTitle)}</h2>
+        <div class="prep-module-rail" aria-label="Battle Prep module progress">${moduleRail}</div>
         <div class="prep-track"><span style="width:${Math.round((index / deck.length) * 100)}%"></span></div>
         <div class="times-quiz-header">
-          <span class="times-quiz-tag">Module ${modulePosition} / ${PREP_MODULES.length}${item.rescue ? ' · Rescue' : ''}</span>
-          <span class="times-quiz-progress">${index + 1} / ${deck.length}</span>
+          <span class="times-quiz-tag">Module ${modulePosition} / ${PREP_MODULES.length}</span>
+          <span class="times-quiz-progress">${item.rescue ? 'Rescue question' : `Question ${moduleQuestion} / ${moduleTarget}`} · Overall ${index + 1} / ${deck.length}</span>
         </div>
         <div class="times-question-wrap"><p class="times-question length-question">${escapeHtml(item.prompt)}</p></div>
         <div class="times-answers">${options}</div>
-        <p class="prep-summary-line">${initialTotal} core questions · wrong answers add one rescue question</p>
+        <p class="prep-summary-line">10 Times Tables · ${coreQuestions} per other module · ${initialTotal} total${item.rescue ? ' · rescue' : ''}</p>
       </div>`;
     host.querySelector('#prep-home')?.addEventListener('click', callbacks.onHome);
     host.querySelectorAll('.prep-answer').forEach((button) => {
