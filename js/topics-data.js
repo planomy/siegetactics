@@ -110,6 +110,7 @@ export const MATH_TOPICS = [
     gateEligible: false,
     unitId: 'operations-hq',
     trainingMode: 'drill',
+    moduleArt: 'assets/topics/operations.png',
   },
   {
     id: 'decimals-percent',
@@ -122,6 +123,7 @@ export const MATH_TOPICS = [
     gateEligible: false,
     unitId: 'decimals-percent-base',
     trainingMode: 'drill',
+    moduleArt: 'assets/topics/decimals-percent.png',
   },
   {
     id: 'time',
@@ -134,6 +136,7 @@ export const MATH_TOPICS = [
     gateEligible: false,
     unitId: 'time-command',
     trainingMode: 'drill',
+    moduleArt: 'assets/topics/time.png',
   },
   {
     id: 'mass-capacity',
@@ -146,6 +149,7 @@ export const MATH_TOPICS = [
     gateEligible: false,
     unitId: 'mass-capacity-depot',
     trainingMode: 'drill',
+    moduleArt: 'assets/topics/mass-capacity.png',
   },
 ];
 
