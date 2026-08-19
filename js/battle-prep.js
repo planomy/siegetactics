@@ -1,11 +1,11 @@
-import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js';
-import { makePlaceValueVariant } from './missions-data.js';
-import { makeLengthQuestion } from './measurement-length.js';
-import { makeFractionQuestion } from './fractions.js';
-import { makeAnglesQuestion } from './angles-shapes.js';
-import { makeExpandedQuestion } from './expanded-maths.js';
+import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20260819b';
+import { makePlaceValueVariant } from './missions-data.js?v=20260819b';
+import { makeLengthQuestion } from './measurement-length.js?v=20260819b';
+import { makeFractionQuestion } from './fractions.js?v=20260819b';
+import { makeAnglesQuestion } from './angles-shapes.js?v=20260819b';
+import { makeExpandedQuestion } from './expanded-maths.js?v=20260819b';
 import { difficultyTrainingTag } from './difficulty.js';
-import { sanitizeQuestionOptions, valuesMatch } from './question-options.js';
+import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
 
 export const PREP_MODULES = [
   { id: 'times-tables', title: 'Target Times Table', symbol: '×' },

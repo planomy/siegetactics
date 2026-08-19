@@ -1,7 +1,7 @@
 import { ECONOMY } from './economy.js';
 import { GATE } from './training-gate.js';
 import { difficultyTrainingTag } from './difficulty.js';
-import { sanitizeQuestionOptions, valuesMatch } from './question-options.js';
+import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
 
 /**
  * Shared multiple-choice drill UI for topic modules.

@@ -1,4 +1,4 @@
-import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js';
+import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20260819b';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js';
 import { renderArmory, nextUnlockableTurret } from './armory.js';
@@ -16,13 +16,13 @@ import { animateResultsStats, animateProgressFill, animateTallyPair } from './ta
 import { renderHome, renderTopbarBadges } from './home.js';
 import { initHowToPlay } from './how-to-play.js';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
-import { initTimesTables } from './times-tables.js';
-import { initMeasurementLength } from './measurement-length.js';
-import { initFractions } from './fractions.js';
-import { initAnglesShapes } from './angles-shapes.js';
-import { initMathsQuest } from './maths-quest.js';
-import { initExpandedMath } from './expanded-maths.js';
-import { initBattlePrep } from './battle-prep.js';
+import { initTimesTables } from './times-tables.js?v=20260819b';
+import { initMeasurementLength } from './measurement-length.js?v=20260819b';
+import { initFractions } from './fractions.js?v=20260819b';
+import { initAnglesShapes } from './angles-shapes.js?v=20260819b';
+import { initMathsQuest } from './maths-quest.js?v=20260819b';
+import { initExpandedMath } from './expanded-maths.js?v=20260819b';
+import { initBattlePrep } from './battle-prep.js?v=20260819b';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js';
 import {
   normalizeLevelMastery,

@@ -1,7 +1,7 @@
 import { ECONOMY } from './economy.js';
 import { GATE } from './training-gate.js';
 import { difficultyTrainingTag } from './difficulty.js';
-import { sanitizeQuestionOptions } from './question-options.js';
+import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
 
 /** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
 

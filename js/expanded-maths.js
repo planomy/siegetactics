@@ -1,4 +1,4 @@
-import { initDrillSession } from './drill-session.js';
+import { initDrillSession } from './drill-session.js?v=20260819b';
 
 const MODULES = {
   operations: { title: 'Operations HQ', tag: 'Number · Operations', quiz: 'Calculate & reason' },

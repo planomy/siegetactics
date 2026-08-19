@@ -1,7 +1,7 @@
 import { ECONOMY } from './economy.js';
 import { difficultyTrainingTag } from './difficulty.js';
-import { createQuestSet, getQuestSetsForLevel } from './maths-quest-data.js';
-import { sanitizeQuestionOptions } from './question-options.js';
+import { createQuestSet, getQuestSetsForLevel } from './maths-quest-data.js?v=20260819b';
+import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
 
 export const MATHS_QUEST = {
   problemsPerSet: 10,
