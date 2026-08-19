@@ -5,6 +5,7 @@ import { makeFractionQuestion } from './fractions.js';
 import { makeAnglesQuestion } from './angles-shapes.js';
 import { makeExpandedQuestion } from './expanded-maths.js';
 import { difficultyTrainingTag } from './difficulty.js';
+import { sanitizeQuestionOptions, valuesMatch } from './question-options.js';
 
 export const PREP_MODULES = [
   { id: 'times-tables', title: 'Target Times Table', symbol: '×' },
@@ -112,7 +113,7 @@ export function makePrepQuestion(moduleId, level, cycle = 0) {
     else options.push(correct);
     question = { ...question, options: shuffle(options) };
   }
-  return question;
+  return sanitizeQuestionOptions(question);
 }
 
 /** @param {number} level @param {number} cycle */
@@ -272,13 +273,6 @@ export function initBattlePrep(host, callbacks) {
     disposed = true;
     clearTimer();
   };
-}
-
-function valuesMatch(a, b) {
-  const na = Number(a);
-  const nb = Number(b);
-  if (!Number.isNaN(na) && !Number.isNaN(nb)) return Math.abs(na - nb) < 0.001;
-  return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 }
 
 function escapeHtml(value) {

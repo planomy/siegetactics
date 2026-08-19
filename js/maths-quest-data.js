@@ -2,7 +2,7 @@
  * Maths Quest — problem-solving set bank.
  *
  * Add new sets to QUEST_SETS. Each set has exactly 10 problems.
- * Filter by `level` (1 = Year 3, 2 = Year 4, 3 = Years 5–6).
+ * Filter by `level` (1 = Year 3, 2 = Year 4, 3 = Year 5, 4 = Year 6).
  *
  * @typedef {1|2|3|4} QuestLevel
  * @typedef {'choice'|'numeric'} QuestKind
@@ -311,7 +311,11 @@ function numeric(prompt, answer, hint) {
 /** @param {string} prompt @param {number} answer @param {number[]} wrongs @param {string} [hint] */
 function numericChoice(prompt, answer, wrongs, hint) {
   const values = [...new Set([answer, ...wrongs])];
-  while (values.length < 4) values.push(answer + values.length + 1);
+  let offset = 1;
+  while (values.length < 4) {
+    const fallback = answer + offset++;
+    if (!values.includes(fallback)) values.push(fallback);
+  }
   return {
     prompt,
     kind: 'choice',
@@ -410,19 +414,19 @@ function makeLevel3Pool() {
   const length = rand(5, 14);
   const width = rand(3, 10);
   const height = rand(2, 8);
-  const ratioA = rand(2, 5);
-  const ratioB = rand(2, 5);
-  const ratioUnit = rand(3, 10);
   const scale = rand(2, 8);
   const mapCm = rand(3, 12);
   const mean = rand(5, 20);
   const offsets = [rand(1, 4), rand(1, 4)];
   const startMinutes = rand(1, 5) * 10;
   const elapsed = rand(3, 8) * 10;
+  const finishTotal = 9 * 60 + startMinutes + elapsed;
+  const finishTime = `${Math.floor(finishTotal / 60)}:${String(finishTotal % 60).padStart(2, '0')}`;
   const decimalDigit = rand(1, 9);
   const unknown = rand(4, 20);
   const multiplier = rand(2, 6);
   const add = rand(3, 15);
+  const itemPrice = rand(8, 20);
   return [
     numeric(`${whole1}.${tenths1} + ${whole2}.${tenths2} = ?`, Number((whole1 + tenths1 / 10 + whole2 + tenths2 / 10).toFixed(1))),
     numeric(`What is 25% of ${percentBase}?`, percentBase / 4),
@@ -430,12 +434,55 @@ function makeLevel3Pool() {
     numeric(`Calculate ${a} + ${b} × ${c}.`, a + b * c, 'Multiply before adding.'),
     numeric(`A rectangle is ${length} m by ${width} m. What is its area in square metres?`, length * width),
     numeric(`A crate is ${length} cm long, ${width} cm wide and ${height} cm high. What is its volume in cubic centimetres?`, length * width * height),
-    numeric(`${(ratioA + ratioB) * ratioUnit} supplies are shared in the ratio ${ratioA}:${ratioB}. How many go to the first group?`, ratioA * ratioUnit),
+    numeric(`Three repair kits cost $${itemPrice} each. How much change is left from $100?`, 100 - itemPrice * 3),
     numeric(`A map uses 1 cm : ${scale} m. Two points are ${mapCm} cm apart. What is the real distance in metres?`, scale * mapCm),
     numeric(`The scores are ${mean - offsets[0]}, ${mean - offsets[1]}, ${mean + offsets[0]} and ${mean + offsets[1]}. What is the mean?`, mean),
-    numeric(`A drill starts at 9:${String(startMinutes).padStart(2, '0')} and lasts ${elapsed} minutes. How many minutes after 9:00 does it finish?`, startMinutes + elapsed),
+    numeric(`A drill starts at 9:${String(startMinutes).padStart(2, '0')} and finishes at ${finishTime}. How many minutes does it last?`, elapsed),
     numericChoice(`In 34.${decimalDigit}2, what is the value of the digit ${decimalDigit}?`, decimalDigit / 10, [decimalDigit, decimalDigit / 100, decimalDigit * 10]),
     numeric(`A number is multiplied by ${multiplier}, then ${add} is added. The result is ${unknown * multiplier + add}. What was the number?`, unknown, `Subtract ${add}, then divide by ${multiplier}.`),
+  ];
+}
+
+/** @returns {QuestProblem[]} */
+function makeLevel4Pool() {
+  const startTemp = -rand(1, 8);
+  const rise = rand(6, 15);
+  const decimalA = rand(12, 45) / 10;
+  const decimalB = rand(2, 8);
+  const percentBase = rand(4, 18) * 25;
+  const a = rand(4, 9);
+  const b = rand(6, 15);
+  const c = rand(2, 7);
+  const d = rand(10, 30);
+  const length = rand(8, 18);
+  const width = rand(5, 12);
+  const ratioA = rand(2, 5);
+  const ratioB = rand(2, 5);
+  const ratioUnit = rand(4, 12);
+  const mean = rand(12, 30);
+  const spread = rand(3, 8);
+  const startHour = rand(13, 18);
+  const startMinute = [0, 10, 20, 30, 40][rand(0, 4)];
+  const elapsed = [75, 85, 95, 105, 125][rand(0, 4)];
+  const finishTotal = startHour * 60 + startMinute + elapsed;
+  const finishTime = `${String(Math.floor(finishTotal / 60)).padStart(2, '0')}:${String(finishTotal % 60).padStart(2, '0')}`;
+  const unknown = rand(8, 30);
+  const multiplier = rand(3, 8);
+  const add = rand(5, 20);
+  const decimalDigit = rand(1, 9);
+  return [
+    numeric(`The temperature is ${startTemp}°C and rises by ${rise}°. What is the new temperature?`, startTemp + rise),
+    numeric(`${decimalA} × ${decimalB} = ?`, Number((decimalA * decimalB).toFixed(1))),
+    numeric(`What is 20% of ${percentBase}?`, percentBase / 5),
+    numericChoice('1/2 + 1/4 is how many quarters?', 3, [2, 4, 6]),
+    numeric(`Calculate ${a} × (${b} + ${c}) − ${d}.`, a * (b + c) - d, 'Work inside the brackets first.'),
+    numericChoice('Which number is prime?', 29, [27, 33, 39]),
+    numeric(`A rectangular defence zone is ${length} m by ${width} m. What is its area in square metres?`, length * width),
+    numeric(`${(ratioA + ratioB) * ratioUnit} supplies are shared in the ratio ${ratioA}:${ratioB}. How many go to the first group?`, ratioA * ratioUnit),
+    numeric(`The scores are ${mean - spread}, ${mean}, ${mean + spread} and ${mean + spread * 2}. What is the range?`, spread * 3),
+    numeric(`A mission starts at ${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')} and finishes at ${finishTime}. How many minutes does it last?`, elapsed),
+    numeric(`A number is multiplied by ${multiplier}, then ${add} is added. The result is ${unknown * multiplier + add}. What was the number?`, unknown, `Subtract ${add}, then divide by ${multiplier}.`),
+    numericChoice(`In 52.4${decimalDigit}, what is the value of the digit ${decimalDigit}?`, decimalDigit / 100, [decimalDigit, decimalDigit / 10, decimalDigit * 10]),
   ];
 }
 
@@ -453,7 +500,13 @@ const QUEST_TITLES = {
  * @returns {QuestSet}
  */
 export function createQuestSet(level) {
-  const pool = level === 1 ? makeLevel1Pool() : level === 2 ? makeLevel2Pool() : makeLevel3Pool();
+  const pool = level === 1
+    ? makeLevel1Pool()
+    : level === 2
+      ? makeLevel2Pool()
+      : level === 3
+        ? makeLevel3Pool()
+        : makeLevel4Pool();
   const titleChoices = QUEST_TITLES[level];
   return {
     id: `quest-generated-${level}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,

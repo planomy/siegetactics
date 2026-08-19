@@ -1,6 +1,7 @@
 import { ECONOMY } from './economy.js';
 import { GATE } from './training-gate.js';
 import { difficultyTrainingTag } from './difficulty.js';
+import { sanitizeQuestionOptions, valuesMatch } from './question-options.js';
 
 /**
  * Shared multiple-choice drill UI for topic modules.
@@ -60,7 +61,7 @@ export function initDrillSession(host, config) {
     const usedPrompts = new Set();
     let guard = 0;
     while (deck.length < config.sessionSize && guard++ < config.sessionSize * 40) {
-      const question = config.makeQuestion(config.difficultyLevel);
+      const question = sanitizeQuestionOptions(config.makeQuestion(config.difficultyLevel));
       if (usedPrompts.has(question.prompt)) continue;
       usedPrompts.add(question.prompt);
       deck.push(question);
@@ -192,14 +193,6 @@ export function initDrillSession(host, config) {
     disposed = true;
     clearAnswerTimer();
   };
-}
-
-/** @param {string|number} a @param {string|number} b */
-function valuesMatch(a, b) {
-  const na = Number(a);
-  const nb = Number(b);
-  if (!Number.isNaN(na) && !Number.isNaN(nb)) return Math.abs(na - nb) < 0.001;
-  return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 }
 
 /** @param {string} s */

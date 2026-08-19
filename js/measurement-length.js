@@ -1,6 +1,7 @@
 import { ECONOMY } from './economy.js';
 import { GATE } from './training-gate.js';
 import { difficultyTrainingTag } from './difficulty.js';
+import { sanitizeQuestionOptions } from './question-options.js';
 
 /** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
 
@@ -22,7 +23,7 @@ function sessionSize(level) {
  */
 export function makeLengthQuestion(level) {
   if (level === 1) {
-    const kind = pick(['compare-cm-small', 'compare-m-whole', 'longer-or-shorter']);
+    const kind = pick(['compare-cm-small', 'compare-m-whole', 'longer-or-shorter', 'join-lengths', 'metre-to-cm']);
     if (kind === 'compare-m-whole') {
       const a = pick([1, 2, 3]);
       const b = a + pick([1, 2]);
@@ -50,6 +51,31 @@ export function makeLengthQuestion(level) {
         options: shuffle([
           { label: `${items[0].name} (${items[0].cm} cm)`, value: items[0].cm },
           { label: `${items[1].name} (${items[1].cm} cm)`, value: items[1].cm },
+        ]),
+      };
+    }
+    if (kind === 'join-lengths') {
+      const first = pick([10, 15, 20, 25, 30]);
+      const second = pick([5, 10, 15, 20]);
+      const answer = first + second;
+      return {
+        prompt: `Two ribbons are ${first} cm and ${second} cm long. How long are they altogether?`,
+        answer,
+        options: shuffle([
+          { label: `${answer} cm`, value: answer },
+          { label: `${Math.abs(first - second)} cm`, value: Math.abs(first - second) },
+          { label: `${answer + 10} cm`, value: answer + 10 },
+        ]),
+      };
+    }
+    if (kind === 'metre-to-cm') {
+      return {
+        prompt: '1 metre equals how many centimetres?',
+        answer: 100,
+        options: shuffle([
+          { label: '100 cm', value: 100 },
+          { label: '10 cm', value: 10 },
+          { label: '1000 cm', value: 1000 },
         ]),
       };
     }
@@ -135,80 +161,149 @@ export function makeLengthQuestion(level) {
     };
   }
 
-  const kind = pick(['compare-cm', 'compare-m', 'convert-simple', 'convert-hard', 'perimeter-rect']);
-  if (kind === 'compare-cm') {
-    const a = pick([12, 15, 23, 34, 45, 56, 67, 78, 89]);
-    const b = a + pick([5, 8, 11, 14]);
-    const longer = Math.max(a, b);
-    const shorter = Math.min(a, b);
-    const askLonger = Math.random() > 0.5;
-    const answer = askLonger ? longer : shorter;
-    const prompt = askLonger
-      ? `Which is longer: ${shorter} cm or ${longer} cm?`
-      : `Which is shorter: ${shorter} cm or ${longer} cm?`;
+  if (level === 3) {
+    const kind = pick(['convert-mixed', 'convert-hard', 'perimeter-rect', 'add-lengths', 'mm-to-cm']);
+    if (kind === 'convert-mixed') {
+      const metres = pick([1, 2, 3, 4, 5]);
+      const extraCm = pick([15, 25, 40, 50, 75]);
+      const answer = metres * 100 + extraCm;
+      return {
+        prompt: `${metres} m ${extraCm} cm = ? cm`,
+        answer,
+        options: shuffle([
+          { label: `${answer} cm`, value: answer },
+          { label: `${metres * 100} cm`, value: metres * 100 },
+          { label: `${metres * 10 + extraCm} cm`, value: metres * 10 + extraCm },
+          { label: `${answer + 100} cm`, value: answer + 100 },
+        ]),
+      };
+    }
+    if (kind === 'convert-hard') {
+      const cm = pick([150, 225, 250, 350, 475, 550]);
+      const metres = cm / 100;
+      return {
+        prompt: `${cm} cm = ? m`,
+        answer: metres,
+        options: shuffle([
+          { label: `${metres} m`, value: metres },
+          { label: `${metres + 1} m`, value: metres + 1 },
+          { label: `${cm / 10} m`, value: cm / 10 },
+          { label: `${cm / 1000} m`, value: cm / 1000 },
+        ]),
+      };
+    }
+    if (kind === 'perimeter-rect') {
+      const w = pick([5, 6, 7, 8, 9, 12]);
+      const h = pick([3, 4, 5, 6, 7]);
+      const p = 2 * (w + h);
+      return {
+        prompt: `A rectangle is ${w} cm long and ${h} cm wide. What is its perimeter?`,
+        answer: p,
+        options: shuffle([
+          { label: `${p} cm`, value: p },
+          { label: `${w * h} cm`, value: w * h },
+          { label: `${w + h} cm`, value: w + h },
+          { label: `${p + 4} cm`, value: p + 4 },
+        ]),
+      };
+    }
+    if (kind === 'add-lengths') {
+      const a = pick([125, 150, 175, 225, 250]);
+      const b = pick([50, 75, 100, 125]);
+      return {
+        prompt: `Two cables are ${a} cm and ${b} cm long. What is their total length in centimetres?`,
+        answer: a + b,
+        options: shuffle([
+          { label: `${a + b} cm`, value: a + b },
+          { label: `${Math.abs(a - b)} cm`, value: Math.abs(a - b) },
+          { label: `${a + b + 100} cm`, value: a + b + 100 },
+          { label: `${a + b - 25} cm`, value: a + b - 25 },
+        ]),
+      };
+    }
+    const mm = pick([125, 240, 350, 475, 620]);
+    const cm = mm / 10;
     return {
-      prompt,
-      answer,
+      prompt: `${mm} mm = ? cm`,
+      answer: cm,
       options: shuffle([
-        { label: `${shorter} cm`, value: shorter },
-        { label: `${longer} cm`, value: longer },
+        { label: `${cm} cm`, value: cm },
+        { label: `${mm} cm`, value: mm },
+        { label: `${mm / 100} cm`, value: mm / 100 },
+        { label: `${cm + 10} cm`, value: cm + 10 },
       ]),
     };
   }
-  if (kind === 'compare-m') {
-    const a = pick([2, 3, 4, 5, 6]);
-    const b = a + pick([1, 2, 3]);
-    const longer = Math.max(a, b);
-    const shorter = Math.min(a, b);
+
+  const kind = pick(['kilometres', 'decimal-metres', 'area-rect', 'fence-gap', 'mixed-compare']);
+  if (kind === 'kilometres') {
+    const km = pick([2, 3, 4, 6, 8, 12]);
     return {
-      prompt: `Which is longer: ${shorter} m or ${longer} m?`,
-      answer: longer,
+      prompt: `${km} km = ? m`,
+      answer: km * 1000,
       options: shuffle([
-        { label: `${shorter} m`, value: shorter },
-        { label: `${longer} m`, value: longer },
+        { label: `${km * 1000} m`, value: km * 1000 },
+        { label: `${km * 100} m`, value: km * 100 },
+        { label: `${km * 10} m`, value: km * 10 },
+        { label: `${km + 1000} m`, value: km + 1000 },
       ]),
     };
   }
-  if (kind === 'convert-hard') {
-    const cm = pick([150, 250, 350, 450, 550]);
-    const metres = cm / 100;
-    const wrong1 = metres + 1;
-    const wrong2 = Math.max(1, metres - 1);
+  if (kind === 'decimal-metres') {
+    const metres = pick([1.25, 1.5, 2.4, 2.75, 3.6]);
+    const cm = metres * 100;
     return {
-      prompt: `${cm} cm = ? m`,
-      answer: metres,
+      prompt: `${metres} m = ? cm`,
+      answer: cm,
       options: shuffle([
-        { label: `${metres} m`, value: metres },
-        { label: `${wrong1} m`, value: wrong1 },
-        { label: `${wrong2} m`, value: wrong2 },
+        { label: `${cm} cm`, value: cm },
+        { label: `${metres * 10} cm`, value: metres * 10 },
+        { label: `${metres * 1000} cm`, value: metres * 1000 },
+        { label: `${cm + 100} cm`, value: cm + 100 },
       ]),
     };
   }
-  if (kind === 'perimeter-rect') {
-    const w = pick([3, 4, 5, 6, 7]);
-    const h = pick([2, 3, 4, 5]);
-    const p = 2 * (w + h);
+  if (kind === 'area-rect') {
+    const w = pick([8, 9, 12, 15, 18]);
+    const h = pick([5, 6, 7, 8, 10]);
+    const area = w * h;
     return {
-      prompt: `A rectangle is ${w} cm long and ${h} cm wide. What is its perimeter?`,
-      answer: p,
+      prompt: `A rectangular mat is ${w} m by ${h} m. What is its area in square metres?`,
+      answer: area,
       options: shuffle([
-        { label: `${p} cm`, value: p },
-        { label: `${p + 4} cm`, value: p + 4 },
-        { label: `${Math.max(4, p - 4)} cm`, value: Math.max(4, p - 4) },
+        { label: `${area} m²`, value: area },
+        { label: `${2 * (w + h)} m²`, value: 2 * (w + h) },
+        { label: `${w + h} m²`, value: w + h },
+        { label: `${area + w} m²`, value: area + w },
       ]),
     };
   }
-  const metres = pick([1, 2, 3, 4, 5]);
-  const cm = metres * 100;
-  const wrong1 = cm + pick([10, 20, 50]);
-  const wrong2 = Math.max(10, cm - pick([10, 25, 40]));
+  if (kind === 'fence-gap') {
+    const w = pick([12, 15, 18, 20]);
+    const h = pick([8, 10, 12]);
+    const gate = pick([2, 3, 4]);
+    const fence = 2 * (w + h) - gate;
+    return {
+      prompt: `A ${w} m by ${h} m yard needs fencing, except for a ${gate} m gate. How many metres of fence are needed?`,
+      answer: fence,
+      options: shuffle([
+        { label: `${fence} m`, value: fence },
+        { label: `${2 * (w + h)} m`, value: 2 * (w + h) },
+        { label: `${w * h - gate} m`, value: w * h - gate },
+        { label: `${w + h - gate} m`, value: w + h - gate },
+      ]),
+    };
+  }
+  const firstCm = pick([125, 175, 225, 275, 350]);
+  const secondM = pick([1.5, 2, 2.5, 3, 4]);
+  const secondCm = secondM * 100;
+  const answer = Math.max(firstCm, secondCm);
   return {
-    prompt: `${metres} m = ? cm`,
-    answer: cm,
+    prompt: `Which is longer: ${firstCm} cm or ${secondM} m?`,
+    answer,
     options: shuffle([
-      { label: `${cm} cm`, value: cm },
-      { label: `${wrong1} cm`, value: wrong1 },
-      { label: `${wrong2} cm`, value: wrong2 },
+      { label: `${firstCm} cm`, value: firstCm },
+      { label: `${secondM} m`, value: secondCm },
     ]),
   };
 }
@@ -277,7 +372,7 @@ export function initMeasurementLength(host, callbacks) {
     const usedPrompts = new Set();
     let guard = 0;
     while (deck.length < count && guard++ < count * 40) {
-      const question = makeLengthQuestion(callbacks.difficultyLevel);
+      const question = sanitizeQuestionOptions(makeLengthQuestion(callbacks.difficultyLevel));
       if (usedPrompts.has(question.prompt)) continue;
       usedPrompts.add(question.prompt);
       deck.push(question);

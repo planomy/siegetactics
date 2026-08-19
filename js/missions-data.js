@@ -133,24 +133,24 @@ export const PLACE_VALUE_BY_DIFFICULTY = {
 
 const PLACE_VALUE_ROLES = {
   1: [
+    { role: 'Thousands', multiplier: 1000 },
     { role: 'Hundreds', multiplier: 100 },
     { role: 'Tens', multiplier: 10 },
-    { role: 'Ones', multiplier: 1 },
   ],
   2: [
-    { role: 'Thousands', multiplier: 1000 },
-    { role: 'Hundreds', multiplier: 100 },
-    { role: 'Tens', multiplier: 10 },
-  ],
-  3: [
-    { role: 'Thousands', multiplier: 1000 },
-    { role: 'Hundreds', multiplier: 100 },
-    { role: 'Ones', multiplier: 1 },
-  ],
-  4: [
     { role: 'Ten-thousands', multiplier: 10000 },
     { role: 'Thousands', multiplier: 1000 },
-    { role: 'Tens', multiplier: 10 },
+    { role: 'Hundreds', multiplier: 100 },
+  ],
+  3: [
+    { role: 'Hundred-thousands', multiplier: 100000 },
+    { role: 'Ten-thousands', multiplier: 10000 },
+    { role: 'Hundreds', multiplier: 100 },
+  ],
+  4: [
+    { role: 'Millions', multiplier: 1000000 },
+    { role: 'Hundred-thousands', multiplier: 100000 },
+    { role: 'Thousands', multiplier: 1000 },
   ],
 };
 
@@ -166,6 +166,8 @@ function shuffle(values) {
 
 /** @param {number} multiplier */
 function placeHint(multiplier) {
+  if (multiplier === 1000000) return 'Millions are six places left of ones — multiply the digit by 1,000,000.';
+  if (multiplier === 100000) return 'Hundred-thousands are five places left of ones — multiply the digit by 100,000.';
   if (multiplier === 10000) return 'Ten-thousands are four places left of ones — multiply the digit by 10,000.';
   if (multiplier === 1000) return "Thousands are three places left of ones — multiply the digit by 1000.";
   if (multiplier === 100) return 'Hundreds are two places left of ones — multiply the digit by 100.';
@@ -184,7 +186,11 @@ export function makePlaceValueVariant(level) {
   const slots = roles.map(({ role, multiplier }, index) => {
     const digit = digits[index];
     const correct = digit * multiplier;
-    const distractors = shuffle([digit, digit * 10, digit * 100, digit * 1000, digit * 10000].filter((value) => value !== correct));
+    const distractors = shuffle(
+      [1, 10, 100, 1000, 10000, 100000, 1000000]
+        .map((place) => digit * place)
+        .filter((value) => value !== correct)
+    );
     const values = shuffle([correct, ...distractors.slice(0, 3)]);
     return {
       role,

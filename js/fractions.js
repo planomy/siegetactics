@@ -85,15 +85,23 @@ export function makeFractionQuestion(level) {
     }
     const total = pick([2, 3, 4, 6, 8]);
     const shaded = pick([1, total - 1]);
+    const optionValues = [
+      frac(shaded, total),
+      frac(total, shaded),
+      frac(Math.max(1, total - shaded), total),
+      frac(shaded, total + 1),
+    ];
+    const seen = new Set();
     return {
       prompt: `A bar is split into ${total} equal parts. ${shaded} part${shaded > 1 ? 's are' : ' is'} shaded. What fraction is shaded?`,
       answer: frac(shaded, total),
-      options: shuffle([
-        { label: frac(shaded, total), value: frac(shaded, total) },
-        { label: frac(total, shaded), value: frac(total, shaded) },
-        { label: frac(1, total), value: frac(1, total) },
-        { label: frac(shaded + 1, total), value: frac(shaded + 1, total) },
-      ]).slice(0, 3),
+      options: shuffle(optionValues
+        .filter((value) => {
+          if (seen.has(value)) return false;
+          seen.add(value);
+          return true;
+        })
+        .map((value) => ({ label: value, value }))),
     };
   }
 
@@ -164,6 +172,55 @@ export function makeFractionQuestion(level) {
         { label: frac(num + 1, d), value: frac(num + 1, d) },
       ]),
     };
+  }
+
+  if (level === 4) {
+    const kind = pick([
+      'add-related-denom',
+      'subtract-related-denom',
+      'fraction-of-quantity',
+      'order-fractions',
+      'mixed-number',
+    ]);
+    if (kind === 'add-related-denom') {
+      const problem = pick([
+        { prompt: '1/2 + 1/4 = ?', answer: '3/4', wrongs: ['2/6', '2/4', '1/8'] },
+        { prompt: '2/3 + 1/6 = ?', answer: '5/6', wrongs: ['3/9', '3/6', '4/6'] },
+        { prompt: '3/4 + 1/8 = ?', answer: '7/8', wrongs: ['4/12', '4/8', '5/8'] },
+        { prompt: '2/5 + 3/10 = ?', answer: '7/10', wrongs: ['5/15', '5/10', '6/10'] },
+      ]);
+      return fractionChoice(problem.prompt, problem.answer, problem.wrongs);
+    }
+    if (kind === 'subtract-related-denom') {
+      const problem = pick([
+        { prompt: '3/4 − 1/2 = ?', answer: '1/4', wrongs: ['2/2', '2/4', '1/2'] },
+        { prompt: '5/6 − 1/3 = ?', answer: '1/2', wrongs: ['4/3', '4/6', '2/6'] },
+        { prompt: '7/8 − 1/4 = ?', answer: '5/8', wrongs: ['6/4', '6/8', '3/8'] },
+      ]);
+      return fractionChoice(problem.prompt, problem.answer, problem.wrongs);
+    }
+    if (kind === 'fraction-of-quantity') {
+      const problem = pick([
+        { n: 5, d: 6, qty: 42 },
+        { n: 7, d: 8, qty: 48 },
+        { n: 3, d: 5, qty: 75 },
+        { n: 4, d: 9, qty: 81 },
+      ]);
+      const answer = (problem.n / problem.d) * problem.qty;
+      return {
+        prompt: `What is ${problem.n}/${problem.d} of ${problem.qty}?`,
+        answer,
+        options: shuffleNumeric([answer, answer + problem.qty / problem.d, answer - problem.qty / problem.d, problem.qty / problem.d]),
+      };
+    }
+    if (kind === 'order-fractions') {
+      return fractionChoice(
+        'Which list is ordered from smallest to largest?',
+        '1/4, 1/2, 3/4',
+        ['3/4, 1/2, 1/4', '1/2, 1/4, 3/4', '1/4, 3/4, 1/2']
+      );
+    }
+    return fractionChoice('1 1/2 + 3/4 = ?', '2 1/4', ['1 4/6', '1 3/4', '2 3/4']);
   }
 
   const kind = pick([
@@ -238,6 +295,15 @@ export function makeFractionQuestion(level) {
     prompt: `${frac(a, d)} − ${frac(b, d)} = ?/${d}`,
     answer: a - b,
     options: shuffleNumeric([a - b, a - b + 1, a - b - 1, a - b + 2]),
+  };
+}
+
+/** @param {string} prompt @param {string} answer @param {string[]} wrongs */
+function fractionChoice(prompt, answer, wrongs) {
+  return {
+    prompt,
+    answer,
+    options: shuffle([answer, ...wrongs].map((value) => ({ label: value, value }))),
   };
 }
 

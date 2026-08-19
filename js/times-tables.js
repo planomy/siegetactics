@@ -23,7 +23,7 @@ export const TIMES_TABLES = {
  */
 export function timesConfigForLevel(level) {
   if (level === 1) {
-    return { tables: [2, 3, 5, 10], multMin: 1, multMax: 10, showMixed: false };
+    return { tables: [2, 3, 4, 5, 10], multMin: 1, multMax: 10, showMixed: false };
   }
   if (level === 2) {
     return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10], multMin: 1, multMax: 10, showMixed: true };

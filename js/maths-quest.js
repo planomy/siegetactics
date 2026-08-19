@@ -1,6 +1,7 @@
 import { ECONOMY } from './economy.js';
 import { difficultyTrainingTag } from './difficulty.js';
 import { createQuestSet, getQuestSetsForLevel } from './maths-quest-data.js';
+import { sanitizeQuestionOptions } from './question-options.js';
 
 export const MATHS_QUEST = {
   problemsPerSet: 10,
@@ -43,7 +44,7 @@ export function initMathsQuest(host, callbacks) {
 
   /** @param {import('./maths-quest-data.js').QuestSet} set */
   function startSet(set) {
-    activeSet = set;
+    activeSet = { ...set, problems: set.problems.map((problem) => sanitizeQuestionOptions(problem)) };
     clearAnswerTimer();
     sessionReported = false;
     index = 0;
