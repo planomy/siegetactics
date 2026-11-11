@@ -243,7 +243,7 @@ function renderCommandSidebar(stats, gate, attack) {
           <span class="gb-metric-val gb-metric-val-sm">${shields}/${maxShields}</span>
         </div>
         <div class="gb-metric">
-          <span class="gb-metric-label">Prep checks</span>
+          <span class="gb-metric-label">Maths questions</span>
           <span class="gb-metric-val gb-metric-val-sm">${checksDone}/${checksTotal}</span>
         </div>
         <div class="gb-metric">
@@ -340,7 +340,7 @@ function renderInboundRadar(attack, open) {
         </div>
       </div>
       <p class="inbound-radar-label">Finish 10 maths questions to earn a siege</p>
-      <button type="button" class="gb-forge-btn gb-attack-hero-cta" id="btn-hold-line">START 10-QUESTION MISSION</button>
+      <button type="button" class="gb-forge-btn gb-attack-hero-cta" id="btn-hold-line">START ${attack.remaining}-QUESTION MISSION</button>
     </div>
   `;
 }
@@ -356,7 +356,7 @@ function renderAttackHero(attack, gate, playerName, isFirstMission) {
   return `
     <section
       class="gb-attack-hero gb-attack-${attack.urgency}${open ? ' gb-attack-hero-ready' : ''}"
-      aria-label="${escapeHtml(open ? 'Attack now — deploy to siege' : 'Battle Prep required before attack')}"
+      aria-label="${escapeHtml(open ? 'Attack now — deploy to siege' : 'Maths questions required before siege')}"
     >
       <div class="gb-attack-hero-bg" aria-hidden="true">
         <div class="gb-attack-hero-glow"></div>
