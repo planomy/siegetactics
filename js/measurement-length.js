@@ -472,11 +472,7 @@ export function initMeasurementLength(host, callbacks) {
   /** @param {number} accuracy @param {boolean} passed */
   function renderDone(accuracy, passed) {
     const pct = Math.round(accuracy * 100);
-    const gateNote = passed
-      ? callbacks.unitDone
-        ? 'Already bought time this cycle.'
-        : 'Length Lab pushed the attack back!'
-      : `Need ${Math.round(GATE.passAccuracy * 100)}%+ to push the attack back.`;
+    const gateNote = 'Maths mission complete — your siege is ready at HQ!';
     host.innerHTML = `
       <div class="panel times-panel times-done">
         <p class="mission-tag">Session complete</p>
