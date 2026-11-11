@@ -826,13 +826,19 @@ function initSiegeScreen() {
   };
 
   renderShopBar(shopBarEl, shopState);
+  const firstSiege = save.siegesCompleted === 0 && !DEV.skipForge;
+  const tutorial = document.getElementById('siege-first-hint');
+  if (tutorial) tutorial.hidden = !firstSiege;
   mountTDEngine(canvas, mission);
+  if (firstSiege) selectTurret('granny-blaster');
   preloadField()
     .then(() => tdEngine?.relayout?.())
     .catch(() => {});
 
-  tdEngine?.setGoLive(true);
-  tdEngine?.startWave();
+  // On the first visit, let the child place their highlighted starter turret
+  // before the aliens arrive. Subsequent sieges run without the training pause.
+  tdEngine?.setGoLive(!firstSiege);
+  if (!firstSiege) tdEngine?.startWave();
 }
 
 function beginMission() {
@@ -985,6 +991,17 @@ function mountTDEngine(canvas, mission) {
       run.waveBudget = Math.max(0, run.waveBudget - penalty);
       refreshShop();
       showToast(`Leak! −${penalty} ${ECONOMY.siegeCoinsLabel} (${leaks}/${maxLeaks})`, { variant: 'warn' });
+    },
+    onTurretPlaced() {
+      const tutorial = document.getElementById('siege-first-hint');
+      if (tutorial && !tutorial.hidden) {
+        tutorial.hidden = true;
+        showToast('Turret deployed! The aliens are coming. Keep placing turrets!', {
+          variant: 'success',
+          duration: 4500,
+        });
+        tdEngine?.setGoLive(true);
+      }
     },
     onPhaseChange(phase) {
       if (phase === 'deploy' || phase === 'wave' || phase === 'announce') {
