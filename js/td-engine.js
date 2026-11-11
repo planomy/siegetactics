@@ -1659,6 +1659,7 @@ export function createTDEngine(canvas, opts) {
       buildRemaining: buildTotal,
       buildTotal,
     });
+    opts.onTurretPlaced?.();
     tryAutoStartWave();
     render();
   }
