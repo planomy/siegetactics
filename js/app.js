@@ -588,6 +588,7 @@ function showBattlePrep() {
       let shieldsEarned = 0;
       let mapPiecesEarned = 0;
       for (const [moduleId, stats] of Object.entries(moduleResults)) {
+        if (stats.attempts === 0) continue;
         const result = recordTrainingProgress(mastery, mapProgress, moduleId, level, stats.accuracy);
         mastery = result.mastery;
         mapProgress = result.mapProgress;
