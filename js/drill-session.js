@@ -162,11 +162,7 @@ export function initDrillSession(host, config) {
     const pct = Math.round(accuracy * 100);
     let gateNote = `${pct}% on ${config.title}.`;
     if (config.onSessionComplete) {
-      gateNote = passed
-        ? config.unitDone
-          ? `${pct}% — already bought time this cycle.`
-          : `${pct}% — ${config.gatePassMessage ?? 'Training logged!'}`
-        : `${pct}% — need ${Math.round(GATE.passAccuracy * 100)}%+ to push the attack back.`;
+      gateNote = `${pct}% on ${config.title}. Maths mission complete — your siege is ready at HQ!`;
     }
     host.innerHTML = `
       <div class="panel times-panel times-done">
