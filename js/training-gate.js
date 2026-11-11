@@ -1,9 +1,10 @@
 import { getGateTopics } from './topics-data.js';
 
-/** @typedef {{ cycle: number, battlePrepComplete: boolean, timesTablesDone: string[], topicsDone: string[], unitsDone: Record<string, boolean> }} TrainingGate */
+/** @typedef {{ cycle: number, battlePrepComplete: boolean, questionsDone: number, bonusSiegeCoins: number, timesTablesDone: string[], topicsDone: string[], unitsDone: Record<string, boolean> }} TrainingGate */
 
 export const GATE = {
   requiredTables: 2,
+  questionsRequired: 10,
   /** Minimum accuracy (0–1) to count a drill toward pushing the attack back. */
   passAccuracy: 0.6,
 };
@@ -18,6 +19,8 @@ export function defaultTrainingGate() {
   return {
     cycle: 0,
     battlePrepComplete: false,
+    questionsDone: 0,
+    bonusSiegeCoins: 0,
     timesTablesDone: [],
     topicsDone: [],
     unitsDone: {},
@@ -46,6 +49,8 @@ export function normalizeTrainingGate(raw) {
   const normalized = repairTrainingGate({
     cycle: typeof g.cycle === 'number' ? g.cycle : 0,
     battlePrepComplete: Boolean(g.battlePrepComplete),
+    questionsDone: Number.isFinite(g.questionsDone) ? Math.max(0, Math.min(GATE.questionsRequired, Math.floor(g.questionsDone))) : (g.battlePrepComplete ? GATE.questionsRequired : 0),
+    bonusSiegeCoins: Number.isFinite(g.bonusSiegeCoins) ? Math.max(0, Math.min(25, Math.floor(g.bonusSiegeCoins))) : 0,
     timesTablesDone: Array.isArray(g.timesTablesDone)
       ? g.timesTablesDone.filter((k) => typeof k === 'string')
       : [],
@@ -60,25 +65,30 @@ export function normalizeTrainingGate(raw) {
   const legacyReady =
     normalized.timesTablesDone.length >= GATE.requiredTables &&
     getGateTopics().every((topic) => normalized.topicsDone.includes(topic.id));
-  return { ...normalized, battlePrepComplete: normalized.battlePrepComplete || legacyReady };
+  return {
+    ...normalized,
+    questionsDone: normalized.battlePrepComplete || legacyReady ? GATE.questionsRequired : normalized.questionsDone,
+    battlePrepComplete: normalized.battlePrepComplete || legacyReady || normalized.questionsDone >= GATE.questionsRequired,
+  };
 }
 
 /** @param {TrainingGate} gate */
 export function isGateOpen(gate) {
   const g = repairTrainingGate(gate);
-  return Boolean(g.battlePrepComplete);
+  return Boolean(g.battlePrepComplete || g.questionsDone >= GATE.questionsRequired);
 }
 
 /** @param {TrainingGate} gate */
 export function gateProgress(gate) {
   const g = repairTrainingGate(gate);
   const open = isGateOpen(g);
+  const done = open ? GATE.questionsRequired : Math.min(GATE.questionsRequired, g.questionsDone || 0);
   return {
-    tables: open ? 1 : 0,
-    topics: open ? 1 : 0,
-    total: 1,
-    done: open ? 1 : 0,
-    pct: open ? 1 : 0,
+    tables: g.timesTablesDone.length,
+    topics: g.topicsDone.length,
+    total: GATE.questionsRequired,
+    done,
+    pct: done / GATE.questionsRequired,
     open,
   };
 }
@@ -102,20 +112,41 @@ export function attackStatus(gate) {
     countdown: p.open ? 'NOW' : String(remaining),
     subline: p.open
       ? 'Aliens are at the porch — deploy!'
-      : 'Complete Battle Prep to launch the siege',
+      : 'Complete 10 maths questions to launch the siege',
   };
 }
 
-/** Completes the guided curriculum run and opens the next siege. */
-export function markBattlePrepComplete(gate) {
-  const topics = getGateTopics();
+/**
+ * Credits completed maths questions toward one siege. Progress and the
+ * accuracy-based coin bonus are saved so a page refresh cannot erase a win.
+ * Completing a topic is enough to earn a fight; accuracy earns extra coins.
+ * @param {TrainingGate} gate
+ * @param {number} answered
+ * @param {number} accuracy 0–1
+ */
+export function recordTrainingQuestions(gate, answered, accuracy) {
+  const current = Math.max(0, Math.min(GATE.questionsRequired, gate.questionsDone || 0));
+  if (isGateOpen(gate)) return { added: 0, gate };
+  const safeAnswered = Math.max(0, Math.floor(Number(answered) || 0));
+  const added = Math.min(safeAnswered, GATE.questionsRequired - current);
+  if (added === 0) return { added: 0, gate };
+  const safeAccuracy = Math.max(0, Math.min(1, Number(accuracy) || 0));
+  const done = current + added;
+  const bonusSiegeCoins = Math.min(25, (gate.bonusSiegeCoins || 0) + Math.round(added * 2.5 * safeAccuracy));
   return {
-    ...gate,
-    battlePrepComplete: true,
-    timesTablesDone: ['battle-prep'],
-    topicsDone: topics.map((topic) => topic.id),
-    unitsDone: Object.fromEntries(topics.filter((topic) => topic.unitId).map((topic) => [topic.unitId, true])),
+    added,
+    gate: {
+      ...gate,
+      questionsDone: done,
+      bonusSiegeCoins,
+      battlePrepComplete: done >= GATE.questionsRequired,
+    },
   };
+}
+
+/** Completes the guided mixed-questions mission and opens the next siege. */
+export function markBattlePrepComplete(gate, accuracy = 0) {
+  return recordTrainingQuestions(gate, GATE.questionsRequired, accuracy).gate;
 }
 
 /** @param {number} table 0 = mixed, 2–12 */

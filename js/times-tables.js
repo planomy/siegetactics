@@ -275,14 +275,15 @@ export function initTimesTables(host, callbacks) {
    */
   function renderDone(bonus = 0, accuracy = correct / Math.max(1, deck.length), gateAdded = false, gateReason) {
     const pct = Math.round(accuracy * 100);
+    const passed = accuracy >= GATE.passAccuracy;
     const label = chosenTable > 0 ? `×${chosenTable}` : 'Mixed';
     let gateNote = '';
     if (gateAdded) {
-      gateNote = `${label} practice logged!`;
+      gateNote = 'Maths mission complete — your siege is ready at HQ!';
     } else if (passed && gateReason) {
       gateNote = gateReason;
     } else if (!passed) {
-      gateNote = `Keep practising — aim for ${Math.round(GATE.passAccuracy * 100)}%+.`;
+      gateNote = `Practise more to earn extra XP and siege coins.`;
     }
     host.innerHTML = `
       <div class="panel times-panel times-done">
@@ -294,7 +295,7 @@ export function initTimesTables(host, callbacks) {
           <span class="times-done-xp-label">${ECONOMY.forgeXpLabel}</span>
         </div>
         ${bonus > 0 ? `<p class="times-bonus-note">Accuracy bonus +${bonus} XP!</p>` : ''}
-        ${gateAdded ? '<p class="times-gate-added">Practice logged!</p>' : ''}
+        ${gateAdded ? '<p class="times-gate-added">SIEGE UNLOCKED!</p>' : ''}
         <div class="times-done-actions">
           <button type="button" class="btn btn-primary" id="times-again">Drill again</button>
           <button type="button" class="btn btn-ghost" id="times-home-done">Home</button>

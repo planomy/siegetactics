@@ -1,0 +1,80 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  GATE,
+  defaultTrainingGate,
+  normalizeTrainingGate,
+  isGateOpen,
+  gateProgress,
+  recordTrainingQuestions,
+  markBattlePrepComplete,
+  resetTrainingGate,
+} from '../js/training-gate.js';
+
+test('new players begin with ten questions to earn their siege', () => {
+  const gate = defaultTrainingGate();
+  assert.equal(gateProgress(gate).done, 0);
+  assert.equal(gateProgress(gate).total, 10);
+  assert.equal(isGateOpen(gate), false);
+});
+
+test('a completed ten-question maths activity unlocks a siege', () => {
+  const result = recordTrainingQuestions(defaultTrainingGate(), 10, 0.8);
+  assert.equal(result.added, 10);
+  assert.equal(isGateOpen(result.gate), true);
+  assert.equal(result.gate.bonusSiegeCoins, 20);
+});
+
+test('one place-value forge contributes one question', () => {
+  const result = recordTrainingQuestions(defaultTrainingGate(), 1, 1);
+  assert.equal(result.added, 1);
+  assert.equal(gateProgress(result.gate).pct, 0.1);
+  assert.equal(isGateOpen(result.gate), false);
+});
+
+test('partial progress is capped at the required amount and only credits remaining questions', () => {
+  const first = recordTrainingQuestions(defaultTrainingGate(), 6, 1).gate;
+  const second = recordTrainingQuestions(first, 10, 1);
+  assert.equal(second.added, 4);
+  assert.equal(second.gate.questionsDone, GATE.questionsRequired);
+  assert.equal(second.gate.bonusSiegeCoins, 25);
+});
+
+test('incorrect answers do not block the fight, but cannot earn bonus coins', () => {
+  const result = recordTrainingQuestions(defaultTrainingGate(), 10, 0);
+  assert.equal(isGateOpen(result.gate), true);
+  assert.equal(result.gate.bonusSiegeCoins, 0);
+});
+
+test('maths sessions do not grant a second siege without first fighting', () => {
+  const ready = recordTrainingQuestions(defaultTrainingGate(), 10, 0.7).gate;
+  const again = recordTrainingQuestions(ready, 10, 1);
+  assert.equal(again.added, 0);
+  assert.deepEqual(again.gate, ready);
+});
+
+test('mixed battle prep credits remaining questions', () => {
+  const existing = recordTrainingQuestions(defaultTrainingGate(), 3, 1).gate;
+  const completed = markBattlePrepComplete(existing, 0.6);
+  assert.equal(completed.questionsDone, 10);
+  assert.equal(isGateOpen(completed), true);
+  assert.ok(completed.bonusSiegeCoins > 0);
+});
+
+test('page reload preserves credited questions, bonuses and prior saved readiness', () => {
+  const ready = recordTrainingQuestions(defaultTrainingGate(), 10, 0.9).gate;
+  const restored = normalizeTrainingGate(JSON.parse(JSON.stringify(ready)));
+  assert.equal(restored.questionsDone, 10);
+  assert.equal(restored.bonusSiegeCoins, ready.bonusSiegeCoins);
+  assert.equal(isGateOpen(restored), true);
+  assert.equal(isGateOpen(normalizeTrainingGate({ battlePrepComplete: true })), true);
+});
+
+test('every completed siege resets maths readiness but keeps the cycle count', () => {
+  const ready = recordTrainingQuestions(defaultTrainingGate(), 10, 1).gate;
+  const reset = resetTrainingGate(ready);
+  assert.equal(reset.cycle, 1);
+  assert.equal(reset.questionsDone, 0);
+  assert.equal(reset.bonusSiegeCoins, 0);
+  assert.equal(isGateOpen(reset), false);
+});

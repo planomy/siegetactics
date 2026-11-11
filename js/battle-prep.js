@@ -21,9 +21,7 @@ export const PREP_MODULES = [
 
 /** @param {number} level */
 export function questionsPerCoreModule(level) {
-  if (level === 1) return 2;
-  if (level === 2) return 3;
-  return 5;
+  return 1;
 }
 
 /** @param {unknown[]} values */
@@ -117,11 +115,11 @@ export function makePrepQuestion(moduleId, level, cycle = 0) {
 }
 
 /** @param {number} level @param {number} cycle */
-export function buildBattlePrepDeck(level, cycle = 0) {
+export function buildBattlePrepDeck(level, cycle = 0, questionsNeeded = 10) {
   const coreCount = questionsPerCoreModule(level);
   const deck = [];
   for (const module of PREP_MODULES) {
-    const count = module.id === 'times-tables' ? 10 : coreCount;
+    const count = module.id === 'times-tables' ? 2 : coreCount;
     const used = new Set();
     let guard = 0;
     while (used.size < count && guard++ < count * 80) {
@@ -131,7 +129,8 @@ export function buildBattlePrepDeck(level, cycle = 0) {
       deck.push({ ...question, moduleId: module.id, moduleTitle: module.title, rescue: false });
     }
   }
-  return deck;
+  // The remaining credits may be fewer than ten if a player did other activities first.
+  return deck.slice(0, Math.max(1, Math.min(10, Math.floor(questionsNeeded))));
 }
 
 /**
@@ -139,6 +138,7 @@ export function buildBattlePrepDeck(level, cycle = 0) {
  * @param {{
  *   level: number,
  *   cycle: number,
+ *   questionsNeeded?: number,
  *   onAwardXp: (amount: number) => void,
  *   onFinished: (results: Record<string, {correct:number, attempts:number, accuracy:number}>, overall:number) => void,
  *   onReady: (overall:number) => void,
@@ -147,7 +147,7 @@ export function buildBattlePrepDeck(level, cycle = 0) {
  * }} callbacks
  */
 export function initBattlePrep(host, callbacks) {
-  let deck = buildBattlePrepDeck(callbacks.level, callbacks.cycle);
+  let deck = buildBattlePrepDeck(callbacks.level, callbacks.cycle, callbacks.questionsNeeded ?? 10);
   const initialTotal = deck.length;
   const coreQuestions = questionsPerCoreModule(callbacks.level);
   let index = 0;
@@ -166,7 +166,7 @@ export function initBattlePrep(host, callbacks) {
   function renderQuestion() {
     const item = deck[index];
     const modulePosition = PREP_MODULES.findIndex((module) => module.id === item.moduleId) + 1;
-    const moduleTarget = item.moduleId === 'times-tables' ? 10 : coreQuestions;
+    const moduleTarget = item.moduleId === 'times-tables' ? 2 : coreQuestions;
     const moduleQuestion = deck
       .slice(0, index + 1)
       .filter((question) => question.moduleId === item.moduleId && !question.rescue).length;
@@ -175,7 +175,7 @@ export function initBattlePrep(host, callbacks) {
       const answeredForModule = answeredBefore.filter(
         (question) => question.moduleId === module.id && !question.rescue
       ).length;
-      const target = module.id === 'times-tables' ? 10 : coreQuestions;
+      const target = module.id === 'times-tables' ? 2 : coreQuestions;
       const current = module.id === item.moduleId;
       const done = answeredForModule >= target && !current;
       return `<span
@@ -200,7 +200,7 @@ export function initBattlePrep(host, callbacks) {
         </div>
         <div class="times-question-wrap"><p class="times-question length-question">${escapeHtml(item.prompt)}</p></div>
         <div class="times-answers">${options}</div>
-        <p class="prep-summary-line">10 Times Tables · ${coreQuestions} per other module · ${initialTotal} total${item.rescue ? ' · rescue' : ''}</p>
+        <p class="prep-summary-line">Answer ${initialTotal} maths questions to earn your siege. Every correct answer earns XP.</p>
       </div>`;
     host.querySelector('#prep-home')?.addEventListener('click', callbacks.onHome);
     host.querySelectorAll('.prep-answer').forEach((button) => {
@@ -219,9 +219,6 @@ export function initBattlePrep(host, callbacks) {
       stats.correct += 1;
       totalCorrect += 1;
       callbacks.onAwardXp(item.moduleId === 'times-tables' ? 3 : 4);
-    } else if (!item.rescue) {
-      const rescue = makePrepQuestion(item.moduleId, callbacks.level, callbacks.cycle);
-      deck.push({ ...rescue, moduleId: item.moduleId, moduleTitle: item.moduleTitle, rescue: true });
     }
     host.querySelectorAll('.prep-answer').forEach((candidate) => {
       const isAnswer = valuesMatch(candidate.getAttribute('data-value') ?? '', item.answer);
@@ -231,7 +228,7 @@ export function initBattlePrep(host, callbacks) {
     if (!right) {
       button.classList.add('is-wrong');
       const shown = item.options.find((option) => valuesMatch(option.value, item.answer))?.label ?? item.answer;
-      callbacks.showToast(`Correct: ${shown}${item.rescue ? '' : ' · Rescue question added'}`, { variant: 'shop' });
+      callbacks.showToast(`Correct answer: ${shown}. Keep going!`, { variant: 'shop' });
     }
     clearTimer();
     timer = setTimeout(() => {
@@ -258,7 +255,7 @@ export function initBattlePrep(host, callbacks) {
       <div class="panel times-panel times-done prep-panel prep-done">
         <p class="mission-tag">Battle Prep complete</p>
         <h2 class="panel-title">Cleared to defend Granny</h2>
-        <p class="granny-line">You completed all ${PREP_MODULES.length} curriculum stations. Accuracy: ${Math.round(overall * 100)}%.</p>
+        <p class="granny-line">You completed ${initialTotal} maths questions. Accuracy: ${Math.round(overall * 100)}%.</p>
         <div class="times-done-actions">
           <button type="button" class="btn btn-primary" id="prep-defend">Defend Granny</button>
           <button type="button" class="btn btn-ghost" id="prep-home-done">Home</button>

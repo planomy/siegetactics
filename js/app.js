@@ -38,6 +38,8 @@ import {
   defaultTrainingGate,
   normalizeTrainingGate,
   isGateOpen,
+  gateProgress,
+  recordTrainingQuestions,
   GATE,
   recordTimesTable,
   recordTopicUnit,
@@ -69,7 +71,7 @@ const defaultSave = {
   trainingGate: defaultTrainingGate(),
   levelMastery: defaultLevelMastery(),
   mapProgress: defaultMapProgress(),
-  settings: { sound: true, difficultyLevel: 3 },
+  settings: { sound: true, difficultyLevel: 1 },
 };
 
 /** @type {SaveData} */
@@ -407,7 +409,23 @@ function completeTrainingSession(moduleId, level, accuracy) {
   );
   save.levelMastery = result.mastery;
   save.mapProgress = result.mapProgress;
+
+  // A completed ten-question topic drill earns a siege, no matter which
+  // topic the child chooses. The place-value forge is one question.
+  const questionCount = moduleId === 'place-value-siege' ? 1 : 10;
+  const trainingCredit = recordTrainingQuestions(save.trainingGate, questionCount, accuracy);
+  if (trainingCredit.added > 0) {
+    save.trainingGate = trainingCredit.gate;
+  }
   persistSave();
+
+  if (trainingCredit.added > 0) {
+    const nowDone = gateProgress(save.trainingGate).done;
+    const message = isGateOpen(save.trainingGate)
+      ? 'Siege unlocked! Back to HQ, then DEFEND GRANNY!'
+      : `Maths training: ${nowDone}/${GATE.questionsRequired} questions towards your next siege.`;
+    showToast(message, { variant: 'success', duration: 4000 });
+  }
 
   if (result.shieldEarned) {
     if (result.firstClearBonus > 0) {
@@ -557,6 +575,7 @@ function showBattlePrep() {
   disposeActiveTraining = initBattlePrep(host, {
     level,
     cycle: save.trainingGate.cycle,
+    questionsNeeded: GATE.questionsRequired - gateProgress(save.trainingGate).done,
     onAwardXp(baseAmount) {
       awardScaledTrainingXp(baseAmount, level);
     },
@@ -569,6 +588,7 @@ function showBattlePrep() {
       let shieldsEarned = 0;
       let mapPiecesEarned = 0;
       for (const [moduleId, stats] of Object.entries(moduleResults)) {
+        if (stats.attempts === 0) continue;
         const result = recordTrainingProgress(mastery, mapProgress, moduleId, level, stats.accuracy);
         mastery = result.mastery;
         mapProgress = result.mapProgress;
@@ -578,9 +598,9 @@ function showBattlePrep() {
       }
       save.levelMastery = mastery;
       save.mapProgress = mapProgress;
-      save.trainingGate = markBattlePrepComplete(save.trainingGate);
+      save.trainingGate = markBattlePrepComplete(save.trainingGate, overall);
       if (shieldBonus > 0) save.xp += shieldBonus;
-      battlePrepCoinBonus = Math.round(overall * 25);
+      battlePrepCoinBonus = save.trainingGate.bonusSiegeCoins;
       persistSave();
       const rewards = [
         `${battlePrepCoinBonus} bonus siege coins`,
@@ -611,14 +631,16 @@ function showTimesTables() {
     onAwardXp: training.onAwardXp,
     onSessionComplete({ table, accuracy, passed }) {
       training.onSessionComplete(accuracy);
-      if (!passed) return { gateAdded: false };
-      const result = recordTimesTable(save.trainingGate, table, accuracy);
-      if (result.added) {
-        persistGate(result.gate);
-        showToast('Times Tables practice logged!', { variant: 'success' });
-        return { gateAdded: true };
+      if (passed) {
+        const result = recordTimesTable(save.trainingGate, table, accuracy);
+        if (result.added) persistGate(result.gate);
       }
-      return { gateAdded: false, reason: 'Practice complete — Battle Prep opens the siege.' };
+      return {
+        gateAdded: isGateOpen(save.trainingGate),
+        reason: isGateOpen(save.trainingGate)
+          ? 'Siege unlocked — return to HQ!'
+          : 'Your maths progress has been saved.',
+      };
     },
     onHome: training.onHome,
     showToast: training.showToast,
@@ -754,8 +776,9 @@ function creditTopicTraining(topic) {
 
 /** @param {import('./topics-data.js').MathTopic} topic */
 function showForgeTraining(topic) {
+  // This one-puzzle forge has a larger XP reward; credit it only once per siege.
   if (isTopicDone(save.trainingGate, topic.id)) {
-    showToast(`${topic.title} already counts this cycle — pick another topic or table!`);
+    showToast('Place Value already rewarded this siege. Try another maths mission or defend Granny!');
     return;
   }
   const forgeHost = document.getElementById('forge-host');
@@ -811,13 +834,19 @@ function initSiegeScreen() {
   };
 
   renderShopBar(shopBarEl, shopState);
+  const firstSiege = save.siegesCompleted === 0 && !DEV.skipForge;
+  const tutorial = document.getElementById('siege-first-hint');
+  if (tutorial) tutorial.hidden = !firstSiege;
   mountTDEngine(canvas, mission);
+  if (firstSiege) selectTurret('granny-blaster');
   preloadField()
     .then(() => tdEngine?.relayout?.())
     .catch(() => {});
 
-  tdEngine?.setGoLive(true);
-  tdEngine?.startWave();
+  // On the first visit, let the child place their highlighted starter turret
+  // before the aliens arrive. Subsequent sieges run without the training pause.
+  tdEngine?.setGoLive(!firstSiege);
+  if (!firstSiege) tdEngine?.startWave();
 }
 
 function beginMission() {
@@ -837,14 +866,14 @@ function beginMission() {
   };
   nukeCacheWasReady = false;
 
-  const placeValueTopic = getTopic('place-value-siege');
-  const forgeAlreadyDone = placeValueTopic ? isTopicDone(save.trainingGate, placeValueTopic.id) : false;
-
-  if (DEV.skipForge || forgeAlreadyDone) {
+  // Earning ten maths-question credits is the complete gate. Don't add
+  // another mandatory forge puzzle after the child has earned a siege.
+  if (DEV.skipForge || isGateOpen(save.trainingGate)) {
     const mission = getActiveMission();
     onForgeSuccess({
-      forgeXp: forgeAlreadyDone ? 0 : (mission?.rewards.forgeXp ?? 40),
-      placementBudget: (mission?.rewards.placementBudget ?? 90) + DEV.extraBudget + battlePrepCoinBonus,
+      forgeXp: 0,
+      placementBudget: (mission?.rewards.placementBudget ?? 90) +
+        DEV.extraBudget + (save.trainingGate.bonusSiegeCoins || 0),
     });
     return;
   }
@@ -875,13 +904,13 @@ function onForgeSuccess(rewards) {
   }
   completeTrainingSession('place-value-siege', level, 1);
   const placeValueTopic = getTopic('place-value-siege');
-  if (placeValueTopic) {
+  if (forgeXp > 0 && placeValueTopic) {
     creditTopicTraining(placeValueTopic);
   }
   const xpLine =
     forgeXp > 0
       ? `+${forgeXp} ${ECONOMY.forgeXpLabel} (unlocks gear) · `
-      : 'Forge already done this cycle · ';
+      : 'Maths mission cleared · ';
   showToast(`${xpLine}${placementBudget} ${ECONOMY.siegeCoinsLabel} for this fight.`);
   if (save.grannyUnlocked) {
     addCacheProgress(GRANNY_CACHE.forgeBonusPoints);
@@ -970,6 +999,17 @@ function mountTDEngine(canvas, mission) {
       run.waveBudget = Math.max(0, run.waveBudget - penalty);
       refreshShop();
       showToast(`Leak! −${penalty} ${ECONOMY.siegeCoinsLabel} (${leaks}/${maxLeaks})`, { variant: 'warn' });
+    },
+    onTurretPlaced() {
+      const tutorial = document.getElementById('siege-first-hint');
+      if (tutorial && !tutorial.hidden) {
+        tutorial.hidden = true;
+        showToast('Turret deployed! The aliens are coming. Keep placing turrets!', {
+          variant: 'success',
+          duration: 4500,
+        });
+        tdEngine?.setGoLive(true);
+      }
     },
     onPhaseChange(phase) {
       if (phase === 'deploy' || phase === 'wave' || phase === 'announce') {
