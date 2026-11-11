@@ -630,14 +630,16 @@ function showTimesTables() {
     onAwardXp: training.onAwardXp,
     onSessionComplete({ table, accuracy, passed }) {
       training.onSessionComplete(accuracy);
-      if (!passed) return { gateAdded: false };
-      const result = recordTimesTable(save.trainingGate, table, accuracy);
-      if (result.added) {
-        persistGate(result.gate);
-        showToast('Times Tables practice logged!', { variant: 'success' });
-        return { gateAdded: true };
+      if (passed) {
+        const result = recordTimesTable(save.trainingGate, table, accuracy);
+        if (result.added) persistGate(result.gate);
       }
-      return { gateAdded: isGateOpen(save.trainingGate), reason: isGateOpen(save.trainingGate) ? 'Siege unlocked — return to HQ!' : 'Maths training logged.' };
+      return {
+        gateAdded: isGateOpen(save.trainingGate),
+        reason: isGateOpen(save.trainingGate)
+          ? 'Siege unlocked — return to HQ!'
+          : 'Your maths progress has been saved.',
+      };
     },
     onHome: training.onHome,
     showToast: training.showToast,
