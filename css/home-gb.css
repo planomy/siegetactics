@@ -1888,3 +1888,24 @@
 .gb-story-strand {
   display: none;
 }
+
+/* The entire game loop fits on the first screen, not inside a ten-page manual. */
+.gb-mission-instructions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: center;
+  padding: 9px 13px;
+  margin: 7px 0 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 211, 107, 0.5);
+  background: rgba(0, 0, 0, 0.56);
+  color: #fff8e6;
+  font-size: clamp(0.78rem, 1.5vw, 0.98rem);
+  line-height: 1.4;
+}
+.gb-mission-instructions strong {
+  color: #ffd36b;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
