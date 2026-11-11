@@ -50,9 +50,9 @@ function renderTrainingCards(gate, attack, levelMastery, mapProgress) {
 /** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
 function renderPrepChecklist(gate, attack) {
   const items = [{
-    code: 'PREP-01',
-    label: 'Guided curriculum run',
-    status: attack.open ? 'Cleared to engage' : 'Required before deployment',
+    code: 'MISSION',
+    label: 'Maths questions',
+    status: `${attack.done} / ${attack.total} completed`,
     done: attack.open,
   }];
   return items
@@ -322,7 +322,7 @@ function renderInboundRadar(attack, open) {
     `;
   }
 
-  const drillCaption = 'Battle Prep';
+  const drillCaption = 'questions left';
 
   return `
     <div class="inbound-radar inbound-radar-${attack.urgency}">
@@ -339,8 +339,8 @@ function renderInboundRadar(attack, open) {
           <span class="inbound-radar-unit">${drillCaption}</span>
         </div>
       </div>
-      <p class="inbound-radar-label">Inbound alien signal · train to push back</p>
-      <button type="button" class="gb-forge-btn gb-attack-hero-cta" id="btn-hold-line">START BATTLE PREP</button>
+      <p class="inbound-radar-label">Finish 10 maths questions to earn a siege</p>
+      <button type="button" class="gb-forge-btn gb-attack-hero-cta" id="btn-hold-line">START 10-QUESTION MISSION</button>
     </div>
   `;
 }
@@ -350,7 +350,7 @@ function renderInboundRadar(attack, open) {
  * @param {import('./training-gate.js').TrainingGate} gate
  * @param {string} playerName
  */
-function renderAttackHero(attack, gate, playerName) {
+function renderAttackHero(attack, gate, playerName, isFirstMission) {
   const open = attack.open;
 
   return `
@@ -364,7 +364,11 @@ function renderAttackHero(attack, gate, playerName) {
       </div>
       <div class="gb-attack-hero-inner">
         <div class="gb-attack-hero-top">
-          <h1 class="gb-welcome">Welcome back, <span>${escapeHtml(playerName)}</span></h1>
+          <h1 class="gb-welcome">${isFirstMission ? 'Welcome, ' : 'Welcome back, '}<span>${escapeHtml(playerName)}</span></h1>
+          <div class="gb-mission-instructions" aria-label="How Siege Tactics works">
+            <strong>${isFirstMission ? 'YOUR FIRST MISSION' : 'YOUR NEXT MISSION'}</strong>
+            <span>1. Do the maths &nbsp; 2. Earn your siege &nbsp; 3. Place turrets and defend Granny!</span>
+          </div>
         </div>
         <div class="gb-attack-hero-core">
           <div class="gb-threat-hud">
@@ -412,13 +416,13 @@ export function renderHome(host, state) {
 
   host.innerHTML = `
     <div class="home-layout gb-home">
-      ${renderAttackHero(attack, state.gate, state.playerName)}
+      ${renderAttackHero(attack, state.gate, state.playerName, state.siegesCompleted === 0)}
 
       <div class="gb-home-grid">
         <div class="gb-home-main">
           <section class="gb-training" aria-label="Training modules">
             <div class="gb-training-head">
-              <h2 class="gb-gallery-title"><span class="gb-gallery-icon" aria-hidden="true">×</span> Optional practice modules</h2>
+              <h2 class="gb-gallery-title"><span class="gb-gallery-icon" aria-hidden="true">×</span> Choose your maths mission</h2>
               <div class="gb-level-control">
                 <span class="gb-level-label">Level</span>
                 <div class="gb-level-picker" role="group" aria-label="Difficulty level">
@@ -437,7 +441,7 @@ export function renderHome(host, state) {
                 </div>
               </div>
             </div>
-            <p class="gb-level-xp-hint">Level ${state.difficultyLevel} pays ${xpMultiplierLabel(state.difficultyLevel)} · 100% earns shields · ${MAP_PASSES_REQUIRED}× at 80%+ earns a map piece</p>
+            <p class="gb-level-xp-hint">Complete any 10-question activity to unlock your next siege. Better answers = more turret coins. Level ${state.difficultyLevel}: ${xpMultiplierLabel(state.difficultyLevel)}.</p>
             <div class="gb-story-grid">${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress)}</div>
           </section>
         </div>
