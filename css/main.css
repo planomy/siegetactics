@@ -1965,3 +1965,25 @@ body.dev-mode .topbar::after {
     text-align: right;
   }
 }
+
+/* First-time siege: keep the one essential instruction on-screen until a turret is placed. */
+.siege-tutorial {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 0 auto 10px;
+  padding: 11px 16px;
+  max-width: 1080px;
+  border: 2px solid rgba(255, 196, 59, 0.82);
+  border-radius: 12px;
+  background: rgba(34, 24, 5, 0.94);
+  color: #fff7df;
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  line-height: 1.45;
+}
+.siege-tutorial strong {
+  color: #ffd36b;
+  letter-spacing: 0.03em;
+}
+.siege-tutorial[hidden] { display: none; }
