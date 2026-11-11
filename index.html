@@ -59,7 +59,7 @@
           <img src="assets/splash.png" width="1024" height="768" alt="Granny Boom — Siege Tactics" />
         </div>
         <p class="hook">They've landed. Hold the line.</p>
-        <p class="hero-copy">Forge the maths. Place turrets. Survive 60 seconds.</p>
+        <p class="hero-copy">Answer 10 maths questions. Earn your defences. Save Granny from the aliens!</p>
         <label class="name-label" for="player-name">Your name</label>
         <input id="player-name" class="name-input" type="text" maxlength="24" autocomplete="nickname" placeholder="Alex" />
         <button type="button" class="btn btn-primary btn-lg" id="btn-welcome-go">Let's go</button>
@@ -108,6 +108,10 @@
 
     <section id="screen-siege" class="screen">
       <div class="siege-layout">
+        <div id="siege-first-hint" class="siege-tutorial" role="status" hidden>
+          <strong>FIRST SIEGE: PLACE YOUR TURRET</strong>
+          <span>Granny Blaster is selected below. Tap an empty grass square to build it. The aliens will start attacking when your first turret is ready!</span>
+        </div>
         <div class="siege-canvas-wrap">
           <canvas id="siege-canvas" aria-label="Siege field"></canvas>
           <div class="wave-controls">
