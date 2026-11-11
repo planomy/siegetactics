@@ -776,6 +776,11 @@ function creditTopicTraining(topic) {
 
 /** @param {import('./topics-data.js').MathTopic} topic */
 function showForgeTraining(topic) {
+  // This one-puzzle forge has a larger XP reward; credit it only once per siege.
+  if (isTopicDone(save.trainingGate, topic.id)) {
+    showToast('Place Value already rewarded this siege. Try another maths mission or defend Granny!');
+    return;
+  }
   const forgeHost = document.getElementById('forge-host');
   if (!forgeHost) return;
   const mission = getActiveMission();
