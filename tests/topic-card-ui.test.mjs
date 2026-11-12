@@ -47,9 +47,19 @@ test('standalone questions, mixed questions, and forge successes all advance the
 });
 
 test('fresh CSS and script modules are loaded so the browser does not show old shields', () => {
-  assert.match(html, /topic-campaign-cards\.css\?v=20261112p/);
+  assert.match(html, /topic-campaign-cards\.css\?v=20261112q/);
   assert.match(html, /app\.js\?v=20261112p/);
   assert.match(app, /home\.js\?v=20261112p/);
   assert.match(app, /battle-prep\.js\?v=20261112p/);
   assert.match(home, /topic-progression\.js\?v=20261112p/);
+});
+
+test('two rows fit more easily on desktop without shrinking the mobile experience', () => {
+  assert.match(css, /gap: 6px;/);
+  assert.match(css, /height: clamp\(108px, 13\.6dvh, 132px\);/);
+  assert.match(css, /height: 104px;/);
+  assert.match(css, /height: 128px;/);
+  assert.match(css, /@media \(max-width: 870px\)/);
+  assert.match(css, /@media \(max-width: 540px\)/);
+  assert.match(css, /object-position: center 40%;/);
 });
