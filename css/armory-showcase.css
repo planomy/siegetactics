@@ -354,3 +354,19 @@
   .armory-feature *, .armory-feature-visual * {animation:none!important;}
   .armory-demo-shot {left:48%;opacity:.65;}
 }
+
+
+.armory-promo-art img.flip-x,
+.armory-feature-turret.flip-x {
+  scale: -1 1;
+}
+.armory-card--locked {
+  cursor: pointer;
+  filter: none;
+  opacity: .82;
+}
+.armory-card--locked:hover,
+.armory-card--locked.armory-card--previewing {
+  opacity: 1;
+  border-color: rgba(255,193,102,.64);
+}
