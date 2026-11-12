@@ -18,6 +18,7 @@ export const MATHS_QUEST = {
  * @param {{
  *   difficultyLevel: import('./difficulty.js').DifficultyLevel,
  *   onAwardXp: (amount: number) => number|void,
+ *   onAnswer?: (right: boolean) => void,
  *   onSessionComplete?: (accuracy: number) => void,
  *   onHome: () => void,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
@@ -226,6 +227,7 @@ export function initMathsQuest(host, callbacks) {
       callbacks.showToast(`Answer: ${shown}.${hint}`, { variant: 'shop' });
     }
 
+    callbacks.onAnswer?.(right);
     clearAnswerTimer();
     answerTimer = setTimeout(() => {
       answerTimer = null;
