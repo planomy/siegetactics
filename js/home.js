@@ -9,6 +9,7 @@ import { renderModuleLevelPips, MAP_PASSES_REQUIRED } from './level-mastery.js';
 import { renderInterstellarMap, renderModuleMapProgress, mapPiecesEarned, TRAINING_MODULE_IDS } from './map-progress.js';
 import { getQualifiedLevels } from './level-mastery.js';
 import { ECONOMY } from './economy.js';
+import { xpMultiplierLabel } from './difficulty.js';
 
 /** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack @param {import('./level-mastery.js').LevelMasterySave} levelMastery @param {import('./map-progress.js').MapProgressSave} mapProgress */
 function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id)) {
@@ -497,12 +498,20 @@ export function renderHome(host, state) {
             <p>Each completed activity earns progress and Forge XP.</p>
           </div>
           <div class="mission-level-control">
-            <label for="mission-level-select">LEVEL</label>
-            <select id="mission-level-select" class="mission-level-select" aria-label="Choose maths difficulty level">
-              ${[1, 2, 3, 4].map((n) =>
-                `<option value="${n}"${state.difficultyLevel === n ? ' selected' : ''}>Level ${n}</option>`
-              ).join('')}
-            </select>
+            <div class="mission-level-intro">
+              <span class="mission-level-title">LEVEL</span>
+              <span class="mission-level-hint">Harder maths earns more XP</span>
+            </div>
+            <div class="mission-level-buttons" role="group" aria-label="Choose maths difficulty and XP reward">
+              ${[1, 2, 3, 4].map((n) => `
+                <button type="button" class="mission-level-option${state.difficultyLevel === n ? ' is-selected' : ''}"
+                  data-level="${n}" aria-pressed="${state.difficultyLevel === n}"
+                  aria-label="Level ${n}, ${xpMultiplierLabel(/** @type {1|2|3|4} */ (n))}">
+                  <span class="mission-level-number">${n}</span>
+                  <span class="mission-level-reward">${xpMultiplierLabel(/** @type {1|2|3|4} */ (n))}</span>
+                </button>
+              `).join('')}
+            </div>
           </div>
         </div>
         <div class="mission-topic-grid">${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress, FRONT_TOPICS)}</div>
@@ -540,10 +549,12 @@ export function renderHome(host, state) {
     });
   });
 
-  host.querySelector('#mission-level-select')?.addEventListener('change', (event) => {
-    const level = Number(event.currentTarget.value);
-    if (![1, 2, 3, 4].includes(level) || level === state.difficultyLevel) return;
-    state.onDifficultyChange(/** @type {1|2|3|4} */ (level));
+  host.querySelectorAll('[data-level]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const level = Number(button.getAttribute('data-level'));
+      if (![1, 2, 3, 4].includes(level) || level === state.difficultyLevel) return;
+      state.onDifficultyChange(/** @type {1|2|3|4} */ (level));
+    });
   });
 }
 
