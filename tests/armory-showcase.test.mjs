@@ -12,7 +12,7 @@ test('Armory promotion advertises the next weapon and precise Forge XP shortfall
   assert.equal(result.needed, Math.max(0, TURRETS[result.id].unlockXp - 100));
   assert.equal(result.ready, false);
   assert.match(renderArmoryPromo(100, owned), /mission-armory-open/);
-  assert.match(renderArmoryPromo(100, owned), /Unlocks don't use up your XP/);
+  assert.match(renderArmoryPromo(100, owned), /WEAPONS OWNED/);
 });
 
 test('reaching an XP threshold makes the upgrade available without spending XP', () => {
