@@ -1,0 +1,273 @@
+/*
+ * Reuse Granny Boom's original green scanning enemy dossier. Let it cycle
+ * beneath the radar and display real, saved defeats of each alien type.
+ *
+ * Right column: 60% dynamic Might forge, 40% siege / player stats.
+ * No duplicate maths-launch button in Mission Control.
+ */
+body.mission-mode .mission-control-blueprint {
+  margin-top: 1px;
+  min-width: 0;
+}
+
+body.mission-mode .mission-control-blueprint .threat-dossier {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  flex: none;
+  font-size: .61rem;
+  opacity: .92;
+}
+
+body.mission-mode .mission-control-blueprint .threat-dossier-frame {
+  border-color: rgba(83, 246, 125, .49);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, .65), 0 0 17px rgba(83, 246, 125, .09);
+}
+
+body.mission-mode .mission-control-blueprint .threat-dossier-body {
+  min-height: 126px;
+  gap: 6px;
+  padding: 6px;
+}
+
+body.mission-mode .mission-control-blueprint .threat-dossier-wire {
+  flex-basis: 40%;
+  min-height: 115px;
+}
+
+body.mission-mode .mission-control-blueprint .threat-dossier-bar {
+  padding: 4px 7px;
+  font-size: .52rem;
+}
+
+body.mission-mode .mission-control-blueprint .threat-dossier-scroll {
+  max-height: 3.4em;
+  min-height: 2.5em;
+}
+
+body.mission-mode .mission-control-blueprint .threat-dossier-meters {
+  gap: 2px;
+}
+
+body.mission-mode .threat-dossier-kills {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 3px 5px;
+  margin: 3px 0 1px;
+  color: #9cffb5;
+  border: 1px solid rgba(93, 255, 138, .34);
+  border-radius: 4px;
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+  background: rgba(25, 67, 38, .21);
+}
+
+body.mission-mode .threat-dossier-kills-count {
+  color: #ecffef;
+  font-size: .9rem;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 9px rgba(93,255,138,.47);
+}
+
+body.mission-mode .mission-battle-stats {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 13px;
+  background: linear-gradient(180deg, rgba(11, 16, 20, .93), rgba(7, 12, 15, .98));
+  border-top: 1px solid rgba(112, 202, 150, .36);
+}
+
+body.mission-mode .mission-battle-stats .mission-control-progress {
+  padding: 9px 10px 7px;
+}
+
+body.mission-mode .mission-battle-stats .mission-control-progress-line {
+  font-size: .74rem;
+  margin-bottom: 7px;
+}
+
+body.mission-mode .mission-battle-stats .mission-control-track {
+  height: 8px;
+  margin-bottom: 0;
+}
+
+body.mission-mode .mission-battle-stats .mission-control-metrics {
+  gap: 7px;
+}
+
+body.mission-mode .mission-battle-stats .mission-control-metrics > div {
+  min-width: 0;
+  padding: 7px 9px;
+}
+
+body.mission-mode .mission-battle-stats .mission-control-metrics span {
+  font-size: .64rem;
+}
+
+body.mission-mode .mission-battle-stats .mission-control-metrics strong {
+  font-size: 1.2rem;
+}
+
+body.mission-mode .mission-battle-stats .mission-control-details {
+  margin: 0;
+  padding: 0;
+}
+
+body.mission-mode .mission-battle-stats .mission-control-details summary {
+  padding: 7px 9px;
+  font-size: .82rem;
+}
+
+body.mission-mode .mission-battle-stats .mission-bonus-progress {
+  padding: 4px 6px;
+  font-size: .68rem;
+  margin-top: 5px;
+}
+
+@media (min-width: 1321px) and (min-height: 600px) {
+  body.mission-mode .mission-power {
+    display: grid;
+    grid-template-rows: minmax(0, 3fr) minmax(0, 2fr);
+    overflow: hidden;
+    max-height: none;
+  }
+
+  body.mission-mode .mission-power .power-rig {
+    box-sizing: border-box;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    padding: 11px 11px 6px;
+    justify-content: space-between;
+    gap: 2px;
+  }
+
+  body.mission-mode .mission-power .power-scene {
+    height: clamp(120px, 19dvh, 170px);
+    width: min(100%, 230px);
+    margin: 0 auto;
+    flex: 0 1 auto;
+    --forge-scale: .76;
+  }
+
+  body.mission-mode .mission-power .power-halo-outer {
+    width: 170px;
+    height: 170px;
+  }
+
+  body.mission-mode .mission-power .power-halo-inner {
+    width: 130px;
+    height: 130px;
+  }
+
+  body.mission-mode .mission-power .power-heading h2 {
+    font-size: 1.43rem;
+    margin: 3px 0;
+  }
+
+  body.mission-mode .mission-power .power-rank {
+    min-height: 0;
+  }
+
+  body.mission-mode .mission-power .power-rank-name {
+    font-size: 1.28rem;
+  }
+
+  body.mission-mode .mission-power .power-charge-number {
+    font-size: 1.6rem;
+    margin-top: 3px;
+  }
+
+  body.mission-mode .mission-power .power-charge-track {
+    height: 8px;
+    margin: 4px 0 0;
+  }
+
+  body.mission-mode .mission-power .power-charge-cells {
+    margin: 4px 0 0;
+  }
+
+  body.mission-mode .mission-power .power-charge-cell {
+    height: 9px;
+  }
+
+  body.mission-mode .mission-battle-stats {
+    overflow: hidden;
+  }
+
+  /* The optional expanded records appear over the lower card, rather
+     than introducing a scrollbar to the entire right panel. */
+  body.mission-mode .mission-battle-stats .mission-control-details[open] {
+    position: relative;
+    z-index: 2;
+    background: #100e1b;
+    box-shadow: 0 0 20px rgba(0,0,0,.72);
+  }
+
+  body.mission-mode .mission-battle-stats .mission-control-details[open] .mission-control-detail-grid {
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    bottom: calc(100% - 2px);
+    padding: 9px;
+    border: 1px solid rgba(146,129,187,.5);
+    border-radius: 9px 9px 0 0;
+    background: #100e1b;
+    box-shadow: 0 -12px 26px rgba(0,0,0,.58);
+  }
+}
+
+@media (min-width: 1321px) and (min-height: 600px) and (max-height: 750px) {
+  body.mission-mode .mission-control-inner {
+    gap: 9px;
+    padding: 12px;
+  }
+
+  body.mission-mode .mission-control-radar .inbound-radar-dish {
+    width: min(155px, 14vw);
+  }
+
+  body.mission-mode .mission-control-blueprint .threat-dossier-body {
+    min-height: 95px;
+  }
+
+  body.mission-mode .mission-control-blueprint .threat-dossier-wire {
+    min-height: 94px;
+  }
+
+  body.mission-mode .mission-power .power-scene {
+    height: clamp(100px, 17dvh, 135px);
+  }
+
+  body.mission-mode .mission-battle-stats {
+    gap: 4px;
+    padding: 6px 9px;
+  }
+}
+
+@media (max-width: 1320px), (max-height: 599px) {
+  body.mission-mode .mission-power {
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.mission-mode .mission-power .power-rig {
+    height: auto;
+  }
+
+  body.mission-mode .mission-battle-stats {
+    overflow: visible;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.mission-mode .mission-control-blueprint :is(.threat-scanline, .threat-hex-rail-inner, .threat-dossier-scroll-inner, .threat-dossier-ticker) {
+    animation: none !important;
+  }
+}
