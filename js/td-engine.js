@@ -6,7 +6,7 @@ import { buildPlacementCells, pickPlacementCell } from './placement-grid.js';
 import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed } from './enemies-data.js';
 import { getFieldImage, preloadField } from './preload.js';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
-import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC } from './waves-data.js?v=20261112g';
+import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261112g';
 import { ECONOMY } from './economy.js';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
@@ -234,7 +234,7 @@ export function createTDEngine(canvas, opts) {
   let enemySprites = {};
 
   const siegeDuration = opts.mission.siegeDurationSec ?? SIEGE_DURATION_SEC;
-  const bonusAvailable = Math.max(0, Math.min(30, opts.bonusSiegeSec || 0));
+  const bonusAvailable = Math.max(0, Math.min(BONUS_TIME_SEC, opts.bonusSiegeSec || 0));
   const maxLeaks = opts.mission.maxLeaks ?? 5;
   const leakCoinPenalty = opts.mission.leakCoinPenalty ?? ECONOMY.leakCoinPenalty;
   const killBudgetXp = opts.mission.killBudgetXp ?? 1;
