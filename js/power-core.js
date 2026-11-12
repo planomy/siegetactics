@@ -54,7 +54,6 @@ export function renderPowerCore(host, state) {
         <header class="power-heading">
           <span class="power-eyebrow">GRANNY'S DEFENCE FORGE</span>
           <h2>BUILD YOUR MIGHT</h2>
-          <p>Every maths question charges your weapons.</p>
         </header>
 
         <div class="power-scene" aria-hidden="true">
@@ -74,10 +73,9 @@ export function renderPowerCore(host, state) {
           <div class="power-burst"></div>
         </div>
 
-        <div class="power-rank">
+        <div class="power-rank" aria-live="polite" aria-atomic="true">
           <span class="power-rank-name">SYSTEMS OFFLINE</span>
           <strong class="power-charge-number">0<span>/10</span></strong>
-          <p class="power-rank-detail"></p>
         </div>
         <div class="power-charge-track" role="progressbar" aria-label="Defence power" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
           <div class="power-charge-fill"></div>
@@ -85,7 +83,6 @@ export function renderPowerCore(host, state) {
         <div class="power-charge-cells" aria-hidden="true">
           ${Array.from({length:10},(_,i)=>`<span class="power-charge-cell" data-cell="${i+1}"></span>`).join('')}
         </div>
-        <div class="power-message" aria-live="polite" aria-atomic="true">Your next maths answer will light up the forge.</div>
       </div>
     `;
   }
@@ -96,8 +93,6 @@ export function renderPowerCore(host, state) {
   rig.dataset.progress = String(done);
   const rank = rig.querySelector('.power-rank-name');
   if (rank) rank.textContent = stage.name;
-  const detail = rig.querySelector('.power-rank-detail');
-  if (detail) detail.textContent = stage.detail;
   const number = rig.querySelector('.power-charge-number');
   if (number) number.innerHTML = `${done}<span>/${total}</span>`;
   const bar = rig.querySelector('.power-charge-track');
@@ -111,17 +106,6 @@ export function renderPowerCore(host, state) {
   rig.querySelectorAll('.forge-mote').forEach((mote, i) => {
     mote.classList.toggle('is-live', i < activeParticles);
   });
-
-  // Preserve DOM between answers so the weapon glow can animate smoothly.
-  // Announce milestones rather than every click to avoid screen-reader chatter.
-  const message = rig.querySelector('.power-message');
-  if (message && (done === 0 || done !== oldProgress)) {
-    if (done >= total) message.textContent = 'BATTLE READY! Defend Granny!';
-    else if (done >= 8) message.textContent = 'THE ALIENS ARE ALMOST HERE!';
-    else if (done >= 5) message.textContent = 'WEAPONS CHARGING. KEEP GOING!';
-    else if (done >= 1) message.textContent = state.correct ? 'POWER BOOST! Another weapon is charging.' : 'Keep going. Every answer builds power.';
-    else message.textContent = 'Your next maths answer will light up the forge.';
-  }
 
   // No false "new answer" flash when a save is restored on page load.
   if (rig.dataset.initialized === 'true' && done > oldProgress) {

@@ -1,9 +1,9 @@
 import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261112g';
 import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261112g';
 import { initForge } from './forge.js';
-import { renderShopBar, updateShopBar } from './shop.js?v=20261112i';
+import { renderShopBar, updateShopBar } from './shop.js?v=20261112m';
 import { renderArmory, nextUnlockableTurret } from './armory.js?v=20261112f';
-import { createTDEngine } from './td-engine.js?v=20261112g';
+import { createTDEngine } from './td-engine.js?v=20261112n';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
 import { createAudio } from './audio.js';
 import { DEV } from './dev.js';
@@ -14,8 +14,9 @@ import { computeStars, renderStarBadges } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderTopbarBadges } from './home.js?v=20261112l';
-import { renderPowerCore } from './power-core.js?v=20261112f';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges } from './home.js?v=20261112n';
+import { normalizeEnemyDefeats, recordEnemyDefeat } from './enemy-tally.js?v=20261112n';
+import { renderPowerCore } from './power-core.js?v=20261112m';
 import { initHowToPlay } from './how-to-play.js';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261112e';
@@ -54,13 +55,14 @@ import {
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 
-/** @typedef {{ version: number, playerName: string, xp: number, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, settings: { sound: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, settings: { sound: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
   version: 1,
   playerName: '',
   xp: 0,
+  enemyDefeated: {},
   unlockedTurrets: [...STARTER_TURRETS],
   unlockedMissions: [SLICE_MISSION_ID],
   completedMissions: [],
@@ -184,6 +186,7 @@ function loadSave() {
       sound: data.settings?.sound !== false,
       difficultyLevel: normalizeDifficultyLevel(data.settings?.difficultyLevel),
     };
+    data.enemyDefeated = normalizeEnemyDefeats(data.enemyDefeated);
     data.trainingGate = normalizeTrainingGate(data.trainingGate);
     data.levelMastery = normalizeLevelMastery(data.levelMastery);
     data.mapProgress = normalizeMapProgress(data.mapProgress);
@@ -227,6 +230,7 @@ function showScreen(id) {
   const inLearning = LEARNING_SCREENS.has(id);
   const previousScreen = Object.entries(screens)
     .find(([, element]) => element?.classList.contains('active'))?.[0];
+  if (!inLearning) stopMissionDossier();
   if (missionShell) missionShell.hidden = !inLearning;
   document.body.classList.toggle('mission-mode', inLearning);
   document.body.classList.toggle('siege-mode', id === 'siege');
@@ -650,12 +654,6 @@ function refreshDeploymentPanel() {
     summary.textContent = `${count} turret${count === 1 ? '' : 's'} deployed · ${run.waveBudget} coins left`;
   }
   if (btn) btn.disabled = deploymentTurretsPlaced < 1;
-  const info = document.getElementById('siege-deploy-instruction');
-  if (info) {
-    info.textContent = deploymentTurretsPlaced === 0
-      ? 'Tap a grass square to place your first turret.'
-      : 'Keep building, or launch the invasion!';
-  }
 }
 
 function showBonusAssaultOffer(seconds) {
@@ -683,6 +681,7 @@ function makeDashboardState() {
     playerName: save.playerName || 'Recruit',
     xp: save.xp,
     unlockedTurrets: getUnlockedSet(),
+    enemyDefeated: save.enemyDefeated,
     onArmory: openArmory,
     siegesCompleted: save.siegesCompleted,
     bestKills: save.bestKills[SLICE_MISSION_ID] ?? 0,
@@ -750,17 +749,16 @@ function refreshMissionControl() {
   const host = document.getElementById('mission-control');
   if (!host) return;
   const state = makeDashboardState();
-  const detailsOpen = host.querySelector('.mission-control-details')?.open ?? false;
   const scrollTop = host.scrollTop;
   renderMissionControl(host, state);
-  const details = host.querySelector('.mission-control-details');
-  if (details) details.open = detailsOpen;
   host.scrollTop = scrollTop;
-  renderPowerCore(document.getElementById('mission-power'), {
+  const powerHost = document.getElementById('mission-power');
+  renderPowerCore(powerHost, {
     done: gateProgress(save.trainingGate).done,
     total: GATE.questionsRequired,
     correct: lastTrainingAnswerCorrect,
   });
+  renderSiegeStats(powerHost, state);
   const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'))?.[0];
   syncMissionControlAction(active || 'home');
 }
@@ -1215,6 +1213,10 @@ function mountTDEngine(canvas, mission) {
       run.waveBudget += xp;
       refreshShop();
       addCacheProgress(isBoss ? GRANNY_CACHE.bossKillPoints : GRANNY_CACHE.killPoints);
+    },
+    onEnemyDestroyed({ key }) {
+      save.enemyDefeated = recordEnemyDefeat(save.enemyDefeated, key);
+      persistSave();
     },
     onWaveCleared({ wave }) {
       const bonus = mission.waveClearBudgetXp ?? 10;

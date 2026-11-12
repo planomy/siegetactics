@@ -5,13 +5,13 @@ import {
   isTopicDone,
 } from './training-gate.js?v=20261112g';
 import { STAR_LABELS, STAR_HINTS, summarizeBadgeCollection, renderStarBadges } from './stars.js';
-import { renderThreatDossier, initThreatDossier } from './threat-dossier.js';
+import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261112n';
 import { renderModuleLevelPips, MAP_PASSES_REQUIRED } from './level-mastery.js';
 import { renderInterstellarMap, renderModuleMapProgress, mapPiecesEarned, TRAINING_MODULE_IDS } from './map-progress.js';
 import { getQualifiedLevels } from './level-mastery.js';
 import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel } from './difficulty.js';
-import { renderArmoryPromo } from './armory-promo.js?v=20261112f';
+import { renderArmoryPromo } from './armory-promo.js?v=20261112m';
 
 /** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack @param {import('./level-mastery.js').LevelMasterySave} levelMastery @param {import('./map-progress.js').MapProgressSave} mapProgress */
 function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id)) {
@@ -343,8 +343,6 @@ function renderInboundRadar(attack, open) {
           <span class="inbound-radar-unit">${drillCaption}</span>
         </div>
       </div>
-      <p class="inbound-radar-label">${attack.remaining <= 2 ? 'Aliens nearly at Granny’s house!' : attack.remaining <= 5 ? 'Radar warning: enemy getting closer!' : 'Red blips move closer as you answer maths'}</p>
-      <button type="button" class="gb-forge-btn gb-attack-hero-cta" id="btn-hold-line">START ${attack.remaining}-QUESTION MISSION</button>
     </div>
   `;
 }
@@ -388,6 +386,12 @@ function renderAttackHero(attack, gate, playerName, isFirstMission) {
 /** @type {(() => void)|null} */
 let threatDossierCleanup = null;
 
+/** Stop animated scanning intervals while visiting the battlefield or Armory. */
+export function stopMissionDossier() {
+  threatDossierCleanup?.();
+  threatDossierCleanup = null;
+}
+
 /**
  * @param {HTMLElement} host
  * @param {{
@@ -427,14 +431,12 @@ const TOPIC_DISPLAY_ORDER = [
  * @param {any} state
  */
 export function renderMissionControl(host, state) {
+  // The existing dossier has active scan intervals: stop them before
+  // replacing the HTML, otherwise each maths answer leaks more timers.
+  threatDossierCleanup?.();
+  threatDossierCleanup = null;
   const attack = attackStatus(state.gate);
   const first = state.siegesCompleted === 0;
-  const shields = countShieldsEarned(state.levelMastery);
-  const sectors = mapPiecesEarned(state.mapProgress);
-  const progress = Math.round(attack.pct * 100);
-  const label = attack.open ? 'BATTLE READY' : 'EARN YOUR NEXT SIEGE';
-  const earnedBonus = bonusSiegeSeconds(state.gate);
-  const extraQuestions = Math.max(0, 15 - (state.gate.questionsDone || 0));
   host.dataset.threat = attack.urgency;
   const threatMessage = attack.open ? 'CONTACT! DEFEND GRANNY NOW!'
     : attack.remaining <= 2 ? 'DANGER: ALIENS AT THE FENCE!'
@@ -446,28 +448,58 @@ export function renderMissionControl(host, state) {
       <div class="mission-control-heading">
         <span class="mission-control-eyebrow">MISSION CONTROL</span>
         <h2 class="mission-control-greeting">${first ? 'Welcome' : 'Welcome back'}, <span>${escapeHtml(state.playerName)}</span></h2>
-        <p>Do maths. Earn defences. Save Granny.</p>
       </div>
       <div class="mission-control-radar" aria-label="Alien radar and progress towards the next defence">
         ${renderInboundRadar(attack, attack.open)}
       </div>
       <div class="mission-control-alert" data-urgency="${attack.urgency}">${threatMessage}</div>
+      <div class="mission-control-blueprint">
+        ${renderThreatDossier(attack.open, attack)}
+      </div>
+      <button type="button" class="mission-control-home" id="mission-back-to-hq">⌂ &nbsp; Maths HQ</button>
+    </div>
+  `;
+  threatDossierCleanup = initThreatDossier(host.querySelector('.threat-dossier'), {
+    contact: attack.open,
+    urgency: attack.urgency,
+    defeatedByType: state.enemyDefeated,
+  });
+  host.querySelector('#btn-hold-line')?.addEventListener('click', state.onHoldTheLine);
+  host.querySelector('#mission-back-to-hq')?.addEventListener('click', state.onHome);
+}
+
+/**
+ * Siege readiness and lifetime player stats live beneath the Might animation.
+ * Keeping this separate from Mission Control leaves the blueprint visible.
+ * @param {HTMLElement|null} host
+ * @param {any} state
+ */
+export function renderSiegeStats(host, state) {
+  if (!host) return;
+  const attack = attackStatus(state.gate);
+  const progress = Math.round(attack.pct * 100);
+  const shields = countShieldsEarned(state.levelMastery);
+  const sectors = mapPiecesEarned(state.mapProgress);
+  const earnedBonus = bonusSiegeSeconds(state.gate);
+  const prior = host.querySelector('.mission-battle-stats');
+  const expanded = prior?.querySelector('.mission-control-details')?.open ?? false;
+  const html = `
+    <div class="mission-battle-stats">
       <div class="mission-control-progress">
         <div class="mission-control-progress-line">
-          <strong>${label}</strong>
+          <strong>${attack.open ? 'BATTLE READY' : 'NEXT SIEGE'}</strong>
           <span>${attack.done} / ${attack.total} questions</span>
         </div>
         <div class="mission-control-track" role="progressbar" aria-label="Maths progress towards siege" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${attack.done}">
           <div class="mission-control-fill" style="width: ${progress}%"></div>
         </div>
-        <p>${attack.open ? 'Ready to defend! Extra maths earns extra battle time.' : `Only ${attack.remaining} more maths question${attack.remaining === 1 ? '' : 's'} to go.`}</p>
-        ${attack.open ? `<div class="mission-bonus-progress">${earnedBonus === 30 ? '★ BONUS ASSAULT +30s earned!' : earnedBonus === 15 ? '★ +15s earned! Answer 5 more for +30s.' : `★ Answer ${extraQuestions} more maths questions for +15s bonus time.`}</div>` : ''}
+        ${attack.open ? `<div class="mission-bonus-progress">${earnedBonus === 30 ? '★ BONUS +30s' : earnedBonus === 15 ? '★ BONUS +15s · NEXT +30s' : '★ +15s AT 15 QUESTIONS'}</div>` : ''}
       </div>
       <div class="mission-control-metrics">
         <div><span>FORGE XP</span><strong id="mission-control-xp">${state.xp.toLocaleString()}</strong></div>
         <div><span>SIEGES PLAYED</span><strong>${state.siegesCompleted}</strong></div>
       </div>
-      <details class="mission-control-details">
+      <details class="mission-control-details" ${expanded ? 'open' : ''}>
         <summary>My progress <span aria-hidden="true">⌄</span></summary>
         <div class="mission-control-detail-grid">
           <div><span>Best blasts</span><strong>${state.bestKills.toLocaleString()}</strong></div>
@@ -476,11 +508,13 @@ export function renderMissionControl(host, state) {
           <div><span>Best coins banked</span><strong>${state.bestBankedCoins.toLocaleString()}</strong></div>
         </div>
       </details>
-      <button type="button" class="mission-control-home" id="mission-back-to-hq">⌂ &nbsp; Maths HQ</button>
     </div>
   `;
-  host.querySelector('#btn-hold-line')?.addEventListener('click', state.onHoldTheLine);
-  host.querySelector('#mission-back-to-hq')?.addEventListener('click', state.onHome);
+  const template = document.createElement('template');
+  template.innerHTML = html.trim();
+  const stats = template.content.firstElementChild;
+  if (prior) prior.replaceWith(stats);
+  else host.append(stats);
 }
 
 /**
@@ -491,26 +525,17 @@ export function renderMissionControl(host, state) {
  */
 export function renderHome(host, state) {
   const attack = attackStatus(state.gate);
-  const extraTime = bonusSiegeSeconds(state.gate);
-  const answered = state.gate.questionsDone || 0;
-  const mixedLabel = attack.open
-    ? extraTime === 30 ? '60-second battle + a 30-second bonus assault earned!'
-      : extraTime === 15 ? '60-second battle + a 15-second bonus assault earned!'
-      : '60-second battle ready. Answer five more maths questions to earn +15 seconds!'
-    : '10 quick questions across different maths topics';
   host.innerHTML = `
     <div class="mission-home">
       <header class="mission-workspace-heading">
         <span class="mission-kicker">MATHS HQ</span>
-        <h1>Choose your maths mission</h1>
-        <p>10 questions earn a battle. 15 earn a bonus +15 seconds, and 20 earn +30 seconds. You choose when to fight!</p>
+        <h1>Maths missions</h1>
       </header>
       <section class="mission-mixed-card" aria-label="Mixed maths mission">
         <div class="mission-mixed-symbol" aria-hidden="true">⚡</div>
         <div class="mission-mixed-copy">
           <span class="mission-recommended">${attack.open ? 'READY FOR ACTION' : 'QUICK START'}</span>
           <h2>${attack.open ? 'Granny needs you!' : 'Mixed Maths Mission'}</h2>
-          <p>${mixedLabel}</p>
         </div>
         ${attack.open
           ? '<span class="mission-battle-ready">Use DEFEND GRANNY in Mission Control!</span>'
@@ -520,13 +545,11 @@ export function renderHome(host, state) {
       <section class="mission-topic-section" aria-label="Maths topics">
         <div class="mission-topic-heading">
           <div>
-            <h2>Or choose a topic</h2>
-            <p>${answered >= 10 ? 'Keep training to unlock bonus battle time, or launch your siege!' : 'Each completed activity earns progress and Forge XP.'}</p>
+            <h2>Topics</h2>
           </div>
           <div class="mission-level-control">
             <div class="mission-level-intro">
               <span class="mission-level-title">LEVEL</span>
-              <span class="mission-level-hint">Harder maths earns more XP</span>
             </div>
             <div class="mission-level-buttons" role="group" aria-label="Choose maths difficulty and XP reward">
               ${[1, 2, 3, 4].map((n) => `

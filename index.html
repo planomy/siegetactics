@@ -19,6 +19,8 @@
   <link rel="stylesheet" href="css/siege-side-armory.css?v=20261112j" />
   <link rel="stylesheet" href="css/maths-hq-cockpit.css?v=20261112k" />
   <link rel="stylesheet" href="css/ten-topic-dashboard.css?v=20261112l" />
+  <link rel="stylesheet" href="css/game-no-instructions.css?v=20261112m" />
+  <link rel="stylesheet" href="css/mission-blueprint-stats.css?v=20261112n" />
   <link rel="preload" href="assets/field.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/granny-boom-siege-logo.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/hero-village.png" as="image" type="image/png" />
@@ -161,7 +163,6 @@
             <section id="siege-deploy-panel" class="siege-deploy-panel" aria-label="Build your defences before the aliens arrive" hidden>
               <div class="siege-deploy-copy">
                 <span class="siege-deploy-eyebrow">PHASE ONE · BUILD YOUR DEFENCES</span>
-                <p id="siege-deploy-instruction">Tap a grass square to place your first turret.</p>
                 <div id="siege-deploy-summary" class="siege-deploy-summary" aria-live="polite"></div>
               </div>
               <button type="button" class="siege-launch-button" id="btn-launch-siege" disabled aria-label="Launch the alien attack">
@@ -175,7 +176,6 @@
         <aside class="siege-loadout" aria-label="Your siege turrets">
           <div class="siege-loadout-heading">
             <strong>YOUR TURRETS</strong>
-            <span>Choose a weapon, then tap the lawn.</span>
           </div>
           <div id="shop-bar" class="shop-bar"></div>
         </aside>
@@ -240,6 +240,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20261112l"></script>
+  <script type="module" src="js/app.js?v=20261112n"></script>
 </body>
 </html>
