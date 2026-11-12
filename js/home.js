@@ -409,8 +409,12 @@ let threatDossierCleanup = null;
  * }} state
  */
 
-const FRONT_TOPICS = ['times-tables', 'fractions', 'operations', 'measurement-length'];
-let expandedTopicsVisible = false;
+// Show every maths activity immediately, in two familiar rows of five on
+// a wide screen. The home page must not hide content behind "More topics".
+const TOPIC_DISPLAY_ORDER = [
+  'times-tables', 'measurement-length', 'fractions', 'operations', 'place-value-siege',
+  'angles', 'mass-capacity', 'decimals-percent', 'time', 'maths-quest',
+];
 
 /**
  * Mission Control stays on screen while the student changes maths activities.
@@ -484,7 +488,6 @@ export function renderMissionControl(host, state) {
  */
 export function renderHome(host, state) {
   const attack = attackStatus(state.gate);
-  const otherTopics = MATH_TOPICS.map((t) => t.id).filter((id) => !FRONT_TOPICS.includes(id));
   const extraTime = bonusSiegeSeconds(state.gate);
   const answered = state.gate.questionsDone || 0;
   const mixedLabel = attack.open
@@ -534,13 +537,8 @@ export function renderHome(host, state) {
             </div>
           </div>
         </div>
-        <div class="mission-topic-grid">${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress, FRONT_TOPICS)}</div>
-        <button type="button" id="mission-show-more" class="mission-more-button"
-          aria-expanded="${expandedTopicsVisible}" aria-controls="mission-extra-topics">
-          ${expandedTopicsVisible ? '− Show fewer topics' : '+ More maths topics'}
-        </button>
-        <div id="mission-extra-topics" class="mission-topic-grid mission-extra-topics" ${expandedTopicsVisible ? '' : 'hidden'}>
-          ${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress, otherTopics)}
+        <div class="mission-topic-grid mission-all-topics" aria-label="All ten maths topics">
+          ${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress, TOPIC_DISPLAY_ORDER)}
         </div>
       </section>
       <details class="mission-map-details">
@@ -552,17 +550,6 @@ export function renderHome(host, state) {
 
   host.querySelector('#mission-start-mixed')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-armory-open')?.addEventListener('click', state.onArmory);
-  host.querySelector('#mission-show-more')?.addEventListener('click', () => {
-    expandedTopicsVisible = !expandedTopicsVisible;
-    const more = host.querySelector('#mission-show-more');
-    const extras = host.querySelector('#mission-extra-topics');
-    if (extras) extras.hidden = !expandedTopicsVisible;
-    if (more) {
-      more.setAttribute('aria-expanded', String(expandedTopicsVisible));
-      more.textContent = expandedTopicsVisible ? '− Show fewer topics' : '+ More maths topics';
-    }
-  });
-
   host.querySelectorAll('[data-topic]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-topic');
