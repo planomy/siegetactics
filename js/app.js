@@ -13,16 +13,17 @@ import { computeStars, renderStarBadges } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderTopbarBadges } from './home.js?v=20261112d';
+import { renderHome, renderMissionControl, renderTopbarBadges } from './home.js?v=20261112e';
+import { renderPowerCore } from './power-core.js?v=20261112e';
 import { initHowToPlay } from './how-to-play.js';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
-import { initTimesTables } from './times-tables.js?v=20260819b';
-import { initMeasurementLength } from './measurement-length.js?v=20260819b';
-import { initFractions } from './fractions.js?v=20260819b';
-import { initAnglesShapes } from './angles-shapes.js?v=20260819b';
-import { initMathsQuest } from './maths-quest.js?v=20260819b';
-import { initExpandedMath } from './expanded-maths.js?v=20260819b';
-import { initBattlePrep } from './battle-prep.js?v=20260819b';
+import { initTimesTables } from './times-tables.js?v=20261112e';
+import { initMeasurementLength } from './measurement-length.js?v=20261112e';
+import { initFractions } from './fractions.js?v=20261112e';
+import { initAnglesShapes } from './angles-shapes.js?v=20261112e';
+import { initMathsQuest } from './maths-quest.js?v=20261112e';
+import { initExpandedMath } from './expanded-maths.js?v=20261112e';
+import { initBattlePrep } from './battle-prep.js?v=20261112e';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js';
 import {
   normalizeLevelMastery,
@@ -47,7 +48,7 @@ import {
   isUnitDone,
   isTopicDone,
   markBattlePrepComplete,
-} from './training-gate.js';
+} from './training-gate.js?v=20261112e';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 
@@ -129,6 +130,7 @@ const screens = {
 
 const xpDisplay = document.getElementById('topbar-xp');
 const missionShell = document.getElementById('mission-shell');
+let lastTrainingAnswerCorrect = null;
 const LEARNING_SCREENS = new Set([
   'home', 'timesTables', 'measurement', 'fractions', 'angles',
   'mathsQuest', 'expanded', 'battlePrep', 'forge',
@@ -208,9 +210,9 @@ function showScreen(id) {
 
 function syncMissionControlAction(id) {
   const action = document.getElementById('btn-hold-line');
-  // During a drill, keep the left-hand radar in view but let the child finish
-  // their maths before offering a different activity.
-  if (action) action.hidden = !isGateOpen(save.trainingGate);
+  // During a drill, leave the radar and forge visible. Only offer
+  // the main battle button on HQ; activities have their own finish controls.
+  if (action) action.hidden = id !== 'home';
   const homeButton = document.getElementById('mission-back-to-hq');
   if (homeButton) homeButton.hidden = id === 'home';
 }
@@ -416,6 +418,26 @@ function awardScaledTrainingXp(baseAmount, level) {
   return amount;
 }
 
+/** Every answered question charges the forge, including wrong answers.
+ * Correct answers earn the accuracy-based siege-coin boost.
+ * Progress is saved immediately, including when students leave mid-session.
+ * @param {boolean} right
+ */
+function creditTrainingAnswer(right) {
+  const result = recordTrainingQuestions(save.trainingGate, 1, right ? 1 : 0);
+  if (!result.added) return;
+  save.trainingGate = result.gate;
+  lastTrainingAnswerCorrect = right;
+  persistSave();
+  refreshMissionControl();
+  if (isGateOpen(save.trainingGate)) {
+    showToast('Defences fully charged! Finish your activity, then defend Granny!', {
+      variant: 'success',
+      duration: 4200,
+    });
+  }
+}
+
 /**
  * @param {string} moduleId
  * @param {import('./difficulty.js').DifficultyLevel} level
@@ -432,23 +454,11 @@ function completeTrainingSession(moduleId, level, accuracy) {
   save.levelMastery = result.mastery;
   save.mapProgress = result.mapProgress;
 
-  // A completed ten-question topic drill earns a siege, no matter which
-  // topic the child chooses. The place-value forge is one question.
-  const questionCount = moduleId === 'place-value-siege' ? 1 : 10;
-  const trainingCredit = recordTrainingQuestions(save.trainingGate, questionCount, accuracy);
-  if (trainingCredit.added > 0) {
-    save.trainingGate = trainingCredit.gate;
-  }
+  // Ten-question drills were credited live by their answer callbacks.
+  // Place Value is a one-puzzle forge, so it earns one credit on success.
+  if (moduleId === 'place-value-siege') creditTrainingAnswer(true);
   persistSave();
   refreshMissionControl();
-
-  if (trainingCredit.added > 0) {
-    const nowDone = gateProgress(save.trainingGate).done;
-    const message = isGateOpen(save.trainingGate)
-      ? 'Siege unlocked! Back to HQ, then DEFEND GRANNY!'
-      : `Maths training: ${nowDone}/${GATE.questionsRequired} questions towards your next siege.`;
-    showToast(message, { variant: 'success', duration: 4000 });
-  }
 
   if (result.shieldEarned) {
     if (result.firstClearBonus > 0) {
@@ -488,6 +498,9 @@ function createTrainingHandlers(moduleId) {
     difficultyLevel: level,
     onAwardXp(baseAmount) {
       return awardScaledTrainingXp(baseAmount, level);
+    },
+    onAnswer(right) {
+      creditTrainingAnswer(right);
     },
     onSessionComplete(accuracy) {
       return completeTrainingSession(moduleId, level, accuracy);
@@ -595,7 +608,18 @@ function makeDashboardState() {
 function refreshMissionControl() {
   const host = document.getElementById('mission-control');
   if (!host) return;
-  renderMissionControl(host, makeDashboardState());
+  const state = makeDashboardState();
+  const detailsOpen = host.querySelector('.mission-control-details')?.open ?? false;
+  const scrollTop = host.scrollTop;
+  renderMissionControl(host, state);
+  const details = host.querySelector('.mission-control-details');
+  if (details) details.open = detailsOpen;
+  host.scrollTop = scrollTop;
+  renderPowerCore(document.getElementById('mission-power'), {
+    done: gateProgress(save.trainingGate).done,
+    total: GATE.questionsRequired,
+    correct: lastTrainingAnswerCorrect,
+  });
   const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'))?.[0];
   syncMissionControlAction(active || 'home');
 }
@@ -605,7 +629,7 @@ function showHome() {
   if (!host) return;
   const state = makeDashboardState();
   renderHome(host, state);
-  renderMissionControl(document.getElementById('mission-control'), state);
+  refreshMissionControl();
   renderTopbarBadges(document.getElementById('topbar-badges'), save.bestStars, SLICE_MISSION_ID);
   showScreen('home');
 }
@@ -623,6 +647,9 @@ function showBattlePrep() {
     questionsNeeded: GATE.questionsRequired - gateProgress(save.trainingGate).done,
     onAwardXp(baseAmount) {
       awardScaledTrainingXp(baseAmount, level);
+    },
+    onAnswer(right) {
+      creditTrainingAnswer(right);
     },
     onFinished(moduleResults, overall) {
       if (prepRecorded) return;
@@ -675,6 +702,7 @@ function showTimesTables() {
     completedTables: save.trainingGate.timesTablesDone,
     difficultyLevel: training.difficultyLevel,
     onAwardXp: training.onAwardXp,
+    onAnswer: training.onAnswer,
     onSessionComplete({ table, accuracy, passed }) {
       training.onSessionComplete(accuracy);
       if (passed) {
@@ -714,6 +742,7 @@ function showMeasurementLength() {
     difficultyLevel: training.difficultyLevel,
     unitDone: topic?.unitId ? isUnitDone(save.trainingGate, topic.unitId) : false,
     onAwardXp: training.onAwardXp,
+    onAnswer: training.onAnswer,
     onSessionComplete({ accuracy, passed }) {
       training.onSessionComplete(accuracy);
       if (passed) creditGateModule('measurement-length', accuracy);
@@ -733,6 +762,7 @@ function showFractions() {
   disposeActiveTraining = initFractions(host, {
     difficultyLevel: training.difficultyLevel,
     onAwardXp: training.onAwardXp,
+    onAnswer: training.onAnswer,
     onSessionComplete({ accuracy }) {
       training.onSessionComplete(accuracy);
       creditGateModule('fractions', accuracy);
@@ -752,6 +782,7 @@ function showAnglesShapes() {
   disposeActiveTraining = initAnglesShapes(host, {
     difficultyLevel: training.difficultyLevel,
     onAwardXp: training.onAwardXp,
+    onAnswer: training.onAnswer,
     onSessionComplete({ accuracy }) {
       training.onSessionComplete(accuracy);
       creditGateModule('angles', accuracy);
@@ -771,6 +802,7 @@ function showMathsQuest() {
   disposeActiveTraining = initMathsQuest(host, {
     difficultyLevel: training.difficultyLevel,
     onAwardXp: training.onAwardXp,
+    onAnswer: training.onAnswer,
     onSessionComplete(accuracy) {
       training.onSessionComplete(accuracy);
       creditGateModule('maths-quest', accuracy);
@@ -792,6 +824,7 @@ function showExpandedMath(topicId) {
     topicId,
     difficultyLevel: training.difficultyLevel,
     onAwardXp: training.onAwardXp,
+    onAnswer: training.onAnswer,
     onSessionComplete({ accuracy }) {
       training.onSessionComplete(accuracy);
     },

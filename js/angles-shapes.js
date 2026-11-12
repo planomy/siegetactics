@@ -1,4 +1,4 @@
-import { initDrillSession } from './drill-session.js?v=20260819b';
+import { initDrillSession } from './drill-session.js?v=20261112e';
 
 /** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
 
@@ -296,6 +296,7 @@ export function initAnglesShapes(host, callbacks) {
     xpPerCorrect: ANGLES_LAB.xpPerCorrect,
     makeQuestion: makeAnglesQuestion,
     onAwardXp: callbacks.onAwardXp,
+    onAnswer: callbacks.onAnswer,
     onSessionComplete({ accuracy }) {
       callbacks.onSessionComplete?.(accuracy);
     },

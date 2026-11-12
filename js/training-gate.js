@@ -101,7 +101,7 @@ export function attackStatus(gate) {
   let urgency = 'calm';
   if (p.open) urgency = 'now';
   else if (remaining <= 2) urgency = 'critical';
-  else if (remaining <= 4) urgency = 'warning';
+  else if (remaining <= 5) urgency = 'warning';
 
   return {
     ...p,

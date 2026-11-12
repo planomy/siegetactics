@@ -15,6 +15,7 @@ import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20
  *   xpPerCorrect: number,
  *   makeQuestion: (level: import('./difficulty.js').DifficultyLevel) => { prompt: string, answer: number|string, options: { label: string, value: number|string }[] },
  *   onAwardXp: (amount: number) => void,
+ *   onAnswer?: (right: boolean) => void,
  *   onSessionComplete?: (result: { accuracy: number, passed: boolean }) => void,
  *   onHome: () => void,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
@@ -130,6 +131,7 @@ export function initDrillSession(host, config) {
           config.showToast(`Correct: ${label}`, { variant: 'shop' });
         }
 
+        config.onAnswer?.(right);
         clearAnswerTimer();
         answerTimer = setTimeout(() => {
           answerTimer = null;

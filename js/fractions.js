@@ -1,4 +1,4 @@
-import { initDrillSession } from './drill-session.js?v=20260819b';
+import { initDrillSession } from './drill-session.js?v=20261112e';
 
 /** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
 
@@ -344,6 +344,7 @@ export function initFractions(host, callbacks) {
     xpPerCorrect: FRACTIONS_LAB.xpPerCorrect,
     makeQuestion: makeFractionQuestion,
     onAwardXp: callbacks.onAwardXp,
+    onAnswer: callbacks.onAnswer,
     onSessionComplete({ accuracy }) {
       callbacks.onSessionComplete?.(accuracy);
     },

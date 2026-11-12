@@ -1,0 +1,240 @@
+/*
+ * Siege Tactics: live learning cockpit, with radar left, maths central,
+ * and a defence forge built from the game's original turret artwork.
+ */
+body.mission-mode #app {
+  max-width: 1860px;
+}
+@media (min-width: 1321px) {
+  .mission-shell {
+    grid-template-columns: minmax(290px, 345px) minmax(0, 1fr) minmax(290px, 345px);
+    gap: clamp(12px, 1.15vw, 20px);
+    align-items: start;
+  }
+  .mission-workspace {
+    padding: clamp(17px, 1.65vw, 29px);
+  }
+  .mission-workspace .times-panel,
+  .mission-workspace .prep-panel,
+  .mission-workspace .forge-panel {
+    max-width: none;
+  }
+  .mission-control-radar .inbound-radar-dish {
+    width: min(185px, 14vw);
+  }
+}
+.mission-power {
+  position: sticky;
+  top: 12px;
+  min-width: 0;
+  border-radius: 19px;
+  overflow: hidden;
+  border: 1px solid rgba(123, 100, 193, 0.62);
+  background: #0d0a1a;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35), inset 0 0 35px rgba(66,33,132,0.2);
+}
+.mission-power[hidden] { display:none !important; }
+.power-rig {
+  --power-accent: #735c9e;
+  --power-glow: rgba(124, 93, 170, 0.18);
+  --power-intensity: 0.1;
+  position: relative;
+  min-height: 635px;
+  padding: 22px 15px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 37%, var(--power-glow) 0%, transparent 58%),
+    radial-gradient(ellipse at bottom, rgba(61,33,109,.24), transparent 68%),
+    linear-gradient(165deg,#1b1430, #090a17 52%, #101324);
+  transition: background .6s ease;
+}
+.power-rig::before {
+  content: '';
+  position:absolute; inset:0; pointer-events:none; opacity:.28;
+  background-image: linear-gradient(rgba(102,92,148,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(102,92,148,.12) 1px, transparent 1px);
+  background-size: 21px 21px;
+  mask-image: linear-gradient(180deg,transparent,black 25%,black 90%,transparent);
+}
+.power-rig[data-stage="warming"] { --power-accent:#82b5ec; --power-glow:rgba(48,104,235,.18); --power-intensity:.3; }
+.power-rig[data-stage="sparking"] { --power-accent:#4edff3; --power-glow:rgba(22,195,250,.22); --power-intensity:.58; }
+.power-rig[data-stage="charged"] { --power-accent:#fac44f; --power-glow:rgba(255,150,34,.28); --power-intensity:.85; }
+.power-rig[data-stage="nearly"] { --power-accent:#ff7541; --power-glow:rgba(253,91,31,.32); --power-intensity:1; }
+.power-rig[data-stage="ready"] { --power-accent:#8efa6e; --power-glow:rgba(116,250,73,.34); --power-intensity:1; }
+.power-heading { position:relative; z-index:2; text-align:center; }
+.power-eyebrow {
+  font-size:.72rem; font-weight:900; letter-spacing:.13em;
+  color:#cdbdfc;
+}
+.power-heading h2 {
+  margin:6px 0 7px;
+  font-family:var(--font-display);
+  font-size:clamp(1.5rem,1.75vw,2rem);
+  line-height:1;
+  font-weight:400;
+  color:#fff0c6;
+  text-shadow:0 3px 14px rgba(0,0,0,.85);
+}
+.power-heading p { margin:0; font-size:.82rem; color:#c3b9d8; line-height:1.35; }
+.power-scene {
+  position:relative;
+  width:min(100%,320px);
+  height:300px;
+  flex:none;
+  margin:8px auto 0;
+  isolation:isolate;
+}
+.power-scene::before {
+  content:'';
+  position:absolute; left:50%; bottom:10px; transform:translateX(-50%);
+  width:83%; height:50px;
+  background:radial-gradient(ellipse,rgba(10,7,17,.95), transparent 72%);
+  z-index:3;
+}
+.power-halo {
+  position:absolute; border-radius:50%; left:50%; top:51%;
+  transform:translate(-50%,-50%);
+  border:2px dashed var(--power-accent);
+  opacity:calc(.12 + var(--power-intensity)*.55);
+  filter:drop-shadow(0 0 13px var(--power-accent));
+  animation:power-spin 13s linear infinite;
+}
+.power-halo-outer { width:270px; height:270px; }
+.power-halo-inner {
+  width:210px; height:210px; border-style:solid;
+  border-width:1px; animation-direction:reverse; animation-duration:8s;
+}
+.power-energy-ring {
+  position:absolute; inset:24% 17%;
+  border:11px solid var(--power-accent);
+  border-radius:50%; opacity:calc(.02 + var(--power-intensity)*.16);
+  filter:blur(16px);
+}
+.power-energy-beams {
+  position:absolute; inset:7%; border-radius:50%;
+  background:repeating-conic-gradient(from 0deg,transparent 0deg 19deg,var(--power-accent) 21deg 22deg, transparent 23deg 45deg);
+  opacity:calc(var(--power-intensity)*.22);
+  animation:power-spin-beams 19s linear infinite;
+  mask-image:radial-gradient(circle,transparent 0%,transparent 22%,black 60%,transparent 73%);
+}
+.power-turret { position:absolute; z-index:5; display:grid; place-items:center; pointer-events:none; }
+.power-turret img { width:100%; height:100%; object-fit:contain; filter:grayscale(1) brightness(.45) drop-shadow(0 9px 12px #000); transition:filter .65s ease, transform .65s ease; }
+.power-turret-main { width:59%; height:65%; left:20.5%; top:17%; }
+.power-turret-main img { transform:translateY(12px) scale(.87); }
+.power-turret-left { width:39%; height:41%; left:-1%; top:43%; opacity:.12; transform:rotate(-12deg); transition:opacity .55s ease; }
+.power-turret-right { width:43%; height:44%; right:-3%; top:42%; opacity:.10; transform:rotate(12deg); transition:opacity .55s ease; }
+.power-rig:not([data-stage="offline"]) .power-turret-main img { filter:grayscale(.7) brightness(.8) drop-shadow(0 0 20px var(--power-accent)); transform:translateY(5px) scale(.94); }
+.power-rig[data-stage="sparking"] .power-turret-main img,
+.power-rig[data-stage="charged"] .power-turret-main img,
+.power-rig[data-stage="nearly"] .power-turret-main img,
+.power-rig[data-stage="ready"] .power-turret-main img {
+  filter:grayscale(0) brightness(1.08) drop-shadow(0 0 24px var(--power-accent));
+  transform:translateY(-4px) scale(1.04);
+}
+.power-rig[data-stage="charged"] .power-turret-left,
+.power-rig[data-stage="nearly"] .power-turret-left,
+.power-rig[data-stage="ready"] .power-turret-left { opacity:1; }
+.power-rig[data-stage="nearly"] .power-turret-right,
+.power-rig[data-stage="ready"] .power-turret-right { opacity:1; }
+.power-rig[data-stage="charged"] .power-turret-left img,
+.power-rig[data-stage="nearly"] .power-turret-left img,
+.power-rig[data-stage="ready"] .power-turret-left img,
+.power-rig[data-stage="nearly"] .power-turret-right img,
+.power-rig[data-stage="ready"] .power-turret-right img {
+  filter:grayscale(0) brightness(1.04) drop-shadow(0 0 15px var(--power-accent));
+}
+.power-core-glow {
+  position:absolute; left:50%; top:54%; transform:translate(-50%,-50%);
+  width:110px; height:110px; border-radius:50%;
+  background:var(--power-accent); opacity:calc(var(--power-intensity)*.22); filter:blur(32px); z-index:2;
+  animation:power-breathe 2.9s ease-in-out infinite;
+}
+.power-core-symbol {
+  position:absolute; z-index:6; left:50%; top:73%; transform:translate(-50%,-50%);
+  font-size:2rem; line-height:1; color:var(--power-accent);
+  text-shadow:0 0 14px var(--power-accent),0 0 30px var(--power-accent);
+  opacity:calc(.18 + var(--power-intensity)*.82);
+}
+.power-burst {
+  position:absolute; z-index:8; inset:17%;
+  border-radius:50%; border:4px solid var(--power-accent);
+  opacity:0; pointer-events:none;
+}
+.power-burst.is-firing { animation:power-charge-burst .65s ease-out 1; }
+.power-burst.is-correct { border-color:#fcd467; }
+.power-rig[data-stage="ready"] .power-scene { animation:power-victory .75s ease-in-out 2; }
+.power-rank { position:relative; z-index:2; text-align:center; min-height:102px; }
+.power-rank-name {
+  display:block; font-family:var(--font-display); font-size:clamp(1.3rem,1.7vw,1.75rem);
+  font-weight:400; line-height:1.05; letter-spacing:.02em; color:var(--power-accent);
+  text-shadow:0 0 16px var(--power-glow);
+}
+.power-charge-number { display:block; margin-top:7px; font-size:2.1rem; color:#fff; font-variant-numeric:tabular-nums; line-height:1; }
+.power-charge-number span {font-size:.9rem; color:#b6a8ca;}
+.power-rank-detail { margin:7px 0 0; color:#bfb5ce; font-size:.8rem; line-height:1.35; }
+.power-charge-track { width:100%; height:12px; margin-top:11px; border:1px solid #67518c; border-radius:30px; background:#090c16; overflow:hidden; }
+.power-charge-fill { height:100%; width:0; background:linear-gradient(90deg,#4d98f0,var(--power-accent)); box-shadow:0 0 18px var(--power-accent); transition:width .5s ease; }
+.power-charge-cells { display:grid; grid-template-columns:repeat(10,1fr); gap:4px; width:100%; margin:12px 0 13px; }
+.power-charge-cell { height:14px; border-radius:3px; background:#292339; border:1px solid #403250; transition:background .3s ease,box-shadow .3s ease,transform .2s ease; }
+.power-charge-cell.is-powered { background:var(--power-accent); border-color:var(--power-accent); box-shadow:0 0 11px var(--power-accent); transform:translateY(-2px); }
+.power-message { min-height:41px; width:100%; border:1px solid rgba(143,110,202,.37); border-radius:9px; background:rgba(12,8,29,.85); color:#eadfff; font-family:var(--font-display); font-size:1rem; line-height:1.15; text-align:center; padding:11px; }
+.power-rig[data-stage="ready"] .power-message { background:#193218; border-color:#8efa6e; color:#b8ff9a; animation:power-ready-pulse 1.2s ease-in-out infinite; }
+
+.mission-control[data-threat="warning"] .mission-control-radar .inbound-radar-dish {
+  border-color:#ffa94f; box-shadow:0 0 20px rgba(255,166,57,.27);
+}
+.mission-control[data-threat="critical"] .mission-control-radar .inbound-radar-dish {
+  border-color:#ff633b; box-shadow:0 0 27px rgba(255,72,43,.4); animation:power-ready-pulse 1.4s ease-in-out infinite;
+}
+.mission-control-alert {
+  border-radius:8px; border:1px solid rgba(91,200,139,.3);
+  background:rgba(4,20,13,.85); color:#b0ecc5; font-size:.76rem; font-weight:900;
+  letter-spacing:.06em; text-align:center; padding:9px 11px; margin-top:0; line-height:1.3;
+}
+.mission-control-alert[data-urgency="warning"] { background:#392407; color:#ffd181; border-color:#c7832f; }
+.mission-control-alert[data-urgency="critical"] { background:#3d120f; color:#ffb0a1; border-color:#e64a34; animation:power-ready-pulse 1.5s ease-in-out infinite; }
+.mission-control-alert[data-urgency="now"] { background:#16351c; color:#baffac; border-color:#71da62; animation:power-ready-pulse 1.5s ease-in-out infinite; }
+.mission-control-radar .inbound-radar-label { font-size:.8rem; font-weight:800; }
+.mission-control-radar .inbound-radar-warning,
+.mission-control-radar .inbound-radar-critical { color:#ffbe79; }
+@keyframes power-spin {to{ transform:translate(-50%,-50%) rotate(360deg); }}
+@keyframes power-spin-beams {to{transform:rotate(360deg);}}
+@keyframes power-breathe {50%{opacity:calc(var(--power-intensity)*.4); transform:translate(-50%,-50%) scale(1.2);}}
+@keyframes power-charge-burst {0%{opacity:.9;transform:scale(.35)} 100%{opacity:0;transform:scale(1.3)}}
+@keyframes power-ready-pulse {50%{filter:brightness(1.25);}}
+@keyframes power-victory {30%{transform:translateY(-7px)}60%{transform:translateY(0)}}
+@media (min-width: 1321px) and (max-height: 780px) {
+  .power-rig { min-height: 540px; padding-top:15px; }
+  .power-scene { height:235px; }
+  .power-halo-outer {width:215px;height:215px}
+  .power-halo-inner {width:165px;height:165px}
+}
+@media (min-width: 871px) and (max-width: 1320px) {
+  .mission-shell { grid-template-columns:minmax(280px,350px) minmax(0,1fr); }
+  .mission-power { position:static; grid-column:2; }
+  .power-rig { min-height:0; padding:15px 20px; }
+  .power-scene { height:205px; width:235px; }
+  .power-halo-outer {width:190px;height:190px}
+  .power-halo-inner {width:150px;height:150px}
+}
+@media (max-width: 870px) {
+  .mission-power { position:static; }
+  .power-rig { min-height:0; padding:14px 16px; }
+  .power-scene { height:210px; width:250px; }
+  .power-halo-outer {width:195px;height:195px}
+  .power-halo-inner {width:150px;height:150px}
+  .power-heading h2 {font-size:1.5rem;}
+}
+@media (max-width: 540px) {
+  .power-scene { height:180px; width:215px; }
+  .power-halo-outer {width:173px;height:173px}
+  .power-halo-inner {width:130px;height:130px}
+}
+@media (prefers-reduced-motion:reduce) {
+  .power-rig *, .mission-control-alert, .mission-control-radar .inbound-radar-dish {
+    animation:none !important; transition:none !important;
+  }
+}

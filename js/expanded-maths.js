@@ -1,4 +1,4 @@
-import { initDrillSession } from './drill-session.js?v=20260819b';
+import { initDrillSession } from './drill-session.js?v=20261112e';
 
 const MODULES = {
   operations: { title: 'Operations HQ', tag: 'Number · Operations', quiz: 'Calculate & reason' },
@@ -362,6 +362,7 @@ export function initExpandedMath(host, callbacks) {
     xpPerCorrect: 4,
     makeQuestion: (level) => makeExpandedQuestion(callbacks.topicId, level),
     onAwardXp: callbacks.onAwardXp,
+    onAnswer: callbacks.onAnswer,
     onSessionComplete: callbacks.onSessionComplete,
     onHome: callbacks.onHome,
     showToast: callbacks.showToast,

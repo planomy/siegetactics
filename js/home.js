@@ -2,7 +2,7 @@ import { MATH_TOPICS } from './topics-data.js';
 import {
   attackStatus,
   isTopicDone,
-} from './training-gate.js';
+} from './training-gate.js?v=20261112e';
 import { STAR_LABELS, STAR_HINTS, summarizeBadgeCollection, renderStarBadges } from './stars.js';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js';
 import { renderModuleLevelPips, MAP_PASSES_REQUIRED } from './level-mastery.js';
@@ -275,18 +275,16 @@ function renderRadarEscorts(attack, blipDeg, blipR) {
   const progress = 1 - attack.remaining / Math.max(1, attack.total);
   if (progress <= 0) return '';
 
-  const target = 8 + Math.floor(Math.random() * 13);
-  const count = Math.max(1, Math.round(target * progress));
-  const arcSpan = 14 + progress * 26;
-  const rMin = Math.min(blipR + 3, 44);
-  const rMax = Math.min(blipR + 10 + progress * 16, 48);
-
-  const dots = Array.from({ length: count }, () => {
-    const angle = blipDeg + (Math.random() - 0.5) * arcSpan * 2;
-    const radius = rMin + Math.random() * Math.max(1, rMax - rMin);
-    const size = 3 + Math.random() * 3.5;
-    const opacity = 0.35 + Math.random() * 0.45;
-    const delay = (Math.random() * 0.85).toFixed(2);
+  // Stable positions make approaching aliens appear like a real formation,
+  // rather than randomly teleporting around the radar after every answer.
+  const count = Math.max(1, Math.round(12 * progress));
+  const arcSpan = 12 + progress * 26;
+  const dots = Array.from({ length: count }, (_, i) => {
+    const angle = blipDeg + (((i * 7) % 11) - 5) * arcSpan / 11;
+    const radius = Math.max(5, Math.min(45, blipR + ((i * 3) % 7 - 3) * 1.65));
+    const size = 3.5 + (i % 4) * 0.9;
+    const opacity = 0.42 + (i % 5) * 0.1;
+    const delay = ((i % 7) * 0.12).toFixed(2);
     return `<span class="inbound-radar-escort" style="--escort-deg:${angle.toFixed(1)}deg;--escort-r:${radius.toFixed(1)}%;--escort-size:${size.toFixed(1)}px;--escort-opacity:${opacity.toFixed(2)};--escort-delay:${delay}s" aria-hidden="true"></span>`;
   });
 
@@ -339,7 +337,7 @@ function renderInboundRadar(attack, open) {
           <span class="inbound-radar-unit">${drillCaption}</span>
         </div>
       </div>
-      <p class="inbound-radar-label">Finish 10 maths questions to earn a siege</p>
+      <p class="inbound-radar-label">${attack.remaining <= 2 ? 'Aliens nearly at Granny’s house!' : attack.remaining <= 5 ? 'Radar warning: enemy getting closer!' : 'Red blips move closer as you answer maths'}</p>
       <button type="button" class="gb-forge-btn gb-attack-hero-cta" id="btn-hold-line">START ${attack.remaining}-QUESTION MISSION</button>
     </div>
   `;
@@ -423,6 +421,12 @@ export function renderMissionControl(host, state) {
   const sectors = mapPiecesEarned(state.mapProgress);
   const progress = Math.round(attack.pct * 100);
   const label = attack.open ? 'BATTLE READY' : 'EARN YOUR NEXT SIEGE';
+  host.dataset.threat = attack.urgency;
+  const threatMessage = attack.open ? 'CONTACT! DEFEND GRANNY NOW!'
+    : attack.remaining <= 2 ? 'DANGER: ALIENS AT THE FENCE!'
+    : attack.remaining <= 5 ? 'WARNING: ALIENS CLOSING IN!'
+    : attack.remaining <= 8 ? 'ENEMY SIGNAL DETECTED'
+    : 'DISTANT ALIEN SIGNAL';
   host.innerHTML = `
     <div class="mission-control-inner">
       <div class="mission-control-heading">
@@ -430,9 +434,10 @@ export function renderMissionControl(host, state) {
         <h2 class="mission-control-greeting">${first ? 'Welcome' : 'Welcome back'}, <span>${escapeHtml(state.playerName)}</span></h2>
         <p>Do maths. Earn defences. Save Granny.</p>
       </div>
-      <div class="mission-control-radar" aria-label="Progress towards the next defence">
+      <div class="mission-control-radar" aria-label="Alien radar and progress towards the next defence">
         ${renderInboundRadar(attack, attack.open)}
       </div>
+      <div class="mission-control-alert" data-urgency="${attack.urgency}">${threatMessage}</div>
       <div class="mission-control-progress">
         <div class="mission-control-progress-line">
           <strong>${label}</strong>

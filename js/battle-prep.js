@@ -1,9 +1,9 @@
-import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20260819b';
+import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20261112e';
 import { makePlaceValueVariant } from './missions-data.js?v=20260819b';
-import { makeLengthQuestion } from './measurement-length.js?v=20260819b';
-import { makeFractionQuestion } from './fractions.js?v=20260819b';
-import { makeAnglesQuestion } from './angles-shapes.js?v=20260819b';
-import { makeExpandedQuestion } from './expanded-maths.js?v=20260819b';
+import { makeLengthQuestion } from './measurement-length.js?v=20261112e';
+import { makeFractionQuestion } from './fractions.js?v=20261112e';
+import { makeAnglesQuestion } from './angles-shapes.js?v=20261112e';
+import { makeExpandedQuestion } from './expanded-maths.js?v=20261112e';
 import { difficultyTrainingTag } from './difficulty.js';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
 
@@ -140,6 +140,7 @@ export function buildBattlePrepDeck(level, cycle = 0, questionsNeeded = 10) {
  *   cycle: number,
  *   questionsNeeded?: number,
  *   onAwardXp: (amount: number) => void,
+ *   onAnswer?: (right: boolean) => void,
  *   onFinished: (results: Record<string, {correct:number, attempts:number, accuracy:number}>, overall:number) => void,
  *   onReady: (overall:number) => void,
  *   onHome: () => void,
@@ -230,6 +231,7 @@ export function initBattlePrep(host, callbacks) {
       const shown = item.options.find((option) => valuesMatch(option.value, item.answer))?.label ?? item.answer;
       callbacks.showToast(`Correct answer: ${shown}. Keep going!`, { variant: 'shop' });
     }
+    callbacks.onAnswer?.(right);
     clearTimer();
     timer = setTimeout(() => {
       timer = null;
