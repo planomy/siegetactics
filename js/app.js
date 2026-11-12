@@ -210,7 +210,9 @@ function syncMissionControlAction(id) {
   const action = document.getElementById('btn-hold-line');
   // During a drill, keep the left-hand radar in view but let the child finish
   // their maths before offering a different activity.
-  if (action) action.hidden = id !== 'home' && !isGateOpen(save.trainingGate);
+  if (action) action.hidden = !isGateOpen(save.trainingGate);
+  const homeButton = document.getElementById('mission-back-to-hq');
+  if (homeButton) homeButton.hidden = id === 'home';
 }
 
 function refreshSoundButton() {
