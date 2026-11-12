@@ -524,3 +524,39 @@ body.mission-mode #app {
     gap: 2px;
   }
 }
+
+
+/* One unambiguous difficulty selection. Do not visually promote a second level. */
+.mission-level-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.mission-level-control label {
+  color: #c9bfdc;
+  font-size: 0.77rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.mission-level-select {
+  min-width: 118px;
+  min-height: 45px;
+  padding: 8px 36px 8px 14px;
+  border: 1px solid rgba(226, 171, 79, 0.7);
+  border-radius: 11px;
+  background-color: #171124;
+  color: #fff5db;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  color-scheme: dark;
+}
+
+.mission-level-select:focus-visible {
+  outline: 3px solid #ffd36b;
+  outline-offset: 3px;
+}
