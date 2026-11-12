@@ -1,4 +1,5 @@
-import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20260819b';
+import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261112g';
+import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261112g';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js';
 import { renderArmory, nextUnlockableTurret } from './armory.js?v=20261112f';
@@ -41,6 +42,7 @@ import {
   isGateOpen,
   gateProgress,
   recordTrainingQuestions,
+  bonusSiegeSeconds,
   GATE,
   recordTimesTable,
   recordTopicUnit,
@@ -48,7 +50,7 @@ import {
   isUnitDone,
   isTopicDone,
   markBattlePrepComplete,
-} from './training-gate.js?v=20261112e';
+} from './training-gate.js?v=20261112g';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 
@@ -88,6 +90,9 @@ let run = {
 };
 
 let battlePrepCoinBonus = 0;
+let deploymentTurretsPlaced = 0;
+let previousBattleCry = '';
+let bonusChoiceFocus = null;
 
 /** Tracks nuke-cache edge so the ready siren only fires once per fill. */
 let nukeCacheWasReady = false;
@@ -595,7 +600,45 @@ function setDifficultyLevel(level) {
 }
 
 function getActiveMission() {
-  return getMissionForDifficulty(SLICE_MISSION_ID, getDifficultyLevel());
+  const mission = getMissionForDifficulty(SLICE_MISSION_ID, getDifficultyLevel());
+  return mission ? balanceMission(mission, save.siegesCompleted) : null;
+}
+
+function refreshDeploymentPanel() {
+  const panel = document.getElementById('siege-deploy-panel');
+  if (!panel || panel.hidden) return;
+  const summary = document.getElementById('siege-deploy-summary');
+  const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('btn-launch-siege'));
+  if (summary) {
+    const count = deploymentTurretsPlaced;
+    summary.textContent = `${count} turret${count === 1 ? '' : 's'} built · ${run.waveBudget} siege coins left · ${count ? 'Start whenever you feel ready!' : 'Place your first turret to begin'}`;
+  }
+  if (btn) btn.disabled = deploymentTurretsPlaced < 1;
+  const info = document.getElementById('siege-deploy-instruction');
+  if (info) {
+    info.textContent = deploymentTurretsPlaced === 0
+      ? 'Granny Blaster is selected. Click an empty grass square to place it, then build more defences.'
+      : 'Keep building while you can afford turrets. The aliens will not come until YOU press the battle button.';
+  }
+}
+
+function showBonusAssaultOffer(seconds) {
+  const panel = document.getElementById('siege-bonus-panel');
+  const amount = document.getElementById('siege-bonus-seconds');
+  if (amount) amount.textContent = `+${seconds} seconds`;
+  if (!panel) return;
+  panel.hidden = false;
+  bonusChoiceFocus = document.activeElement;
+  /** @type {HTMLButtonElement|null} */ (document.getElementById('btn-bonus-accept'))?.focus();
+}
+
+function resolveBonusAssault(accept) {
+  if (!tdEngine?.chooseBonusAssault(accept)) return;
+  const panel = document.getElementById('siege-bonus-panel');
+  if (panel) panel.hidden = true;
+  if (accept) setShopActive(true);
+  else if (bonusChoiceFocus instanceof HTMLElement) bonusChoiceFocus.focus();
+  bonusChoiceFocus = null;
 }
 
 function makeDashboardState() {
@@ -975,19 +1018,22 @@ function initSiegeScreen() {
   };
 
   renderShopBar(shopBarEl, shopState);
-  const firstSiege = save.siegesCompleted === 0 && !DEV.skipForge;
-  const tutorial = document.getElementById('siege-first-hint');
-  if (tutorial) tutorial.hidden = !firstSiege;
+  deploymentTurretsPlaced = 0;
+  const deployPanel = document.getElementById('siege-deploy-panel');
+  if (deployPanel) deployPanel.hidden = false;
+  const bonusPanel = document.getElementById('siege-bonus-panel');
+  if (bonusPanel) bonusPanel.hidden = true;
+
+  previousBattleCry = nextBattleCry(Math.random(), previousBattleCry);
+  const launch = document.getElementById('btn-launch-siege');
+  if (launch) launch.textContent = previousBattleCry;
   mountTDEngine(canvas, mission);
-  if (firstSiege) selectTurret('granny-blaster');
+  selectTurret('granny-blaster');
+  tdEngine?.setGoLive(false);
+  refreshDeploymentPanel();
   preloadField()
     .then(() => tdEngine?.relayout?.())
     .catch(() => {});
-
-  // On the first visit, let the child place their highlighted starter turret
-  // before the aliens arrive. Subsequent sieges run without the training pause.
-  tdEngine?.setGoLive(!firstSiege);
-  if (!firstSiege) tdEngine?.startWave();
 }
 
 function beginMission() {
@@ -1013,8 +1059,9 @@ function beginMission() {
     const mission = getActiveMission();
     onForgeSuccess({
       forgeXp: 0,
-      placementBudget: (mission?.rewards.placementBudget ?? 90) +
-        DEV.extraBudget + (save.trainingGate.bonusSiegeCoins || 0),
+      placementBudget: mission
+        ? startingSiegeCoins(mission, save.siegesCompleted, save.trainingGate.bonusSiegeCoins) + DEV.extraBudget
+        : 90 + DEV.extraBudget,
     });
     return;
   }
@@ -1063,7 +1110,7 @@ function launchTestSiege() {
   tdEngine = null;
 
   const mission = getActiveMission();
-  const placementBudget = (mission?.rewards.placementBudget ?? 90) + DEV.extraBudget;
+  const placementBudget = (mission ? startingSiegeCoins(mission, save.siegesCompleted) : 90) + DEV.extraBudget;
 
   run = {
     waveBudget: placementBudget,
@@ -1086,6 +1133,9 @@ function mountTDEngine(canvas, mission) {
   nukeCacheWasReady = false;
   tdEngine = createTDEngine(canvas, {
     mission,
+    firstSiege: save.siegesCompleted === 0,
+    bonusSiegeSec: bonusSiegeSeconds(save.trainingGate),
+    onBonusOffer: showBonusAssaultOffer,
     spawnGranddaddy: shouldSpawnGranddaddy(save),
     grannyEnabled: () => save.grannyUnlocked,
     onGranddaddySpawn() {
@@ -1117,6 +1167,7 @@ function mountTDEngine(canvas, mission) {
       }
       run.waveBudget -= cost;
       refreshShop();
+      refreshDeploymentPanel();
       return true;
     },
     onKillReward({ xp, isBoss }) {
@@ -1139,20 +1190,16 @@ function mountTDEngine(canvas, mission) {
       showToast(`Leak! −${penalty} ${ECONOMY.siegeCoinsLabel} (${leaks}/${maxLeaks})`, { variant: 'warn' });
     },
     onTurretPlaced() {
-      const tutorial = document.getElementById('siege-first-hint');
-      if (tutorial && !tutorial.hidden) {
-        tutorial.hidden = true;
-        showToast('Turret deployed! The aliens are coming. Keep placing turrets!', {
-          variant: 'success',
-          duration: 4500,
-        });
-        tdEngine?.setGoLive(true);
+      if (tdEngine?.getPhase() === 'deploy') {
+        deploymentTurretsPlaced += 1;
+        refreshDeploymentPanel();
+        if (deploymentTurretsPlaced === 1) showToast('Nice! Keep placing turrets or hit the big battle button.', { variant: 'success' });
       }
     },
     onPhaseChange(phase) {
       if (phase === 'deploy' || phase === 'wave' || phase === 'announce') {
         setShopActive(true);
-      } else if (phase === 'done') {
+      } else {
         setShopActive(false);
       }
       updateNukeCachePanel();
@@ -1183,9 +1230,10 @@ function finishRun(stats) {
   const bonus = stats.won ? (mission?.winBonusXp ?? 60) : (mission?.loseBonusXp ?? 20);
   const bankedCoins = run.waveBudget;
   const bankBonus = bankBonusForgeXp(bankedCoins);
+  const bonusAssaultXp = stats.bonusPlayed ? Math.min(50, (stats.bonusKills || 0) * 2) : 0;
 
-  run.runForgeXpEarned += bonus + bankBonus;
-  creditForgeXp(bonus + bankBonus);
+  run.runForgeXpEarned += bonus + bankBonus + bonusAssaultXp;
+  creditForgeXp(bonus + bankBonus + bonusAssaultXp);
 
   const starResult = computeStars({
     won: stats.won,
@@ -1274,6 +1322,20 @@ function finishRun(stats) {
 
 function bindUI() {
   initPopups();
+
+  document.getElementById('btn-launch-siege')?.addEventListener('click', () => {
+    if (deploymentTurretsPlaced < 1) {
+      showToast('Place at least one turret before challenging the aliens!');
+      return;
+    }
+    if (!tdEngine?.startWave()) return;
+    const panel = document.getElementById('siege-deploy-panel');
+    if (panel) panel.hidden = true;
+    showToast('HERE THEY COME! Protect Granny!', { variant: 'success' });
+  });
+
+  document.getElementById('btn-bonus-accept')?.addEventListener('click', () => resolveBonusAssault(true));
+  document.getElementById('btn-bonus-decline')?.addEventListener('click', () => resolveBonusAssault(false));
 
   document.getElementById('btn-welcome-go')?.addEventListener('click', () => {
     audio.warmUp();
