@@ -14,7 +14,7 @@ import { computeStars, renderStarBadges } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges } from './home.js?v=20261112o';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges } from './home.js?v=20261112p';
 import { normalizeEnemyDefeats, recordEnemyDefeat } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore } from './power-core.js?v=20261112m';
 import { initHowToPlay } from './how-to-play.js';
@@ -25,7 +25,7 @@ import { initFractions } from './fractions.js?v=20261112e';
 import { initAnglesShapes } from './angles-shapes.js?v=20261112e';
 import { initMathsQuest } from './maths-quest.js?v=20261112e';
 import { initExpandedMath } from './expanded-maths.js?v=20261112e';
-import { initBattlePrep } from './battle-prep.js?v=20261112e';
+import { initBattlePrep } from './battle-prep.js?v=20261112p';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js';
 import {
   normalizeLevelMastery,
@@ -37,6 +37,7 @@ import {
 } from './level-mastery.js';
 import { defaultMapProgress, normalizeMapProgress } from './map-progress.js';
 import { getTopic } from './topics-data.js?v=20261112o';
+import { normalizeTopicProgress, recordTopicAnswer, recordTopicSession } from './topic-progression.js?v=20261112p';
 import {
   defaultTrainingGate,
   normalizeTrainingGate,
@@ -55,7 +56,7 @@ import {
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 
-/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, settings: { sound: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js').TopicProgressSave, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, settings: { sound: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -75,6 +76,7 @@ const defaultSave = {
   grannyUnlocked: false,
   trainingGate: defaultTrainingGate(),
   levelMastery: defaultLevelMastery(),
+  topicProgress: {},
   mapProgress: defaultMapProgress(),
   settings: { sound: true, difficultyLevel: 1 },
 };
@@ -190,6 +192,8 @@ function loadSave() {
     data.trainingGate = normalizeTrainingGate(data.trainingGate);
     data.levelMastery = normalizeLevelMastery(data.levelMastery);
     data.mapProgress = normalizeMapProgress(data.mapProgress);
+    // Preserve old players' real mastered levels and map passes as a one-time rank baseline.
+    data.topicProgress = normalizeTopicProgress(data.topicProgress, data.levelMastery, data.mapProgress);
     if (DEV.enabled && DEV.unlockAll) {
       data.unlockedTurrets = Object.keys(TURRETS);
       data.xp = Math.max(data.xp, 9999);
@@ -515,6 +519,38 @@ function awardScaledTrainingXp(baseAmount, level) {
   return creditForgeXp(amount);
 }
 
+/**
+ * Maths topic ranks track correct answers separately from the 10-question siege gate.
+ * Their progress continues even when a siege is already ready to play.
+ * @param {string} topicId
+ * @param {1|2|3|4} level
+ * @param {boolean} right
+ */
+function creditTopicAnswer(topicId, level, right) {
+  const result = recordTopicAnswer(save.topicProgress, topicId, level, right);
+  save.topicProgress = result.progress;
+  persistSave();
+  announceTopicRankReward(topicId, result);
+}
+
+function creditTopicSession(topicId, accuracy) {
+  const result = recordTopicSession(save.topicProgress, topicId, accuracy);
+  save.topicProgress = result.progress;
+  persistSave();
+  announceTopicRankReward(topicId, result);
+}
+
+function announceTopicRankReward(topicId, result) {
+  if (!result.rankUp) return;
+  const title = getTopic(topicId)?.title || 'Maths';
+  if (result.bonusForgeXp) {
+    creditForgeXp(result.bonusForgeXp);
+    showToast(`${title.toUpperCase()} · RANK ${result.newRank}! +${result.bonusForgeXp} FORGE XP!`, { variant: 'success', duration: 4500 });
+  } else {
+    showToast(`${title.toUpperCase()} · RANK ${result.newRank}!`, { variant: 'success', duration: 2800 });
+  }
+}
+
 /** Every answered question charges the forge, including wrong answers.
  * Correct answers earn the accuracy-based siege-coin boost.
  * Progress is saved immediately, including when students leave mid-session.
@@ -558,6 +594,7 @@ function completeTrainingSession(moduleId, level, accuracy) {
   );
   save.levelMastery = result.mastery;
   save.mapProgress = result.mapProgress;
+  creditTopicSession(moduleId, accuracy);
 
   // Ten-question drills were credited live by their answer callbacks.
   // Place Value is a one-puzzle forge, so it earns one credit on success.
@@ -604,6 +641,7 @@ function createTrainingHandlers(moduleId) {
       return awardScaledTrainingXp(baseAmount, level);
     },
     onAnswer(right) {
+      creditTopicAnswer(moduleId, level, right);
       creditTrainingAnswer(right);
     },
     onSessionComplete(accuracy) {
@@ -691,6 +729,7 @@ function makeDashboardState() {
     gate: save.trainingGate,
     levelMastery: save.levelMastery,
     mapProgress: save.mapProgress,
+    topicProgress: save.topicProgress,
     difficultyLevel: getDifficultyLevel(),
     recommendedLevel: recommendGlobalLevel(save.levelMastery),
     onDifficultyChange(level) {
@@ -788,7 +827,8 @@ function showBattlePrep() {
     onAwardXp(baseAmount) {
       awardScaledTrainingXp(baseAmount, level);
     },
-    onAnswer(right) {
+    onAnswer(right, moduleId) {
+      creditTopicAnswer(moduleId, level, right);
       creditTrainingAnswer(right);
     },
     onFinished(moduleResults, overall) {
@@ -1016,6 +1056,7 @@ function showForgeTraining(topic) {
       if (scaled > 0) {
         awardForgeXp(scaled, `Place Value · ${xpMultiplierLabel(level)}`);
       }
+      creditTopicAnswer('place-value-siege', level, true);
       completeTrainingSession('place-value-siege', level, 1);
       if (!creditTopicTraining(topic) && !isTopicDone(save.trainingGate, topic.id)) {
         showToast('Training finished, but it did not count toward the gate — try again.', { variant: 'shop' });
@@ -1127,6 +1168,7 @@ function onForgeSuccess(rewards) {
   // Only award its one-question credit when the puzzle was actually played.
   if (forgeXp > 0) {
     creditForgeXp(forgeXp);
+    creditTopicAnswer('place-value-siege', level, true);
     completeTrainingSession('place-value-siege', level, 1);
     const placeValueTopic = getTopic('place-value-siege');
     if (placeValueTopic) creditTopicTraining(placeValueTopic);
