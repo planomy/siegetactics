@@ -2,55 +2,60 @@ import { MATH_TOPICS } from './topics-data.js?v=20261112o';
 import {
   attackStatus,
   bonusSiegeSeconds,
-  isTopicDone,
 } from './training-gate.js?v=20261112g';
 import { STAR_LABELS, STAR_HINTS, summarizeBadgeCollection, renderStarBadges } from './stars.js';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261112n';
-import { renderModuleLevelPips, MAP_PASSES_REQUIRED } from './level-mastery.js';
-import { renderInterstellarMap, renderModuleMapProgress, mapPiecesEarned, TRAINING_MODULE_IDS } from './map-progress.js';
+import { renderInterstellarMap, mapPiecesEarned, TRAINING_MODULE_IDS } from './map-progress.js';
+import { topicRankProgress, getTopicRecord } from './topic-progression.js?v=20261112p';
 import { getQualifiedLevels } from './level-mastery.js';
 import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel } from './difficulty.js';
 import { renderArmoryPromo } from './armory-promo.js?v=20261112m';
 
-/** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack @param {import('./level-mastery.js').LevelMasterySave} levelMastery @param {import('./map-progress.js').MapProgressSave} mapProgress */
-function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id)) {
-  // Render in the requested screen order, rather than data-file order.
+/**
+ * Ten clean campaign cards. Mastery is a small permanent mark, while each
+ * topic's rank and next-rank progress can grow without ever being "Done".
+ * @param {import('./training-gate.js').TrainingGate} gate
+ * @param {ReturnType<typeof attackStatus>} attack
+ * @param {import('./level-mastery.js').LevelMasterySave} levelMastery
+ * @param {import('./map-progress.js').MapProgressSave} mapProgress
+ * @param {string[]} selectedTopics
+ * @param {import('./topic-progression.js').TopicProgressSave} topicProgress
+ */
+function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id), topicProgress = {}) {
+  // Respect the five-by-two screen order, never re-sort by "completion".
   return MATH_TOPICS.filter((topic) => selectedTopics.includes(topic.id))
     .sort((a, b) => selectedTopics.indexOf(a.id) - selectedTopics.indexOf(b.id))
     .map((topic) => {
-    const locked = !topic.available;
-    // A siege being ready does not mean every maths topic is complete.
-    // All topics remain replayable for optional bonus battle time.
-    const complete = topic.id === 'times-tables'
-      ? (gate.timesTablesDone?.length || 0) > 0
-      : Boolean(topic.unitId) && isTopicDone(gate, topic.id);
-    const pips = !locked ? renderModuleLevelPips(levelMastery, topic.id) : '';
-    const mapPip = !locked ? renderModuleMapProgress(mapProgress, topic.id) : '';
-    const progressRow =
-      pips || mapPip
-        ? `<span class="gb-module-level-pips" aria-hidden="true">${pips}${mapPip}</span>`
-        : '';
-    const artClass = `gb-story-art gb-story-art-${topic.id.replace(/[^a-z-]/g, '')}`;
-    const artInner = topic.moduleArt
-      ? `<img class="gb-story-art-img" src="${topic.moduleArt}" alt="" width="400" height="400" loading="lazy" />`
-      : `<span class="gb-story-art-emoji">${topic.emoji}</span>`;
-    return `
-      <button
-        type="button"
-        class="gb-story-card${locked ? ' gb-story-locked' : ''}${complete ? ' gb-story-complete' : ''}"
-        data-topic="${topic.id}"
-        ${locked ? 'disabled' : ''}
-      >
-        <div class="${artClass}" aria-hidden="true">
-          ${artInner}
-        </div>
-        ${complete ? '<span class="gb-story-badge gb-story-badge-done">Done</span>' : ''}
-        <span class="gb-story-title">${topic.title}</span>
-        ${progressRow}
-      </button>
-    `;
-  }).join('');
+      const locked = !topic.available;
+      const campaign = topicRankProgress(getTopicRecord(topicProgress, topic.id).xp);
+      const qualified = getQualifiedLevels(levelMastery, topic.id);
+      const highestMastery = Math.max(0, ...qualified);
+      const masteryLabel = highestMastery ? `L${highestMastery} ✓` : '';
+      const artClass = `gb-story-art gb-story-art-${topic.id.replace(/[^a-z-]/g, '')}`;
+      const art = topic.moduleArt
+        ? `<img class="gb-story-art-img" src="${topic.moduleArt}" alt="" width="400" height="400" loading="lazy" />`
+        : `<span class="gb-story-art-emoji">${topic.emoji}</span>`;
+      return `
+        <button type="button"
+          class="gb-story-card gb-topic-campaign-card${locked ? ' gb-story-locked' : ''}"
+          data-topic="${topic.id}"
+          aria-label="${topic.title}, topic rank ${campaign.rank}${highestMastery ? `, Level ${highestMastery} mastered` : ''}. ${campaign.remaining} topic XP to rank ${campaign.nextRank}."
+          ${locked ? 'disabled' : ''}>
+          <span class="${artClass}" aria-hidden="true">${art}</span>
+          <span class="gb-topic-card-shade" aria-hidden="true"></span>
+          <span class="gb-story-title">${topic.title}</span>
+          <span class="gb-topic-campaign-line">
+            <span class="gb-topic-rank">RANK <strong>${campaign.rank}</strong></span>
+            ${highestMastery ? `<span class="gb-topic-mastery" title="Level ${highestMastery} mastery earned">${masteryLabel}</span>` : ''}
+            <span class="gb-topic-next">NEXT ${campaign.remaining.toLocaleString()} XP</span>
+          </span>
+          <span class="gb-topic-rank-track" aria-hidden="true">
+            <span class="gb-topic-rank-fill" style="width:${campaign.percent}%"></span>
+          </span>
+        </button>
+      `;
+    }).join('');
 }
 
 /** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
@@ -405,6 +410,7 @@ export function stopMissionDossier() {
  *   gate: import('./training-gate.js').TrainingGate,
  *   levelMastery: import('./level-mastery.js').LevelMasterySave,
  *   mapProgress: import('./map-progress.js').MapProgressSave,
+ *   topicProgress: import('./topic-progression.js').TopicProgressSave,
  *   difficultyLevel: import('./difficulty.js').DifficultyLevel,
  *   recommendedLevel: import('./difficulty.js').DifficultyLevel,
  *   onDifficultyChange: (level: import('./difficulty.js').DifficultyLevel) => void,
@@ -564,7 +570,7 @@ export function renderHome(host, state) {
           </div>
         </div>
         <div class="mission-topic-grid mission-all-topics" aria-label="All ten maths topics">
-          ${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress, TOPIC_DISPLAY_ORDER)}
+          ${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress, TOPIC_DISPLAY_ORDER, state.topicProgress)}
         </div>
       </section>
       <details class="mission-map-details">
