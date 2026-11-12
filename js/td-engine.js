@@ -6,7 +6,7 @@ import { buildPlacementCells, pickPlacementCell } from './placement-grid.js';
 import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed } from './enemies-data.js';
 import { getFieldImage, preloadField } from './preload.js';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
-import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC } from './waves-data.js';
+import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC } from './waves-data.js?v=20261112g';
 import { ECONOMY } from './economy.js';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
