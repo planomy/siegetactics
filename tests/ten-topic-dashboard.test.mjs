@@ -12,7 +12,7 @@ test('exactly ten available maths topics appear without a More button', () => {
   assert.equal(MATH_TOPICS.length, 10);
   assert.ok(MATH_TOPICS.every(topic => topic.available));
   assert.match(home, /mission-all-topics/);
-  assert.match(home, /renderTrainingCards\(state\.gate, attack, state\.levelMastery, state\.mapProgress, TOPIC_DISPLAY_ORDER\)/);
+  assert.match(home, /renderTrainingCards\(state\.gate, attack, state\.levelMastery, state\.mapProgress, TOPIC_DISPLAY_ORDER, state\.topicProgress\)/);
   assert.doesNotMatch(home, /id="mission-show-more"/);
   assert.doesNotMatch(home, /id="mission-extra-topics"/);
   assert.doesNotMatch(home, /expandedTopicsVisible/);
