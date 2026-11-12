@@ -15,7 +15,10 @@ import { renderArmoryPromo } from './armory-promo.js?v=20261112f';
 
 /** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack @param {import('./level-mastery.js').LevelMasterySave} levelMastery @param {import('./map-progress.js').MapProgressSave} mapProgress */
 function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id)) {
-  return MATH_TOPICS.filter((topic) => selectedTopics.includes(topic.id)).map((topic) => {
+  // Render in the requested screen order, rather than data-file order.
+  return MATH_TOPICS.filter((topic) => selectedTopics.includes(topic.id))
+    .sort((a, b) => selectedTopics.indexOf(a.id) - selectedTopics.indexOf(b.id))
+    .map((topic) => {
     const locked = !topic.available;
     // A siege being ready does not mean every maths topic is complete.
     // All topics remain replayable for optional bonus battle time.
