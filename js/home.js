@@ -343,7 +343,6 @@ function renderInboundRadar(attack, open) {
           <span class="inbound-radar-unit">${drillCaption}</span>
         </div>
       </div>
-      <button type="button" class="gb-forge-btn gb-attack-hero-cta" id="btn-hold-line">START ${attack.remaining}-QUESTION MISSION</button>
     </div>
   `;
 }
@@ -426,13 +425,12 @@ const TOPIC_DISPLAY_ORDER = [
  * @param {any} state
  */
 export function renderMissionControl(host, state) {
+  // The existing dossier has active scan intervals: stop them before
+  // replacing the HTML, otherwise each maths answer leaks more timers.
+  threatDossierCleanup?.();
+  threatDossierCleanup = null;
   const attack = attackStatus(state.gate);
   const first = state.siegesCompleted === 0;
-  const shields = countShieldsEarned(state.levelMastery);
-  const sectors = mapPiecesEarned(state.mapProgress);
-  const progress = Math.round(attack.pct * 100);
-  const label = attack.open ? 'BATTLE READY' : 'EARN YOUR NEXT SIEGE';
-  const earnedBonus = bonusSiegeSeconds(state.gate);
   host.dataset.threat = attack.urgency;
   const threatMessage = attack.open ? 'CONTACT! DEFEND GRANNY NOW!'
     : attack.remaining <= 2 ? 'DANGER: ALIENS AT THE FENCE!'
@@ -449,9 +447,41 @@ export function renderMissionControl(host, state) {
         ${renderInboundRadar(attack, attack.open)}
       </div>
       <div class="mission-control-alert" data-urgency="${attack.urgency}">${threatMessage}</div>
+      <div class="mission-control-blueprint">
+        ${renderThreatDossier(attack.open, attack)}
+      </div>
+      <button type="button" class="mission-control-home" id="mission-back-to-hq">⌂ &nbsp; Maths HQ</button>
+    </div>
+  `;
+  threatDossierCleanup = initThreatDossier(host.querySelector('.threat-dossier'), {
+    contact: attack.open,
+    urgency: attack.urgency,
+    defeatedByType: state.enemyDefeated,
+  });
+  host.querySelector('#btn-hold-line')?.addEventListener('click', state.onHoldTheLine);
+  host.querySelector('#mission-back-to-hq')?.addEventListener('click', state.onHome);
+}
+
+/**
+ * Siege readiness and lifetime player stats live beneath the Might animation.
+ * Keeping this separate from Mission Control leaves the blueprint visible.
+ * @param {HTMLElement|null} host
+ * @param {any} state
+ */
+export function renderSiegeStats(host, state) {
+  if (!host) return;
+  const attack = attackStatus(state.gate);
+  const progress = Math.round(attack.pct * 100);
+  const shields = countShieldsEarned(state.levelMastery);
+  const sectors = mapPiecesEarned(state.mapProgress);
+  const earnedBonus = bonusSiegeSeconds(state.gate);
+  const prior = host.querySelector('.mission-battle-stats');
+  const expanded = prior?.querySelector('.mission-control-details')?.open ?? false;
+  const html = `
+    <div class="mission-battle-stats">
       <div class="mission-control-progress">
         <div class="mission-control-progress-line">
-          <strong>${label}</strong>
+          <strong>${attack.open ? 'BATTLE READY' : 'NEXT SIEGE'}</strong>
           <span>${attack.done} / ${attack.total} questions</span>
         </div>
         <div class="mission-control-track" role="progressbar" aria-label="Maths progress towards siege" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${attack.done}">
@@ -463,7 +493,7 @@ export function renderMissionControl(host, state) {
         <div><span>FORGE XP</span><strong id="mission-control-xp">${state.xp.toLocaleString()}</strong></div>
         <div><span>SIEGES PLAYED</span><strong>${state.siegesCompleted}</strong></div>
       </div>
-      <details class="mission-control-details">
+      <details class="mission-control-details" ${expanded ? 'open' : ''}>
         <summary>My progress <span aria-hidden="true">⌄</span></summary>
         <div class="mission-control-detail-grid">
           <div><span>Best blasts</span><strong>${state.bestKills.toLocaleString()}</strong></div>
@@ -472,11 +502,13 @@ export function renderMissionControl(host, state) {
           <div><span>Best coins banked</span><strong>${state.bestBankedCoins.toLocaleString()}</strong></div>
         </div>
       </details>
-      <button type="button" class="mission-control-home" id="mission-back-to-hq">⌂ &nbsp; Maths HQ</button>
     </div>
   `;
-  host.querySelector('#btn-hold-line')?.addEventListener('click', state.onHoldTheLine);
-  host.querySelector('#mission-back-to-hq')?.addEventListener('click', state.onHome);
+  const template = document.createElement('template');
+  template.innerHTML = html.trim();
+  const stats = template.content.firstElementChild;
+  if (prior) prior.replaceWith(stats);
+  else host.append(stats);
 }
 
 /**
