@@ -92,6 +92,29 @@ body.siege-mode .siege-loadout .siege-launch-button {
   font-size: clamp(1.3rem,1.8vw,1.65rem);
 }
 
+body.siege-mode .siege-loadout-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 9px;
+  padding: 2px 3px 0;
+}
+
+body.siege-mode .siege-loadout-heading strong {
+  color: #ffe09a;
+  font-family: var(--font-display);
+  font-size: 1.32rem;
+  font-weight: 400;
+  letter-spacing: .03em;
+}
+
+body.siege-mode .siege-loadout-heading span {
+  color: #cfc3d9;
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
 body.siege-mode .siege-loadout .shop-bar {
   flex: 1 1 auto;
   min-height: 0;
@@ -231,6 +254,10 @@ body.siege-mode .siege-layout.is-battle-done .siege-loadout {
     min-height: 50px;
     padding: 6px 8px;
     font-size: clamp(1.05rem,2.9vw,1.35rem);
+  }
+
+  body.siege-mode .siege-loadout-heading {
+    display: none;
   }
 
   body.siege-mode .siege-loadout .shop-bar {
