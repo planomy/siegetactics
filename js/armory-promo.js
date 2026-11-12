@@ -1,5 +1,5 @@
 import { TURRETS, TURRET_ORDER } from './turrets-data.js';
-import { nextLockedTurret, nextUnlockableTurret } from './armory.js';
+import { nextLockedTurret, nextUnlockableTurret } from './armory.js?v=20261112f';
 
 /**
  * Preview only. Forge XP is a permanent milestone score, NOT a spendable balance.
