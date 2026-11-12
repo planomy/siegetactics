@@ -106,6 +106,7 @@ const { ENEMY_PATHS, TURRET_ROWS } = FIELD_LAYOUT;
  *   bonusSiegeSec?: number,
  *   firstSiege?: boolean,
  *   onKillReward?: (info: { isBoss: boolean, xp: number }) => void,
+ *   onEnemyDestroyed?: (info: { key: import('./enemies-data.js').EnemySpriteKey }) => void,
  *   onWaveCleared?: (info: { wave: number, nextWave: number|null }) => void,
  *   onLeak?: (info: { leaks: number, maxLeaks: number, penalty: number }) => void,
  *   onPhaseChange?: (phase: 'deploy'|'announce'|'wave'|'bonus-offer'|'finale'|'done') => void,
@@ -512,6 +513,7 @@ export function createTDEngine(canvas, opts) {
     waveKills += 1;
     totalKills += 1;
     rewardKill(enemy.isBoss, pos.x, pos.y);
+    opts.onEnemyDestroyed?.({ key: spriteKeyForEnemy(enemy) });
     opts.audio?.playDeath({
       craft: spriteKeyForEnemy(enemy),
       isBoss: enemy.isBoss,
