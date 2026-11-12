@@ -14,7 +14,7 @@ test('all ten cards are artwork-led without grey squircle borders, shields or Do
   assert.doesNotMatch(home, /gb-story-badge-done/);
   assert.doesNotMatch(home, /gb-module-level-pips/);
   assert.match(css, /\.gb-topic-campaign-card\s*\{[\s\S]*?border:\s*0;/);
-  assert.match(css, /\.gb-topic-campaign-card \.gb-story-art-img\s*\{[\s\S]*?object-fit:\s*cover;/);
+  assert.match(css, /\.gb-topic-campaign-card \.gb-story-art-img\s*\{[\s\S]*?object-fit:\s*contain;/);
   assert.match(css, /\.gb-topic-campaign-card:focus-visible\s*\{/);
   assert.match(home, /TOPIC_DISPLAY_ORDER/);
 });
@@ -47,9 +47,9 @@ test('standalone questions, mixed questions, and forge successes all advance the
 });
 
 test('fresh CSS and script modules are loaded so the browser does not show old shields', () => {
-  assert.match(html, /topic-campaign-cards\.css\?v=20261112q/);
-  assert.match(html, /app\.js\?v=20261112p/);
-  assert.match(app, /home\.js\?v=20261112p/);
+  assert.match(html, /topic-campaign-cards\.css\?v=20261112r/);
+  assert.match(html, /app\.js\?v=20261112r/);
+  assert.match(app, /home\.js\?v=20261112r/);
   assert.match(app, /battle-prep\.js\?v=20261112p/);
   assert.match(home, /topic-progression\.js\?v=20261112p/);
 });
@@ -61,5 +61,16 @@ test('two rows fit more easily on desktop without shrinking the mobile experienc
   assert.match(css, /height: 128px;/);
   assert.match(css, /@media \(max-width: 870px\)/);
   assert.match(css, /@media \(max-width: 540px\)/);
-  assert.match(css, /object-position: center 40%;/);
+  assert.match(css, /object-position: center;/);
+});
+
+test('original art is never cropped, zoomed, faded or covered by an extra title', () => {
+  assert.match(css, /object-fit:\s*contain;/);
+  assert.match(css, /object-position: center;/);
+  assert.match(css, /filter: none;/);
+  assert.match(css, /transform: none;/);
+  assert.match(css, /background: #000;/);
+  assert.doesNotMatch(home, /gb-topic-card-shade/);
+  assert.match(home, /topic\.moduleArt \? '' :/);
+  assert.match(css, /\.gb-topic-campaign-line\s*\{[\s\S]*?position: relative;/);
 });
