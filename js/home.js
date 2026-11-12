@@ -487,9 +487,9 @@ export function renderHome(host, state) {
           <h2>${attack.open ? 'Granny needs you!' : 'Mixed Maths Mission'}</h2>
           <p>${mixedLabel}</p>
         </div>
-        <button type="button" id="mission-start-mixed" class="gb-forge-btn">
-          ${attack.open ? 'DEFEND GRANNY' : `START ${attack.remaining}-QUESTION MISSION`}
-        </button>
+        ${attack.open
+          ? '<span class="mission-battle-ready">Use DEFEND GRANNY in Mission Control!</span>'
+          : `<button type="button" id="mission-start-mixed" class="gb-forge-btn">START ${attack.remaining}-QUESTION MISSION</button>`}
       </section>
       <section class="mission-topic-section" aria-label="Maths topics">
         <div class="mission-topic-heading">
