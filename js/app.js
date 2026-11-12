@@ -93,6 +93,7 @@ let battlePrepCoinBonus = 0;
 let deploymentTurretsPlaced = 0;
 let previousBattleCry = '';
 let bonusChoiceFocus = null;
+let bonusBankProtected = 0;
 
 /** Tracks nuke-cache edge so the ready siren only fires once per fill. */
 let nukeCacheWasReady = false;
@@ -631,6 +632,7 @@ function refreshDeploymentPanel() {
 }
 
 function showBonusAssaultOffer(seconds) {
+  bonusBankProtected = run.waveBudget;
   const panel = document.getElementById('siege-bonus-panel');
   const amount = document.getElementById('siege-bonus-seconds');
   if (amount) amount.textContent = `+${seconds} seconds`;
@@ -1027,6 +1029,7 @@ function initSiegeScreen() {
 
   renderShopBar(shopBarEl, shopState);
   deploymentTurretsPlaced = 0;
+  bonusBankProtected = 0;
   const deployPanel = document.getElementById('siege-deploy-panel');
   if (deployPanel) deployPanel.hidden = false;
   const bonusPanel = document.getElementById('siege-bonus-panel');
@@ -1238,7 +1241,8 @@ function finishRun(stats) {
   const mission = getActiveMission();
   const missionId = SLICE_MISSION_ID;
   const bonus = stats.won ? (mission?.winBonusXp ?? 60) : (mission?.loseBonusXp ?? 20);
-  const bankedCoins = run.waveBudget;
+  // Taking the optional challenge can never reduce the original victory's banked reward.
+  const bankedCoins = stats.bonusPlayed ? Math.max(run.waveBudget, bonusBankProtected) : run.waveBudget;
   const bankBonus = bankBonusForgeXp(bankedCoins);
   const bonusAssaultXp = stats.bonusPlayed ? Math.min(50, (stats.bonusKills || 0) * 2) : 0;
 
