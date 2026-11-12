@@ -1,4 +1,4 @@
-import { MATH_TOPICS } from './topics-data.js';
+import { MATH_TOPICS } from './topics-data.js?v=20261112o';
 import {
   attackStatus,
   bonusSiegeSeconds,
