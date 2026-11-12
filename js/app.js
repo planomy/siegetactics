@@ -14,7 +14,7 @@ import { computeStars, renderStarBadges } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderTopbarBadges } from './home.js?v=20261112g';
+import { renderHome, renderMissionControl, renderTopbarBadges } from './home.js?v=20261112l';
 import { renderPowerCore } from './power-core.js?v=20261112f';
 import { initHowToPlay } from './how-to-play.js';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
