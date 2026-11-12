@@ -48,7 +48,7 @@ import {
   isUnitDone,
   isTopicDone,
   markBattlePrepComplete,
-} from './training-gate.js';
+} from './training-gate.js?v=20261112e';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 
