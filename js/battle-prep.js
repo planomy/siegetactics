@@ -140,7 +140,7 @@ export function buildBattlePrepDeck(level, cycle = 0, questionsNeeded = 10) {
  *   cycle: number,
  *   questionsNeeded?: number,
  *   onAwardXp: (amount: number) => void,
- *   onAnswer?: (right: boolean) => void,
+ *   onAnswer?: (right: boolean, moduleId: string) => void,
  *   onFinished: (results: Record<string, {correct:number, attempts:number, accuracy:number}>, overall:number) => void,
  *   onReady: (overall:number) => void,
  *   onHome: () => void,
@@ -231,7 +231,7 @@ export function initBattlePrep(host, callbacks) {
       const shown = item.options.find((option) => valuesMatch(option.value, item.answer))?.label ?? item.answer;
       callbacks.showToast(`Correct answer: ${shown}. Keep going!`, { variant: 'shop' });
     }
-    callbacks.onAnswer?.(right);
+    callbacks.onAnswer?.(right, item.moduleId);
     clearTimer();
     timer = setTimeout(() => {
       timer = null;
