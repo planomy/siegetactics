@@ -639,14 +639,14 @@ function refreshDeploymentPanel() {
   const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('btn-launch-siege'));
   if (summary) {
     const count = deploymentTurretsPlaced;
-    summary.textContent = `${count} turret${count === 1 ? '' : 's'} built · ${run.waveBudget} siege coins left · ${count ? 'Start whenever you feel ready!' : 'Place your first turret to begin'}`;
+    summary.textContent = `${count} turret${count === 1 ? '' : 's'} deployed · ${run.waveBudget} coins left`;
   }
   if (btn) btn.disabled = deploymentTurretsPlaced < 1;
   const info = document.getElementById('siege-deploy-instruction');
   if (info) {
     info.textContent = deploymentTurretsPlaced === 0
-      ? 'Granny Blaster is selected. Click an empty grass square to place it, then build more defences.'
-      : 'Keep building while you can afford turrets. The aliens will not come until YOU press the battle button.';
+      ? 'Tap a grass square to place your first turret.'
+      : 'Keep building, or launch the invasion!';
   }
 }
 
