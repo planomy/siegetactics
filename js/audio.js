@@ -1,4 +1,4 @@
-/** @typedef {'gun1'|'gun2'|'gun3'|'gun4'|'electro'|'slime'|'lazer1'|'lazer2'|'lazer3'|'missile'|'nukeFire'|'nukeExplosion'|'death'|'mothership'|'granddaddy'|'wave1warning'|'wave2warning'|'wave3warning'|'granddaddywarning'|'scuttling1'|'scuttling2'} SoundId */
+/** @typedef {'gun1'|'gun2'|'gun3'|'gun4'|'electro'|'slime'|'lazer1'|'lazer2'|'lazer3'|'missile'|'nukeFire'|'nukeExplosion'|'death'|'mothership'|'granddaddy'|'wave1warning'|'wave2warning'|'wave3warning'|'granddaddywarning'|'scuttling1'|'scuttling2'|'coreEarned'|'coreCollect'|'turretUpgrade'} SoundId */
 
 /** @type {Record<SoundId, string>} */
 const SOUND_SRC = {
@@ -23,6 +23,9 @@ const SOUND_SRC = {
   granddaddywarning: 'assets/sounds/granddaddywarning.mp3',
   scuttling1: 'assets/sounds/scuttling1.mp3',
   scuttling2: 'assets/sounds/scuttling2.mp3',
+  coreEarned: 'assets/sounds/core-earned.mp3',
+  coreCollect: 'assets/sounds/core-collect.mp3',
+  turretUpgrade: 'assets/sounds/turret-upgrade.mp3',
 };
 
 /** @type {Record<string, { id: SoundId, volume: number, rate: number, gap?: number }>} */
@@ -165,6 +168,18 @@ export function createAudio(opts) {
   }
 
   return {
+    /** An upgrade core bursts onto the screen. */
+    playCoreEarned() {
+      play('coreEarned', { volume: 0.7, gap: 0.5 });
+    },
+    /** The core lands in the header counter. */
+    playCoreCollect() {
+      play('coreCollect', { volume: 0.6, gap: 0.3 });
+    },
+    /** A turret is upgraded in the Armory. */
+    playTurretUpgrade() {
+      play('turretUpgrade', { volume: 0.7, gap: 0.3 });
+    },
     /** Call once after a user tap so mobile browsers allow playback. */
     warmUp() {
       if (unlocked) return;

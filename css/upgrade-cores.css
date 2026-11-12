@@ -1,0 +1,500 @@
+/*
+ * Upgrade cores: the glowing gem players earn from maths and spend on turret upgrades.
+ * The gem, the header counter and the reward burst when one is earned.
+ */
+
+.core-gem {
+  --gem-size: 1.3em;
+  display: inline-block;
+  flex: none;
+  width: var(--gem-size);
+  height: var(--gem-size);
+  background: url('../assets/ui/alien-crystal-small.png') center / contain no-repeat;
+  vertical-align: -0.3em;
+}
+
+.core-gem--big {
+  background-image: url('../assets/ui/alien-crystal.png');
+}
+
+/* Header counter: tap it to open the Armory. Pulses when an upgrade can be bought. */
+.core-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 8px;
+  border: 1px solid rgba(80, 255, 170, .45);
+  border-radius: 999px;
+  background: rgba(6, 30, 24, .75);
+  color: #d6ffe8;
+  font: inherit;
+  font-weight: 900;
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.core-pill:hover {
+  border-color: rgba(120, 255, 190, .85);
+}
+
+.core-pill--ready {
+  animation: core-pill-ready 1.6s ease-in-out infinite;
+}
+
+@keyframes core-pill-ready {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(80, 255, 170, .5); }
+  50% { box-shadow: 0 0 0 7px rgba(80, 255, 170, 0); }
+}
+
+.core-pill--bump {
+  animation: core-pill-bump .5s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+@keyframes core-pill-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.45); background: rgba(40, 140, 90, .9); }
+  100% { transform: scale(1); }
+}
+
+/* The reward moment: the core bursts onto the screen, then flies into the header counter. */
+.core-reward {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  background: radial-gradient(circle at 50% 45%, rgba(10, 40, 30, .7), rgba(3, 5, 10, .86) 60%);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  animation: core-backdrop-in .3s ease-out both;
+}
+
+.core-reward-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  animation: core-reward-in .55s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+@keyframes core-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.core-reward-rays {
+  position: absolute;
+  left: 50%;
+  top: 70px;
+  width: 360px;
+  height: 360px;
+  margin: -180px 0 0 -180px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(120, 255, 190, .38) 0 8deg, transparent 8deg 22deg);
+  -webkit-mask: radial-gradient(circle, #000 18%, transparent 68%);
+  mask: radial-gradient(circle, #000 18%, transparent 68%);
+  animation: core-rays-spin 6s linear infinite;
+  pointer-events: none;
+}
+
+.core-gem--big {
+  --gem-size: 120px;
+  position: relative;
+  filter: drop-shadow(0 0 22px rgba(80, 255, 170, .95)) drop-shadow(0 0 46px rgba(40, 200, 255, .6));
+  animation: core-gem-float 1.4s ease-in-out infinite;
+}
+
+.core-reward-title {
+  position: relative;
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  letter-spacing: .04em;
+  color: #eafff2;
+  text-shadow: 0 0 18px rgba(80, 255, 170, .9), 0 4px 0 #0b3d2a;
+}
+
+.core-reward-reason {
+  position: relative;
+  font-weight: 900;
+  font-size: .95rem;
+  letter-spacing: .1em;
+  color: #ffe07a;
+  text-shadow: 0 2px 6px #000;
+}
+
+.core-reward-cta {
+  position: relative;
+  margin-top: 6px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #5cffa8, #13b86a);
+  color: #032414;
+  font-weight: 900;
+  font-size: .85rem;
+  letter-spacing: .06em;
+  box-shadow: 0 0 18px rgba(80, 255, 170, .6);
+}
+
+.core-reward.is-leaving {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transition: background .3s ease;
+  pointer-events: none;
+}
+
+.core-reward.is-leaving .core-reward-inner {
+  animation: core-reward-fly .65s cubic-bezier(.55, 0, .85, .4) forwards;
+}
+
+.core-reward.is-leaving .core-reward-rays,
+.core-reward.is-leaving .core-reward-title,
+.core-reward.is-leaving .core-reward-reason,
+.core-reward.is-leaving .core-reward-cta {
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+
+@keyframes core-reward-in {
+  0% { opacity: 0; transform: scale(.2) rotate(-20deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes core-reward-fly {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--fly-x, 0px), var(--fly-y, -300px)) scale(.12); opacity: .6; }
+}
+
+@keyframes core-rays-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes core-gem-float {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-8px) rotate(4deg); }
+}
+
+/* Armory: core count and the cost on the upgrade button. */
+.armory-cores {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: #d6ffe8;
+  font-weight: 800;
+}
+
+.armory-cores strong {
+  font-size: 1.1em;
+}
+
+.armory-upgrade-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(4, 30, 20, .85);
+  color: #d6ffe8;
+  font-size: .85em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .core-pill--ready,
+  .core-pill--bump,
+  .core-reward,
+  .core-reward-rays,
+  .core-gem--big {
+    animation: none;
+  }
+
+  .core-reward.is-leaving {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* In battle: the crystal bursts out of a defeated boss, hangs glowing, then arcs into the header counter. */
+.crystal-drop {
+  position: fixed;
+  z-index: 9998;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.crystal-drop-flash {
+  position: absolute;
+  left: -110px;
+  top: -110px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, .95) 0%, rgba(140, 255, 190, .7) 22%, rgba(60, 240, 140, 0) 65%);
+  animation: crystal-flash .6s ease-out forwards;
+}
+
+.crystal-drop-rays {
+  top: 0;
+  width: 300px;
+  height: 300px;
+  margin: -150px 0 0 -150px;
+  animation: core-rays-spin 4s linear infinite, crystal-rays-in .4s ease-out both;
+}
+
+.crystal-drop-gem {
+  position: absolute;
+  left: -55px;
+  top: -70px;
+  width: 110px;
+  height: 110px;
+  animation: crystal-pop .7s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+.crystal-drop-gem .core-gem--big {
+  --gem-size: 110px;
+  filter: drop-shadow(0 0 18px rgba(80, 255, 170, .95)) drop-shadow(0 0 40px rgba(40, 200, 255, .55));
+}
+
+.crystal-drop-title {
+  position: absolute;
+  left: 50%;
+  top: -118px;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: .04em;
+  color: #eafff2;
+  text-shadow: 0 0 16px rgba(80, 255, 170, .95), 0 3px 0 #0b3d2a;
+  transform: translateX(-50%);
+  animation: crystal-title .7s cubic-bezier(.34, 1.56, .64, 1) .15s both;
+}
+
+.crystal-drop.is-leaving .crystal-drop-gem {
+  animation: crystal-fly .75s cubic-bezier(.55, 0, .85, .4) forwards;
+}
+
+.crystal-drop.is-leaving .crystal-drop-title,
+.crystal-drop.is-leaving .crystal-drop-rays {
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+
+@keyframes crystal-flash {
+  0% { opacity: 1; transform: scale(.2); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
+@keyframes crystal-rays-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes crystal-pop {
+  0% { opacity: 0; transform: translateY(30px) scale(.1) rotate(-30deg); }
+  60% { opacity: 1; transform: translateY(-34px) scale(1.15) rotate(6deg); }
+  100% { opacity: 1; transform: translateY(-24px) scale(1) rotate(0); }
+}
+
+@keyframes crystal-title {
+  0% { opacity: 0; transform: translateX(-50%) scale(.4); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+@keyframes crystal-fly {
+  0% { transform: translateY(-24px) scale(1); }
+  100% { transform: translate(var(--fly-x, 0px), calc(var(--fly-y, -300px) - 24px)) scale(.15); opacity: .7; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crystal-drop-flash,
+  .crystal-drop-rays,
+  .crystal-drop-gem,
+  .crystal-drop-title {
+    animation: none;
+  }
+}
+
+/* Crystal Vault: a glass vault that fills with crystals, the all-time count and the next tier to chase. */
+.crystal-vault {
+  --vault-edge: rgba(80, 255, 170, .45);
+  --vault-glow: rgba(80, 255, 170, .22);
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 150px;
+  padding: 12px;
+  border: 1px solid var(--vault-edge);
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse at 30% 80%, var(--vault-glow), transparent 65%),
+    linear-gradient(180deg, rgba(8, 22, 20, .9), rgba(4, 10, 12, .95));
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, .55), 0 0 18px var(--vault-glow);
+}
+
+.crystal-vault--bronze { --vault-edge: rgba(214, 140, 70, .75); --vault-glow: rgba(214, 140, 70, .22); }
+.crystal-vault--silver { --vault-edge: rgba(210, 225, 240, .8); --vault-glow: rgba(190, 215, 240, .22); }
+.crystal-vault--gold { --vault-edge: rgba(255, 210, 70, .9); --vault-glow: rgba(255, 200, 60, .28); }
+.crystal-vault--legend {
+  --vault-edge: rgba(200, 120, 255, .95);
+  --vault-glow: rgba(170, 90, 255, .32);
+  animation: vault-legend 2.4s ease-in-out infinite;
+}
+
+@keyframes vault-legend {
+  50% { box-shadow: inset 0 0 24px rgba(0, 0, 0, .55), 0 0 30px rgba(170, 90, 255, .55); }
+}
+
+/* The vault artwork for the current tier; the crystal pile sits inside its glass. */
+.crystal-vault-jar {
+  --vault-art: url('../assets/ui/vaults/vault-green.png?v=2');
+  position: relative;
+  width: 100%;
+  max-width: 190px;
+  aspect-ratio: 3 / 4;
+  justify-self: center;
+  background: var(--vault-art) center / contain no-repeat;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .6));
+}
+
+.crystal-vault--bronze .crystal-vault-jar { --vault-art: url('../assets/ui/vaults/vault-bronze.png?v=2'); }
+.crystal-vault--silver .crystal-vault-jar { --vault-art: url('../assets/ui/vaults/vault-silver.png?v=2'); }
+.crystal-vault--gold .crystal-vault-jar { --vault-art: url('../assets/ui/vaults/vault-gold.png?v=2'); }
+.crystal-vault--legend .crystal-vault-jar { --vault-art: url('../assets/ui/vaults/vault-legend.png?v=2'); }
+
+.crystal-vault-pile {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  top: 30%;
+  bottom: 28%;
+  overflow: hidden;
+}
+
+.crystal-vault-crystal {
+  position: absolute;
+  width: 30%;
+  aspect-ratio: 1;
+  background: url('../assets/ui/alien-crystal-small.png') center / contain no-repeat;
+  transform: rotate(var(--turn, 0deg));
+  filter: drop-shadow(0 0 3px rgba(80, 255, 170, .6));
+}
+
+.crystal-vault-crystal.is-new {
+  animation: vault-drop .9s cubic-bezier(.34, 1.56, .64, 1) both;
+  filter: drop-shadow(0 0 10px rgba(160, 255, 210, 1));
+}
+
+@keyframes vault-drop {
+  0% { opacity: 0; transform: translateY(-140px) rotate(var(--turn, 0deg)) scale(1.6); }
+  70% { opacity: 1; transform: translateY(4px) rotate(var(--turn, 0deg)) scale(.95); }
+  100% { opacity: 1; transform: translateY(0) rotate(var(--turn, 0deg)) scale(1); }
+}
+
+/* Glass highlight over the pile, so the crystals sit behind the glass. */
+.crystal-vault-glass {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  top: 30%;
+  bottom: 28%;
+  opacity: .6;
+  background: linear-gradient(105deg, rgba(255, 255, 255, .16) 0 14%, transparent 15% 62%, rgba(255, 255, 255, .06) 63% 70%, transparent 71%);
+  pointer-events: none;
+}
+
+.crystal-vault-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crystal-vault-tier {
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+  color: var(--vault-edge);
+}
+
+.crystal-vault-count {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 3.6vw, 3.8rem);
+  line-height: .95;
+  color: #eafff2;
+  text-shadow: 0 0 18px rgba(80, 255, 170, .65), 0 3px 0 #0b3d2a;
+  font-variant-numeric: tabular-nums;
+}
+
+.crystal-vault-label {
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+  color: #bfeed3;
+}
+
+.crystal-vault-next {
+  margin-top: 3px;
+  font-size: .68rem;
+  font-weight: 700;
+  color: #ffe07a;
+}
+
+.crystal-vault-spend {
+  display: inline-flex;
+  white-space: nowrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  padding: 6px 11px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #5cffa8, #13b86a);
+  color: #032414;
+  font: inherit;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .02em;
+  cursor: pointer;
+  animation: core-pill-ready 1.6s ease-in-out infinite;
+}
+
+.crystal-vault-spend:hover {
+  filter: brightness(1.1);
+}
+
+/* The other stats, kept to one quiet line under the vault. */
+.mission-progress-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 10px;
+  padding: 2px 4px;
+  font-size: .64rem;
+  color: rgba(214, 230, 222, .7);
+}
+
+.mission-progress-strip strong {
+  color: #f1fff6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crystal-vault--legend,
+  .crystal-vault-crystal.is-new,
+  .crystal-vault-spend {
+    animation: none;
+  }
+}

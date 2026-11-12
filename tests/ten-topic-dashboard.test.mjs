@@ -43,7 +43,7 @@ test('the right-side defence forge fits without its own scrollbar', () => {
 });
 
 test('garden is darkened in the header and removed from behind radar writing', () => {
-  assert.match(css, /body\.mission-mode \.topbar\.gb-topbar\s*\{[\s\S]*?hero-village\.png/);
+  assert.match(css, /body\.mission-mode \.topbar\.gb-topbar\s*\{[\s\S]*?header-backyard\.jpg/);
   assert.match(css, /body\.mission-mode \.mission-control\s*\{[\s\S]*?radial-gradient/);
   assert.match(css, /body\.mission-mode \.topbar\.gb-topbar \.brand-logo\s*\{[\s\S]*?143px/);
 });
@@ -51,7 +51,7 @@ test('garden is darkened in the header and removed from behind radar writing', (
 test('small screens continue to use fewer columns and CSS assets are loaded fresh', () => {
   assert.match(cards, /@media \(max-width: 540px\)/);
   assert.match(cards, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(html, /ten-topic-dashboard\.css\?v=20261112u/);
-  assert.match(html, /app\.js\?v=20261112r/);
-  assert.match(app, /home\.js\?v=20261112r/);
+  assert.match(html, /ten-topic-dashboard\.css\?v=20261112b3/);
+  assert.match(html, /app\.js\?v=20261112c1/);
+  assert.match(app, /home\.js\?v=20261112z4/);
 });

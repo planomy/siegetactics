@@ -1,4 +1,5 @@
 import { TURRETS, TURRET_ORDER, TURRET_MAX_HP, loadTurretSprites, loadWreckedTurretSprites } from './turrets-data.js';
+import { effectiveTurret, turretLevel } from './turret-upgrades.js?v=20261112a2';
 import { AMMO, loadAmmoSprites } from './ammo-data.js';
 import { FIELD_LAYOUT, targetPathsForRow } from './field-layout.js';
 import { drawAlienPortalVfx } from './portal-vfx.js';
@@ -105,7 +106,7 @@ const { ENEMY_PATHS, TURRET_ROWS } = FIELD_LAYOUT;
  *   onBonusOffer?: (seconds: number) => void,
  *   bonusSiegeSec?: number,
  *   firstSiege?: boolean,
- *   onKillReward?: (info: { isBoss: boolean, xp: number }) => void,
+ *   onKillReward?: (info: { isBoss: boolean, xp: number, screenX?: number, screenY?: number }) => void,
  *   onEnemyDestroyed?: (info: { key: import('./enemies-data.js').EnemySpriteKey }) => void,
  *   onWaveCleared?: (info: { wave: number, nextWave: number|null }) => void,
  *   onLeak?: (info: { leaks: number, maxLeaks: number, penalty: number }) => void,
@@ -522,7 +523,7 @@ export function createTDEngine(canvas, opts) {
   }
 
   function findTarget(tower) {
-    const def = TURRETS[/** @type {keyof typeof TURRETS} */ (tower.type)];
+    const def = effectiveTurret(tower.type);
     const paths = targetPathsForRow(tower.row);
     let best = null;
     let bestP = -1;
@@ -541,7 +542,7 @@ export function createTDEngine(canvas, opts) {
 
   function fireTower(tower, dt) {
     if (tower.wrecked || tower.buildRemaining > 0) return;
-    const def = TURRETS[/** @type {keyof typeof TURRETS} */ (tower.type)];
+    const def = effectiveTurret(tower.type);
     if (def.role === 'decoy' || def.role === 'magnet' || def.role === 'repair') return;
 
     tower.cooldown -= dt;
@@ -593,7 +594,7 @@ export function createTDEngine(canvas, opts) {
       if (!targetPathsForRow(t.row).has(enemy.path)) continue;
       const dist = Math.hypot(pos.x - t.x, pos.y - t.y);
       if (dist > enemy.attackRange) continue;
-      const def = TURRETS[/** @type {keyof typeof TURRETS} */ (t.type)];
+      const def = effectiveTurret(t.type);
       if (def.role === 'decoy') {
         if (dist < bestDecoyDist) {
           bestDecoyDist = dist;
@@ -611,7 +612,7 @@ export function createTDEngine(canvas, opts) {
     const pos = enemyWorldPos(enemy);
     for (const t of towers) {
       if (t.wrecked || t.buildRemaining > 0) continue;
-      const def = TURRETS[/** @type {keyof typeof TURRETS} */ (t.type)];
+      const def = effectiveTurret(t.type);
       if (def.role !== 'decoy') continue;
       if (!targetPathsForRow(t.row).has(enemy.path)) continue;
       if (Math.hypot(pos.x - t.x, pos.y - t.y) <= enemy.attackRange) return true;
@@ -633,7 +634,7 @@ export function createTDEngine(canvas, opts) {
   }
 
   function applyTurretStatus(sourceType, x, y, aoe, primaryId) {
-    const def = TURRETS[/** @type {keyof typeof TURRETS} */ (sourceType)];
+    const def = effectiveTurret(sourceType);
     if (!def) return;
     const tag = (e) => {
       if (def.slow || def.slowDuration || def.role === 'glue') {
@@ -662,7 +663,7 @@ export function createTDEngine(canvas, opts) {
   function updateRepairTowers(dt) {
     for (const shed of towers) {
       if (!isTowerOperational(shed)) continue;
-      const def = TURRETS[/** @type {keyof typeof TURRETS} */ (shed.type)];
+      const def = effectiveTurret(shed.type);
       if (def.role !== 'repair') continue;
       for (const t of towers) {
         if (t === shed || t.wrecked || t.hp >= t.maxHp) continue;
@@ -698,7 +699,7 @@ export function createTDEngine(canvas, opts) {
     tower.hp = Math.max(0, tower.hp - damage);
     if (tower.hp <= 0) {
       tower.wrecked = true;
-      const name = TURRETS[/** @type {keyof typeof TURRETS} */ (tower.type)]?.name ?? 'Turret';
+      const name = effectiveTurret(tower.type)?.name ?? 'Turret';
       if (waveTime - wreckToastAt > 2.2) {
         wreckToastAt = waveTime;
         opts.showToast(`${name} wrecked!`);
@@ -1040,14 +1041,20 @@ export function createTDEngine(canvas, opts) {
     if (x != null && y != null) {
       for (const t of towers) {
         if (t.wrecked) continue;
-        const def = TURRETS[/** @type {keyof typeof TURRETS} */ (t.type)];
+        const def = effectiveTurret(t.type);
         if (def.role !== 'magnet' || !isTowerOperational(t)) continue;
         if (Math.hypot(x - t.x, y - t.y) <= (def.magnetRadius ?? 100)) {
           xp += def.magnetBonus ?? 1;
         }
       }
     }
-    opts.onKillReward?.({ isBoss, xp });
+    const rect = canvas.getBoundingClientRect();
+    opts.onKillReward?.({
+      isBoss,
+      xp,
+      screenX: x != null ? rect.left + x : undefined,
+      screenY: y != null ? rect.top + y : undefined,
+    });
   }
 
   function applyDamage(x, y, damage, aoe, primaryId, sourceType) {
@@ -1411,7 +1418,7 @@ export function createTDEngine(canvas, opts) {
   function drawTurretAt(type, x, y, { wrecked = false, ghost = false, valid = true } = {}) {
     const sz = Math.max(36, cellRadius() * 2.6);
     const anchorY = FIELD_LAYOUT.turretAnchorY;
-    const def = TURRETS[/** @type {keyof typeof TURRETS} */ (type)];
+    const def = effectiveTurret(type);
     const img = wrecked ? wreckedSprites[type] ?? turretSprites[type] : turretSprites[type];
 
     ctx.save();
@@ -1423,6 +1430,12 @@ export function createTDEngine(canvas, opts) {
       ctx.globalAlpha = 0.75;
     } else if (ghost) {
       ctx.globalAlpha = 0.88;
+    }
+
+    if (!wrecked && !ghost && turretLevel(type) === 3) {
+      ctx.filter = 'saturate(1.35) brightness(1.12) drop-shadow(0 0 6px rgba(255, 210, 70, 0.9))';
+    } else if (!wrecked && !ghost && turretLevel(type) === 2) {
+      ctx.filter = 'saturate(1.2) brightness(1.06)';
     }
 
     if (img) {
@@ -1473,6 +1486,62 @@ export function createTDEngine(canvas, opts) {
     ctx.restore();
   }
 
+  /** Upgraded turrets stand on a pulsing aura in their colour; level 3 glows gold and throws sparks. */
+  function drawUpgradeAura(t, sz) {
+    const level = turretLevel(t.type);
+    if (level < 2) return;
+    const def = effectiveTurret(t.type);
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 260 + t.x);
+    const cy = t.y - sz * 0.05;
+    const r = sz * (level === 3 ? 0.62 : 0.52) * (0.92 + pulse * 0.1);
+    const colour = level === 3 ? '255, 205, 60' : hexToRgb(def?.color ?? '#7cfc00');
+    ctx.save();
+    const glow = ctx.createRadialGradient(t.x, cy, r * 0.1, t.x, cy, r);
+    glow.addColorStop(0, `rgba(${colour}, ${0.42 + pulse * 0.25})`);
+    glow.addColorStop(1, `rgba(${colour}, 0)`);
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.ellipse(t.x, cy, r, r * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    if (level === 3) {
+      const now = performance.now() / 1000;
+      for (let i = 0; i < 4; i++) {
+        const a = now * 1.6 + i * (Math.PI / 2) + t.x;
+        const sx = t.x + Math.cos(a) * sz * 0.42;
+        const sy = t.y - sz * 0.45 + Math.sin(a * 1.3) * sz * 0.22;
+        ctx.fillStyle = `rgba(255, 236, 140, ${0.55 + 0.45 * Math.sin(a * 2)})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, Math.max(1.5, sz * 0.035), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  /** Gold stars under an upgraded turret show its level at a glance. */
+  function drawUpgradeStars(t, sz) {
+    const level = turretLevel(t.type);
+    if (level < 2) return;
+    ctx.save();
+    ctx.font = `900 ${Math.max(10, Math.round(sz * 0.22))}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(30, 16, 0, 0.85)';
+    ctx.fillStyle = level === 3 ? '#ffd84a' : '#fff1a8';
+    const text = '★'.repeat(level);
+    const y = t.y + sz * 0.16;
+    ctx.strokeText(text, t.x, y);
+    ctx.fillText(text, t.x, y);
+    ctx.restore();
+  }
+
+  function hexToRgb(hex) {
+    const h = String(hex).replace('#', '');
+    const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16);
+    return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+  }
+
   function drawTowers() {
     const sz = Math.max(36, cellRadius() * 2.6);
     const anchorY = FIELD_LAYOUT.turretAnchorY;
@@ -1484,7 +1553,9 @@ export function createTDEngine(canvas, opts) {
         drawTurretAt(t.type, t.x, t.y, { wrecked: t.wrecked });
         ctx.restore();
       } else {
+        if (!t.wrecked) drawUpgradeAura(t, sz);
         drawTurretAt(t.type, t.x, t.y, { wrecked: t.wrecked });
+        if (!t.wrecked) drawUpgradeStars(t, sz);
       }
       drawBuildRing(t);
 
@@ -1528,7 +1599,7 @@ export function createTDEngine(canvas, opts) {
   function drawProjectiles() {
     const scale = Math.max(0.85, height / 576);
     projectiles.forEach((p) => {
-      const def = TURRETS[/** @type {keyof typeof TURRETS} */ (p.type)];
+      const def = effectiveTurret(p.type);
       const ammo = AMMO[p.type];
       const img = ammoSprites[p.type];
       const size = (ammo?.size ?? (def?.boltSize ?? 5) * 4) * scale;
@@ -1692,7 +1763,7 @@ export function createTDEngine(canvas, opts) {
       return;
     }
     if (!opts.trySpend(selectedType)) return;
-    const def = TURRETS[/** @type {keyof typeof TURRETS} */ (selectedType)];
+    const def = effectiveTurret(selectedType);
     const maxHp = TURRET_MAX_HP[/** @type {keyof typeof TURRET_MAX_HP} */ (selectedType)] ?? 80;
     const buildTotal = buildTimeForPlacementCost(def?.placementCost ?? 15);
     towers.push({

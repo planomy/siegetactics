@@ -2,10 +2,12 @@ import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=
 import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261112g';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261112m';
-import { renderArmory, nextUnlockableTurret } from './armory.js?v=20261112f';
-import { createTDEngine } from './td-engine.js?v=20261112n';
+import { renderArmory, nextUnlockableTurret } from './armory.js?v=20261112j';
+import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady } from './turret-upgrades.js?v=20261112a2';
+import { createTDEngine } from './td-engine.js?v=20261112q';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
-import { createAudio } from './audio.js';
+import { createAudio } from './audio.js?v=20261112a1';
+import { topicXpMultiplier } from './hot-topic.js?v=20261112a1';
 import { DEV } from './dev.js';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
@@ -14,7 +16,7 @@ import { computeStars, renderStarBadges } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges } from './home.js?v=20261112r';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges } from './home.js?v=20261112z4';
 import { normalizeEnemyDefeats, recordEnemyDefeat } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore } from './power-core.js?v=20261112m';
 import { initHowToPlay } from './how-to-play.js';
@@ -56,7 +58,7 @@ import {
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 
-/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js').TopicProgressSave, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, settings: { sound: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js').TopicProgressSave, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, settings: { sound: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -78,11 +80,15 @@ const defaultSave = {
   levelMastery: defaultLevelMastery(),
   topicProgress: {},
   mapProgress: defaultMapProgress(),
+  turretLevels: {},
+  upgradeCores: 0,
+  crystalsCollected: 0,
   settings: { sound: true, difficultyLevel: 1 },
 };
 
 /** @type {SaveData} */
 let save = loadSave();
+setTurretLevels(save.turretLevels);
 
 /** @type {{ waveBudget: number, runForgeXpEarned: number, startCoins: number, selectedTurret: string|null, cacheProgress: number }} */
 let run = {
@@ -192,6 +198,11 @@ function loadSave() {
     data.trainingGate = normalizeTrainingGate(data.trainingGate);
     data.levelMastery = normalizeLevelMastery(data.levelMastery);
     data.mapProgress = normalizeMapProgress(data.mapProgress);
+    data.turretLevels = normalizeTurretLevels(data.turretLevels);
+    data.upgradeCores = normalizeCores(data.upgradeCores);
+    // All-time crystals: what the player holds plus what they have already spent on upgrades.
+    const spent = Object.values(data.turretLevels).reduce((sum, level) => sum + (level >= 3 ? 3 : level >= 2 ? 1 : 0), 0);
+    data.crystalsCollected = Math.max(normalizeCores(data.crystalsCollected), data.upgradeCores + spent);
     // Preserve old players' real mastered levels and map passes as a one-time rank baseline.
     data.topicProgress = normalizeTopicProgress(data.topicProgress, data.levelMastery, data.mapProgress);
     if (DEV.enabled && DEV.unlockAll) {
@@ -270,13 +281,16 @@ function refreshSoundButton() {
 
 function refreshTopbar() {
   if (xpDisplay) xpDisplay.textContent = save.xp.toLocaleString();
+  const coresDisplay = document.getElementById('topbar-cores');
+  if (coresDisplay) coresDisplay.textContent = String(save.upgradeCores);
+  document.getElementById('topbar-cores-pill')?.classList.toggle('core-pill--ready', anyUpgradeReady(save.upgradeCores, getUnlockedSet()));
   const missionXp = document.getElementById('mission-control-xp');
   if (missionXp) missionXp.textContent = save.xp.toLocaleString();
   refreshSoundButton();
   renderTopbarBadges(document.getElementById('topbar-badges'), save.bestStars, SLICE_MISSION_ID);
   const armoryBtn = document.getElementById('btn-armory');
   if (armoryBtn) {
-    armoryBtn.classList.toggle('topbar-armory-ready', Boolean(nextUnlockableTurret(save.xp, getUnlockedSet())));
+    armoryBtn.classList.toggle('topbar-armory-ready', Boolean(nextUnlockableTurret(save.xp, getUnlockedSet())) || anyUpgradeReady(save.upgradeCores, getUnlockedSet()));
   }
 }
 
@@ -285,9 +299,15 @@ function renderArmoryScreen() {
   if (!host) return;
   renderArmory(host, {
     xp: save.xp,
+    cores: save.upgradeCores,
     unlocked: getUnlockedSet(),
     onUnlock(id) {
       const ok = tryUnlockTurret(id);
+      if (ok) renderArmoryScreen();
+      return ok;
+    },
+    onUpgrade(id) {
+      const ok = tryUpgradeTurret(id);
       if (ok) renderArmoryScreen();
       return ok;
     },
@@ -342,6 +362,119 @@ function tryUnlockTurret(id) {
     return false;
   }
   save.unlockedTurrets.push(id);
+  persistSave();
+  refreshShopBarFromSave();
+  refreshTopbar();
+  return true;
+}
+
+/**
+ * One alien crystal, with a big reward moment: the crystal bursts onto the screen, then flies into
+ * the header counter. Tapping it opens the Armory to spend it.
+ * @param {string} reason
+ */
+function awardUpgradeCore(reason, from) {
+  save.upgradeCores += 1;
+  save.crystalsCollected += 1;
+  persistSave();
+  refreshTopbar();
+  refreshMissionControl();
+  if (from?.x != null && from?.y != null) showCrystalDrop(from.x, from.y);
+  else showCoreReward(reason);
+}
+
+/**
+ * In battle: the crystal bursts out of the defeated boss where it died, hangs there glowing,
+ * then arcs up into the header counter. Never blocks the fight.
+ * @param {number} x @param {number} y
+ */
+function showCrystalDrop(x, y) {
+  const el = document.createElement('div');
+  el.className = 'crystal-drop';
+  el.setAttribute('aria-hidden', 'true');
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  el.innerHTML = `
+    <span class="crystal-drop-flash"></span>
+    <span class="core-reward-rays crystal-drop-rays"></span>
+    <span class="crystal-drop-gem"><span class="core-gem core-gem--big"></span></span>
+    <strong class="crystal-drop-title">ALIEN CRYSTAL!</strong>`;
+  document.body.append(el);
+  audio.playCoreEarned();
+  window.setTimeout(() => {
+    const pill = document.getElementById('topbar-cores-pill');
+    const gem = el.querySelector('.crystal-drop-gem');
+    if (pill && gem) {
+      const to = pill.getBoundingClientRect();
+      const fromBox = gem.getBoundingClientRect();
+      gem.style.setProperty('--fly-x', `${to.left + to.width / 2 - (fromBox.left + fromBox.width / 2)}px`);
+      gem.style.setProperty('--fly-y', `${to.top + to.height / 2 - (fromBox.top + fromBox.height / 2)}px`);
+    }
+    el.classList.add('is-leaving');
+    window.setTimeout(() => {
+      el.remove();
+      audio.playCoreCollect();
+      pill?.classList.remove('core-pill--bump');
+      void pill?.offsetWidth;
+      pill?.classList.add('core-pill--bump');
+    }, 750);
+  }, 1500);
+}
+
+let coreRewardTimer = 0;
+
+/** @param {string} reason */
+function showCoreReward(reason) {
+  document.querySelector('.core-reward')?.remove();
+  clearTimeout(coreRewardTimer);
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'core-reward';
+  el.setAttribute('aria-label', 'Alien crystal collected. Open the Armory to spend it.');
+  el.innerHTML = `
+    <span class="core-reward-inner">
+      <span class="core-reward-rays" aria-hidden="true"></span>
+      <span class="core-gem core-gem--big" aria-hidden="true"></span>
+      <strong class="core-reward-title">ALIEN CRYSTAL!</strong>
+      <span class="core-reward-reason">${reason}</span>
+      <span class="core-reward-cta">TAP TO POWER UP A TURRET</span>
+    </span>`;
+  el.addEventListener('click', () => {
+    el.remove();
+    openArmory();
+  });
+  document.body.append(el);
+  audio.playCoreEarned();
+  coreRewardTimer = window.setTimeout(() => {
+    const pill = document.getElementById('topbar-cores-pill');
+    const gem = el.querySelector('.core-gem--big');
+    if (pill && gem) {
+      const to = pill.getBoundingClientRect();
+      const from = gem.getBoundingClientRect();
+      const inner = el.querySelector('.core-reward-inner');
+      inner?.style.setProperty('--fly-x', `${to.left + to.width / 2 - (from.left + from.width / 2)}px`);
+      inner?.style.setProperty('--fly-y', `${to.top + to.height / 2 - (from.top + from.height / 2)}px`);
+    }
+    el.classList.add('is-leaving');
+    window.setTimeout(() => {
+      el.remove();
+      audio.playCoreCollect();
+      pill?.classList.remove('core-pill--bump');
+      void pill?.offsetWidth;
+      pill?.classList.add('core-pill--bump');
+    }, 650);
+  }, 2600);
+}
+
+/** Claim a turret's next level once the player's Forge XP has passed its threshold. */
+function tryUpgradeTurret(id) {
+  const next = nextUpgrade(id, save.upgradeCores, isUnlocked(id));
+  if (!next?.ready) return false;
+  save.upgradeCores -= next.cost;
+  save.turretLevels = { ...save.turretLevels, [id]: next.level };
+  audio.playTurretUpgrade();
+  refreshMissionControl();
+  setTurretLevels(save.turretLevels);
   persistSave();
   refreshShopBarFromSave();
   refreshTopbar();
@@ -527,14 +660,14 @@ function awardScaledTrainingXp(baseAmount, level) {
  * @param {boolean} right
  */
 function creditTopicAnswer(topicId, level, right) {
-  const result = recordTopicAnswer(save.topicProgress, topicId, level, right);
+  const result = recordTopicAnswer(save.topicProgress, topicId, level, right, topicXpMultiplier(topicId));
   save.topicProgress = result.progress;
   persistSave();
   announceTopicRankReward(topicId, result);
 }
 
 function creditTopicSession(topicId, accuracy) {
-  const result = recordTopicSession(save.topicProgress, topicId, accuracy);
+  const result = recordTopicSession(save.topicProgress, topicId, accuracy, topicXpMultiplier(topicId));
   save.topicProgress = result.progress;
   persistSave();
   announceTopicRankReward(topicId, result);
@@ -543,6 +676,7 @@ function creditTopicSession(topicId, accuracy) {
 function announceTopicRankReward(topicId, result) {
   if (!result.rankUp) return;
   const title = getTopic(topicId)?.title || 'Maths';
+  awardUpgradeCore(`${title.toUpperCase()} RANK ${result.newRank}`);
   if (result.bonusForgeXp) {
     creditForgeXp(result.bonusForgeXp);
     showToast(`${title.toUpperCase()} · RANK ${result.newRank}! +${result.bonusForgeXp} FORGE XP!`, { variant: 'success', duration: 4500 });
@@ -565,6 +699,7 @@ function creditTrainingAnswer(right) {
   lastTrainingAnswerCorrect = right;
   persistSave();
   refreshMissionControl();
+  if (!previouslyReady && isGateOpen(save.trainingGate)) awardUpgradeCore('MISSION COMPLETE');
   const extraTime = bonusSiegeSeconds(save.trainingGate);
   if (extraTime > previousBonus) {
     showToast(`BONUS ASSAULT EARNED! +${extraTime} seconds after your normal siege.`, {
@@ -722,6 +857,8 @@ function makeDashboardState() {
     enemyDefeated: save.enemyDefeated,
     onArmory: openArmory,
     siegesCompleted: save.siegesCompleted,
+    crystalsCollected: save.crystalsCollected,
+    crystalsToSpend: save.upgradeCores,
     bestKills: save.bestKills[SLICE_MISSION_ID] ?? 0,
     bestBankedCoins: save.bestBankedCoins[SLICE_MISSION_ID] ?? 0,
     bestStars: save.bestStars,
@@ -1251,10 +1388,11 @@ function mountTDEngine(canvas, mission) {
       refreshDeploymentPanel();
       return true;
     },
-    onKillReward({ xp, isBoss }) {
+    onKillReward({ xp, isBoss, screenX, screenY }) {
       run.waveBudget += xp;
       refreshShop();
       addCacheProgress(isBoss ? GRANNY_CACHE.bossKillPoints : GRANNY_CACHE.killPoints);
+      if (isBoss) awardUpgradeCore('BOSS DEFEATED', { x: screenX, y: screenY });
     },
     onEnemyDestroyed({ key }) {
       save.enemyDefeated = recordEnemyDefeat(save.enemyDefeated, key);
@@ -1480,6 +1618,10 @@ function bindUI() {
   });
 
   document.getElementById('btn-armory')?.addEventListener('click', () => {
+    openArmory();
+  });
+
+  document.getElementById('topbar-cores-pill')?.addEventListener('click', () => {
     openArmory();
   });
 

@@ -341,9 +341,11 @@
    Keep it dark enough that the logo and achievements remain legible. */
 body.mission-mode .topbar.gb-topbar {
   background:
-    linear-gradient(90deg, rgba(9, 8, 18, .70) 0%, rgba(9, 8, 18, .77) 43%, rgba(9, 8, 18, .94) 100%),
-    url('../assets/home/hero-village.png') center 45% / cover no-repeat,
-    #0c0a14;
+    linear-gradient(180deg, transparent 60%, rgba(9, 8, 18, .4) 100%),
+    linear-gradient(90deg, #0b0814 0%, #0b0814 20%, rgba(11, 8, 20, 0) 32%, rgba(11, 8, 20, 0) 68%, #0b0814 80%, #0b0814 100%),
+    /* Shown near its real size (never stretched), so the scene stays crisp; the fades hide its edges. */
+    url('../assets/home/header-backyard.jpg?v=2') center 52% / auto 310% no-repeat,
+    #0b0814;
   padding-top: 6px;
   padding-bottom: 7px;
 }

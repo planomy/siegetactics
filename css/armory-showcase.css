@@ -370,3 +370,77 @@
   opacity: 1;
   border-color: rgba(255,193,102,.64);
 }
+
+/* Turret upgrades: level stars, the upgrade button, and an upgraded glow. */
+.armory-level-stars {
+  display: inline-flex;
+  gap: 1px;
+  font-size: .85em;
+  letter-spacing: 0;
+  vertical-align: middle;
+}
+
+.armory-level-stars span {
+  color: rgba(255, 255, 255, .18);
+}
+
+.armory-level-stars span.is-earned {
+  color: #ffd84a;
+  text-shadow: 0 0 6px rgba(255, 200, 60, .7);
+}
+
+.armory-card .armory-level-stars {
+  display: flex;
+  justify-content: center;
+  margin: 1px 0 2px;
+}
+
+.armory-upgrade-btn {
+  display: block;
+  width: 100%;
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffe27a, #f3a512);
+  color: #2a1700;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: .04em;
+  cursor: pointer;
+  animation: upgrade-ready 1.4s ease-in-out infinite;
+}
+
+.armory-upgrade-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px) scale(1.02);
+}
+
+@keyframes upgrade-ready {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 200, 60, .55); }
+  50% { box-shadow: 0 0 0 10px rgba(255, 200, 60, 0); }
+}
+
+.armory-card--upgrade .armory-card-badge {
+  background: linear-gradient(180deg, #ffe27a, #f3a512);
+  color: #2a1700;
+}
+
+.armory-card.armory-level-2 .armory-card-art img,
+.armory-feature.armory-level-2 .armory-feature-turret {
+  filter: saturate(1.2) brightness(1.06) drop-shadow(0 0 10px var(--turret-color));
+}
+
+.armory-card.armory-level-3 .armory-card-art img,
+.armory-feature.armory-level-3 .armory-feature-turret {
+  filter: saturate(1.35) brightness(1.12) drop-shadow(0 0 14px rgba(255, 210, 70, .95));
+}
+
+.armory-card.armory-level-3 {
+  border-color: rgba(255, 210, 70, .7);
+  box-shadow: 0 0 16px rgba(255, 200, 60, .3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .armory-upgrade-btn { animation: none; }
+}

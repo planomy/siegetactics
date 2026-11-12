@@ -13,15 +13,18 @@
   <link rel="stylesheet" href="css/popups.css" />
   <link rel="stylesheet" href="css/mission-layout.css?v=20261112t" />
   <link rel="stylesheet" href="css/defence-forge.css?v=20261112h" />
-  <link rel="stylesheet" href="css/armory-showcase.css?v=20261112f" />
+  <link rel="stylesheet" href="css/armory-showcase.css?v=20261112a1" />
   <link rel="stylesheet" href="css/siege-deployment.css?v=20261112g" />
   <link rel="stylesheet" href="css/sticky-header.css?v=20261112h" />
   <link rel="stylesheet" href="css/siege-side-armory.css?v=20261112j" />
   <link rel="stylesheet" href="css/maths-hq-cockpit.css?v=20261112t" />
-  <link rel="stylesheet" href="css/ten-topic-dashboard.css?v=20261112u" />
+  <link rel="stylesheet" href="css/ten-topic-dashboard.css?v=20261112b3" />
   <link rel="stylesheet" href="css/game-no-instructions.css?v=20261112m" />
   <link rel="stylesheet" href="css/mission-blueprint-stats.css?v=20261112n" />
-  <link rel="stylesheet" href="css/topic-campaign-cards.css?v=20261112v" />
+  <link rel="stylesheet" href="css/topic-campaign-cards.css?v=20261112a6" />
+  <link rel="stylesheet" href="css/maths-hq-declutter.css?v=20261112c4" />
+  <link rel="stylesheet" href="css/upgrade-cores.css?v=20261112a7" />
+  <link rel="stylesheet" href="css/rank-badge.css?v=20261112a1" />
   <link rel="preload" href="assets/field.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/granny-boom-siege-logo.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/hero-village.png" as="image" type="image/png" />
@@ -43,6 +46,9 @@
         <img class="topbar-armory-icon" src="assets/ui/topbar-shop.png" width="763" height="777" alt="" />
       </button>
       <span class="forge-xp-pill"><span id="topbar-xp">0</span> XP</span>
+      <button type="button" class="core-pill" id="topbar-cores-pill" aria-label="Alien crystals: spend them in the Armory">
+        <span class="core-gem" aria-hidden="true"></span><span id="topbar-cores">0</span>
+      </button>
     </div>
     <div class="topbar-actions">
       <button type="button" class="topbar-action-btn" id="btn-sound" aria-label="Mute sound">
@@ -241,6 +247,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20261112r"></script>
+  <script type="module" src="js/app.js?v=20261112c1"></script>
 </body>
 </html>

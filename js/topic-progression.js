@@ -104,12 +104,13 @@ function milestoneRewards(oldRank, newRank) {
  * @param {string} id
  * @param {1|2|3|4} level
  * @param {boolean} right
+ * @param {number} [multiplier] Topic XP multiplier, e.g. 2 for the daily hot topic.
  */
-export function recordTopicAnswer(progress, id, level, right) {
+export function recordTopicAnswer(progress, id, level, right, multiplier = 1) {
   if (!TOPIC_IDS.has(id)) return { progress, addedXp: 0, newRank: 1, rankUp: false, bonusForgeXp: 0 };
   const old = getTopicRecord(progress, id);
   const before = topicRankProgress(old.xp).rank;
-  const addedXp = right ? (TOPIC_XP_PER_CORRECT[level] || TOPIC_XP_PER_CORRECT[1]) : 0;
+  const addedXp = right ? (TOPIC_XP_PER_CORRECT[level] || TOPIC_XP_PER_CORRECT[1]) * multiplier : 0;
   const xp = Math.min(MAX_TOPIC_XP, old.xp + addedXp);
   const record = {
     ...old,
@@ -133,12 +134,13 @@ export function recordTopicAnswer(progress, id, level, right) {
  * @param {TopicProgressSave} progress
  * @param {string} id
  * @param {number} accuracy
+ * @param {number} [multiplier] Topic XP multiplier, e.g. 2 for the daily hot topic.
  */
-export function recordTopicSession(progress, id, accuracy) {
+export function recordTopicSession(progress, id, accuracy, multiplier = 1) {
   if (!TOPIC_IDS.has(id)) return { progress, addedXp: 0, newRank: 1, rankUp: false, bonusForgeXp: 0 };
   const old = getTopicRecord(progress, id);
   const before = topicRankProgress(old.xp).rank;
-  const addedXp = Number.isFinite(accuracy) && accuracy >= .8 ? TOPIC_MISSION_BONUS : 0;
+  const addedXp = Number.isFinite(accuracy) && accuracy >= .8 ? TOPIC_MISSION_BONUS * multiplier : 0;
   const xp = Math.min(MAX_TOPIC_XP, old.xp + addedXp);
   const record = { ...old, xp, missions: Math.min(MAX_TOPIC_XP, old.missions + 1) };
   const newRank = topicRankProgress(xp).rank;

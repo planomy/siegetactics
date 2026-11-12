@@ -16,16 +16,19 @@ body.mission-mode #screen-home .mission-all-topics {
 }
 
 body.mission-mode #screen-home .mission-all-topics {
-  --topic-meta: 23px;
+  --topic-meta: 25px;
+  /* Topic art is about 193 x 240 (width / height). */
+  --topic-art-ratio: .8;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   column-gap: 6px;
   row-gap: 7px;
   align-items: start;
-  padding: 5px 0 3px;
+  padding: 10px 12px;
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -40,11 +43,84 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card {
   font: inherit;
   text-align: center;
   cursor: pointer;
-  transition: filter .16s ease;
+  transform-origin: 50% 70%;
+  transition: transform .28s cubic-bezier(.34, 1.56, .64, 1);
+  animation: topic-pop-in .45s cubic-bezier(.34, 1.56, .64, 1) backwards;
 }
 
-body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover {
-  filter: brightness(1.10);
+/* Cards pop in one after another when Maths HQ opens. */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:nth-child(2) { animation-delay: .04s; }
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:nth-child(3) { animation-delay: .08s; }
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:nth-child(4) { animation-delay: .12s; }
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:nth-child(5) { animation-delay: .16s; }
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:nth-child(6) { animation-delay: .20s; }
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:nth-child(7) { animation-delay: .24s; }
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:nth-child(8) { animation-delay: .28s; }
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:nth-child(9) { animation-delay: .32s; }
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:nth-child(10) { animation-delay: .36s; }
+
+@keyframes topic-pop-in {
+  0% { opacity: 0; transform: translateY(18px) scale(.82); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* Hover: the card springs up, brightens, glows toxic green and a shine sweeps across it. */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover,
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):focus-visible {
+  z-index: 2;
+  transform: translateY(-7px) scale(1.08) rotate(-1.5deg);
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:nth-child(even):not(:disabled):hover,
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:nth-child(even):not(:disabled):focus-visible {
+  transform: translateY(-7px) scale(1.08) rotate(1.5deg);
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):active {
+  transform: translateY(-2px) scale(.96);
+  transition-duration: .08s;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-story-art-img,
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):focus-visible .gb-story-art-img {
+  animation: topic-glow 1.2s ease-in-out infinite;
+}
+
+@keyframes topic-glow {
+  0%, 100% { filter: brightness(1.22) saturate(1.2) drop-shadow(0 0 8px rgba(120, 255, 70, .55)) drop-shadow(0 10px 14px rgba(0, 0, 0, .6)); }
+  50% { filter: brightness(1.35) saturate(1.3) drop-shadow(0 0 18px rgba(150, 255, 80, .9)) drop-shadow(0 10px 14px rgba(0, 0, 0, .6)); }
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-story-art {
+  position: relative;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-story-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .55) 48%, rgba(200, 255, 150, .25) 52%, transparent 65%) no-repeat;
+  background-size: 250% 100%;
+  background-position: 140% 0;
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-story-art::after,
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):focus-visible .gb-story-art::after {
+  animation: topic-shine .7s ease-out forwards;
+}
+
+@keyframes topic-shine {
+  0% { opacity: 1; background-position: 140% 0; }
+  100% { opacity: 1; background-position: -40% 0; }
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-topic-rank,
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-topic-next {
+  color: #eaffd0;
+  text-shadow: 0 0 6px rgba(120, 255, 70, .7);
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:focus-visible {
@@ -108,23 +184,32 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-t
   width: 100%;
   min-width: 0;
   height: 20px;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  gap: 3px;
+  gap: 6px;
   padding: 0 5px;
   background: transparent;
   white-space: nowrap;
   pointer-events: none;
 }
 
+/* Rank is hidden at rank 1, then becomes a gold star pill once the topic ranks up. */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-line[data-rank="1"] .gb-topic-rank {
+  display: none;
+}
+
 body.mission-mode #screen-home .mission-all-topics .gb-topic-rank {
-  color: #c7f7c7;
-  font-size: clamp(.53rem, .62vw, .7rem);
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffd65a, #e09a12);
+  color: #2a1700;
+  font-size: .66rem;
   font-weight: 800;
+  box-shadow: 0 0 8px rgba(255, 200, 60, .45);
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-rank strong {
-  color: #ffe4a2;
+  color: #2a1700;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
@@ -135,12 +220,18 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-mastery {
   font-weight: 800;
 }
 
+/* XP to the next rank only shows on hover or keyboard focus. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-next {
-  margin-left: auto;
+  display: none;
   color: #ded8c7;
   font-size: clamp(.5rem, .56vw, .65rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-topic-next,
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:focus-visible .gb-topic-next {
+  display: inline;
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-track {
@@ -159,38 +250,95 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-fill {
   transition: width .3s ease;
 }
 
+/* The prize: an alien crystal waits at the end of every topic's XP bar, and pulses when close. */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-track {
+  position: relative;
+  height: 4px;
+  border-radius: 2px;
+  overflow: visible;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-prize {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-prize .core-gem {
+  --gem-size: 18px;
+  filter: drop-shadow(0 0 3px rgba(80, 255, 170, .7)) grayscale(.35) brightness(.8);
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-prize.is-close .core-gem {
+  filter: drop-shadow(0 0 8px rgba(120, 255, 190, 1));
+  animation: prize-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes prize-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.35) rotate(8deg); }
+}
+
+/* Today's hot topic: a flame banner across the top of the card and a warm glow. */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card.is-hot .gb-story-art {
+  position: relative;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card.is-hot .gb-story-art-img {
+  filter: drop-shadow(0 0 10px rgba(255, 140, 40, .75));
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  z-index: 2;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffb340, #ff5a1f);
+  color: #2a0d00;
+  font-size: clamp(.55rem, .62vw, .72rem);
+  font-weight: 900;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  box-shadow: 0 0 14px rgba(255, 110, 30, .75);
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: hot-flicker 1.6s ease-in-out infinite;
+}
+
+@keyframes hot-flicker {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 110, 30, .6); }
+  50% { box-shadow: 0 0 20px rgba(255, 150, 40, .95); }
+}
+
 /* Desktop dashboard: two rows of five share the height Maths HQ has left (see
    ten-topic-dashboard.css). Each card measures its own cell, and the square art
    takes the largest size that fits above the rank line, so nothing is cut off.
-   On a very short window the art stops shrinking at 96px and Maths HQ scrolls. */
+   On a very short window the art stops shrinking at 120px tall and Maths HQ scrolls. */
 @media (min-width: 1321px) and (min-height: 600px) {
   body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .mission-topic-section {
+    --topic-head: 0px;
     display: flex;
     flex-direction: column;
-    container-type: inline-size;
-  }
-
-  /* Never taller than five columns of art need, so on a tall screen the rows stay
-     together and any spare height is black space below them. */
-  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .mission-all-topics {
-    flex: 1 1 auto;
-    min-height: calc(2 * (96px + var(--topic-meta)) + 7px + 8px);
-    max-height: calc(2 * ((100cqw - 4 * 6px) / 5 + var(--topic-meta)) + 7px + 8px);
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
-  }
-
-  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .gb-topic-campaign-card {
     container-type: size;
-    min-height: 0;
-    justify-content: center;
+    min-height: calc(var(--topic-head) + 2 * (120px + 25px) + 7px + 20px);
   }
 
-  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .gb-topic-campaign-card .gb-story-art-img,
-  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .gb-topic-campaign-card .gb-story-art-emoji,
-  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .gb-topic-campaign-card .gb-topic-campaign-line,
-  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .gb-topic-campaign-card .gb-topic-rank-track {
-    width: min(100cqw, 100cqh - var(--topic-meta));
+  /* Each column is exactly one card wide: the largest card that fits two rows in the
+     space left, 12px apart and centred. */
+  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .mission-all-topics {
+    --topic-row: calc((100cqh - var(--topic-head) - 20px - 7px) / 2);
+    --topic-art-w: calc(min((var(--topic-row) - var(--topic-meta)) * var(--topic-art-ratio), (100cqw - 24px - 4 * 12px) / 5));
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-columns: repeat(5, var(--topic-art-w));
+    column-gap: 12px;
+    justify-content: center;
+    align-content: center;
   }
 }
 
@@ -209,7 +357,23 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-fill {
 
 @media (prefers-reduced-motion: reduce) {
   body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card,
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-fill {
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-fill,
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-prize .core-gem,
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
     transition: none;
+    animation: none;
+  }
+
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover {
+    transform: none;
+  }
+
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-story-art-img {
+    animation: none;
+    filter: brightness(1.25);
+  }
+
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-story-art::after {
+    animation: none;
   }
 }

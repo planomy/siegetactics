@@ -1,9 +1,7 @@
 import { MATH_TOPICS } from './topics-data.js?v=20261112o';
-import {
-  attackStatus,
-  bonusSiegeSeconds,
-} from './training-gate.js?v=20261112g';
-import { STAR_LABELS, STAR_HINTS, summarizeBadgeCollection, renderStarBadges } from './stars.js';
+import { attackStatus } from './training-gate.js?v=20261112g';
+import { STAR_LABELS, STAR_HINTS, summarizeBadgeCollection, badgeSrc } from './stars.js';
+import { hotTopicId } from './hot-topic.js?v=20261112a1';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261112n';
 import { renderInterstellarMap, mapPiecesEarned, TRAINING_MODULE_IDS } from './map-progress.js';
 import { topicRankProgress, getTopicRecord } from './topic-progression.js?v=20261112p';
@@ -33,24 +31,28 @@ function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTo
       const highestMastery = Math.max(0, ...qualified);
       const masteryLabel = highestMastery ? `L${highestMastery} ✓` : '';
       const artClass = `gb-story-art gb-story-art-${topic.id.replace(/[^a-z-]/g, '')}`;
+      const hot = !locked && topic.id === hotTopicId();
+      const close = campaign.percent >= 70;
       const art = topic.moduleArt
         ? `<img class="gb-story-art-img" src="${topic.moduleArt}" alt="" width="400" height="400" loading="lazy" />`
         : `<span class="gb-story-art-emoji">${topic.emoji}</span>`;
       return `
         <button type="button"
-          class="gb-story-card gb-topic-campaign-card${locked ? ' gb-story-locked' : ''}"
+          class="gb-story-card gb-topic-campaign-card${locked ? ' gb-story-locked' : ''}${hot ? ' is-hot' : ''}"
           data-topic="${topic.id}"
-          aria-label="${topic.title}, topic rank ${campaign.rank}${highestMastery ? `, Level ${highestMastery} mastered` : ''}. ${campaign.remaining} topic XP to rank ${campaign.nextRank}."
+          aria-label="${topic.title}${hot ? ', hot topic today, double XP' : ''}, topic rank ${campaign.rank}${highestMastery ? `, Level ${highestMastery} mastered` : ''}. ${campaign.remaining} topic XP to rank ${campaign.nextRank}."
           ${locked ? 'disabled' : ''}>
           <span class="${artClass}" aria-hidden="true">${art}</span>
+          ${hot ? '<span class="gb-topic-hot" aria-hidden="true">🔥 HOT TOPIC · 2× XP</span>' : ''}
           ${topic.moduleArt ? '' : `<span class="gb-story-title">${topic.title}</span>`}
-          <span class="gb-topic-campaign-line">
-            <span class="gb-topic-rank">RANK <strong>${campaign.rank}</strong></span>
+          <span class="gb-topic-campaign-line" data-rank="${campaign.rank}">
+            <span class="gb-topic-rank">★ <strong>${campaign.rank}</strong></span>
             ${highestMastery ? `<span class="gb-topic-mastery" title="Level ${highestMastery} mastery earned">${masteryLabel}</span>` : ''}
             <span class="gb-topic-next">NEXT ${campaign.remaining.toLocaleString()} XP</span>
           </span>
           <span class="gb-topic-rank-track" aria-hidden="true">
             <span class="gb-topic-rank-fill" style="width:${campaign.percent}%"></span>
+            <span class="gb-topic-prize${close ? ' is-close' : ''}" title="Rank up for an alien crystal"><span class="core-gem"></span></span>
           </span>
         </button>
       `;
@@ -481,38 +483,18 @@ export function renderMissionControl(host, state) {
  */
 export function renderSiegeStats(host, state) {
   if (!host) return;
-  const attack = attackStatus(state.gate);
-  const progress = Math.round(attack.pct * 100);
   const shields = countShieldsEarned(state.levelMastery);
   const sectors = mapPiecesEarned(state.mapProgress);
-  const earnedBonus = bonusSiegeSeconds(state.gate);
   const prior = host.querySelector('.mission-battle-stats');
-  const expanded = prior?.querySelector('.mission-control-details')?.open ?? false;
   const html = `
     <div class="mission-battle-stats">
-      <div class="mission-control-progress">
-        <div class="mission-control-progress-line">
-          <strong>${attack.open ? 'BATTLE READY' : 'NEXT SIEGE'}</strong>
-          <span>${attack.done} / ${attack.total} questions</span>
-        </div>
-        <div class="mission-control-track" role="progressbar" aria-label="Maths progress towards siege" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${attack.done}">
-          <div class="mission-control-fill" style="width: ${progress}%"></div>
-        </div>
-        ${attack.open ? `<div class="mission-bonus-progress">${earnedBonus === 30 ? '★ BONUS +30s' : earnedBonus === 15 ? '★ BONUS +15s · NEXT +30s' : '★ +15s AT 15 QUESTIONS'}</div>` : ''}
+      ${renderCrystalVault(state.crystalsCollected ?? 0, state.crystalsToSpend ?? 0)}
+      <div class="mission-progress-strip">
+        <span>Sieges <strong>${state.siegesCompleted}</strong></span>
+        <span>Best blasts <strong>${state.bestKills.toLocaleString()}</strong></span>
+        <span>Shields <strong>${shields}</strong></span>
+        <span>Map <strong>${sectors}/${TRAINING_MODULE_IDS.length}</strong></span>
       </div>
-      <div class="mission-control-metrics">
-        <div><span>FORGE XP</span><strong id="mission-control-xp">${state.xp.toLocaleString()}</strong></div>
-        <div><span>SIEGES PLAYED</span><strong>${state.siegesCompleted}</strong></div>
-      </div>
-      <details class="mission-control-details" ${expanded ? 'open' : ''}>
-        <summary>My progress <span aria-hidden="true">⌄</span></summary>
-        <div class="mission-control-detail-grid">
-          <div><span>Best blasts</span><strong>${state.bestKills.toLocaleString()}</strong></div>
-          <div><span>Shields earned</span><strong>${shields}</strong></div>
-          <div><span>Map charted</span><strong>${sectors}/${TRAINING_MODULE_IDS.length}</strong></div>
-          <div><span>Best coins banked</span><strong>${state.bestBankedCoins.toLocaleString()}</strong></div>
-        </div>
-      </details>
     </div>
   `;
   const template = document.createElement('template');
@@ -520,6 +502,67 @@ export function renderSiegeStats(host, state) {
   const stats = template.content.firstElementChild;
   if (prior) prior.replaceWith(stats);
   else host.append(stats);
+  stats.querySelector('.crystal-vault-spend')?.addEventListener('click', () => state.onArmory?.());
+  lastVaultCount = state.crystalsCollected ?? 0;
+}
+
+const VAULT_TIERS = [
+  { at: 100, id: 'legend', name: 'LEGENDARY VAULT' },
+  { at: 50, id: 'gold', name: 'GOLD VAULT' },
+  { at: 25, id: 'silver', name: 'SILVER VAULT' },
+  { at: 10, id: 'bronze', name: 'BRONZE VAULT' },
+  { at: 0, id: 'starter', name: 'CRYSTAL VAULT' },
+];
+
+/** Crystals shown so far, so a newly collected one can drop into the pile. @type {number|null} */
+let lastVaultCount = null;
+
+/**
+ * The Crystal Vault: a glass vault that physically fills with crystals as the player collects them,
+ * the all-time total, the next vault tier to chase, and a shortcut to spend crystals in the Armory.
+ * @param {number} collected @param {number} toSpend
+ */
+function renderCrystalVault(collected, toSpend) {
+  const tier = VAULT_TIERS.find((t) => collected >= t.at) ?? VAULT_TIERS[VAULT_TIERS.length - 1];
+  const next = [...VAULT_TIERS].reverse().find((t) => t.at > collected);
+  // One crystal in the glass for every crystal collected in this vault's tier. Crystals are sized
+  // for the tier, so the glass is exactly full when the vault upgrades.
+  const room = next ? next.at - tier.at : 24;
+  const shown = Math.min(room, Math.max(0, collected - tier.at));
+  const cols = Math.max(3, Math.ceil(Math.sqrt(room * 1.05)));
+  const rows = Math.ceil(room / cols);
+  const cell = 100 / cols;
+  const fresh = lastVaultCount != null && collected > lastVaultCount;
+  const crystals = Array.from({ length: shown }, (_, i) => {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const left = col * cell + (row % 2 ? cell * 0.25 : 0) - cell * 0.1;
+    const bottom = (row * 100) / rows;
+    const turn = ((i * 53) % 50) - 25;
+    const isNew = fresh && i === shown - 1;
+    return `<span class="crystal-vault-crystal${isNew ? ' is-new' : ''}" style="left:${left.toFixed(1)}%;bottom:${bottom.toFixed(1)}%;width:${(cell * 1.15).toFixed(1)}%;--turn:${turn}deg"></span>`;
+  }).join('');
+  return `
+    <section class="crystal-vault crystal-vault--${tier.id}" aria-label="Crystal vault: ${collected} alien crystals collected">
+      <div class="crystal-vault-jar" aria-hidden="true">
+        <div class="crystal-vault-pile">${crystals}</div>
+        <div class="crystal-vault-glass"></div>
+      </div>
+      <div class="crystal-vault-copy">
+        <span class="crystal-vault-tier">${tier.name}</span>
+        <strong class="crystal-vault-count">${collected.toLocaleString()}</strong>
+        <span class="crystal-vault-label">CRYSTALS COLLECTED</span>
+        ${next ? `<span class="crystal-vault-next">${next.at - collected} more for ${next.name}</span>` : '<span class="crystal-vault-next">Every vault unlocked!</span>'}
+        ${toSpend > 0 ? `<button type="button" class="crystal-vault-spend"><span class="core-gem" aria-hidden="true"></span>${toSpend} READY TO SPEND →</button>` : ''}
+      </div>
+    </section>`;
+}
+
+/** Scroll an opened details panel into view, so its contents never open out of sight. */
+function revealWhenOpened(details) {
+  details?.addEventListener('toggle', () => {
+    if (details.open) requestAnimationFrame(() => details.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+  });
 }
 
 /**
@@ -544,30 +587,25 @@ export function renderHome(host, state) {
         </div>
         ${attack.open
           ? '<span class="mission-battle-ready">Use DEFEND GRANNY in Mission Control!</span>'
-          : `<button type="button" id="mission-start-mixed" class="gb-forge-btn">START ${attack.remaining}-QUESTION MISSION</button>`}
+          : `<button type="button" id="mission-start-mixed" class="gb-forge-btn" aria-label="Random mission: ${attack.remaining} questions from every topic">🎲 RANDOM MISSION</button>`}
+        <div class="mission-level-control">
+          <div class="mission-level-intro">
+            <span class="mission-level-title">LEVEL</span>
+          </div>
+          <div class="mission-level-buttons" role="group" aria-label="Choose maths difficulty and XP reward">
+            ${[1, 2, 3, 4].map((n) => `
+              <button type="button" class="mission-level-option${state.difficultyLevel === n ? ' is-selected' : ''}"
+                data-level="${n}" aria-pressed="${state.difficultyLevel === n}"
+                aria-label="Level ${n}, ${xpMultiplierLabel(/** @type {1|2|3|4} */ (n))}">
+                <span class="mission-level-number">${n}</span>
+                <span class="mission-level-reward">${xpMultiplierLabel(/** @type {1|2|3|4} */ (n))}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
       </section>
       ${renderArmoryPromo(state.xp, state.unlockedTurrets)}
       <section class="mission-topic-section" aria-label="Maths topics">
-        <div class="mission-topic-heading">
-          <div>
-            <h2>Topics</h2>
-          </div>
-          <div class="mission-level-control">
-            <div class="mission-level-intro">
-              <span class="mission-level-title">LEVEL</span>
-            </div>
-            <div class="mission-level-buttons" role="group" aria-label="Choose maths difficulty and XP reward">
-              ${[1, 2, 3, 4].map((n) => `
-                <button type="button" class="mission-level-option${state.difficultyLevel === n ? ' is-selected' : ''}"
-                  data-level="${n}" aria-pressed="${state.difficultyLevel === n}"
-                  aria-label="Level ${n}, ${xpMultiplierLabel(/** @type {1|2|3|4} */ (n))}">
-                  <span class="mission-level-number">${n}</span>
-                  <span class="mission-level-reward">${xpMultiplierLabel(/** @type {1|2|3|4} */ (n))}</span>
-                </button>
-              `).join('')}
-            </div>
-          </div>
-        </div>
         <div class="mission-topic-grid mission-all-topics" aria-label="All ten maths topics">
           ${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress, TOPIC_DISPLAY_ORDER, state.topicProgress)}
         </div>
@@ -581,6 +619,7 @@ export function renderHome(host, state) {
 
   host.querySelector('#mission-start-mixed')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-armory-open')?.addEventListener('click', state.onArmory);
+  revealWhenOpened(host.querySelector('.mission-map-details'));
   host.querySelectorAll('[data-topic]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-topic');
@@ -604,12 +643,70 @@ export function renderHome(host, state) {
  */
 export function renderTopbarBadges(container, bestStars, primaryMissionId) {
   if (!container) return;
-  const badges = summarizeBadgeCollection(bestStars, primaryMissionId);
-  renderStarBadges(
-    container,
-    { earned: badges.tiers, labels: STAR_LABELS, hints: STAR_HINTS },
-    { compact: true }
-  );
+  const level = summarizeBadgeCollection(bestStars, primaryMissionId).displayCount;
+  const rankedUp = lastBadgeLevel != null && level > lastBadgeLevel;
+  lastBadgeLevel = level;
+  const shown = Math.max(1, level);
+  const name = level ? STAR_LABELS[level - 1] : 'Recruit';
+  const next = level < STAR_LABELS.length ? { name: STAR_LABELS[level], hint: STAR_HINTS[level] } : null;
+  container.classList.remove('badge-row-compact');
+  container.innerHTML = `
+    <button type="button" class="rank-badge${level ? '' : ' is-locked'}${rankedUp ? ' is-rank-up' : ''}" aria-haspopup="dialog"
+      aria-label="${level ? `Your rank: ${name}` : 'No rank yet'}${next ? `. Next: ${next.name}, ${next.hint}` : '. Top rank reached'}. Show all ranks.">
+      <span class="rank-badge-art"><img src="${badgeSrc(shown)}" alt="" width="57" height="57" />${level ? '' : '<span class="rank-badge-lock" aria-hidden="true">🔒</span>'}</span>
+      <span class="rank-badge-copy">
+        <strong class="rank-badge-name">${level ? name.toUpperCase() : 'NO RANK YET'}</strong>
+        <span class="rank-badge-next">${next ? `Next: ${next.name} · ${next.hint}` : 'Top rank!'}</span>
+      </span>
+    </button>`;
+  container.querySelector('.rank-badge')?.addEventListener('click', () => showRankLadder(level));
+  if (rankedUp) showRankUp(name, shown);
+}
+
+/** The badge level last shown in the header, so a new rank can be celebrated. @type {number|null} */
+let lastBadgeLevel = null;
+
+/** A short celebration when the header badge upgrades. @param {string} name @param {number} level */
+function showRankUp(name, level) {
+  document.querySelector('.rank-up')?.remove();
+  const el = document.createElement('div');
+  el.className = 'rank-up';
+  el.setAttribute('role', 'status');
+  el.innerHTML = `
+    <span class="core-reward-rays" aria-hidden="true"></span>
+    <img class="rank-up-badge" src="${badgeSrc(level)}" alt="" width="150" height="150" />
+    <strong class="rank-up-title">RANK UP!</strong>
+    <span class="rank-up-name">${name.toUpperCase()}</span>`;
+  document.body.append(el);
+  window.setTimeout(() => el.classList.add('is-leaving'), 2400);
+  window.setTimeout(() => el.remove(), 3000);
+}
+
+/** All five ranks, earned ones lit, with what each needs. @param {number} level */
+function showRankLadder(level) {
+  document.querySelector('.rank-ladder')?.remove();
+  const el = document.createElement('div');
+  el.className = 'rank-ladder';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', 'Siege ranks');
+  el.innerHTML = `
+    <div class="rank-ladder-panel">
+      <h2 class="rank-ladder-title">SIEGE RANKS</h2>
+      <ol class="rank-ladder-list">
+        ${STAR_LABELS.map((label, i) => `
+          <li class="rank-ladder-item${i < level ? ' is-earned' : ''}${i === level ? ' is-next' : ''}">
+            <img src="${badgeSrc(i + 1)}" alt="" width="64" height="64" />
+            <strong>${label}</strong>
+            <span>${STAR_HINTS[i]}</span>
+            <em>${i < level ? 'EARNED' : i === level ? 'NEXT' : 'LOCKED'}</em>
+          </li>`).join('')}
+      </ol>
+      <button type="button" class="rank-ladder-close">GOT IT</button>
+    </div>`;
+  const close = () => el.remove();
+  el.addEventListener('click', (e) => { if (e.target === el) close(); });
+  el.querySelector('.rank-ladder-close')?.addEventListener('click', close);
+  document.body.append(el);
 }
 
 /** @param {string} s */

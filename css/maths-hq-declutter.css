@@ -1,0 +1,425 @@
+/*
+ * Maths HQ declutter: one headline per panel, no repeated information, and a slim
+ * mission row so the topic cards get the room. Hides labels only; every button,
+ * number and progress bar a player uses stays.
+ */
+
+/* Centre: the panel title, "Quick start" and "Topics" / "Level" labels. */
+body.mission-mode #screen-home .mission-workspace-heading,
+body.mission-mode #screen-home .mission-kicker,
+body.mission-mode #screen-home .mission-recommended,
+body.mission-mode #screen-home .mission-topic-heading h2,
+body.mission-mode #screen-home .mission-level-intro {
+  display: none;
+}
+
+/* "Mixed Maths Mission" goes; the START button says it. "Granny needs you!" stays when a siege is ready. */
+body.mission-mode #screen-home .mission-mixed-card:not(:has(.mission-battle-ready)) .mission-mixed-copy {
+  display: none;
+}
+
+body.mission-mode #screen-home .mission-topic-heading {
+  justify-content: flex-end;
+}
+
+/* Armory: turret, its name, the XP bar and the button. "Ready!" still shows when it can be unlocked. */
+body.mission-mode #screen-home .armory-promo-eyebrow,
+body.mission-mode #screen-home .armory-promo:not(.armory-promo-ready) h2,
+body.mission-mode #screen-home .armory-promo:not(.armory-promo-ready) .armory-promo-progress-label strong,
+body.mission-mode #screen-home .armory-promo-footnote {
+  display: none;
+}
+
+body.mission-mode #screen-home .armory-promo-progress-label {
+  justify-content: flex-end;
+}
+
+/* The map becomes a small link rather than a full-width bar. */
+body.mission-mode #screen-home .mission-map-details:not([open]) {
+  justify-self: end;
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+}
+
+body.mission-mode #screen-home .mission-map-details:not([open]) summary {
+  font-size: .68rem;
+  opacity: .75;
+}
+
+/* Left: no panel title, no top-secret stamp, and no alert while all is calm (warnings still show). */
+body.mission-mode .mission-control-eyebrow,
+body.mission-mode .threat-dossier-stamp {
+  display: none;
+}
+
+/* The alien side is red: green means the player's own things (maths, crystals, gear),
+   so the radar and the enemy blueprint shift to a red-orange threat colour. */
+body.mission-mode .mission-control-radar,
+body.mission-mode .mission-control-blueprint {
+  filter: hue-rotate(-125deg) saturate(1.25) brightness(1.05);
+}
+
+/* Threat meter between the radar and the dossier: amber while calm, then hotter as the aliens close in. */
+body.mission-mode .mission-control-alert {
+  --threat: 18%;
+  --threat-colour: #ff9a3c;
+  position: relative;
+  padding: 16px 10px 23px;
+  border: 1px solid rgba(255, 120, 60, .4);
+  border-radius: 8px;
+  background: rgba(24, 8, 4, .7);
+  color: #ffb27a;
+  text-align: center;
+  letter-spacing: .08em;
+}
+
+body.mission-mode .mission-control-alert::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 9px;
+  height: 5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--threat-colour) var(--threat), rgba(255, 255, 255, .08) var(--threat));
+  box-shadow: 0 0 8px var(--threat-colour);
+}
+
+body.mission-mode .mission-control-alert[data-urgency="warning"] { --threat: 55%; --threat-colour: #ff6a2a; }
+body.mission-mode .mission-control-alert[data-urgency="critical"] { --threat: 82%; --threat-colour: #ff5a3c; }
+body.mission-mode .mission-control-alert[data-urgency="now"] { --threat: 100%; --threat-colour: #ff2d2d; animation: threat-flash .9s ease-in-out infinite; }
+
+@keyframes threat-flash {
+  50% { box-shadow: 0 0 16px rgba(255, 45, 45, .6); }
+}
+
+/* Right: no panel title or "Systems offline". */
+body.mission-mode .power-eyebrow,
+body.mission-mode .power-rig[data-stage="offline"] .power-rank-name {
+  display: none;
+}
+
+/* Fully armed: the count, bar and cells give way to one gold badge. */
+body.mission-mode .mission-power .power-rig[data-stage="ready"] .power-charge-number,
+body.mission-mode .mission-power .power-rig[data-stage="ready"] .power-charge-track,
+body.mission-mode .mission-power .power-rig[data-stage="ready"] .power-charge-cells {
+  display: none;
+}
+
+body.mission-mode .mission-power .power-rig[data-stage="ready"] .power-rank {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
+  margin: 4px 0 10px;
+}
+
+body.mission-mode .mission-power .power-rig[data-stage="ready"] .power-rank-name {
+  display: inline-block;
+  padding: 9px 26px;
+  border-radius: 999px;
+  border: 2px solid #ffe08a;
+  background: linear-gradient(180deg, #ffd65a, #e0960f);
+  color: #2a1700;
+  font-size: clamp(1.15rem, 1.4vw, 1.5rem);
+  letter-spacing: .08em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .45);
+  box-shadow: 0 0 0 4px rgba(255, 200, 60, .18), 0 0 26px rgba(255, 190, 40, .6);
+  animation: armed-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes armed-glow {
+  50% { box-shadow: 0 0 0 7px rgba(255, 200, 60, .08), 0 0 38px rgba(255, 200, 60, .85); transform: scale(1.04); }
+}
+
+/* START is the hero: full width, big, and gently pulsing so it is the first thing a kid sees. */
+body.mission-mode #screen-home #mission-start-mixed {
+  width: 100%;
+  max-width: none;
+  min-height: 58px;
+  font-size: clamp(1.1rem, 1.5vw, 1.5rem);
+  letter-spacing: .04em;
+  animation: start-pulse 1.8s ease-in-out infinite;
+}
+
+body.mission-mode #screen-home #mission-start-mixed:hover {
+  animation-play-state: paused;
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.12);
+}
+
+@keyframes start-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 170, 40, .55), 0 6px 18px rgba(255, 140, 0, .35); }
+  50% { box-shadow: 0 0 0 9px rgba(255, 170, 40, 0), 0 6px 26px rgba(255, 160, 20, .7); }
+}
+
+/* Right: "Sieges played" now lives in My progress, and the forge turret gets the space. */
+body.mission-mode .mission-control-metrics {
+  display: none;
+}
+
+/* Desktop: a slim mission row, so the height goes to the topic cards. */
+@media (min-width: 1321px) and (min-height: 600px) {
+  /* With the panel title and topic heading gone, the mission row takes their height. */
+  body.mission-mode #screen-home .mission-mixed-card,
+  body.mission-mode #screen-home .armory-promo {
+    min-height: 168px;
+    padding: 12px 14px;
+  }
+
+  body.mission-mode #screen-home #mission-start-mixed {
+    min-height: 70px;
+    font-size: clamp(1.35rem, 1.9vw, 1.9rem);
+  }
+
+  /* Difficulty sits under the mission button it applies to, labelled LEVEL, with no box around it. */
+  body.mission-mode #screen-home .mission-mixed-card .mission-level-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  body.mission-mode #screen-home .mission-mixed-card .mission-level-intro {
+    display: block;
+  }
+
+  body.mission-mode #screen-home .mission-mixed-card .mission-level-title {
+    font-size: .8rem;
+    font-weight: 900;
+    letter-spacing: .16em;
+    color: #e9ddff;
+  }
+
+  body.mission-mode #screen-home .mission-mixed-card .mission-level-buttons {
+    display: flex;
+    gap: 8px;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+  }
+
+  body.mission-mode #screen-home .mission-mixed-card .mission-level-option {
+    width: clamp(48px, 3.6vw, 64px);
+    min-height: 46px;
+  }
+
+  body.mission-mode #screen-home .mission-topic-heading {
+    display: none;
+  }
+
+  body.mission-mode #screen-home .mission-mixed-card {
+    justify-content: center;
+  }
+
+  /* The next turret is the star: big art, with a compact name, XP bar and button beside it. */
+  body.mission-mode #screen-home .armory-promo {
+    grid-template-columns: minmax(130px, 46%) minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+  }
+
+  body.mission-mode #screen-home .armory-promo-art {
+    min-height: 0;
+    height: 100%;
+  }
+
+  body.mission-mode #screen-home .armory-promo-art img {
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    max-height: 150px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 16px rgba(120, 255, 90, .45));
+  }
+
+  body.mission-mode #screen-home .armory-promo-copy {
+    max-width: 240px;
+  }
+
+  body.mission-mode #screen-home .armory-promo-featured {
+    font-size: 1.05rem;
+  }
+
+  body.mission-mode #screen-home .armory-promo-cta {
+    min-height: 38px;
+    font-size: .95rem;
+  }
+
+  body.mission-mode #screen-home .armory-promo-featured {
+    margin: 0 0 3px;
+  }
+
+  body.mission-mode #screen-home .armory-promo-progress {
+    margin-bottom: 5px;
+  }
+
+  body.mission-mode #screen-home .mission-mixed-card {
+    align-items: stretch;
+    padding: 10px 14px;
+  }
+
+  /* A bigger forge stage; the turrets are sized from it, so they grow too. */
+  body.mission-mode .mission-power .power-scene {
+    width: min(100%, 340px);
+    height: clamp(220px, 40dvh, 380px);
+  }
+
+  body.mission-mode .mission-power .power-halo-outer {
+    width: min(92%, 300px);
+    height: min(92%, 300px);
+  }
+
+  body.mission-mode .mission-power .power-halo-inner {
+    width: min(72%, 236px);
+    height: min(72%, 236px);
+  }
+
+  /* Left: a bigger radar and a taller alien dossier fill the panel. */
+  body.mission-mode .mission-control-inner {
+    height: 100%;
+    justify-content: space-evenly;
+  }
+
+  body.mission-mode .mission-control-radar .inbound-radar-dish {
+    width: min(290px, 19vw, 32dvh);
+  }
+
+  /* One fixed height, whichever alien is on file, so the panel never jumps. */
+  body.mission-mode .mission-control-blueprint .threat-dossier {
+    display: flex;
+    flex-direction: column;
+    height: 236px;
+    overflow: hidden;
+  }
+
+  body.mission-mode .mission-control-blueprint .threat-dossier-body {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  body.mission-mode .mission-control-blueprint .threat-dossier-wire {
+    min-height: 0;
+    height: 100%;
+  }
+
+  /* Right: My progress is always shown, in the space below the forge. */
+  body.mission-mode .mission-battle-stats .mission-control-details[open] {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body.mission-mode .mission-battle-stats .mission-control-details[open] .mission-control-detail-grid {
+    position: static;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    padding: 4px 0 0;
+  }
+}
+
+body.mission-mode .mission-battle-stats .mission-control-details summary {
+  pointer-events: none;
+  list-style: none;
+}
+
+body.mission-mode .mission-battle-stats .mission-control-details summary::-webkit-details-marker,
+body.mission-mode .mission-battle-stats .mission-control-details summary span {
+  display: none;
+}
+
+/* Fewer outlines: only the three main panels, the radar dish and the alien blueprint frame keep a
+   stroke. Everything inside them separates with soft backgrounds and glows instead. */
+body.mission-mode #screen-home .mission-mixed-card,
+body.mission-mode #screen-home .armory-promo,
+body.mission-mode .mission-control-alert,
+body.mission-mode .threat-dossier-kills,
+body.mission-mode .threat-hex-rail,
+body.mission-mode .threat-meter,
+body.mission-mode .mission-battle-stats,
+body.mission-mode .crystal-vault,
+body.mission-mode .armory-promo-art-badge,
+body .rank-badge,
+body .forge-xp-pill,
+body .core-pill {
+  border-color: transparent;
+}
+
+body.mission-mode .mission-battle-stats {
+  border-top: none;
+}
+
+body.mission-mode #screen-home .mission-mixed-card {
+  background: linear-gradient(160deg, rgba(60, 40, 110, .55), rgba(30, 22, 58, .55));
+}
+
+body.mission-mode #screen-home .armory-promo {
+  background: linear-gradient(160deg, rgba(70, 50, 30, .45), rgba(28, 22, 40, .6));
+}
+
+body.mission-mode #screen-home .armory-promo.armory-promo-ready {
+  box-shadow: 0 0 0 2px rgba(120, 255, 120, .55), 0 0 24px rgba(120, 255, 120, .25);
+}
+
+/* Level buttons: no boxes, just the number and XP; the chosen level gets a gold ring. */
+body.mission-mode #screen-home .mission-mixed-card .mission-level-option {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+body.mission-mode #screen-home .mission-mixed-card .mission-level-option:hover {
+  background: rgba(255, 255, 255, .06);
+}
+
+body.mission-mode #screen-home .mission-mixed-card .mission-level-option.is-selected {
+  border-color: #f3b33b;
+  background: rgba(243, 179, 59, .14);
+  box-shadow: 0 0 12px rgba(243, 179, 59, .35);
+}
+
+/* Right panel: an even split, so the Crystal Vault gets as much room as the forge.
+   The forge turret keeps its size; only the space around it tightens. */
+@media (min-width: 1321px) and (min-height: 600px) {
+  body.mission-mode .mission-power {
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  body.mission-mode .mission-power .power-rig {
+    padding-top: 8px;
+    padding-bottom: 6px;
+  }
+
+  body.mission-mode .mission-power .power-rank {
+    min-height: 0;
+  }
+
+  /* With the taller half, the vault stacks: a big jar on top, the count and tier underneath. */
+  body.mission-mode .crystal-vault {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    justify-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+
+  body.mission-mode .crystal-vault-jar {
+    width: auto;
+    height: 100%;
+    max-width: none;
+    max-height: 360px;
+  }
+
+  body.mission-mode .crystal-vault-copy {
+    align-items: center;
+  }
+
+  body.mission-mode .crystal-vault-count {
+    font-size: clamp(3rem, 4vw, 4.4rem);
+  }
+}

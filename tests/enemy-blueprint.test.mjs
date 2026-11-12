@@ -51,11 +51,11 @@ test('Mission Control uses the existing blueprint, with no duplicate 10-question
   assert.match(home, /id="mission-start-mixed"/);
 });
 
-test('power uses the top 60% and siege progress and stats occupy the bottom 40%', () => {
+test('the forge sits above the Crystal Vault and lifetime stats', () => {
   assert.match(css, /grid-template-rows: minmax\(0, 3fr\) minmax\(0, 2fr\)/);
   assert.match(css, /body\.mission-mode \.mission-power \{/);
   assert.match(home, /export function renderSiegeStats\(host, state\)/);
   assert.match(app, /renderSiegeStats\(powerHost, state\)/);
-  assert.match(home, /id="mission-control-xp"/);
-  assert.match(home, /class="mission-control-metrics"/);
+  assert.match(home, /renderCrystalVault\(state\.crystalsCollected/);
+  assert.match(home, /class="mission-progress-strip"/);
 });
