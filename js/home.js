@@ -43,8 +43,7 @@ function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTo
           aria-label="${topic.title}, topic rank ${campaign.rank}${highestMastery ? `, Level ${highestMastery} mastered` : ''}. ${campaign.remaining} topic XP to rank ${campaign.nextRank}."
           ${locked ? 'disabled' : ''}>
           <span class="${artClass}" aria-hidden="true">${art}</span>
-          <span class="gb-topic-card-shade" aria-hidden="true"></span>
-          <span class="gb-story-title">${topic.title}</span>
+          ${topic.moduleArt ? '' : `<span class="gb-story-title">${topic.title}</span>`}
           <span class="gb-topic-campaign-line">
             <span class="gb-topic-rank">RANK <strong>${campaign.rank}</strong></span>
             ${highestMastery ? `<span class="gb-topic-mastery" title="Level ${highestMastery} mastery earned">${masteryLabel}</span>` : ''}
