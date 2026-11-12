@@ -1,9 +1,9 @@
-import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20260819b';
+import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20261112e';
 import { makePlaceValueVariant } from './missions-data.js?v=20260819b';
-import { makeLengthQuestion } from './measurement-length.js?v=20260819b';
-import { makeFractionQuestion } from './fractions.js?v=20260819b';
-import { makeAnglesQuestion } from './angles-shapes.js?v=20260819b';
-import { makeExpandedQuestion } from './expanded-maths.js?v=20260819b';
+import { makeLengthQuestion } from './measurement-length.js?v=20261112e';
+import { makeFractionQuestion } from './fractions.js?v=20261112e';
+import { makeAnglesQuestion } from './angles-shapes.js?v=20261112e';
+import { makeExpandedQuestion } from './expanded-maths.js?v=20261112e';
 import { difficultyTrainingTag } from './difficulty.js';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
 
