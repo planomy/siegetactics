@@ -14,7 +14,7 @@ import { computeStars, renderStarBadges } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, renderTopbarBadges } from './home.js?v=20261112n';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges } from './home.js?v=20261112n';
 import { normalizeEnemyDefeats, recordEnemyDefeat } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore } from './power-core.js?v=20261112m';
 import { initHowToPlay } from './how-to-play.js';
@@ -230,6 +230,7 @@ function showScreen(id) {
   const inLearning = LEARNING_SCREENS.has(id);
   const previousScreen = Object.entries(screens)
     .find(([, element]) => element?.classList.contains('active'))?.[0];
+  if (!inLearning) stopMissionDossier();
   if (missionShell) missionShell.hidden = !inLearning;
   document.body.classList.toggle('mission-mode', inLearning);
   document.body.classList.toggle('siege-mode', id === 'siege');
