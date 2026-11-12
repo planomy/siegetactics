@@ -10,6 +10,7 @@ import { renderInterstellarMap, renderModuleMapProgress, mapPiecesEarned, TRAINI
 import { getQualifiedLevels } from './level-mastery.js';
 import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel } from './difficulty.js';
+import { renderArmoryPromo } from './armory-promo.js?v=20261112f';
 
 /** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack @param {import('./level-mastery.js').LevelMasterySave} levelMastery @param {import('./map-progress.js').MapProgressSave} mapProgress */
 function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id)) {
@@ -399,6 +400,8 @@ let threatDossierCleanup = null;
  *   recommendedLevel: import('./difficulty.js').DifficultyLevel,
  *   onDifficultyChange: (level: import('./difficulty.js').DifficultyLevel) => void,
  *   onTopic: (topicId: string) => void,
+ *   unlockedTurrets: Set<string>,
+ *   onArmory: () => void,
  *   onHoldTheLine: () => void,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
  * }} state
@@ -496,6 +499,7 @@ export function renderHome(host, state) {
           ? '<span class="mission-battle-ready">Use DEFEND GRANNY in Mission Control!</span>'
           : `<button type="button" id="mission-start-mixed" class="gb-forge-btn">START ${attack.remaining}-QUESTION MISSION</button>`}
       </section>
+      ${renderArmoryPromo(state.xp, state.unlockedTurrets)}
       <section class="mission-topic-section" aria-label="Maths topics">
         <div class="mission-topic-heading">
           <div>
@@ -536,6 +540,7 @@ export function renderHome(host, state) {
   `;
 
   host.querySelector('#mission-start-mixed')?.addEventListener('click', state.onHoldTheLine);
+  host.querySelector('#mission-armory-open')?.addEventListener('click', state.onArmory);
   host.querySelector('#mission-show-more')?.addEventListener('click', () => {
     expandedTopicsVisible = !expandedTopicsVisible;
     const more = host.querySelector('#mission-show-more');

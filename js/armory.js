@@ -24,7 +24,7 @@ function armoryCardStatus(t, xp, isUnlocked) {
     return { tone: 'owned', label: 'In arsenal', detail: `${t.placementCost} ${ECONOMY.siegeCoinsLabel} to deploy` };
   }
   if (xp >= t.unlockXp) {
-    return { tone: 'unlock', label: 'Unlock now', detail: `Spend ${formatUnlockXp(t.unlockXp)}` };
+    return { tone: 'unlock', label: 'Unlock now', detail: 'Permanent upgrade ready' };
   }
   const need = t.unlockXp - xp;
   return {
@@ -32,6 +32,42 @@ function armoryCardStatus(t, xp, isUnlocked) {
     label: 'Locked',
     detail: `${need.toLocaleString()} more ${ECONOMY.forgeXpLabel}`,
   };
+}
+
+/**
+ * Featured live turret preview. Selecting a card reveals its weapon and
+ * firing style, even before the player has unlocked it.
+ * @param {string} id
+ * @param {number} xp
+ * @param {Set<string>} unlocked
+ */
+function renderArmoryFeature(id, xp, unlocked) {
+  const turret = TURRETS[id];
+  if (!turret) return '';
+  const owned = unlocked.has(id);
+  const ready = !owned && xp >= turret.unlockXp;
+  const state = owned ? 'IN YOUR ARSENAL' : ready ? 'READY TO UNLOCK' : `${(turret.unlockXp - xp).toLocaleString()} XP TO GO`;
+  const role = turret.role ?? (turret.aoe ? 'splash' : 'attack');
+  return `
+    <div class="armory-feature" data-role="${role}" style="--turret-color:${turret.color}">
+      <div class="armory-feature-visual" aria-hidden="true">
+        <div class="armory-feature-aura"></div>
+        <img class="armory-feature-turret ${turret.flipX ? 'flip-x' : ''}" src="${turret.sprite}" alt="" width="230" height="230" />
+        <div class="armory-demo-lane">
+          <span class="armory-demo-shot"></span>
+          <span class="armory-demo-target">✺</span>
+        </div>
+      </div>
+      <div class="armory-feature-copy">
+        <span class="armory-feature-eyebrow">WEAPON SPOTLIGHT · FIELD TEST</span>
+        <h3>${turret.name}</h3>
+        <p>${turret.desc}</p>
+        <strong>${state}</strong>
+        <div class="armory-feature-stats">${turretStatLine(turret)}</div>
+        <span class="armory-feature-explain">${owned ? 'Unlocked permanently. Deploy during sieges using siege coins.' : ready ? 'Select this weapon in the grid below to unlock it permanently.' : 'Keep doing maths and earning Forge XP to unlock this weapon.'}</span>
+      </div>
+    </div>
+  `;
 }
 
 /**
@@ -50,6 +86,7 @@ export function renderArmory(host, callbacks) {
   const next = nextLockedTurret(xp, unlocked);
   const nextT = next ? TURRETS[next] : null;
   const canUnlockNow = nextUnlockableTurret(xp, unlocked);
+  const featuredId = canUnlockNow ?? next ?? TURRET_ORDER[TURRET_ORDER.length - 1];
 
   let headline = `${owned} / ${TURRET_ORDER.length} turrets in your arsenal`;
   if (canUnlockNow) {
@@ -73,7 +110,7 @@ export function renderArmory(host, callbacks) {
         class="armory-card armory-card--${status.tone}${canUnlock ? ' armory-card--ready' : ''}"
         data-turret-id="${id}"
         style="--turret-color: ${t.color}"
-        ${!isUnlocked && !canUnlock ? 'disabled' : ''}
+        aria-label="View ${t.name}${canUnlock ? ', ready to unlock' : ''}"
       >
         <span class="armory-card-badge armory-card-badge--${status.tone}">${status.label}</span>
         <span class="armory-card-art">
@@ -97,6 +134,8 @@ export function renderArmory(host, callbacks) {
         <span class="armory-xp-label">${ECONOMY.forgeXpLabel}</span>
         <span class="armory-xp-val">${xp.toLocaleString()}</span>
       </div>
+      <div id="armory-feature-host">${renderArmoryFeature(featuredId, xp, unlocked)}</div>
+      <p class="armory-grid-intro">CHOOSE ANY TURRET TO PREVIEW IT · AVAILABLE WEAPONS CAN BE UNLOCKED BELOW</p>
       <div class="armory-grid">${cards}</div>
     </div>
   `;
@@ -106,16 +145,14 @@ export function renderArmory(host, callbacks) {
   host.querySelectorAll('.armory-card').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-turret-id');
-      if (!id || btn.hasAttribute('disabled')) return;
-      const t = TURRETS[id];
-      if (unlocked.has(id)) {
-        showToast(`${t.name} is already in your arsenal.`, { variant: 'info' });
-        return;
-      }
-      if (xp < t.unlockXp) return;
-      if (onUnlock(id)) {
-        showToast(`${t.name} unlocked!`, { variant: 'success' });
-      }
+      if (!id || !TURRETS[id]) return;
+      const preview = host.querySelector('#armory-feature-host');
+      if (preview) preview.innerHTML = renderArmoryFeature(id, xp, unlocked);
+      host.querySelectorAll('.armory-card').forEach((card) => {
+        card.classList.toggle('armory-card--previewing', card === btn);
+      });
+      if (unlocked.has(id) || xp < TURRETS[id].unlockXp) return;
+      if (onUnlock(id)) showToast(`${TURRETS[id].name} unlocked permanently!`, { variant: 'success' });
     });
   });
 }

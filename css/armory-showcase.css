@@ -1,0 +1,372 @@
+/*
+ * Granny's Armory: a prominent reason to keep earning Forge XP.
+ * Original turret artwork is featured; students see an accurate unlock target.
+ */
+.armory-promo {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(128px, 35%) minmax(0, 1fr);
+  gap: clamp(14px, 2.4vw, 25px);
+  align-items: center;
+  padding: clamp(17px, 2vw, 25px);
+  margin: 0 0 31px;
+  border: 2px solid rgba(237, 160, 39, .76);
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 5% 52%, rgba(234, 107, 16, .29), transparent 49%),
+    linear-gradient(120deg, #30203d, #171228 51%, #110f20);
+  box-shadow: 0 10px 35px rgba(0,0,0,.28), inset 0 0 31px rgba(245, 130, 27, .09);
+  overflow: hidden;
+  isolation: isolate;
+}
+.armory-promo::before {
+  content:'';
+  position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.16;
+  background: repeating-linear-gradient(110deg, transparent 0 17px, #ffe18f 18px 19px, transparent 20px 38px);
+  mask-image:linear-gradient(90deg,black,transparent 52%);
+}
+.armory-promo-art {
+  min-height: 235px;
+  align-self:stretch;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  isolation:isolate;
+  background:radial-gradient(ellipse,rgba(255,180,44,.2),transparent 67%);
+}
+.armory-promo-art::before {
+  content:'';
+  position:absolute;z-index:-1;
+  width:84%;aspect-ratio:1;border-radius:50%;
+  border:2px dashed rgba(255,194,70,.37);
+  box-shadow:0 0 24px rgba(255,165,28,.16);
+  animation:armory-ad-spin 18s linear infinite;
+}
+.armory-promo-art-ring {
+  position:absolute;
+  z-index:-1;
+  width:72%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,187,59,.24),rgba(216,71,22,.16) 42%,transparent 70%);
+  filter:blur(10px);
+  animation:armory-ad-breathe 3s ease-in-out infinite;
+}
+.armory-promo-art img {
+  display:block;
+  width:min(100%,240px);
+  max-height:212px;
+  object-fit:contain;
+  position:relative;
+  z-index:1;
+  filter:drop-shadow(0 8px 4px rgba(0,0,0,.4)) drop-shadow(0 0 23px rgba(255,186,61,.28));
+  animation:armory-ad-float 4.3s ease-in-out infinite;
+}
+.armory-promo-art-badge {
+  position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
+  z-index:2;
+  border:1px solid rgba(255,200,84,.62);
+  border-radius:99px;
+  padding:6px 10px;
+  color:#ffe7a4;
+  background:rgba(18,11,25,.92);
+  font-size:.67rem;font-weight:900;letter-spacing:.11em;
+  white-space:nowrap;
+}
+.armory-promo-copy {min-width:0;position:relative;z-index:1;}
+.armory-promo-eyebrow {
+  display:block;color:#ffcf75;
+  font-size:.73rem;letter-spacing:.11em;
+  font-weight:900;
+}
+.armory-promo-copy h2 {
+  margin:7px 0 7px;
+  font-family:var(--font-display);
+  font-size:clamp(1.75rem,2.35vw,2.7rem);
+  font-weight:400;
+  line-height:.99;
+  color:#ffe09a;
+  text-shadow:0 3px 8px #0a0615,0 0 18px rgba(255,161,30,.25);
+}
+.armory-promo-featured {
+  margin:9px 0 5px;
+  color:#fff8ed;
+  font-weight:900;
+  font-size:clamp(1rem,1.35vw,1.24rem);
+}
+.armory-promo-featured span {font-size:.8rem;font-weight:600;color:#bfb4cd;}
+.armory-promo-description {
+  margin:0 0 13px;
+  line-height:1.4;
+  font-size:.84rem;
+  color:#d9cfdd;
+}
+.armory-promo-progress {margin:0 0 13px;}
+.armory-promo-progress-label {
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:5px 9px;
+  color:#ebd7b7;font-size:.76rem;font-weight:800;
+}
+.armory-promo-progress-label strong {color:#ffc46e;}
+.armory-promo-progress-label span {font-variant-numeric:tabular-nums;}
+.armory-promo-track {
+  height:12px;width:100%;margin-top:7px;
+  border-radius:99px;
+  overflow:hidden;
+  border:1px solid rgba(255,192,99,.37);
+  background:rgba(7,6,18,.84);
+}
+.armory-promo-fill {
+  display:block;height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#a85619,#ffd977);
+  box-shadow:0 0 19px rgba(255,176,71,.62);
+  transition:width .5s ease-out;
+}
+.armory-promo-cta {
+  display:block;
+  width:100%;
+  min-height:48px;
+  border:0;
+  border-radius:11px;
+  background:linear-gradient(180deg,#ffe082,#ffb538 48%,#d98215);
+  color:#261007;
+  cursor:pointer;
+  font-family:var(--font-display);
+  font-size:1.17rem;
+  letter-spacing:.035em;
+  box-shadow:0 4px 0 #9c5410,0 9px 19px rgba(0,0,0,.28);
+  transition:filter .15s ease,transform .15s ease;
+}
+.armory-promo-cta:hover {filter:brightness(1.12);transform:translateY(-1px);}
+.armory-promo-cta:active {transform:translateY(2px);}
+.armory-promo-footnote {
+  display:block;margin-top:11px;color:#c9bdcc;font-size:.69rem;line-height:1.35;
+}
+.armory-promo-ready {
+  border-color:#8dfb8c;
+  background:
+    radial-gradient(ellipse at 7% 51%,rgba(117,238,60,.2),transparent 55%),
+    linear-gradient(120deg,#1d372a,#171228 51%,#100f1c);
+}
+.armory-promo-ready .armory-promo-copy h2 {color:#a8fa85;}
+.armory-promo-ready .armory-promo-art-badge {border-color:#a3f68e;color:#b6ff9a;}
+.armory-promo-ready .armory-promo-progress-label strong {color:#b5fc93;}
+.armory-promo-ready .armory-promo-fill {background:linear-gradient(90deg,#4eb465,#b6ff86);}
+.armory-promo-complete {grid-template-columns:100px minmax(0,1fr);min-height:180px;}
+.armory-promo-complete .armory-promo-cta {grid-column:1 / -1;}
+.armory-promo-complete-art {font-size:5rem;color:#ffcb67;text-align:center;text-shadow:0 0 25px #e8a02f;}
+#weapon-unlock-notice {
+  position:fixed;
+  z-index:120;
+  top:clamp(100px,16vh,155px);
+  right:clamp(12px,2vw,26px);
+  display:flex;
+  align-items:center;
+  gap:13px;
+  width:min(405px,calc(100vw - 24px));
+  padding:16px;
+  border:2px solid #a3fa84;
+  border-radius:15px;
+  background:linear-gradient(120deg,rgba(33,54,29,.97),rgba(20,14,36,.98));
+  box-shadow:0 0 35px rgba(147,251,85,.26),0 15px 48px rgba(0,0,0,.56);
+  animation:weapon-notice-arrive .45s cubic-bezier(.2,.8,.2,1) 1;
+}
+#weapon-unlock-notice[hidden] {display:none!important;}
+.unlock-notice-art {flex:0 0 95px;width:95px;height:95px;object-fit:contain;filter:drop-shadow(0 0 16px #d5ff6c);}
+.unlock-notice-copy {display:flex;flex-direction:column;gap:6px;min-width:0;color:#f0f8e6;}
+.unlock-notice-copy > strong {font-family:var(--font-display);font-size:1.22rem;font-weight:400;color:#caff91;line-height:1.05;}
+.unlock-notice-copy > span {font-size:.85rem;line-height:1.3;}
+.unlock-notice-actions {display:flex;flex-wrap:wrap;gap:8px;}
+.unlock-notice-actions button {
+  min-height:37px;padding:6px 12px;border-radius:8px;cursor:pointer;
+  font-size:.8rem;font-weight:900;border:1px solid rgba(178,234,126,.6);
+  background:#b6f67f;color:#1d281a;
+}
+.unlock-notice-actions #unlock-notice-later {background:rgba(19,28,23,.8);color:#e2edcf;}
+@keyframes armory-ad-spin {to{transform:rotate(360deg);}}
+@keyframes armory-ad-breathe {50%{transform:scale(1.15);opacity:.78;}}
+@keyframes armory-ad-float {50%{transform:translateY(-7px);}}
+@keyframes weapon-notice-arrive {from{opacity:0;transform:translateY(-14px) scale(.95);}to{opacity:1;transform:none;}}
+@media (max-width:1250px) {
+  .armory-promo {grid-template-columns:minmax(105px,33%) minmax(0,1fr);}
+  .armory-promo-art{min-height:192px;}
+  .armory-promo-art img{max-height:165px;}
+}
+@media (max-width:650px) {
+  .armory-promo {grid-template-columns:1fr;padding:15px;gap:9px;text-align:center;}
+  .armory-promo-art {min-height:150px;}
+  .armory-promo-art img {max-height:145px;}
+  .armory-promo-progress-label {justify-content:center;}
+  .armory-promo-complete {grid-template-columns:1fr;}
+  .armory-promo-complete-art {font-size:3rem;}
+  #weapon-unlock-notice{top:auto;bottom:18px;right:12px;padding:12px;}
+  .unlock-notice-art{flex-basis:75px;width:75px;height:75px;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .armory-promo *,#weapon-unlock-notice {animation:none!important;transition:none!important;}
+}
+
+
+/* In the actual Armory, a large weapon preview makes the upgrade tangible. */
+.armory-feature {
+  display:grid;
+  grid-template-columns:minmax(210px,36%) minmax(0,1fr);
+  gap:clamp(14px,2vw,26px);
+  align-items:center;
+  margin:14px 0 24px;
+  padding:19px 24px;
+  border:1px solid rgba(237,177,87,.57);
+  border-radius:17px;
+  background:radial-gradient(ellipse at 20% 58%,rgba(169,89,28,.26),transparent 48%),linear-gradient(120deg,#20162f,#131020);
+}
+.armory-feature-visual {
+  position:relative;
+  min-height:242px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  isolation:isolate;
+}
+.armory-feature-aura {
+  position:absolute;
+  width:220px;
+  height:220px;
+  max-width:95%;
+  border-radius:50%;
+  background:radial-gradient(circle,var(--turret-color),transparent 65%);
+  filter:blur(31px);
+  opacity:.24;
+  animation:armory-ad-breathe 3.5s ease-in-out infinite;
+}
+.armory-feature-turret {
+  display:block;
+  position:relative;
+  width:100%;
+  max-height:230px;
+  object-fit:contain;
+  z-index:1;
+  filter:drop-shadow(0 8px 8px rgba(0,0,0,.55)) drop-shadow(0 0 18px var(--turret-color));
+  animation:armory-ad-float 3.8s ease-in-out infinite;
+}
+.armory-demo-lane {
+  position:absolute;
+  left:9%;right:5%;bottom:7px;
+  height:30px;
+  z-index:2;
+  overflow:hidden;
+}
+.armory-demo-lane::before {
+  content:'';
+  position:absolute;left:0;right:0;top:50%;
+  border-top:1px dashed rgba(200,158,231,.35);
+}
+.armory-demo-shot {
+  position:absolute;
+  left:-18px;top:9px;
+  width:19px;height:10px;
+  border-radius:70%;
+  background:#fff6b8;
+  box-shadow:0 0 6px 3px var(--turret-color),0 0 20px 4px var(--turret-color);
+  animation:armory-demo-shot 1.65s ease-in infinite;
+}
+.armory-demo-target {
+  position:absolute;
+  top:-2px;right:2px;
+  color:#fff5bd;
+  font-size:28px;
+  text-shadow:0 0 7px var(--turret-color);
+  animation:armory-target-flash 1.65s ease-in infinite;
+}
+.armory-feature[data-role="glue"] .armory-demo-shot,
+.armory-feature[data-role="freeze"] .armory-demo-shot {
+  border-radius:45%;width:24px;height:13px;
+  background:#8bfcdf;
+}
+.armory-feature[data-role="splash"] .armory-demo-shot {
+  width:25px;height:14px;
+}
+.armory-feature[data-role="magnet"] .armory-demo-shot,
+.armory-feature[data-role="repair"] .armory-demo-shot,
+.armory-feature[data-role="decoy"] .armory-demo-shot {
+  border-radius:50%;width:15px;height:15px;
+}
+.armory-feature-copy h3 {
+  margin:5px 0 8px;
+  font-family:var(--font-display);
+  color:#ffe6ad;
+  font-weight:400;
+  font-size:clamp(1.8rem,2.3vw,2.6rem);
+}
+.armory-feature-copy p {
+  margin:0 0 10px;color:#e6dbec;font-size:1.04rem;font-weight:700;
+}
+.armory-feature-eyebrow {
+  color:#ffc766;
+  font-size:.74rem;
+  font-weight:900;
+  letter-spacing:.1em;
+}
+.armory-feature-copy > strong {
+  display:inline-block;margin:0 0 12px;padding:7px 11px;
+  border-radius:8px;border:1px solid rgba(255,183,68,.5);
+  color:#ffe095;font-size:.8rem;letter-spacing:.03em;
+}
+.armory-feature-stats {
+  color:#d8d0e8;
+  font-size:.9rem;font-weight:800;
+  margin-bottom:9px;
+}
+.armory-feature-explain {
+  display:block;
+  color:#b9b0c6;
+  font-size:.82rem;
+  line-height:1.35;
+}
+.armory-grid-intro {
+  color:#dec7a2;font-size:.75rem;
+  font-weight:900;letter-spacing:.08em;
+  margin:10px 0;
+}
+.armory-card--previewing {
+  outline:2px solid #ffd06e;
+  outline-offset:2px;
+}
+@keyframes armory-demo-shot {
+  0%{transform:translateX(0) scale(.55);opacity:0;}
+  12%{opacity:1;}
+  80%{transform:translateX(195px) scale(1);opacity:1;}
+  100%{transform:translateX(240px) scale(.3);opacity:0;}
+}
+@keyframes armory-target-flash {
+  0%,75%,100%{transform:scale(1);opacity:.62;}
+  88%{transform:scale(1.65);opacity:1;}
+}
+@media(max-width:700px) {
+  .armory-feature {grid-template-columns:1fr;gap:3px;padding:15px;}
+  .armory-feature-visual {min-height:180px;}
+  .armory-feature-turret {max-height:185px;}
+  .armory-feature-copy {text-align:center;}
+  .armory-demo-lane {left:20%;right:20%;}
+}
+@media(prefers-reduced-motion:reduce){
+  .armory-feature *, .armory-feature-visual * {animation:none!important;}
+  .armory-demo-shot {left:48%;opacity:.65;}
+}
+
+
+.armory-promo-art img.flip-x,
+.armory-feature-turret.flip-x {
+  scale: -1 1;
+}
+.armory-card--locked {
+  cursor: pointer;
+  filter: none;
+  opacity: .82;
+}
+.armory-card--locked:hover,
+.armory-card--locked.armory-card--previewing {
+  opacity: 1;
+  border-color: rgba(255,193,102,.64);
+}

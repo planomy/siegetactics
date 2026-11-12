@@ -238,3 +238,158 @@ body.mission-mode #app {
     animation:none !important; transition:none !important;
   }
 }
+
+
+/* The core breathes continuously, then gains more orbiting motes with each
+   maths answer. CSS animations are used instead of a heavy particle engine. */
+.power-scene { --forge-scale: 1; }
+
+.forge-particle-field {
+  position: absolute;
+  inset: 0;
+  transform: scale(var(--forge-scale));
+  transform-origin: center center;
+  z-index: 7;
+  overflow: visible;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.forge-mote {
+  position: absolute;
+  top: 53%;
+  left: 50%;
+  width: var(--forge-size, 3px);
+  height: var(--forge-size, 3px);
+  margin-left: calc(var(--forge-size, 3px) / -2);
+  margin-top: calc(var(--forge-size, 3px) / -2);
+  border-radius: 50%;
+  background: #e9fbff;
+  box-shadow: 0 0 6px 2px var(--power-accent), 0 0 13px 2px var(--power-accent);
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+.forge-mote.is-live {
+  visibility: visible;
+  animation: forge-orbit var(--forge-duration, 7s) linear var(--forge-delay, 0s) infinite;
+}
+
+.forge-mote--spark {
+  background: #fff1ad;
+  border-radius: 35% 65% 50% 50%;
+  box-shadow: 0 0 5px 2px #ffc45e, 0 0 18px 3px var(--power-accent);
+  animation-duration: calc(var(--forge-duration, 7s) * .75);
+}
+
+.forge-mist {
+  position: absolute;
+  inset: 12% 5%;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 50%;
+  opacity: calc(0.10 + var(--power-intensity) * .52);
+  filter: blur(17px);
+  background:
+    conic-gradient(from 40deg,
+      transparent 0 15%,
+      var(--power-accent) 21%,
+      transparent 27% 52%,
+      var(--power-accent) 64%,
+      transparent 69% 100%);
+  animation: forge-mist-wind 18s linear infinite;
+  transition: opacity .65s ease, filter .65s ease;
+}
+
+.forge-mist--inner {
+  inset: 24% 16%;
+  opacity: calc(0.07 + var(--power-intensity) * .28);
+  filter: blur(13px);
+  animation-duration: 12s;
+  animation-direction: reverse;
+}
+
+.power-rig[data-stage="nearly"] .forge-mist,
+.power-rig[data-stage="ready"] .forge-mist {
+  filter: blur(11px);
+}
+
+.forge-charge-flare {
+  position: absolute;
+  left: 50%;
+  top: 53%;
+  z-index: 9;
+  width: 17px;
+  height: 17px;
+  transform: translate(-50%, -50%) scale(.2);
+  opacity: 0;
+  border-radius: 50%;
+  background: #e0fcff;
+  box-shadow: 0 0 26px 13px var(--power-accent), 0 0 75px 28px var(--power-accent);
+  pointer-events: none;
+}
+
+.forge-charge-flare.is-correct {
+  background: #fff0b7;
+  box-shadow: 0 0 28px 17px #ffd661, 0 0 90px 35px var(--power-accent);
+}
+
+.forge-charge-flare.is-firing {
+  animation: forge-answer-flare .65s cubic-bezier(.12,.75,.2,1) 1;
+}
+
+.forge-charge-flare.is-firing.is-correct {
+  animation-duration: .92s;
+}
+
+@keyframes forge-orbit {
+  0% {
+    transform: rotate(var(--forge-angle)) translateX(var(--forge-radius)) scale(.55);
+    opacity: 0;
+  }
+  18% { opacity: .85; }
+  52% {
+    transform: rotate(calc(var(--forge-angle) + 180deg)) translateX(var(--forge-radius)) scale(1.18);
+    opacity: 1;
+  }
+  82% { opacity: .72; }
+  100% {
+    transform: rotate(calc(var(--forge-angle) + 360deg)) translateX(var(--forge-radius)) scale(.55);
+    opacity: 0;
+  }
+}
+
+@keyframes forge-mist-wind {
+  0% { transform: rotate(0deg) scale(.86); }
+  50% { transform: rotate(180deg) scale(1.04); }
+  100% { transform: rotate(360deg) scale(.86); }
+}
+
+@keyframes forge-answer-flare {
+  0% { transform: translate(-50%, -50%) scale(.15); opacity: 0; }
+  18% { transform: translate(-50%, -50%) scale(1.6); opacity: .95; }
+  55% { transform: translate(-50%, -50%) scale(2.6); opacity: .52; }
+  100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+}
+
+@media (max-width: 1320px) {
+  .power-scene { --forge-scale: .74; }
+}
+@media (max-width: 540px) {
+  .power-scene { --forge-scale: .65; }
+  .forge-mist { inset: 19% 12%; }
+}
+
+/* Reduced motion stays readable without constantly flying particles. */
+@media (prefers-reduced-motion: reduce) {
+  .forge-mote,
+  .forge-mist,
+  .forge-charge-flare {
+    animation: none !important;
+    transition: none !important;
+  }
+  .forge-mote.is-live { opacity: .55; visibility: visible; transform: translateX(calc(var(--forge-radius) * .36)); }
+  .forge-charge-flare { opacity: 0; }
+}
