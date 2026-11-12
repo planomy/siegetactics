@@ -41,7 +41,6 @@ export function renderArmoryPromo(xp, unlocked) {
         <div class="armory-promo-copy">
           <span class="armory-promo-eyebrow">GRANNY'S ARMORY · FULL ARSENAL</span>
           <h2>YOU'VE UNLOCKED THEM ALL!</h2>
-          <p>Your entire arsenal is ready to defend Granny. Keep earning XP and setting new battle records.</p>
         </div>
         <button type="button" class="armory-promo-cta" id="mission-armory-open">VIEW YOUR ARMORY</button>
       </section>
@@ -50,9 +49,6 @@ export function renderArmoryPromo(xp, unlocked) {
   const status = p.ready
     ? 'NEW WEAPON AVAILABLE NOW!'
     : `ONLY ${p.needed.toLocaleString()} XP TO GO!`;
-  const description = p.ready
-    ? `${p.name} is ready to unlock permanently.`
-    : `Earn Forge XP from maths to unlock ${p.name} forever.`;
   const button = p.ready ? 'UNLOCK IN THE ARMORY' : 'EXPLORE THE ARMORY';
   return `
     <section class="armory-promo${p.ready ? ' armory-promo-ready' : ''}" aria-label="Granny's Armory weapon upgrades">
@@ -65,7 +61,6 @@ export function renderArmoryPromo(xp, unlocked) {
         <span class="armory-promo-eyebrow">GRANNY'S ARMORY · PERMANENT UPGRADES</span>
         <h2>${p.ready ? 'NEW FIREPOWER AVAILABLE!' : 'BUILD AN UNSTOPPABLE ARMY!'}</h2>
         <p class="armory-promo-featured">${p.name} <span>· ${p.desc}</span></p>
-        <p class="armory-promo-description">${description}</p>
         <div class="armory-promo-progress">
           <div class="armory-promo-progress-label">
             <strong>${status}</strong>
@@ -76,7 +71,7 @@ export function renderArmoryPromo(xp, unlocked) {
           </div>
         </div>
         <button type="button" class="armory-promo-cta" id="mission-armory-open">${button}</button>
-        <span class="armory-promo-footnote">${p.owned} / ${p.total} weapons owned · Unlocks don't use up your XP</span>
+        <span class="armory-promo-footnote">${p.owned} / ${p.total} WEAPONS OWNED</span>
       </div>
     </section>
   `;
