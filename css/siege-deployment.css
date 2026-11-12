@@ -122,3 +122,16 @@
 @media(prefers-reduced-motion:reduce) {
   .siege-launch-button{transition:none;}
 }
+
+/* Extra maths is voluntary and the perk is easy to spot without yet another bar. */
+.mission-bonus-progress {
+  margin-top:9px;
+  padding:8px 10px;
+  border:1px solid rgba(255,208,100,.56);
+  border-radius:8px;
+  color:#ffdf96;
+  background:rgba(65,45,16,.6);
+  font-size:.79rem;
+  font-weight:900;
+  line-height:1.35;
+}
