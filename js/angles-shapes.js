@@ -296,6 +296,7 @@ export function initAnglesShapes(host, callbacks) {
     xpPerCorrect: ANGLES_LAB.xpPerCorrect,
     makeQuestion: makeAnglesQuestion,
     onAwardXp: callbacks.onAwardXp,
+    onAnswer: callbacks.onAnswer,
     onSessionComplete({ accuracy }) {
       callbacks.onSessionComplete?.(accuracy);
     },
