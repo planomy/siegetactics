@@ -30,7 +30,7 @@ body.mission-mode .mission-power {
 }
 
 body.mission-mode .mission-control {
-  max-height: calc(100dvh - var(--gb-sticky-header-height) - 2 * var(--gb-sticky-header-gap));
+  max-height: calc(100dvh - var(--gb-sticky-header-height) - 24px);
 }
 
 /* The big battle cry remains reachable while the player scrolls the field. */
