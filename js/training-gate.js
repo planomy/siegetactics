@@ -113,7 +113,7 @@ export function attackStatus(gate) {
     countdown: p.open ? 'NOW' : String(remaining),
     subline: p.open
       ? 'Aliens are at the porch — deploy!'
-      : 'Complete 10 maths questions to launch the siege',
+      : 'Get 10 maths questions right to launch the siege',
   };
 }
 

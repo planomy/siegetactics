@@ -1,5 +1,6 @@
 import { ECONOMY } from './economy.js';
 import { GATE } from './training-gate.js';
+import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
 
@@ -164,7 +165,7 @@ export function initDrillSession(host, config) {
     const pct = Math.round(accuracy * 100);
     let gateNote = `${pct}% on ${config.title}.`;
     if (config.onSessionComplete) {
-      gateNote = `${pct}% on ${config.title}. Maths mission complete — your siege is ready at HQ!`;
+      gateNote = `${pct}% on ${config.title}. ${siegeGateNote()}`;
     }
     host.innerHTML = `
       <div class="panel times-panel times-done">

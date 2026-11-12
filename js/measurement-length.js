@@ -1,5 +1,6 @@
 import { ECONOMY } from './economy.js';
 import { GATE } from './training-gate.js';
+import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js';
 import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
 
@@ -474,7 +475,7 @@ export function initMeasurementLength(host, callbacks) {
   /** @param {number} accuracy @param {boolean} passed */
   function renderDone(accuracy, passed) {
     const pct = Math.round(accuracy * 100);
-    const gateNote = 'Maths mission complete — your siege is ready at HQ!';
+    const gateNote = siegeGateNote();
     host.innerHTML = `
       <div class="panel times-panel times-done">
         <p class="mission-tag">Session complete</p>

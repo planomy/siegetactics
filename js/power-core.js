@@ -13,6 +13,24 @@ const STAGES = [
   { min: 10, id: 'ready', name: 'FULLY ARMED!', detail: 'Defences charged. Granny is ready for the aliens!' },
 ];
 
+/** What the badge says once the forge is fully charged; one is picked each time it fills. */
+export const FULLY_ARMED_LINES = [
+  'FULLY ARMED!',
+  'FULLY SIK, BRO!',
+  'SO TOUGH!',
+  'GO GET ’EM!',
+  'LOCKED AND LOADED!',
+  'BRING IT ON!',
+  'MAXIMUM GRANNY!',
+  'UNSTOPPABLE!',
+  'TOO STRONG!',
+  'ALIENS BEWARE!',
+  'BEAST MODE!',
+  'READY TO RUMBLE!',
+  'SEND IT!',
+  'LEGEND STATUS!',
+];
+
 /** @param {number} done */
 export function powerParticleCount(done) {
   // Deliberately capped: dozens of CSS particles, not hundreds of canvas draws.
@@ -40,8 +58,30 @@ export function powerStage(done) {
 }
 
 /**
+ * The player's squad: their best turret in the centre (most upgraded, then newest),
+ * with two other turrets they own, picked at random, either side.
+ * @param {string[]} owned Turret ids the player has unlocked, in unlock order.
+ * @param {(id: string) => number} levelOf
+ * @param {() => number} [random]
+ * @returns {{ main: string, left: string, right: string }}
+ */
+export function pickForgeSquad(owned, levelOf, random = Math.random) {
+  const list = owned.length ? [...owned] : ['granny-blaster'];
+  let main = list[list.length - 1];
+  for (const id of list) {
+    if (levelOf(id) > levelOf(main)) main = id;
+  }
+  const rest = list.filter((id) => id !== main);
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  return { main, left: rest[0] ?? main, right: rest[1] ?? rest[0] ?? main };
+}
+
+/**
  * @param {HTMLElement|null} host
- * @param {{done:number,total?:number,correct?:boolean|null}} state
+ * @param {{done:number,total?:number,correct?:boolean|null,squad?:{main:string,left:string,right:string},mainLevel?:number}} state
  */
 export function renderPowerCore(host, state) {
   if (!host) return;
@@ -88,11 +128,42 @@ export function renderPowerCore(host, state) {
   }
   const rig = host.querySelector('.power-rig');
   if (!rig) return;
+  if (state.squad) {
+    for (const side of /** @type {const} */ (['main', 'left', 'right'])) {
+      const img = rig.querySelector(`.power-turret-${side} img`);
+      const src = `assets/turrets/${state.squad[side]}.png`;
+      if (img instanceof HTMLImageElement && img.getAttribute('src') !== src) img.setAttribute('src', src);
+    }
+    const level = state.mainLevel ?? 1;
+    const mainEl = rig.querySelector('.power-turret-main');
+    if (mainEl instanceof HTMLElement) {
+      mainEl.dataset.level = String(level);
+      let stars = mainEl.querySelector('.power-turret-stars');
+      if (level >= 2) {
+        if (!stars) {
+          stars = document.createElement('span');
+          stars.className = 'power-turret-stars';
+          stars.setAttribute('aria-hidden', 'true');
+          mainEl.append(stars);
+        }
+        stars.textContent = '★'.repeat(level);
+      } else {
+        stars?.remove();
+      }
+    }
+  }
   const oldProgress = Number(rig.dataset.progress || 0);
   rig.dataset.stage = stage.id;
   rig.dataset.progress = String(done);
+  if (stage.id === 'ready') {
+    if (!rig.dataset.readyLine) {
+      rig.dataset.readyLine = FULLY_ARMED_LINES[Math.floor(Math.random() * FULLY_ARMED_LINES.length)];
+    }
+  } else {
+    delete rig.dataset.readyLine;
+  }
   const rank = rig.querySelector('.power-rank-name');
-  if (rank) rank.textContent = stage.name;
+  if (rank) rank.textContent = stage.id === 'ready' ? rig.dataset.readyLine : stage.name;
   const number = rig.querySelector('.power-charge-number');
   if (number) number.innerHTML = `${done}<span>/${total}</span>`;
   const bar = rig.querySelector('.power-charge-track');

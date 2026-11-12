@@ -1,6 +1,7 @@
 import { MATH_TOPICS } from './topics-data.js?v=20261112o';
-import { attackStatus } from './training-gate.js?v=20261112g';
-import { STAR_LABELS, STAR_HINTS, summarizeBadgeCollection, badgeSrc } from './stars.js';
+import { attackStatus } from './training-gate.js?v=20261112h';
+import { badgeSrc } from './stars.js';
+import { SIEGE_RANKS, siegeRankLevel, rankProgressText } from './siege-ranks.js?v=20261112a2';
 import { hotTopicId } from './hot-topic.js?v=20261112a1';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261112n';
 import { renderInterstellarMap, mapPiecesEarned, TRAINING_MODULE_IDS } from './map-progress.js';
@@ -507,12 +508,34 @@ export function renderSiegeStats(host, state) {
 }
 
 const VAULT_TIERS = [
-  { at: 100, id: 'legend', name: 'LEGENDARY VAULT' },
-  { at: 50, id: 'gold', name: 'GOLD VAULT' },
-  { at: 25, id: 'silver', name: 'SILVER VAULT' },
-  { at: 10, id: 'bronze', name: 'BRONZE VAULT' },
-  { at: 0, id: 'starter', name: 'CRYSTAL VAULT' },
+  { at: 100, id: 'legend', name: 'LEGENDARY VAULT', art: 'vault-legend' },
+  { at: 50, id: 'gold', name: 'GOLD VAULT', art: 'vault-gold' },
+  { at: 25, id: 'silver', name: 'SILVER VAULT', art: 'vault-silver' },
+  { at: 10, id: 'bronze', name: 'BRONZE VAULT', art: 'vault-bronze' },
+  { at: 0, id: 'starter', name: 'CRYSTAL VAULT', art: 'vault-green' },
 ];
+
+/** @param {number} collected */
+export function vaultTierFor(collected) {
+  return VAULT_TIERS.find((t) => collected >= t.at) ?? VAULT_TIERS[VAULT_TIERS.length - 1];
+}
+
+/** A short celebration when the Crystal Vault upgrades to a new tier. @param {number} collected */
+export function showVaultUpgrade(collected) {
+  const tier = vaultTierFor(collected);
+  document.querySelector('.vault-up')?.remove();
+  const el = document.createElement('div');
+  el.className = 'rank-up vault-up';
+  el.setAttribute('role', 'status');
+  el.innerHTML = `
+    <span class="core-reward-rays" aria-hidden="true"></span>
+    <img class="vault-up-art" src="assets/ui/vaults/${tier.art}.png?v=2" alt="" />
+    <strong class="rank-up-title">VAULT UPGRADED!</strong>
+    <span class="rank-up-name">${tier.name}</span>`;
+  document.body.append(el);
+  window.setTimeout(() => el.classList.add('is-leaving'), 3000);
+  window.setTimeout(() => el.remove(), 3600);
+}
 
 /** Crystals shown so far, so a newly collected one can drop into the pile. @type {number|null} */
 let lastVaultCount = null;
@@ -523,7 +546,7 @@ let lastVaultCount = null;
  * @param {number} collected @param {number} toSpend
  */
 function renderCrystalVault(collected, toSpend) {
-  const tier = VAULT_TIERS.find((t) => collected >= t.at) ?? VAULT_TIERS[VAULT_TIERS.length - 1];
+  const tier = vaultTierFor(collected);
   const next = [...VAULT_TIERS].reverse().find((t) => t.at > collected);
   // One crystal in the glass for every crystal collected in this vault's tier. Crystals are sized
   // for the tier, so the glass is exactly full when the vault upgrades.
@@ -587,7 +610,7 @@ export function renderHome(host, state) {
         </div>
         ${attack.open
           ? '<span class="mission-battle-ready">Use DEFEND GRANNY in Mission Control!</span>'
-          : `<button type="button" id="mission-start-mixed" class="gb-forge-btn" aria-label="Random mission: ${attack.remaining} questions from every topic">🎲 RANDOM MISSION</button>`}
+          : `<button type="button" id="mission-start-mixed" class="gb-forge-btn" aria-label="Random mission: ${attack.remaining} more right answers needed, from every topic">🎲 RANDOM MISSION</button>`}
         <div class="mission-level-control">
           <div class="mission-level-intro">
             <span class="mission-level-title">LEVEL</span>
@@ -638,28 +661,28 @@ export function renderHome(host, state) {
 
 /**
  * @param {HTMLElement|null} container
- * @param {Record<string, number>} bestStars
- * @param {string} primaryMissionId
+ * @param {import('./siege-ranks.js').SiegeRecord} record
  */
-export function renderTopbarBadges(container, bestStars, primaryMissionId) {
+export function renderTopbarBadges(container, record) {
   if (!container) return;
-  const level = summarizeBadgeCollection(bestStars, primaryMissionId).displayCount;
+  const level = siegeRankLevel(record);
   const rankedUp = lastBadgeLevel != null && level > lastBadgeLevel;
   lastBadgeLevel = level;
   const shown = Math.max(1, level);
-  const name = level ? STAR_LABELS[level - 1] : 'Recruit';
-  const next = level < STAR_LABELS.length ? { name: STAR_LABELS[level], hint: STAR_HINTS[level] } : null;
+  const name = level ? SIEGE_RANKS[level - 1].name : 'Recruit';
+  const next = SIEGE_RANKS[level] ?? null;
+  const progress = next ? rankProgressText(record, level) : '';
   container.classList.remove('badge-row-compact');
   container.innerHTML = `
     <button type="button" class="rank-badge${level ? '' : ' is-locked'}${rankedUp ? ' is-rank-up' : ''}" aria-haspopup="dialog"
-      aria-label="${level ? `Your rank: ${name}` : 'No rank yet'}${next ? `. Next: ${next.name}, ${next.hint}` : '. Top rank reached'}. Show all ranks.">
+      aria-label="${level ? `Your rank: ${name}` : 'No rank yet'}${next ? `. Next: ${next.name}, ${next.hint}, ${progress} done` : '. Top rank reached'}. Show all ranks.">
       <span class="rank-badge-art"><img src="${badgeSrc(shown)}" alt="" width="57" height="57" />${level ? '' : '<span class="rank-badge-lock" aria-hidden="true">🔒</span>'}</span>
       <span class="rank-badge-copy">
         <strong class="rank-badge-name">${level ? name.toUpperCase() : 'NO RANK YET'}</strong>
-        <span class="rank-badge-next">${next ? `Next: ${next.name} · ${next.hint}` : 'Top rank!'}</span>
+        <span class="rank-badge-next">${next ? `Next: ${next.name} · ${progress}` : 'Top rank!'}</span>
       </span>
     </button>`;
-  container.querySelector('.rank-badge')?.addEventListener('click', () => showRankLadder(level));
+  container.querySelector('.rank-badge')?.addEventListener('click', () => showRankLadder(level, record));
   if (rankedUp) showRankUp(name, shown);
 }
 
@@ -682,8 +705,8 @@ function showRankUp(name, level) {
   window.setTimeout(() => el.remove(), 3000);
 }
 
-/** All five ranks, earned ones lit, with what each needs. @param {number} level */
-function showRankLadder(level) {
+/** All five ranks, earned ones lit, with what each needs. @param {number} level @param {import('./siege-ranks.js').SiegeRecord} record */
+function showRankLadder(level, record) {
   document.querySelector('.rank-ladder')?.remove();
   const el = document.createElement('div');
   el.className = 'rank-ladder';
@@ -693,12 +716,12 @@ function showRankLadder(level) {
     <div class="rank-ladder-panel">
       <h2 class="rank-ladder-title">SIEGE RANKS</h2>
       <ol class="rank-ladder-list">
-        ${STAR_LABELS.map((label, i) => `
+        ${SIEGE_RANKS.map((rank, i) => `
           <li class="rank-ladder-item${i < level ? ' is-earned' : ''}${i === level ? ' is-next' : ''}">
             <img src="${badgeSrc(i + 1)}" alt="" width="64" height="64" />
-            <strong>${label}</strong>
-            <span>${STAR_HINTS[i]}</span>
-            <em>${i < level ? 'EARNED' : i === level ? 'NEXT' : 'LOCKED'}</em>
+            <strong>${rank.name}</strong>
+            <span>${rank.hint}</span>
+            <em>${i < level ? 'EARNED' : i === level ? rankProgressText(record, i) : 'LOCKED'}</em>
           </li>`).join('')}
       </ol>
       <button type="button" class="rank-ladder-close">GOT IT</button>

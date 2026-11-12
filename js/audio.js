@@ -1,4 +1,4 @@
-/** @typedef {'gun1'|'gun2'|'gun3'|'gun4'|'electro'|'slime'|'lazer1'|'lazer2'|'lazer3'|'missile'|'nukeFire'|'nukeExplosion'|'death'|'mothership'|'granddaddy'|'wave1warning'|'wave2warning'|'wave3warning'|'granddaddywarning'|'scuttling1'|'scuttling2'|'coreEarned'|'coreCollect'|'turretUpgrade'} SoundId */
+/** @typedef {'gun1'|'gun2'|'gun3'|'gun4'|'electro'|'slime'|'lazer1'|'lazer2'|'lazer3'|'missile'|'nukeFire'|'nukeExplosion'|'death'|'mothership'|'granddaddy'|'wave1warning'|'wave2warning'|'wave3warning'|'granddaddywarning'|'scuttling1'|'scuttling2'|'coreEarned'|'coreCollect'|'turretUpgrade'|'correct'|'wrong'} SoundId */
 
 /** @type {Record<SoundId, string>} */
 const SOUND_SRC = {
@@ -26,6 +26,8 @@ const SOUND_SRC = {
   coreEarned: 'assets/sounds/core-earned.mp3',
   coreCollect: 'assets/sounds/core-collect.mp3',
   turretUpgrade: 'assets/sounds/turret-upgrade.mp3',
+  correct: 'assets/sounds/correct.mp3',
+  wrong: 'assets/sounds/wrong.mp3',
 };
 
 /** @type {Record<string, { id: SoundId, volume: number, rate: number, gap?: number }>} */
@@ -179,6 +181,14 @@ export function createAudio(opts) {
     /** A turret is upgraded in the Armory. */
     playTurretUpgrade() {
       play('turretUpgrade', { volume: 0.7, gap: 0.3 });
+    },
+    /** A maths answer is right. */
+    playCorrect() {
+      play('correct', { volume: 0.55, gap: 0.15 });
+    },
+    /** A maths answer is wrong. */
+    playWrong() {
+      play('wrong', { volume: 0.5, gap: 0.15 });
     },
     /** Call once after a user tap so mobile browsers allow playback. */
     warmUp() {

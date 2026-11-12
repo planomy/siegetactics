@@ -25,6 +25,7 @@ export function onGranddaddySpawned(save) {
 export function normalizeMetaSave(save) {
   save.siegesCompleted = save.siegesCompleted ?? 0;
   save.granddaddySeen = save.granddaddySeen ?? false;
-  save.grannyUnlocked = save.grannyUnlocked ?? false;
+  // The nuke cache is part of every siege from the first one; Granddaddy is still a surprise boss.
+  save.grannyUnlocked = true;
   ensureGranddaddyTarget(save);
 }

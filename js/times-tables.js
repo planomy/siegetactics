@@ -1,5 +1,6 @@
 import { ECONOMY } from './economy.js';
 import { GATE, tableKey } from './training-gate.js';
+import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js';
 
 /** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
@@ -281,7 +282,7 @@ export function initTimesTables(host, callbacks) {
     const label = chosenTable > 0 ? `×${chosenTable}` : 'Mixed';
     let gateNote = '';
     if (gateAdded) {
-      gateNote = 'Maths mission complete — your siege is ready at HQ!';
+      gateNote = siegeGateNote();
     } else if (passed && gateReason) {
       gateNote = gateReason;
     } else if (!passed) {

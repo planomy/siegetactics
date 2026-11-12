@@ -1,4 +1,4 @@
-import { FIELD_LAYOUT } from './field-layout.js';
+import { FIELD_LAYOUT } from './field-layout.js?v=20261112a1';
 
 /**
  * @typedef {{ row: number, col: number, x: number, y: number }} PlacementCell

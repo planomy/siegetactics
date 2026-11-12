@@ -50,3 +50,15 @@ test('answered questions persist across reload and reset after a siege', () => {
   assert.equal(gateProgress(reset).done, 0);
   assert.equal(powerStage(reset.questionsDone).id, 'offline');
 });
+
+test('the forge squad puts the best owned turret in the centre and two other owned turrets beside it', async () => {
+  const { pickForgeSquad } = await import('../js/power-core.js');
+  const owned = ['granny-blaster', 'zap-sprinkler', 'boom-gnome', 'plasma-daisy'];
+  const squad = pickForgeSquad(owned, (id) => (id === 'zap-sprinkler' ? 3 : 1), () => 0.5);
+  assert.equal(squad.main, 'zap-sprinkler');
+  assert.notEqual(squad.left, squad.main);
+  assert.notEqual(squad.right, squad.main);
+  assert.notEqual(squad.left, squad.right);
+  assert.ok(owned.includes(squad.left) && owned.includes(squad.right));
+  assert.equal(pickForgeSquad(owned, () => 1).main, 'plasma-daisy');
+});

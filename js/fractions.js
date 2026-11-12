@@ -1,4 +1,4 @@
-import { initDrillSession } from './drill-session.js?v=20261112e';
+import { initDrillSession } from './drill-session.js?v=20261112f';
 
 /** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
 

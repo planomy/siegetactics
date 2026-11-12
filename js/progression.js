@@ -1,5 +1,6 @@
 import { TURRETS, TURRET_ORDER } from './turrets-data.js';
-import { STAR_COUNT, STAR_LABELS, STAR_HINTS, badgeSrc } from './stars.js';
+import { STAR_COUNT, STAR_HINTS, badgeSrc } from './stars.js';
+import { SIEGE_RANKS, siegeRankLevel } from './siege-ranks.js?v=20261112a2';
 import { ECONOMY } from './economy.js';
 
 /**
@@ -38,10 +39,9 @@ export function computeBragHeadline(ctx) {
   }
 
   if (starResult.stars > prevBestStars && starResult.stars > 1) {
-    const rank = STAR_LABELS[starResult.stars - 1];
     return {
-      headline: `${rank} badge earned!`,
-      subline: `${starResult.stars}/${STAR_COUNT} military badges on this mission.`,
+      headline: 'Your best siege yet!',
+      subline: `${STAR_HINTS[starResult.stars - 1]}.`,
     };
   }
 
@@ -88,22 +88,25 @@ function turretGoal(id, xp) {
   };
 }
 
-/** @param {number} bestBadges badges already earned (0–5) */
-function badgeGoal(bestBadges) {
-  const idx = Math.min(bestBadges, STAR_COUNT - 1);
+/** @param {import('./siege-ranks.js').SiegeRecord} record */
+function rankGoal(record) {
+  const level = siegeRankLevel(record);
+  const next = SIEGE_RANKS[level];
+  if (!next) return null;
+  const have = Math.min(next.need, record?.[next.key] ?? 0);
   return {
     kind: 'badge',
-    title: `Earn ${STAR_LABELS[idx]} badge`,
-    detail: STAR_HINTS[idx],
-    progress: bestBadges / STAR_COUNT,
-    progressLabel: `${bestBadges}/${STAR_COUNT} badges mastered`,
-    iconSrc: badgeSrc(idx + 1),
+    title: `Reach ${next.name}`,
+    detail: next.hint,
+    progress: have / next.need,
+    progressLabel: `${have} / ${next.need}`,
+    iconSrc: badgeSrc(level + 1),
   };
 }
 
 /**
  * @param {{
- *   save: { xp: number, unlockedTurrets: string[], bestStars: Record<string, number>, bestKills: Record<string, number>, grannyUnlocked?: boolean, granddaddySeen?: boolean, granddaddySiegeTarget?: number|null, siegesCompleted?: number },
+ *   save: { xp: number, unlockedTurrets: string[], bestKills: Record<string, number>, siegeRecord: import('./siege-ranks.js').SiegeRecord, grannyUnlocked?: boolean, granddaddySeen?: boolean, granddaddySiegeTarget?: number|null, siegesCompleted?: number },
  *   missionId: string,
  *   stats: { kills: number },
  * }} ctx
@@ -111,14 +114,13 @@ function badgeGoal(bestBadges) {
  */
 export function computeNextGoal(ctx) {
   const { save, missionId, stats } = ctx;
-  const bestBadges = save.bestStars[missionId] ?? 0;
   const bestKills = save.bestKills[missionId] ?? 0;
 
   const nextTurretId = TURRET_ORDER.find(
     (id) => !save.unlockedTurrets.includes(id) && TURRETS[id].unlockXp > 0
   );
   const turret = nextTurretId ? turretGoal(nextTurretId, save.xp) : null;
-  const badge = bestBadges < STAR_COUNT ? badgeGoal(bestBadges) : null;
+  const badge = rankGoal(save.siegeRecord);
 
   if (!save.grannyUnlocked && !save.granddaddySeen) {
     const target = save.granddaddySiegeTarget ?? 5;
@@ -157,9 +159,9 @@ export function computeNextGoal(ctx) {
   return {
     kind: 'mastery',
     title: 'Full arsenal forged',
-    detail: 'Every turret unlocked. Chase a flawless Marshal run — 2 leaks or fewer.',
-    progress: bestBadges / STAR_COUNT,
-    progressLabel: `${bestBadges}/${STAR_COUNT} badges mastered`,
+    detail: 'Every turret unlocked and top rank reached. Chase a flawless run: 2 leaks or fewer.',
+    progress: 1,
+    progressLabel: 'Marshal',
     iconSrc: badgeSrc(STAR_COUNT),
   };
 }

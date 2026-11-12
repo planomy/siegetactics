@@ -1,9 +1,9 @@
 import { TURRETS, TURRET_ORDER, TURRET_MAX_HP, loadTurretSprites, loadWreckedTurretSprites } from './turrets-data.js';
 import { effectiveTurret, turretLevel } from './turret-upgrades.js?v=20261112a2';
-import { AMMO, loadAmmoSprites } from './ammo-data.js';
-import { FIELD_LAYOUT, targetPathsForRow } from './field-layout.js';
+import { AMMO, loadAmmoSprites } from './ammo-data.js?v=20261112a1';
+import { FIELD_LAYOUT, targetPathsForRow } from './field-layout.js?v=20261112a1';
 import { drawAlienPortalVfx } from './portal-vfx.js';
-import { buildPlacementCells, pickPlacementCell } from './placement-grid.js';
+import { buildPlacementCells, pickPlacementCell } from './placement-grid.js?v=20261112a1';
 import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed } from './enemies-data.js';
 import { getFieldImage, preloadField } from './preload.js';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
@@ -16,6 +16,10 @@ export function buildTimeForPlacementCost(cost) {
 }
 
 const { ENEMY_PATHS, TURRET_ROWS } = FIELD_LAYOUT;
+
+/** How long a wrecked turret stays on its square, and how much of that it spends fading out. */
+const WRECK_CLEAR_SECONDS = 2.5;
+const WRECK_FADE_SECONDS = 0.7;
 
 /**
  * @typedef {import('./placement-grid.js').PlacementCell} PlacementCell
@@ -256,6 +260,14 @@ export function createTDEngine(canvas, opts) {
       if (t.buildRemaining > 0) {
         t.buildRemaining = Math.max(0, t.buildRemaining - dt);
       }
+      if (t.wrecked) t.wreckAge = (t.wreckAge ?? 0) + dt;
+    }
+    // A wreck crumbles away after a moment so its square can be built on again.
+    const crumbled = towers.filter((t) => t.wrecked && t.wreckAge >= WRECK_CLEAR_SECONDS);
+    if (crumbled.length) {
+      const sz = Math.max(36, cellRadius() * 2.6);
+      crumbled.forEach((t) => spawnNukeKillBurst(t.x, t.y - sz * 0.4, false, 0.85));
+      towers = towers.filter((t) => !crumbled.includes(t));
     }
   }
 
@@ -699,6 +711,7 @@ export function createTDEngine(canvas, opts) {
     tower.hp = Math.max(0, tower.hp - damage);
     if (tower.hp <= 0) {
       tower.wrecked = true;
+      tower.wreckAge = 0;
       const name = effectiveTurret(tower.type)?.name ?? 'Turret';
       if (waveTime - wreckToastAt > 2.2) {
         wreckToastAt = waveTime;
@@ -1552,10 +1565,20 @@ export function createTDEngine(canvas, opts) {
         ctx.globalAlpha = 0.72;
         drawTurretAt(t.type, t.x, t.y, { wrecked: t.wrecked });
         ctx.restore();
+      } else if (t.wrecked) {
+        // Shakes, then fades and sinks as it crumbles away.
+        const left = WRECK_CLEAR_SECONDS - (t.wreckAge ?? 0);
+        const crumbling = Math.max(0, Math.min(1, left / WRECK_FADE_SECONDS));
+        const shake = left < WRECK_FADE_SECONDS + 0.6 ? Math.sin((t.wreckAge ?? 0) * 60) * 1.6 : 0;
+        ctx.save();
+        ctx.globalAlpha = crumbling;
+        ctx.translate(shake, (1 - crumbling) * sz * 0.25);
+        drawTurretAt(t.type, t.x, t.y, { wrecked: true });
+        ctx.restore();
       } else {
-        if (!t.wrecked) drawUpgradeAura(t, sz);
-        drawTurretAt(t.type, t.x, t.y, { wrecked: t.wrecked });
-        if (!t.wrecked) drawUpgradeStars(t, sz);
+        drawUpgradeAura(t, sz);
+        drawTurretAt(t.type, t.x, t.y, { wrecked: false });
+        drawUpgradeStars(t, sz);
       }
       drawBuildRing(t);
 
@@ -1606,8 +1629,8 @@ export function createTDEngine(canvas, opts) {
 
       if (img) {
         const aspect = img.width / img.height || 1;
-        const h = size;
-        const w = h * aspect;
+        const w = aspect >= 1 ? size : size * aspect;
+        const h = aspect >= 1 ? size / aspect : size;
         ctx.save();
         ctx.translate(p.x, p.y);
         if (ammo?.forwardAngle !== undefined) {

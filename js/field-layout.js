@@ -57,18 +57,20 @@ const TURRET_ROW_Y = computeTurretRowY(ENEMY_PATH_Y.slice(0, 5)).map((y, i) => y
 
 const PATH_START_X = 0.12;
 const PATH_END_X = 0.96;
-/** Former 8-col grid: keep old columns 2–7 (1-based) at the same X. */
-const GRID_COL_X = Array.from({ length: 6 }, (_, i) =>
-  PATH_START_X + ((i + 2) * (PATH_END_X - PATH_START_X)) / 9
+/** Placement slots per grass lane, spread evenly across the same stretch of grass the old six used. */
+const GRID_COLS = 7;
+const GRID_FIRST_X = PATH_START_X + (2 * (PATH_END_X - PATH_START_X)) / 9;
+const GRID_LAST_X = PATH_START_X + (7 * (PATH_END_X - PATH_START_X)) / 9;
+const GRID_COL_X = Array.from({ length: GRID_COLS }, (_, i) =>
+  GRID_FIRST_X + (i * (GRID_LAST_X - GRID_FIRST_X)) / (GRID_COLS - 1)
 );
 
 export const FIELD_LAYOUT = {
   ENEMY_PATHS: 6,
   TURRET_ROWS: 6,
-  /** Slots per grass lane (cols 2–7 of the old 8-wide grid). */
-  GRID_COLS: 6,
+  GRID_COLS,
   /** @deprecated use GRID_COLS */
-  PADS_PER_ROW: 6,
+  PADS_PER_ROW: GRID_COLS,
   enemyPathY: ENEMY_PATH_Y,
   turretRowY: TURRET_ROW_Y,
   grassBandY: computeGrassBands(ENEMY_PATH_Y, TURRET_ROW_Y),

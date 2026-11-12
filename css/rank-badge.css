@@ -253,3 +253,121 @@
     animation: none;
   }
 }
+
+/* After a siege: the career rank, with progress to the next one. */
+.results-badges .rank-result {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: min(100%, 440px);
+  margin: 0 auto;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 210, 90, .35);
+  border-radius: 14px;
+  background: linear-gradient(165deg, rgba(40, 30, 10, .65), rgba(16, 12, 26, .9));
+  text-align: left;
+}
+
+.results-badges .rank-result.is-rank-up {
+  border-color: #ffd65a;
+  box-shadow: 0 0 24px rgba(255, 200, 60, .45);
+}
+
+.rank-result-badge {
+  flex: 0 0 auto;
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .5));
+}
+
+.rank-result.is-rank-up .rank-result-badge {
+  animation: rank-result-pop .7s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+@keyframes rank-result-pop {
+  0% { opacity: 0; transform: scale(.3) rotate(-20deg); }
+  100% { opacity: 1; transform: none; }
+}
+
+.rank-result-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.rank-result-label,
+.rank-result-tag {
+  font-size: .7rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+  color: var(--muted);
+}
+
+.rank-result-tag {
+  align-self: flex-start;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffd65a, #e0960f);
+  color: #2a1700;
+}
+
+.rank-result-name {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  letter-spacing: .05em;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.rank-result-next {
+  font-size: .82rem;
+  color: rgba(245, 240, 255, .85);
+}
+
+.rank-result-track {
+  display: block;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .1);
+  overflow: hidden;
+}
+
+.rank-result-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #e0960f, #ffd65a);
+  box-shadow: 0 0 8px rgba(255, 200, 60, .6);
+}
+
+.rank-result-count {
+  font-size: .72rem;
+  font-weight: 800;
+  color: #ffe4a2;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Vault upgrade celebration: the new vault art, larger than a badge. */
+.vault-up .core-reward-rays {
+  top: 110px;
+}
+
+.vault-up::before {
+  content: '';
+  position: absolute;
+  inset: -100vmax;
+  z-index: -1;
+  background: radial-gradient(circle at 50% 50%, rgba(20, 14, 4, .55), rgba(3, 4, 10, .86) 35%);
+}
+
+.vault-up-art {
+  position: relative;
+  width: auto;
+  height: min(240px, 34vh);
+  object-fit: contain;
+  filter: drop-shadow(0 0 28px rgba(255, 200, 60, .85));
+}

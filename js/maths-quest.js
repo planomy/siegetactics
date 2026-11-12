@@ -5,10 +5,11 @@ import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
 
 export const MATHS_QUEST = {
   problemsPerSet: 10,
-  xpPerCorrect: 5,
-  /** Bonus XP when accuracy >= this (0–1) at end of set. */
+  /** Word problems take longest, so they pay the most of any topic. */
+  xpPerCorrect: 8,
+  /** Bonus XP, and an Alien Crystal, when accuracy >= this (0–1) at end of set. */
   accuracyBonusThreshold: 0.8,
-  accuracyBonusXp: 15,
+  accuracyBonusXp: 40,
 };
 
 /** @typedef {'pick'|'quiz'|'done'} QuestPhase */

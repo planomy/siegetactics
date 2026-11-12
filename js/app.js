@@ -3,31 +3,32 @@ import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-bala
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261112m';
 import { renderArmory, nextUnlockableTurret } from './armory.js?v=20261112j';
-import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady } from './turret-upgrades.js?v=20261112a2';
-import { createTDEngine } from './td-engine.js?v=20261112q';
+import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel } from './turret-upgrades.js?v=20261112a2';
+import { createTDEngine } from './td-engine.js?v=20261112t';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
-import { createAudio } from './audio.js?v=20261112a1';
+import { createAudio } from './audio.js?v=20261112a3';
 import { topicXpMultiplier } from './hot-topic.js?v=20261112a1';
+import { normalizeSiegeRecord, recordSiege, siegeRankLevel, renderRankResult } from './siege-ranks.js?v=20261112a2';
 import { DEV } from './dev.js';
-import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js';
+import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
 import { ECONOMY, bankBonusForgeXp } from './economy.js';
-import { computeStars, renderStarBadges } from './stars.js';
-import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
+import { computeStars, badgeSrc } from './stars.js';
+import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges } from './home.js?v=20261112z4';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade } from './home.js?v=20261112z7';
 import { normalizeEnemyDefeats, recordEnemyDefeat } from './enemy-tally.js?v=20261112n';
-import { renderPowerCore } from './power-core.js?v=20261112m';
-import { initHowToPlay } from './how-to-play.js';
+import { renderPowerCore, pickForgeSquad } from './power-core.js?v=20261112o';
+import { initHowToPlay } from './how-to-play.js?v=20261112a4';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
-import { initTimesTables } from './times-tables.js?v=20261112e';
-import { initMeasurementLength } from './measurement-length.js?v=20261112e';
-import { initFractions } from './fractions.js?v=20261112e';
-import { initAnglesShapes } from './angles-shapes.js?v=20261112e';
-import { initMathsQuest } from './maths-quest.js?v=20261112e';
-import { initExpandedMath } from './expanded-maths.js?v=20261112e';
-import { initBattlePrep } from './battle-prep.js?v=20261112p';
+import { initTimesTables } from './times-tables.js?v=20261112f';
+import { initMeasurementLength } from './measurement-length.js?v=20261112f';
+import { initFractions } from './fractions.js?v=20261112f';
+import { initAnglesShapes } from './angles-shapes.js?v=20261112f';
+import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261112f';
+import { initExpandedMath } from './expanded-maths.js?v=20261112f';
+import { initBattlePrep } from './battle-prep.js?v=20261112q';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js';
 import {
   normalizeLevelMastery,
@@ -53,12 +54,12 @@ import {
   resetTrainingGate,
   isUnitDone,
   isTopicDone,
-  markBattlePrepComplete,
-} from './training-gate.js?v=20261112g';
+} from './training-gate.js?v=20261112h';
+import { setGateRemainingProvider } from './gate-status.js?v=20261112a1';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 
-/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js').TopicProgressSave, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, settings: { sound: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js').TopicProgressSave, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, settings: { sound: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -75,7 +76,7 @@ const defaultSave = {
   siegesCompleted: 0,
   granddaddySiegeTarget: null,
   granddaddySeen: false,
-  grannyUnlocked: false,
+  grannyUnlocked: true,
   trainingGate: defaultTrainingGate(),
   levelMastery: defaultLevelMastery(),
   topicProgress: {},
@@ -83,11 +84,13 @@ const defaultSave = {
   turretLevels: {},
   upgradeCores: 0,
   crystalsCollected: 0,
+  siegeRecord: normalizeSiegeRecord(null),
   settings: { sound: true, difficultyLevel: 1 },
 };
 
 /** @type {SaveData} */
 let save = loadSave();
+setGateRemainingProvider(() => GATE.questionsRequired - gateProgress(save.trainingGate).done);
 setTurretLevels(save.turretLevels);
 
 /** @type {{ waveBudget: number, runForgeXpEarned: number, startCoins: number, selectedTurret: string|null, cacheProgress: number }} */
@@ -165,6 +168,8 @@ if (topbarForOffset && typeof ResizeObserver !== 'undefined') {
   window.addEventListener('resize', syncStickyHeaderOffset);
 }
 let lastTrainingAnswerCorrect = null;
+/** The turrets shown in the forge; reshuffled each time the player returns to Maths HQ. @type {{ main: string, left: string, right: string }|null} */
+let forgeSquad = null;
 const LEARNING_SCREENS = new Set([
   'home', 'timesTables', 'measurement', 'fractions', 'angles',
   'mathsQuest', 'expanded', 'battlePrep', 'forge',
@@ -203,6 +208,7 @@ function loadSave() {
     // All-time crystals: what the player holds plus what they have already spent on upgrades.
     const spent = Object.values(data.turretLevels).reduce((sum, level) => sum + (level >= 3 ? 3 : level >= 2 ? 1 : 0), 0);
     data.crystalsCollected = Math.max(normalizeCores(data.crystalsCollected), data.upgradeCores + spent);
+    data.siegeRecord = normalizeSiegeRecord(data.siegeRecord, data.siegesCompleted);
     // Preserve old players' real mastered levels and map passes as a one-time rank baseline.
     data.topicProgress = normalizeTopicProgress(data.topicProgress, data.levelMastery, data.mapProgress);
     if (DEV.enabled && DEV.unlockAll) {
@@ -287,7 +293,7 @@ function refreshTopbar() {
   const missionXp = document.getElementById('mission-control-xp');
   if (missionXp) missionXp.textContent = save.xp.toLocaleString();
   refreshSoundButton();
-  renderTopbarBadges(document.getElementById('topbar-badges'), save.bestStars, SLICE_MISSION_ID);
+  renderTopbarBadges(document.getElementById('topbar-badges'), save.siegeRecord);
   const armoryBtn = document.getElementById('btn-armory');
   if (armoryBtn) {
     armoryBtn.classList.toggle('topbar-armory-ready', Boolean(nextUnlockableTurret(save.xp, getUnlockedSet())) || anyUpgradeReady(save.upgradeCores, getUnlockedSet()));
@@ -374,6 +380,7 @@ function tryUnlockTurret(id) {
  * @param {string} reason
  */
 function awardUpgradeCore(reason, from) {
+  const tierBefore = vaultTierFor(save.crystalsCollected).id;
   save.upgradeCores += 1;
   save.crystalsCollected += 1;
   persistSave();
@@ -381,6 +388,13 @@ function awardUpgradeCore(reason, from) {
   refreshMissionControl();
   if (from?.x != null && from?.y != null) showCrystalDrop(from.x, from.y);
   else showCoreReward(reason);
+  if (vaultTierFor(save.crystalsCollected).id !== tierBefore) {
+    const collected = save.crystalsCollected;
+    window.setTimeout(() => {
+      showVaultUpgrade(collected);
+      audio.playTurretUpgrade();
+    }, 3400);
+  }
 }
 
 /**
@@ -473,8 +487,9 @@ function tryUpgradeTurret(id) {
   save.upgradeCores -= next.cost;
   save.turretLevels = { ...save.turretLevels, [id]: next.level };
   audio.playTurretUpgrade();
-  refreshMissionControl();
   setTurretLevels(save.turretLevels);
+  forgeSquad = null;
+  refreshMissionControl();
   persistSave();
   refreshShopBarFromSave();
   refreshTopbar();
@@ -691,9 +706,14 @@ function announceTopicRankReward(topicId, result) {
  * @param {boolean} right
  */
 function creditTrainingAnswer(right) {
+  // Only right answers charge Granny's defences, so a siege always means ten correct answers.
+  if (!right) {
+    lastTrainingAnswerCorrect = false;
+    return;
+  }
   const previouslyReady = isGateOpen(save.trainingGate);
   const previousBonus = bonusSiegeSeconds(save.trainingGate);
-  const result = recordTrainingQuestions(save.trainingGate, 1, right ? 1 : 0);
+  const result = recordTrainingQuestions(save.trainingGate, 1, 1);
   if (!result.added) return;
   save.trainingGate = result.gate;
   lastTrainingAnswerCorrect = right;
@@ -776,6 +796,8 @@ function createTrainingHandlers(moduleId) {
       return awardScaledTrainingXp(baseAmount, level);
     },
     onAnswer(right) {
+      if (right) audio.playCorrect();
+      else audio.playWrong();
       creditTopicAnswer(moduleId, level, right);
       creditTrainingAnswer(right);
     },
@@ -929,10 +951,16 @@ function refreshMissionControl() {
   renderMissionControl(host, state);
   host.scrollTop = scrollTop;
   const powerHost = document.getElementById('mission-power');
+  const ownedTurrets = TURRET_ORDER.filter((id) => save.unlockedTurrets.includes(id));
+  if (!forgeSquad || ![forgeSquad.main, forgeSquad.left, forgeSquad.right].every((id) => ownedTurrets.includes(id))) {
+    forgeSquad = pickForgeSquad(ownedTurrets, turretLevel);
+  }
   renderPowerCore(powerHost, {
     done: gateProgress(save.trainingGate).done,
     total: GATE.questionsRequired,
     correct: lastTrainingAnswerCorrect,
+    squad: forgeSquad,
+    mainLevel: turretLevel(forgeSquad.main),
   });
   renderSiegeStats(powerHost, state);
   const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'))?.[0];
@@ -944,8 +972,9 @@ function showHome() {
   if (!host) return;
   const state = makeDashboardState();
   renderHome(host, state);
+  forgeSquad = null;
   refreshMissionControl();
-  renderTopbarBadges(document.getElementById('topbar-badges'), save.bestStars, SLICE_MISSION_ID);
+  renderTopbarBadges(document.getElementById('topbar-badges'), save.siegeRecord);
   showScreen('home');
   showPendingWeaponAnnouncement();
 }
@@ -961,10 +990,13 @@ function showBattlePrep() {
     level,
     cycle: save.trainingGate.cycle,
     questionsNeeded: GATE.questionsRequired - gateProgress(save.trainingGate).done,
+    remainingNeeded: () => GATE.questionsRequired - gateProgress(save.trainingGate).done,
     onAwardXp(baseAmount) {
       awardScaledTrainingXp(baseAmount, level);
     },
     onAnswer(right, moduleId) {
+      if (right) audio.playCorrect();
+      else audio.playWrong();
       creditTopicAnswer(moduleId, level, right);
       creditTrainingAnswer(right);
     },
@@ -987,7 +1019,6 @@ function showBattlePrep() {
       }
       save.levelMastery = mastery;
       save.mapProgress = mapProgress;
-      save.trainingGate = markBattlePrepComplete(save.trainingGate, overall);
       if (shieldBonus > 0) creditForgeXp(shieldBonus);
       battlePrepCoinBonus = save.trainingGate.bonusSiegeCoins;
       persistSave();
@@ -1123,6 +1154,7 @@ function showMathsQuest() {
     onSessionComplete(accuracy) {
       training.onSessionComplete(accuracy);
       creditGateModule('maths-quest', accuracy);
+      if (accuracy >= MATHS_QUEST.accuracyBonusThreshold) awardUpgradeCore('MATHS QUEST CLEARED');
     },
     onHome: () => disposeTrainingAndGoHome(training.onHome),
     showToast: training.showToast,
@@ -1486,6 +1518,8 @@ function finishRun(stats) {
     save.completedMissions.push(missionId);
   }
   save.siegesCompleted += 1;
+  const prevRankLevel = siegeRankLevel(save.siegeRecord);
+  save.siegeRecord = recordSiege(save.siegeRecord, starResult.earned);
   save.trainingGate = resetTrainingGate(save.trainingGate);
   persistSave();
 
@@ -1504,7 +1538,7 @@ function finishRun(stats) {
   }
 
   const badgesEl = document.getElementById('results-badges');
-  if (badgesEl) renderStarBadges(badgesEl, starResult);
+  if (badgesEl) badgesEl.innerHTML = renderRankResult(save.siegeRecord, prevRankLevel, badgeSrc);
 
   const maxLeaksEl = document.getElementById('results-max-leaks');
   if (maxLeaksEl) maxLeaksEl.textContent = '0';

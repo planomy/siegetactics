@@ -1,9 +1,9 @@
-import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20261112e';
+import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20261112f';
 import { makePlaceValueVariant } from './missions-data.js?v=20260819b';
-import { makeLengthQuestion } from './measurement-length.js?v=20261112e';
-import { makeFractionQuestion } from './fractions.js?v=20261112e';
-import { makeAnglesQuestion } from './angles-shapes.js?v=20261112e';
-import { makeExpandedQuestion } from './expanded-maths.js?v=20261112e';
+import { makeLengthQuestion } from './measurement-length.js?v=20261112f';
+import { makeFractionQuestion } from './fractions.js?v=20261112f';
+import { makeAnglesQuestion } from './angles-shapes.js?v=20261112f';
+import { makeExpandedQuestion } from './expanded-maths.js?v=20261112f';
 import { difficultyTrainingTag } from './difficulty.js';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
 
@@ -133,12 +133,21 @@ export function buildBattlePrepDeck(level, cycle = 0, questionsNeeded = 10) {
   return deck.slice(0, Math.max(1, Math.min(10, Math.floor(questionsNeeded))));
 }
 
+/** Extra mixed questions when a player still needs more right answers. @param {number} level @param {number} cycle @param {number} count */
+function bonusQuestions(level, cycle, count) {
+  return Array.from({ length: count }, () => {
+    const module = PREP_MODULES[Math.floor(Math.random() * PREP_MODULES.length)];
+    return { ...makePrepQuestion(module.id, level, cycle), moduleId: module.id, moduleTitle: module.title, rescue: true };
+  });
+}
+
 /**
  * @param {HTMLElement} host
  * @param {{
  *   level: number,
  *   cycle: number,
  *   questionsNeeded?: number,
+ *   remainingNeeded?: () => number,
  *   onAwardXp: (amount: number) => void,
  *   onAnswer?: (right: boolean, moduleId: string) => void,
  *   onFinished: (results: Record<string, {correct:number, attempts:number, accuracy:number}>, overall:number) => void,
@@ -197,11 +206,11 @@ export function initBattlePrep(host, callbacks) {
         <div class="prep-track"><span style="width:${Math.round((index / deck.length) * 100)}%"></span></div>
         <div class="times-quiz-header">
           <span class="times-quiz-tag">Module ${modulePosition} / ${PREP_MODULES.length}</span>
-          <span class="times-quiz-progress">${item.rescue ? 'Rescue question' : `Question ${moduleQuestion} / ${moduleTarget}`} · Overall ${index + 1} / ${deck.length}</span>
+          <span class="times-quiz-progress">${item.rescue ? 'Bonus question' : `Question ${moduleQuestion} / ${moduleTarget}`} · Overall ${index + 1} / ${deck.length}</span>
         </div>
         <div class="times-question-wrap"><p class="times-question length-question">${escapeHtml(item.prompt)}</p></div>
         <div class="times-answers">${options}</div>
-        <p class="prep-summary-line">Answer ${initialTotal} maths questions to earn your siege. Every correct answer earns XP.</p>
+        <p class="prep-summary-line">Get ${initialTotal} right to earn your siege. Every right answer charges Granny’s defences.</p>
       </div>`;
     host.querySelector('#prep-home')?.addEventListener('click', callbacks.onHome);
     host.querySelectorAll('.prep-answer').forEach((button) => {
@@ -237,6 +246,11 @@ export function initBattlePrep(host, callbacks) {
       timer = null;
       if (disposed) return;
       index += 1;
+      if (index >= deck.length) {
+        // Wrong answers do not charge the defences, so keep going until enough are right.
+        const more = Math.max(0, Math.floor(callbacks.remainingNeeded?.() ?? 0));
+        if (more > 0) deck.push(...bonusQuestions(callbacks.level, callbacks.cycle, more));
+      }
       if (index >= deck.length) finish();
       else {
         answered = false;
@@ -257,7 +271,7 @@ export function initBattlePrep(host, callbacks) {
       <div class="panel times-panel times-done prep-panel prep-done">
         <p class="mission-tag">Battle Prep complete</p>
         <h2 class="panel-title">Cleared to defend Granny</h2>
-        <p class="granny-line">You completed ${initialTotal} maths questions. Accuracy: ${Math.round(overall * 100)}%.</p>
+        <p class="granny-line">${totalCorrect} right out of ${deck.length}. Accuracy: ${Math.round(overall * 100)}%.</p>
         <div class="times-done-actions">
           <button type="button" class="btn btn-primary" id="prep-defend">Defend Granny</button>
           <button type="button" class="btn btn-ghost" id="prep-home-done">Home</button>

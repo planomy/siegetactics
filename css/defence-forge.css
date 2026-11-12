@@ -434,3 +434,7 @@ body.mission-mode #app {
     animation: none !important;
   }
 }
+
+/* An upgraded centre turret wears its level as gold stars. */
+.power-turret-stars { position:absolute; left:50%; bottom:6%; z-index:6; transform:translateX(-50%); padding:1px 8px; border-radius:999px; background:rgba(20,12,2,.75); color:#ffd65a; font-size:.85rem; letter-spacing:.12em; text-shadow:0 0 6px rgba(255,200,60,.9); white-space:nowrap; }
+.power-turret-main[data-level="3"] .power-turret-stars { box-shadow:0 0 12px rgba(255,200,60,.7); }
