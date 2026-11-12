@@ -13,7 +13,7 @@ test('all ten cards are artwork-led without grey squircle borders, shields or Do
   assert.doesNotMatch(home, /renderModuleLevelPips\(/);
   assert.doesNotMatch(home, /gb-story-badge-done/);
   assert.doesNotMatch(home, /gb-module-level-pips/);
-  assert.match(css, /\.gb-topic-campaign-card\s*\{[\s\S]*?border:\s*0;/);
+  assert.match(css, /\.gb-topic-campaign-card\s*\{[\s\S]*?border:\s*none;/);
   assert.match(css, /\.gb-topic-campaign-card \.gb-story-art-img\s*\{[\s\S]*?object-fit:\s*contain;/);
   assert.match(css, /\.gb-topic-campaign-card:focus-visible\s*\{/);
   assert.match(home, /TOPIC_DISPLAY_ORDER/);
@@ -47,21 +47,21 @@ test('standalone questions, mixed questions, and forge successes all advance the
 });
 
 test('fresh CSS and script modules are loaded so the browser does not show old shields', () => {
-  assert.match(html, /topic-campaign-cards\.css\?v=20261112r/);
+  assert.match(html, /topic-campaign-cards\.css\?v=20261112s/);
   assert.match(html, /app\.js\?v=20261112r/);
   assert.match(app, /home\.js\?v=20261112r/);
   assert.match(app, /battle-prep\.js\?v=20261112p/);
   assert.match(home, /topic-progression\.js\?v=20261112p/);
 });
 
-test('two rows fit more easily on desktop without shrinking the mobile experience', () => {
-  assert.match(css, /gap: 6px;/);
-  assert.match(css, /height: clamp\(108px, 13\.6dvh, 132px\);/);
-  assert.match(css, /height: 104px;/);
-  assert.match(css, /height: 128px;/);
+test('two rows show complete original artwork without fixed-height clipped cards', () => {
+  assert.match(css, /column-gap: 6px;/);
+  assert.match(css, /row-gap: 7px;/);
+  assert.match(css, /height: auto;/);
+  assert.match(css, /overflow: visible;/);
+  assert.match(css, /max-height: clamp\(160px, 20dvh, 214px\);/);
   assert.match(css, /@media \(max-width: 870px\)/);
   assert.match(css, /@media \(max-width: 540px\)/);
-  assert.match(css, /object-position: center;/);
 });
 
 test('original art is never cropped, zoomed, faded or covered by an extra title', () => {
@@ -72,5 +72,13 @@ test('original art is never cropped, zoomed, faded or covered by an extra title'
   assert.match(css, /background: #000;/);
   assert.doesNotMatch(home, /gb-topic-card-shade/);
   assert.match(home, /topic\.moduleArt \? '' :/);
-  assert.match(css, /\.gb-topic-campaign-line\s*\{[\s\S]*?position: relative;/);
+  assert.match(css, /\.gb-topic-campaign-line\s*\{[\s\S]*?position: static;/);
+});
+
+test('the shared gallery is black, while individual cards and rank strips are transparent', () => {
+  assert.match(css, /\.mission-topic-section,\s*body\.mission-mode #screen-home \.mission-all-topics\s*\{\s*background: #000;/);
+  assert.match(css, /\.gb-topic-campaign-card\s*\{[\s\S]*?background: transparent;/);
+  assert.match(css, /\.gb-topic-campaign-line\s*\{[\s\S]*?background: transparent;/);
+  assert.match(css, /\.gb-story-art\s*\{[\s\S]*?overflow: visible;/);
+  assert.match(css, /\.gb-story-art-img\s*\{[\s\S]*?width: auto;[\s\S]*?height: auto;/);
 });
