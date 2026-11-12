@@ -17,10 +17,11 @@ import { renderArmoryPromo } from './armory-promo.js?v=20261112f';
 function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id)) {
   return MATH_TOPICS.filter((topic) => selectedTopics.includes(topic.id)).map((topic) => {
     const locked = !topic.available;
-    const complete =
-      topic.id === 'times-tables'
-        ? attack.open
-        : Boolean(topic.unitId) && isTopicDone(gate, topic.id);
+    // A siege being ready does not mean every maths topic is complete.
+    // All topics remain replayable for optional bonus battle time.
+    const complete = topic.id === 'times-tables'
+      ? (gate.timesTablesDone?.length || 0) > 0
+      : Boolean(topic.unitId) && isTopicDone(gate, topic.id);
     const pips = !locked ? renderModuleLevelPips(levelMastery, topic.id) : '';
     const mapPip = !locked ? renderModuleMapProgress(mapProgress, topic.id) : '';
     const progressRow =
