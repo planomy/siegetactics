@@ -3,7 +3,7 @@ import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js';
 import { renderArmory, nextUnlockableTurret } from './armory.js';
 import { createTDEngine } from './td-engine.js';
-import { TURRETS, STARTER_TURRETS } from './turrets-data.js';
+import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
 import { createAudio } from './audio.js';
 import { DEV } from './dev.js';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js';
@@ -13,8 +13,8 @@ import { computeStars, renderStarBadges } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderTopbarBadges } from './home.js?v=20261112e';
-import { renderPowerCore } from './power-core.js?v=20261112e';
+import { renderHome, renderMissionControl, renderTopbarBadges } from './home.js?v=20261112f';
+import { renderPowerCore } from './power-core.js?v=20261112f';
 import { initHowToPlay } from './how-to-play.js';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261112e';
@@ -139,6 +139,8 @@ const LEARNING_SCREENS = new Set([
 
 /** @type {keyof typeof screens} */
 let armoryReturnScreen = 'home';
+/** @type {string|null} Recently earned unlock, pending a nonblocking notification. */
+let pendingArmoryUnlock = null;
 
 function loadSave() {
   try {
@@ -254,6 +256,7 @@ function renderArmoryScreen() {
 }
 
 function openArmory() {
+  dismissWeaponAnnouncement();
   const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'));
   const key = active?.[0] ?? 'home';
   armoryReturnScreen = key === 'welcome' || key === 'armory' ? 'home' : key;
@@ -399,10 +402,70 @@ function updateFireNukesButton() {
   btn.textContent = salvoActive ? 'Nukes inbound…' : 'Fire nukes';
 }
 
-function awardForgeXp(amount, reason) {
-  if (amount <= 0) return;
+/**
+ * Small, non-blocking unlock notice. It never interrupts the maths question.
+ * Students may visit the Armory now or carry on working.
+ */
+function dismissWeaponAnnouncement() {
+  const host = document.getElementById('weapon-unlock-notice');
+  if (host) {
+    host.hidden = true;
+    host.innerHTML = '';
+  }
+}
+
+function showPendingWeaponAnnouncement() {
+  if (!pendingArmoryUnlock) return;
+  const active = Object.entries(screens).find(([,el]) => el?.classList.contains('active'))?.[0];
+  if (active === 'siege' || active === 'forge' || active === 'welcome') return;
+  const host = document.getElementById('weapon-unlock-notice');
+  const id = pendingArmoryUnlock;
+  const turret = TURRETS[id];
+  if (!host || !turret || isUnlocked(id)) {
+    pendingArmoryUnlock = null;
+    return;
+  }
+  pendingArmoryUnlock = null;
+  host.innerHTML = `
+    <img src="${turret.sprite}" alt="" width="95" height="95" class="unlock-notice-art" />
+    <div class="unlock-notice-copy">
+      <strong>OI! NEW WEAPON AVAILABLE!</strong>
+      <span>${turret.name} can now be unlocked permanently.</span>
+      <div class="unlock-notice-actions">
+        <button type="button" id="unlock-notice-open">VISIT ARMORY</button>
+        <button type="button" id="unlock-notice-later">Later</button>
+      </div>
+    </div>
+  `;
+  host.hidden = false;
+  host.querySelector('#unlock-notice-open')?.addEventListener('click', openArmory);
+  host.querySelector('#unlock-notice-later')?.addEventListener('click', dismissWeaponAnnouncement);
+}
+
+/** Check for XP milestones without treating Forge XP as spendable currency. */
+function checkNewWeaponMilestone(previousXp) {
+  const id = TURRET_ORDER.find((id) =>
+    !isUnlocked(id) && previousXp < TURRETS[id].unlockXp && save.xp >= TURRETS[id].unlockXp
+  );
+  if (!id) return;
+  pendingArmoryUnlock = id;
+  showPendingWeaponAnnouncement();
+}
+
+/** All Forge XP awards pass through here, including siege rewards. */
+function creditForgeXp(amount) {
+  if (!(amount > 0)) return 0;
+  const previousXp = save.xp;
   save.xp += amount;
   persistSave();
+  refreshTopbar();
+  checkNewWeaponMilestone(previousXp);
+  return amount;
+}
+
+function awardForgeXp(amount, reason) {
+  if (amount <= 0) return;
+  creditForgeXp(amount);
   if (reason) {
     showToast(`+${amount} ${ECONOMY.forgeXpLabel} · ${reason}`, { variant: 'success' });
   }
@@ -412,10 +475,7 @@ function awardForgeXp(amount, reason) {
 function awardScaledTrainingXp(baseAmount, level) {
   const amount = scaleTrainingXp(baseAmount, level);
   if (amount <= 0) return 0;
-  save.xp += amount;
-  persistSave();
-  refreshTopbar();
-  return amount;
+  return creditForgeXp(amount);
 }
 
 /** Every answered question charges the forge, including wrong answers.
@@ -462,8 +522,7 @@ function completeTrainingSession(moduleId, level, accuracy) {
 
   if (result.shieldEarned) {
     if (result.firstClearBonus > 0) {
-      save.xp += result.firstClearBonus;
-      persistSave();
+      creditForgeXp(result.firstClearBonus);
       showToast(
         `Perfect! Level ${level} shield earned · +${result.firstClearBonus} ${ECONOMY.forgeXpLabel}`,
         { variant: 'success', duration: 4000 }
@@ -543,6 +602,8 @@ function makeDashboardState() {
   return {
     playerName: save.playerName || 'Recruit',
     xp: save.xp,
+    unlockedTurrets: getUnlockedSet(),
+    onArmory: openArmory,
     siegesCompleted: save.siegesCompleted,
     bestKills: save.bestKills[SLICE_MISSION_ID] ?? 0,
     bestBankedCoins: save.bestBankedCoins[SLICE_MISSION_ID] ?? 0,
@@ -632,6 +693,7 @@ function showHome() {
   refreshMissionControl();
   renderTopbarBadges(document.getElementById('topbar-badges'), save.bestStars, SLICE_MISSION_ID);
   showScreen('home');
+  showPendingWeaponAnnouncement();
 }
 
 function showBattlePrep() {
@@ -671,7 +733,7 @@ function showBattlePrep() {
       save.levelMastery = mastery;
       save.mapProgress = mapProgress;
       save.trainingGate = markBattlePrepComplete(save.trainingGate, overall);
-      if (shieldBonus > 0) save.xp += shieldBonus;
+      if (shieldBonus > 0) creditForgeXp(shieldBonus);
       battlePrepCoinBonus = save.trainingGate.bonusSiegeCoins;
       persistSave();
       refreshMissionControl();
@@ -977,10 +1039,7 @@ function onForgeSuccess(rewards) {
   run.runForgeXpEarned = forgeXp;
   run.selectedTurret = null;
   battlePrepCoinBonus = 0;
-  if (forgeXp > 0) {
-    save.xp += forgeXp;
-    persistSave();
-  }
+  if (forgeXp > 0) creditForgeXp(forgeXp);
   completeTrainingSession('place-value-siege', level, 1);
   const placeValueTopic = getTopic('place-value-siege');
   if (forgeXp > 0 && placeValueTopic) {
@@ -1126,7 +1185,7 @@ function finishRun(stats) {
   const bankBonus = bankBonusForgeXp(bankedCoins);
 
   run.runForgeXpEarned += bonus + bankBonus;
-  save.xp += bonus + bankBonus;
+  creditForgeXp(bonus + bankBonus);
 
   const starResult = computeStars({
     won: stats.won,
