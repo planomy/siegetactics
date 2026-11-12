@@ -5,7 +5,7 @@ import {
   isTopicDone,
 } from './training-gate.js?v=20261112g';
 import { STAR_LABELS, STAR_HINTS, summarizeBadgeCollection, renderStarBadges } from './stars.js';
-import { renderThreatDossier, initThreatDossier } from './threat-dossier.js';
+import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261112n';
 import { renderModuleLevelPips, MAP_PASSES_REQUIRED } from './level-mastery.js';
 import { renderInterstellarMap, renderModuleMapProgress, mapPiecesEarned, TRAINING_MODULE_IDS } from './map-progress.js';
 import { getQualifiedLevels } from './level-mastery.js';
