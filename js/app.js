@@ -225,12 +225,20 @@ function toggleSound() {
 
 function showScreen(id) {
   const inLearning = LEARNING_SCREENS.has(id);
+  const previousScreen = Object.entries(screens)
+    .find(([, element]) => element?.classList.contains('active'))?.[0];
   if (missionShell) missionShell.hidden = !inLearning;
   document.body.classList.toggle('mission-mode', inLearning);
   document.body.classList.toggle('siege-mode', id === 'siege');
   Object.entries(screens).forEach(([key, el]) => {
     el?.classList.toggle('active', key === id);
   });
+  // Each lesson opens at the top of the independent centre scroller.
+  // Re-rendering the current screen (e.g. changing difficulty) keeps its place.
+  if (inLearning && previousScreen !== id) {
+    const workspace = document.getElementById('mission-workspace');
+    if (workspace) workspace.scrollTop = 0;
+  }
   syncMissionControlAction(id);
   refreshTopbar();
 }
