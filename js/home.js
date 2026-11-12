@@ -386,6 +386,12 @@ function renderAttackHero(attack, gate, playerName, isFirstMission) {
 /** @type {(() => void)|null} */
 let threatDossierCleanup = null;
 
+/** Stop animated scanning intervals while visiting the battlefield or Armory. */
+export function stopMissionDossier() {
+  threatDossierCleanup?.();
+  threatDossierCleanup = null;
+}
+
 /**
  * @param {HTMLElement} host
  * @param {{
