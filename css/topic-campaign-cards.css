@@ -1,17 +1,22 @@
 /*
- * Original Granny Boom topic images shown ENTIRELY at natural aspect ratio.
- * One unified black gallery: NO individual tiles, NO cropping, NO overlays.
+ * Maths HQ topic gallery. This is the only stylesheet for the ten topic cards.
  *
- * Crucial: neither the card nor the image wrapper has a fixed height or
- * overflow:hidden. The previous flex/height:100% combination silently
- * overflowed the wrapper and cut the image's built-in titles off.
+ * One continuous black surface holds a grid of topics. Each topic is the complete
+ * original artwork, scaled proportionally (never cropped, stretched or overlaid),
+ * with a compact rank line and a slim XP meter underneath.
+ *
+ * On the desktop dashboard the two rows share the height Maths HQ has left, so the
+ * art shrinks to fit rather than pushing the second row off screen. Elsewhere each
+ * card takes the column width and the page scrolls as normal.
  */
+
 body.mission-mode #screen-home .mission-topic-section,
 body.mission-mode #screen-home .mission-all-topics {
   background: #000;
 }
 
 body.mission-mode #screen-home .mission-all-topics {
+  --topic-meta: 23px;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   column-gap: 6px;
@@ -22,30 +27,23 @@ body.mission-mode #screen-home .mission-all-topics {
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card {
   display: flex;
-  position: relative;
   flex-direction: column;
-  justify-content: flex-start;
   align-items: center;
   min-width: 0;
-  min-height: 0;
-  height: auto;
   padding: 0;
   margin: 0;
   border: none;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  outline: none;
-  overflow: visible;
-  aspect-ratio: auto;
-  isolation: auto;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
   transition: filter .16s ease;
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover {
-  transform: none;
-  box-shadow: none;
-  border: none;
   filter: brightness(1.10);
 }
 
@@ -54,77 +52,66 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:focus
   outline-offset: 1px;
 }
 
-/* The source art contains the FULL metal frame, topic name and green lights.
-   Explicit auto width + capped height preserves its own dimensions and
-   paints every pixel. Never set width:100% AND height:100% here. */
+body.mission-mode #screen-home .mission-all-topics .gb-story-locked {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-story-art {
   display: flex;
-  position: static;
-  flex: none;
-  align-items: center;
   justify-content: center;
-  inset: auto;
   width: 100%;
-  height: auto;
-  min-height: 0;
-  max-height: none;
-  padding: 0;
-  margin: 0;
-  background: transparent;
   overflow: visible;
 }
 
+/* The source art already holds the frame and artwork: show every pixel of it. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-story-art-img {
   display: block;
-  flex: none;
-  width: auto;
+  width: 100%;
   height: auto;
-  max-width: 100%;
-  max-height: clamp(160px, 20dvh, 214px);
   object-fit: contain;
   object-position: center;
-  padding: 0;
-  margin: 0;
   filter: none;
   transform: none;
-  transition: none;
 }
 
-body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-story-art-img,
-body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:focus-visible .gb-story-art-img {
-  filter: none;
-  transform: none;
+body.mission-mode #screen-home .mission-all-topics .gb-story-locked .gb-story-art-img {
+  filter: grayscale(.85) brightness(.55);
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-story-art-emoji {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  color: rgba(255, 255, 255, .85);
 }
 
 /* Backup title ONLY for a topic whose source image is missing. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-story-title {
-  position: static;
   display: block;
   margin: 4px auto 0;
   padding: 0 4px;
-  width: auto;
+  font-family: var(--font-display);
   font-size: .8rem;
   line-height: 1.05;
   color: #ffe09d;
   text-shadow: 0 2px 5px #000;
-  pointer-events: none;
 }
 
-/* Rank is a lightweight single row on the same shared black surface,
-   OUTSIDE the image. No black or grey rectangles around each graphic. */
+/* Rank, mastery and next XP: one compact row on the black surface, outside the art. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-topic-campaign-line {
   display: flex;
   position: static;
-  flex: none;
   width: 100%;
   min-width: 0;
-  height: auto;
-  min-height: 20px;
+  height: 20px;
   justify-content: space-between;
   align-items: center;
   gap: 3px;
-  margin: 0;
-  padding: 1px 5px 2px;
+  padding: 0 5px;
   background: transparent;
   white-space: nowrap;
   pointer-events: none;
@@ -158,11 +145,9 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-next {
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-track {
   display: block;
-  position: static;
-  flex: none;
   width: 100%;
   height: 2px;
-  margin: 0;
+  margin-bottom: 1px;
   background: rgba(195, 220, 188, .13);
   pointer-events: none;
 }
@@ -174,33 +159,51 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-fill {
   transition: width .3s ease;
 }
 
-@media (min-width: 1321px) and (min-height: 600px) and (max-height: 740px) {
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-story-art-img {
-    max-height: clamp(132px, 19dvh, 168px);
+/* Desktop dashboard: two rows of five share the height Maths HQ has left (see
+   ten-topic-dashboard.css). Each card measures its own cell, and the square art
+   takes the largest size that fits above the rank line, so nothing is cut off.
+   On a very short window the art stops shrinking at 96px and Maths HQ scrolls. */
+@media (min-width: 1321px) and (min-height: 600px) {
+  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .mission-topic-section {
+    display: flex;
+    flex-direction: column;
+    container-type: inline-size;
   }
-}
 
-@media (min-width: 871px) and (max-width: 1320px) {
-  body.mission-mode #screen-home .mission-all-topics .gb-story-art-img {
-    max-height: 180px;
+  /* Never taller than five columns of art need, so on a tall screen the rows stay
+     together and any spare height is black space below them. */
+  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .mission-all-topics {
+    flex: 1 1 auto;
+    min-height: calc(2 * (96px + var(--topic-meta)) + 7px + 8px);
+    max-height: calc(2 * ((100cqw - 4 * 6px) / 5 + var(--topic-meta)) + 7px + 8px);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .gb-topic-campaign-card {
+    container-type: size;
+    min-height: 0;
+    justify-content: center;
+  }
+
+  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .gb-topic-campaign-card .gb-story-art-img,
+  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .gb-topic-campaign-card .gb-story-art-emoji,
+  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .gb-topic-campaign-card .gb-topic-campaign-line,
+  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) .gb-topic-campaign-card .gb-topic-rank-track {
+    width: min(100cqw, 100cqh - var(--topic-meta));
   }
 }
 
 @media (max-width: 870px) {
   body.mission-mode #screen-home .mission-all-topics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-story-art-img {
-    max-height: 224px;
+    gap: 9px;
   }
 }
 
 @media (max-width: 540px) {
   body.mission-mode #screen-home .mission-all-topics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-story-art-img {
-    max-height: 230px;
   }
 }
 

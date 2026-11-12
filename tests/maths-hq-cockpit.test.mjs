@@ -36,7 +36,7 @@ test('mixed maths, armory promotion and maths topic choices share the wide-scree
 test('smaller windows keep normal scrolling and do not lose any content', () => {
   assert.match(css, /@media \(max-width: 1320px\), \(max-height: 599px\)/);
   assert.match(css, /overflow-y: auto;/);
-  assert.match(html, /maths-hq-cockpit\.css\?v=20261112k/);
+  assert.match(html, /maths-hq-cockpit\.css\?v=20261112t/);
 });
 
 test('navigating lessons resets only the centre scroller, preserving same-screen scroll', () => {

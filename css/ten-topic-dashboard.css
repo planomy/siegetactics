@@ -20,6 +20,18 @@
     min-width: 0;
   }
 
+  /* Maths HQ fills the workspace, and the topic gallery takes whatever height is left, so both
+     rows of topics fit without scrolling. Opening the map lets the page grow and scroll again. */
+  body.mission-mode #screen-home.active,
+  body.mission-mode #home-host {
+    height: 100%;
+  }
+
+  body.mission-mode #screen-home .mission-home:not(:has(.mission-map-details[open])) {
+    height: 100%;
+    grid-template-rows: auto auto minmax(auto, 1fr) auto;
+  }
+
   body.mission-mode #screen-home .mission-workspace-heading {
     grid-area: intro;
     margin: 0;
@@ -208,41 +220,6 @@
     font-size: .56rem;
   }
 
-  body.mission-mode #screen-home .mission-all-topics {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 7px;
-  }
-
-  body.mission-mode #screen-home .mission-all-topics .gb-story-card {
-    height: clamp(110px, 14.5dvh, 132px);
-    min-height: 0;
-    min-width: 0;
-    border-radius: 10px;
-  }
-
-  body.mission-mode #screen-home .mission-all-topics .gb-story-art {
-    min-height: 0;
-    padding: 3px 3px 0;
-  }
-
-  body.mission-mode #screen-home .mission-all-topics .gb-story-art-img {
-    width: 95%;
-    max-height: 89px;
-    object-fit: contain;
-  }
-
-  body.mission-mode #screen-home .mission-all-topics .gb-story-title {
-    font-size: clamp(.65rem, .77vw, .85rem);
-    line-height: 1.08;
-    padding: 3px 1px 5px;
-  }
-
-  body.mission-mode #screen-home .mission-all-topics .gb-module-level-pips {
-    transform: scale(.84);
-    transform-origin: left bottom;
-  }
-
   body.mission-mode #screen-home .mission-map-details {
     grid-area: map;
     margin: 1px 0 0;
@@ -355,46 +332,8 @@
     max-height: 98px;
   }
 
-  body.mission-mode #screen-home .mission-all-topics .gb-story-card {
-    height: 105px;
-  }
-
-  body.mission-mode #screen-home .mission-all-topics .gb-story-art-img {
-    max-height: 65px;
-  }
-
   body.mission-mode .mission-power .power-scene {
     height: clamp(135px, 23dvh, 178px);
-  }
-}
-
-/* The other layouts remain fully accessible and still show all ten topics.
-   Fewer columns are appropriate when there isn't room to read their names. */
-@media (min-width: 871px) and (max-width: 1320px) {
-  body.mission-mode #screen-home .mission-all-topics {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  body.mission-mode #screen-home .mission-all-topics .gb-story-card {
-    height: 130px;
-  }
-
-  body.mission-mode #screen-home .mission-all-topics .gb-story-art-img {
-    max-height: 84px;
-  }
-}
-
-@media (max-width: 870px) {
-  body.mission-mode #screen-home .mission-all-topics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 9px;
-  }
-}
-
-@media (max-width: 540px) {
-  body.mission-mode #screen-home .mission-all-topics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -419,8 +358,3 @@ body.mission-mode .mission-control {
     linear-gradient(180deg, #101623 0%, #090f16 54%, #0b0d17 100%);
 }
 
-@media (prefers-reduced-motion:reduce) {
-  body.mission-mode #screen-home .mission-all-topics .gb-story-card {
-    transition: none;
-  }
-}

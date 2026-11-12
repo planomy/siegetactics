@@ -130,29 +130,6 @@
     font-size: .68rem;
   }
 
-  body.mission-mode .mission-topic-grid {
-    gap: 7px;
-  }
-
-  body.mission-mode .mission-topic-grid .gb-story-card {
-    height: 132px;
-    border-radius: 10px;
-  }
-
-  body.mission-mode .mission-topic-grid .gb-story-art {
-    padding: 5px 4px 0;
-  }
-
-  body.mission-mode .mission-topic-grid .gb-story-art-img {
-    max-height: 92px;
-    width: 88%;
-  }
-
-  body.mission-mode .mission-topic-grid .gb-story-title {
-    padding: 4px 3px 6px;
-    font-size: .78rem;
-  }
-
   body.mission-mode .mission-more-button {
     min-height: 32px;
     margin: 8px auto 6px;

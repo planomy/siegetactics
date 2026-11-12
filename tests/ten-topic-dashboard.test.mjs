@@ -5,6 +5,7 @@ import { MATH_TOPICS } from '../js/topics-data.js';
 
 const home = readFileSync(new URL('../js/home.js', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../css/ten-topic-dashboard.css', import.meta.url), 'utf8');
+const cards = readFileSync(new URL('../css/topic-campaign-cards.css', import.meta.url), 'utf8');
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 
@@ -28,7 +29,8 @@ test('the desktop grid shows two rows of five, with both promotion cards above i
   assert.match(css, /@media \(min-width: 1321px\) and \(min-height: 600px\)/);
   assert.match(css, /"mixed armory"/);
   assert.match(css, /"topics topics"/);
-  assert.match(css, /mission-all-topics\s*\{[\s\S]*?grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);/);
+  assert.match(cards, /mission-all-topics\s*\{[\s\S]*?grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);/);
+  assert.match(css, /\.mission-home:not\(:has\(\.mission-map-details\[open\]\)\)\s*\{[\s\S]*?height:\s*100%;[\s\S]*?grid-template-rows:\s*auto auto minmax\(auto, 1fr\) auto;/);
   assert.match(css, /mission-mixed-card\s*\{[\s\S]*?grid-area:\s*mixed;/);
   assert.match(css, /armory-promo\s*\{[\s\S]*?grid-area:\s*armory;/);
   assert.match(css, /mission-topic-section\s*\{[\s\S]*?grid-area:\s*topics;/);
@@ -47,9 +49,9 @@ test('garden is darkened in the header and removed from behind radar writing', (
 });
 
 test('small screens continue to use fewer columns and CSS assets are loaded fresh', () => {
-  assert.match(css, /@media \(max-width: 540px\)/);
-  assert.match(css, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(html, /ten-topic-dashboard\.css\?v=20261112l/);
+  assert.match(cards, /@media \(max-width: 540px\)/);
+  assert.match(cards, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(html, /ten-topic-dashboard\.css\?v=20261112u/);
   assert.match(html, /app\.js\?v=20261112r/);
   assert.match(app, /home\.js\?v=20261112r/);
 });

@@ -337,37 +337,6 @@ body.mission-mode #app {
   padding: 0 8px;
 }
 
-.mission-topic-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.mission-topic-grid .gb-story-card {
-  width: 100%;
-  height: 218px;
-  aspect-ratio: auto;
-  border-radius: 14px;
-  border-width: 1px;
-}
-
-.mission-topic-grid .gb-story-art {
-  min-height: 0;
-  padding: 12px 6px 3px;
-}
-
-.mission-topic-grid .gb-story-art-img {
-  width: 97%;
-  max-height: 155px;
-  max-width: 100%;
-  object-fit: contain;
-}
-
-.mission-topic-grid .gb-story-title {
-  padding: 8px 5px 10px;
-  font-size: clamp(0.8rem, 1vw, 1.02rem);
-}
-
 .mission-more-button {
   display: block;
   margin: 18px auto 14px;
@@ -422,18 +391,6 @@ body.mission-mode #app {
 .mission-shell summary:focus-visible {
   outline: 3px solid #ffd36b;
   outline-offset: 3px;
-}
-
-@media (max-width: 1310px) {
-  .mission-topic-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .mission-topic-grid .gb-story-card {
-    height: 205px;
-  }
-  .mission-topic-grid .gb-story-art-img {
-    max-height: 145px;
-  }
 }
 
 @media (max-width: 870px) {
@@ -508,23 +465,10 @@ body.mission-mode #app {
     flex-basis: 100%;
     max-width: none;
   }
-  .mission-topic-grid {
-    gap: 10px;
-  }
-  .mission-topic-grid .gb-story-card {
-    height: 174px;
-  }
-  .mission-topic-grid .gb-story-art-img {
-    max-height: 116px;
-  }
-  .mission-topic-grid .gb-story-title {
-    font-size: 0.83rem;
-  }
   .mission-topic-heading .gb-level-picker {
     gap: 2px;
   }
 }
-
 
 /* The original four-button level picker, with the XP pay-off visible on every button.
    Only the selected difficulty is accented. No competing "recommended" highlights. */
