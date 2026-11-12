@@ -63,7 +63,7 @@ export function renderArmoryPromo(xp, unlocked) {
       </div>
       <div class="armory-promo-copy">
         <span class="armory-promo-eyebrow">GRANNY'S ARMORY · PERMANENT UPGRADES</span>
-        <h2>${p.ready ? 'NEW FIREPOWER UNLOCKED!' : 'BUILD AN UNSTOPPABLE ARMY!'}</h2>
+        <h2>${p.ready ? 'NEW FIREPOWER AVAILABLE!' : 'BUILD AN UNSTOPPABLE ARMY!'}</h2>
         <p class="armory-promo-featured">${p.name} <span>· ${p.desc}</span></p>
         <p class="armory-promo-description">${description}</p>
         <div class="armory-promo-progress">
