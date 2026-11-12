@@ -212,8 +212,10 @@ export function renderShopBar(barEl, state) {
 
     bindShopPopover(btn, t, state);
 
+    // Affordability must be checked at click time. Kills add coins while
+    // the battle is running, so a captured initial "canPlace" becomes stale.
     btn.addEventListener('click', () => {
-      if (!canPlace) {
+      if (state.budget < t.placementCost) {
         showShopPopover(btn, t, state, { pulse: true });
         return;
       }
