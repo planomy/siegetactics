@@ -2,7 +2,7 @@ import { MATH_TOPICS } from './topics-data.js';
 import {
   attackStatus,
   isTopicDone,
-} from './training-gate.js';
+} from './training-gate.js?v=20261112e';
 import { STAR_LABELS, STAR_HINTS, summarizeBadgeCollection, renderStarBadges } from './stars.js';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js';
 import { renderModuleLevelPips, MAP_PASSES_REQUIRED } from './level-mastery.js';
