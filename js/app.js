@@ -1,7 +1,7 @@
 import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20260819b';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js';
-import { renderArmory, nextUnlockableTurret } from './armory.js';
+import { renderArmory, nextUnlockableTurret } from './armory.js?v=20261112f';
 import { createTDEngine } from './td-engine.js';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
 import { createAudio } from './audio.js';
