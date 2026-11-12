@@ -76,6 +76,7 @@ function pick(arr) {
  * @param {{
  *   playerName: string,
  *   onAwardXp: (amount: number) => void,
+ *   onAnswer?: (right: boolean) => void,
  *   onSessionComplete: (result: { table: number, accuracy: number, passed: boolean, gateAdded: boolean }) => void,
  *   onHome: () => void,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
@@ -236,6 +237,7 @@ export function initTimesTables(host, callbacks) {
           callbacks.showToast(`It's ${q.answer}. Keep going!`, { variant: 'shop' });
         }
 
+        callbacks.onAnswer?.(right);
         setTimeout(() => {
           index += 1;
           if (index >= deck.length) finishSession();
