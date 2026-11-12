@@ -275,18 +275,16 @@ function renderRadarEscorts(attack, blipDeg, blipR) {
   const progress = 1 - attack.remaining / Math.max(1, attack.total);
   if (progress <= 0) return '';
 
-  const target = 8 + Math.floor(Math.random() * 13);
-  const count = Math.max(1, Math.round(target * progress));
-  const arcSpan = 14 + progress * 26;
-  const rMin = Math.min(blipR + 3, 44);
-  const rMax = Math.min(blipR + 10 + progress * 16, 48);
-
-  const dots = Array.from({ length: count }, () => {
-    const angle = blipDeg + (Math.random() - 0.5) * arcSpan * 2;
-    const radius = rMin + Math.random() * Math.max(1, rMax - rMin);
-    const size = 3 + Math.random() * 3.5;
-    const opacity = 0.35 + Math.random() * 0.45;
-    const delay = (Math.random() * 0.85).toFixed(2);
+  // Stable positions make approaching aliens appear like a real formation,
+  // rather than randomly teleporting around the radar after every answer.
+  const count = Math.max(1, Math.round(12 * progress));
+  const arcSpan = 12 + progress * 26;
+  const dots = Array.from({ length: count }, (_, i) => {
+    const angle = blipDeg + (((i * 7) % 11) - 5) * arcSpan / 11;
+    const radius = Math.max(5, Math.min(45, blipR + ((i * 3) % 7 - 3) * 1.65));
+    const size = 3.5 + (i % 4) * 0.9;
+    const opacity = 0.42 + (i % 5) * 0.1;
+    const delay = ((i % 7) * 0.12).toFixed(2);
     return `<span class="inbound-radar-escort" style="--escort-deg:${angle.toFixed(1)}deg;--escort-r:${radius.toFixed(1)}%;--escort-size:${size.toFixed(1)}px;--escort-opacity:${opacity.toFixed(2)};--escort-delay:${delay}s" aria-hidden="true"></span>`;
   });
 
