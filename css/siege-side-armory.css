@@ -1,0 +1,327 @@
+/*
+ * Siege battlefield is the hero; turrets and launch live in a permanent
+ * right-hand command rail instead of below the canvas. On narrow screens,
+ * replace that rail with a compact fixed-bottom turret dock.
+ */
+body.siege-mode #app {
+  max-width: 1640px;
+  padding: clamp(10px, 1.1vw, 18px) clamp(10px, 1.5vw, 22px) 30px;
+}
+
+body.siege-mode .siege-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(290px, 330px);
+  align-items: start;
+  gap: clamp(12px, 1.2vw, 20px);
+}
+
+body.siege-mode .siege-battle-zone {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+body.siege-mode .siege-canvas-wrap {
+  min-width: 0;
+  box-shadow: 0 12px 36px rgba(0,0,0,.34);
+}
+
+body.siege-mode #siege-canvas {
+  height: clamp(315px, calc(100dvh - var(--gb-sticky-header-height) - 150px), 680px);
+}
+
+/* The only scrollable shop on desktop is its own rail.
+   The canvas and its controls never need to move to reach a turret. */
+body.siege-mode .siege-loadout {
+  position: sticky;
+  top: calc(var(--gb-sticky-header-height) + 12px);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  max-height: calc(100dvh - var(--gb-sticky-header-height) - 24px);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 2px solid rgba(214,162,76,.49);
+  border-radius: 15px;
+  padding: 10px;
+  background: linear-gradient(160deg,#21182d,#111523 72%,#121123);
+  box-shadow: 0 14px 42px rgba(0,0,0,.34);
+}
+
+body.siege-mode .siege-loadout .siege-deploy-panel {
+  position: static;
+  top: auto;
+  z-index: auto;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px;
+  border-radius: 11px;
+  box-shadow: inset 0 0 18px rgba(116,230,92,.07);
+}
+
+body.siege-mode .siege-loadout .siege-deploy-copy {
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+body.siege-mode .siege-loadout .siege-deploy-panel h2 {
+  margin: 4px 0;
+  font-size: clamp(1.4rem, 1.7vw, 1.8rem);
+}
+
+body.siege-mode .siege-loadout .siege-deploy-panel p {
+  font-size: .78rem;
+  line-height: 1.35;
+}
+
+body.siege-mode .siege-loadout .siege-deploy-summary {
+  margin-top: 6px;
+  font-size: .79rem;
+}
+
+body.siege-mode .siege-loadout .siege-launch-button {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  font-size: clamp(1.3rem,1.8vw,1.65rem);
+}
+
+body.siege-mode .siege-loadout .shop-bar {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #a0844a #211a2c;
+  border: 1px solid rgba(153,125,179,.25);
+  background: rgba(9,8,20,.67);
+  padding: 12px;
+}
+
+body.siege-mode .siege-loadout .shop-budget {
+  margin: 0 0 6px;
+  font-weight: 900;
+  color: #e7daee;
+}
+
+body.siege-mode .siege-loadout .shop-budget strong {
+  font-size: 1.4rem;
+  color: #ffde7a;
+}
+
+body.siege-mode .siege-loadout .shop-hint {
+  font-size: .74rem;
+  margin-bottom: 11px;
+  color: #c4b8d2;
+}
+
+body.siege-mode .siege-loadout .shop-turrets {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 9px;
+  margin: 0;
+  overflow: visible;
+}
+
+body.siege-mode .siege-loadout .shop-buy-btn {
+  min-width: 0;
+  min-height: 103px;
+  padding: 8px 4px 6px;
+  border-radius: 10px;
+  gap: 4px;
+  background: rgba(16,13,30,.86);
+}
+
+body.siege-mode .siege-loadout .shop-buy-btn img {
+  width: 64px;
+  height: 61px;
+  margin-top: 7px;
+  object-fit: contain;
+}
+
+body.siege-mode .siege-loadout .turret-name {
+  width: 100%;
+  font-size: .68rem;
+  line-height: 1.15;
+  white-space: normal;
+  overflow: visible;
+  font-weight: 900;
+}
+
+body.siege-mode .siege-loadout .price-tag {
+  font-size: .65rem;
+  padding: 1px 5px;
+  top: 4px;
+  right: 4px;
+}
+
+body.siege-mode .siege-command-bar {
+  padding: 1px 0;
+}
+
+/* Bonus choice needs the whole canvas on mobile. The shop disappears
+   temporarily while that choice is on screen, then comes straight back. */
+body.siege-mode .siege-layout.is-bonus-offer .siege-loadout,
+body.siege-mode .siege-layout.is-battle-done .siege-loadout {
+  display: none;
+}
+
+@media (max-width: 959px) {
+  body.siege-mode #app {
+    max-width: none;
+    padding: 10px 10px clamp(178px, 36dvh, 235px);
+  }
+
+  body.siege-mode .siege-layout {
+    display: block;
+  }
+
+  body.siege-mode #siege-canvas {
+    height: clamp(225px, calc(100dvh - var(--gb-sticky-header-height) - 225px), 470px);
+  }
+
+  body.siege-mode .siege-loadout {
+    position: fixed;
+    top: auto;
+    bottom: max(7px,env(safe-area-inset-bottom,0px));
+    left: 8px;
+    right: 8px;
+    width: auto;
+    z-index: 65;
+    max-height: min(39dvh, 235px);
+    min-height: 0;
+    padding: 7px;
+    gap: 5px;
+    border-radius: 12px;
+    background: rgba(22,16,34,.98);
+    box-shadow: 0 -5px 25px rgba(0,0,0,.65);
+  }
+
+  body.siege-mode .siege-loadout .siege-deploy-panel {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) minmax(165px, 40%);
+    align-items: center;
+    padding: 6px 9px;
+    gap: 8px;
+  }
+
+  body.siege-mode .siege-loadout .siege-deploy-panel h2 {
+    margin: 2px 0;
+    font-size: 1.18rem;
+  }
+
+  body.siege-mode .siege-loadout .siege-deploy-panel p {
+    font-size: .69rem;
+    line-height: 1.18;
+  }
+
+  body.siege-mode .siege-loadout .siege-deploy-summary {
+    margin-top: 3px;
+    font-size: .69rem;
+  }
+
+  body.siege-mode .siege-loadout .siege-launch-button {
+    min-height: 50px;
+    padding: 6px 8px;
+    font-size: clamp(1.05rem,2.9vw,1.35rem);
+  }
+
+  body.siege-mode .siege-loadout .shop-bar {
+    padding: 5px 7px 4px;
+    overflow-y: hidden;
+    overflow-x: hidden;
+  }
+
+  body.siege-mode .siege-loadout .shop-budget {
+    font-size: .79rem;
+    margin-bottom: 4px;
+  }
+
+  body.siege-mode .siege-loadout .shop-budget strong {
+    font-size: 1.04rem;
+  }
+
+  body.siege-mode .siege-loadout .shop-hint {
+    display: none;
+  }
+
+  body.siege-mode .siege-loadout .shop-turrets {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 1px 3px 5px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  body.siege-mode .siege-loadout .shop-buy-btn {
+    flex: 0 0 86px;
+    min-height: 76px;
+    padding: 2px 2px 4px;
+    gap: 1px;
+  }
+
+  body.siege-mode .siege-loadout .shop-buy-btn img {
+    width: 42px;
+    height: 42px;
+    margin-top: 5px;
+  }
+
+  body.siege-mode .siege-loadout .turret-name {
+    font-size: .55rem;
+    line-height: 1.06;
+  }
+
+  body.siege-mode .siege-loadout .price-tag {
+    font-size: .49rem;
+    padding: 1px 3px;
+    top: 2px;
+    right: 2px;
+  }
+
+  body.siege-mode .siege-command-bar {
+    padding-bottom: 12px;
+  }
+
+  body.siege-mode .siege-layout.is-bonus-offer .siege-loadout,
+  body.siege-mode .siege-layout.is-battle-done .siege-loadout {
+    display: none;
+  }
+}
+
+@media (max-width: 490px) {
+  body.siege-mode .siege-loadout .siege-deploy-panel {
+    grid-template-columns: 1fr;
+  }
+
+  body.siege-mode .siege-loadout .siege-deploy-panel p {
+    display: none;
+  }
+
+  body.siege-mode .siege-loadout .siege-deploy-panel h2 {
+    display: none;
+  }
+
+  body.siege-mode .siege-loadout .siege-deploy-summary {
+    font-size: .72rem;
+  }
+
+  body.siege-mode .siege-loadout .siege-launch-button {
+    min-height: 42px;
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  body.siege-mode .siege-loadout .shop-turrets {
+    scroll-behavior: auto;
+  }
+}
