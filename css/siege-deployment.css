@@ -1,0 +1,124 @@
+/* Player-led pre-siege deployment: no timer until they press their own battle cry. */
+.siege-deploy-panel {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:14px 22px;
+  padding:15px clamp(15px,2vw,24px);
+  background:linear-gradient(110deg,#203720,#101c22 48%,#151526);
+  border:2px solid rgba(133,231,111,.6);
+  border-radius:15px;
+  box-shadow:inset 0 0 23px rgba(122,240,85,.08), 0 8px 25px rgba(0,0,0,.3);
+}
+.siege-deploy-panel[hidden],.siege-bonus-panel[hidden] {display:none!important;}
+.siege-deploy-copy {min-width:0;flex:1 1 350px;}
+.siege-deploy-eyebrow,.siege-bonus-eyebrow {
+  color:#affb9c;font-size:.72rem;font-weight:900;letter-spacing:.11em;
+}
+.siege-deploy-panel h2 {
+  margin:5px 0 4px;
+  color:#fff1c6;
+  font-family:var(--font-display);
+  font-size:clamp(1.45rem,2.3vw,2.1rem);font-weight:400;
+}
+.siege-deploy-panel p {
+  margin:0;
+  color:#dfedda;
+  line-height:1.45;
+  font-size:.87rem;
+}
+.siege-deploy-summary {
+  margin-top:9px;
+  color:#b8ffd3;
+  font-size:.83rem;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+.siege-launch-button {
+  flex:0 1 260px;
+  min-width:215px;
+  min-height:68px;
+  padding:11px 17px;
+  border-radius:13px;
+  border:2px solid #ffe18a;
+  background:linear-gradient(180deg,#ffeb8a,#ffb235 53%,#e97a20);
+  color:#2a1102;
+  font-family:var(--font-display);
+  font-size:clamp(1.3rem,2vw,1.8rem);
+  letter-spacing:.025em;
+  cursor:pointer;
+  box-shadow:0 5px 0 #8f4c10,0 8px 22px rgba(255,145,36,.25);
+  transition:transform .15s ease,filter .15s ease;
+}
+.siege-launch-button:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.12);}
+.siege-launch-button:active:not(:disabled){transform:translateY(2px);box-shadow:0 2px 0 #8f4c10;}
+.siege-launch-button:disabled {
+  opacity:.55;
+  filter:grayscale(.6);
+  box-shadow:none;
+  cursor:not-allowed;
+}
+.siege-bonus-panel {
+  position:absolute;
+  z-index:11;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(6,8,18,.84);
+  backdrop-filter:blur(7px);
+  padding:clamp(12px,3vw,35px);
+}
+.siege-bonus-content {
+  width:min(100%,640px);
+  padding:clamp(19px,3vw,35px);
+  border:2px solid #ffd974;
+  border-radius:17px;
+  text-align:center;
+  background:linear-gradient(140deg,#302047,#111b2d);
+  box-shadow:0 0 36px rgba(255,192,66,.25);
+  color:#fff3db;
+}
+.siege-bonus-content h2 {
+  margin:8px 0 11px;
+  font-family:var(--font-display);
+  font-weight:400;
+  font-size:clamp(1.7rem,3vw,3rem);
+  color:#ffde84;
+}
+.siege-bonus-content p {
+  font-size:clamp(.9rem,1.35vw,1.05rem);
+  line-height:1.5;
+  margin:0 auto 19px;
+  max-width:510px;
+}
+.siege-bonus-content p strong{color:#baffaa;}
+.siege-bonus-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;}
+.siege-bonus-actions button {
+  min-height:53px;padding:10px 19px;
+  border-radius:10px;
+  border:1px solid #ffd883;
+  background:#f1af3e;
+  color:#24100a;
+  font-family:var(--font-display);
+  font-size:1.3rem;
+  cursor:pointer;
+}
+#btn-bonus-decline{
+  background:#24203a;color:#ffeac1;
+}
+.siege-launch-button:focus-visible,.siege-bonus-actions button:focus-visible {
+  outline:3px solid white;outline-offset:3px;
+}
+@media(max-width:650px) {
+  .siege-deploy-panel {padding:12px;}
+  .siege-launch-button {flex:1 1 100%;min-height:55px;}
+  .siege-bonus-panel {padding:8px;}
+  .siege-bonus-content {padding:13px;}
+  .siege-bonus-content p {font-size:.8rem;}
+  .siege-bonus-actions button {min-height:46px;font-size:1.1rem;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .siege-launch-button{transition:none;}
+}
