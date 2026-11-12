@@ -17,13 +17,13 @@ import { renderHome, renderMissionControl, renderTopbarBadges } from './home.js?
 import { renderPowerCore } from './power-core.js?v=20261112e';
 import { initHowToPlay } from './how-to-play.js';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
-import { initTimesTables } from './times-tables.js?v=20260819b';
-import { initMeasurementLength } from './measurement-length.js?v=20260819b';
-import { initFractions } from './fractions.js?v=20260819b';
-import { initAnglesShapes } from './angles-shapes.js?v=20260819b';
-import { initMathsQuest } from './maths-quest.js?v=20260819b';
-import { initExpandedMath } from './expanded-maths.js?v=20260819b';
-import { initBattlePrep } from './battle-prep.js?v=20260819b';
+import { initTimesTables } from './times-tables.js?v=20261112e';
+import { initMeasurementLength } from './measurement-length.js?v=20261112e';
+import { initFractions } from './fractions.js?v=20261112e';
+import { initAnglesShapes } from './angles-shapes.js?v=20261112e';
+import { initMathsQuest } from './maths-quest.js?v=20261112e';
+import { initExpandedMath } from './expanded-maths.js?v=20261112e';
+import { initBattlePrep } from './battle-prep.js?v=20261112e';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js';
 import {
   normalizeLevelMastery,
