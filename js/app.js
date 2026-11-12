@@ -1094,11 +1094,13 @@ function onForgeSuccess(rewards) {
   run.runForgeXpEarned = forgeXp;
   run.selectedTurret = null;
   battlePrepCoinBonus = 0;
-  if (forgeXp > 0) creditForgeXp(forgeXp);
-  completeTrainingSession('place-value-siege', level, 1);
-  const placeValueTopic = getTopic('place-value-siege');
-  if (forgeXp > 0 && placeValueTopic) {
-    creditTopicTraining(placeValueTopic);
+  // The normal maths-to-siege route skips the old Place Value forge.
+  // Only award its one-question credit when the puzzle was actually played.
+  if (forgeXp > 0) {
+    creditForgeXp(forgeXp);
+    completeTrainingSession('place-value-siege', level, 1);
+    const placeValueTopic = getTopic('place-value-siege');
+    if (placeValueTopic) creditTopicTraining(placeValueTopic);
   }
   const xpLine =
     forgeXp > 0
