@@ -123,55 +123,57 @@
       <div class="siege-layout">
         <div class="siege-battle-zone">
           <div class="siege-canvas-wrap">
-          <div id="siege-bonus-panel" class="siege-bonus-panel" hidden role="dialog" aria-modal="false" aria-labelledby="siege-bonus-title">
-          <div class="siege-bonus-content">
-          <span class="siege-bonus-eyebrow">GRANNY SURVIVED THE MINUTE!</span>
-          <h2 id="siege-bonus-title">BONUS ASSAULT UNLOCKED!</h2>
-          <p>You earned <strong id="siege-bonus-seconds">+15 seconds</strong> by doing extra maths. Your first victory is safe, even if the aliens fight back!</p>
-          <div class="siege-bonus-actions">
-          <button type="button" id="btn-bonus-accept">ONE MORE ROUND!</button>
-          <button type="button" id="btn-bonus-decline">BANK THE WIN</button>
+            <div id="siege-bonus-panel" class="siege-bonus-panel" hidden role="dialog" aria-modal="false" aria-labelledby="siege-bonus-title">
+              <div class="siege-bonus-content">
+                <span class="siege-bonus-eyebrow">GRANNY SURVIVED THE MINUTE!</span>
+                <h2 id="siege-bonus-title">BONUS ASSAULT UNLOCKED!</h2>
+                <p>You earned <strong id="siege-bonus-seconds">+15 seconds</strong> by doing extra maths. Your first victory is safe, even if the aliens fight back!</p>
+                <div class="siege-bonus-actions">
+                  <button type="button" id="btn-bonus-accept">ONE MORE ROUND!</button>
+                  <button type="button" id="btn-bonus-decline">BANK THE WIN</button>
+                </div>
+              </div>
+            </div>
+            <canvas id="siege-canvas" aria-label="Siege field"></canvas>
+            <div class="wave-controls">
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-speed" data-speed="1">1×</button>
+            </div>
           </div>
-          </div>
-          </div>
-          <canvas id="siege-canvas" aria-label="Siege field"></canvas>
-          <div class="wave-controls">
-          <button type="button" class="btn btn-ghost btn-sm" id="btn-speed" data-speed="1">1×</button>
-          </div>
-          </div>
+
           <div class="siege-battle-footer">
             <div class="siege-command-bar">
-            <div id="nuke-cache-panel" class="nuke-cache-panel" hidden>
-            <div class="nuke-cache-visual" id="nuke-cache-visual" style="--fill: 0%">
-            <img class="nuke-cache-img nuke-cache-ghost" src="assets/cupcake-missile.png" width="66" height="89" alt="" />
-            <img class="nuke-cache-img nuke-cache-lit" id="nuke-cache-lit" src="assets/cupcake-missile.png" width="66" height="89" alt="" />
+              <div id="nuke-cache-panel" class="nuke-cache-panel" hidden>
+                <div class="nuke-cache-visual" id="nuke-cache-visual" style="--fill: 0%">
+                  <img class="nuke-cache-img nuke-cache-ghost" src="assets/cupcake-missile.png" width="66" height="89" alt="" />
+                  <img class="nuke-cache-img nuke-cache-lit" id="nuke-cache-lit" src="assets/cupcake-missile.png" width="66" height="89" alt="" />
+                </div>
+                <div class="nuke-cache-info">
+                  <span class="nuke-cache-title">Nuke cache</span>
+                  <span id="nuke-cache-progress" class="nuke-cache-progress">0 / 50</span>
+                  <span id="nuke-cache-status" class="nuke-cache-status">Blast aliens to fill</span>
+                </div>
+              </div>
+              <button type="button" class="btn btn-fire-nukes" id="btn-fire-nukes" hidden disabled>Fire nukes</button>
             </div>
-            <div class="nuke-cache-info">
-            <span class="nuke-cache-title">Nuke cache</span>
-            <span id="nuke-cache-progress" class="nuke-cache-progress">0 / 50</span>
-            <span id="nuke-cache-status" class="nuke-cache-status">Blast aliens to fill</span>
-            </div>
-            </div>
-            <button type="button" class="btn btn-fire-nukes" id="btn-fire-nukes" hidden disabled>Fire nukes</button>
-            </div>
+
             <section id="siege-deploy-panel" class="siege-deploy-panel" aria-label="Build your defences before the aliens arrive" hidden>
-            <div class="siege-deploy-copy">
-            <span class="siege-deploy-eyebrow">PHASE ONE · BUILD YOUR DEFENCES</span>
-            <h2>YOUR LAWN. YOUR RULES.</h2>
-            <p id="siege-deploy-instruction">Choose a turret below, then click an empty grass square to build. Keep building until you're ready.</p>
-            <div id="siege-deploy-summary" class="siege-deploy-summary" aria-live="polite"></div>
-            </div>
-            <button type="button" class="siege-launch-button" id="btn-launch-siege" disabled aria-label="Launch the alien attack">
-            BRING IT ON!
-            </button>
+              <div class="siege-deploy-copy">
+                <span class="siege-deploy-eyebrow">PHASE ONE · BUILD YOUR DEFENCES</span>
+                <p id="siege-deploy-instruction">Tap a grass square to place your first turret.</p>
+                <div id="siege-deploy-summary" class="siege-deploy-summary" aria-live="polite"></div>
+              </div>
+              <button type="button" class="siege-launch-button" id="btn-launch-siege" disabled aria-label="Launch the alien attack">
+                BRING IT ON!
+              </button>
             </section>
             <div class="siege-footer-spacer" aria-hidden="true"></div>
           </div>
         </div>
+
         <aside class="siege-loadout" aria-label="Your siege turrets">
           <div class="siege-loadout-heading">
-          <strong>YOUR TURRETS</strong>
-          <span>Choose a weapon, then tap the lawn.</span>
+            <strong>YOUR TURRETS</strong>
+            <span>Choose a weapon, then tap the lawn.</span>
           </div>
           <div id="shop-bar" class="shop-bar"></div>
         </aside>
