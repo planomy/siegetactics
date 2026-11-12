@@ -457,7 +457,7 @@ export function renderMissionControl(host, state) {
         <div class="mission-control-track" role="progressbar" aria-label="Maths progress towards siege" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${attack.done}">
           <div class="mission-control-fill" style="width: ${progress}%"></div>
         </div>
-        ${attack.open ? `<div class="mission-bonus-progress">${earnedBonus === 30 ? '★ BONUS +30s' : earnedBonus === 15 ? '★ BONUS +15s · NEXT +30s' : `★ BONUS +15s AT ${15} QUESTIONS`}</div>` : ''}
+        ${attack.open ? `<div class="mission-bonus-progress">${earnedBonus === 30 ? '★ BONUS +30s' : earnedBonus === 15 ? '★ BONUS +15s · NEXT +30s' : '★ +15s AT 15 QUESTIONS'}</div>` : ''}
       </div>
       <div class="mission-control-metrics">
         <div><span>FORGE XP</span><strong id="mission-control-xp">${state.xp.toLocaleString()}</strong></div>
@@ -491,7 +491,7 @@ export function renderHome(host, state) {
     <div class="mission-home">
       <header class="mission-workspace-heading">
         <span class="mission-kicker">MATHS HQ</span>
-        <h1>Choose your maths mission</h1>
+        <h1>Maths missions</h1>
       </header>
       <section class="mission-mixed-card" aria-label="Mixed maths mission">
         <div class="mission-mixed-symbol" aria-hidden="true">⚡</div>
@@ -507,7 +507,7 @@ export function renderHome(host, state) {
       <section class="mission-topic-section" aria-label="Maths topics">
         <div class="mission-topic-heading">
           <div>
-            <h2>Or choose a topic</h2>
+            <h2>Topics</h2>
           </div>
           <div class="mission-level-control">
             <div class="mission-level-intro">
