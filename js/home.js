@@ -339,7 +339,7 @@ function renderInboundRadar(attack, open) {
           <span class="inbound-radar-unit">${drillCaption}</span>
         </div>
       </div>
-      <p class="inbound-radar-label">Finish 10 maths questions to earn a siege</p>
+      <p class="inbound-radar-label">${attack.remaining <= 2 ? 'Aliens nearly at Granny’s house!' : attack.remaining <= 5 ? 'Radar warning: enemy getting closer!' : 'Red blips move closer as you answer maths'}</p>
       <button type="button" class="gb-forge-btn gb-attack-hero-cta" id="btn-hold-line">START ${attack.remaining}-QUESTION MISSION</button>
     </div>
   `;
@@ -423,6 +423,12 @@ export function renderMissionControl(host, state) {
   const sectors = mapPiecesEarned(state.mapProgress);
   const progress = Math.round(attack.pct * 100);
   const label = attack.open ? 'BATTLE READY' : 'EARN YOUR NEXT SIEGE';
+  host.dataset.threat = attack.urgency;
+  const threatMessage = attack.open ? 'CONTACT! DEFEND GRANNY NOW!'
+    : attack.remaining <= 2 ? 'DANGER: ALIENS AT THE FENCE!'
+    : attack.remaining <= 5 ? 'WARNING: ALIENS CLOSING IN!'
+    : attack.remaining <= 8 ? 'ENEMY SIGNAL DETECTED'
+    : 'DISTANT ALIEN SIGNAL';
   host.innerHTML = `
     <div class="mission-control-inner">
       <div class="mission-control-heading">
@@ -430,9 +436,10 @@ export function renderMissionControl(host, state) {
         <h2 class="mission-control-greeting">${first ? 'Welcome' : 'Welcome back'}, <span>${escapeHtml(state.playerName)}</span></h2>
         <p>Do maths. Earn defences. Save Granny.</p>
       </div>
-      <div class="mission-control-radar" aria-label="Progress towards the next defence">
+      <div class="mission-control-radar" aria-label="Alien radar and progress towards the next defence">
         ${renderInboundRadar(attack, attack.open)}
       </div>
+      <div class="mission-control-alert" data-urgency="${attack.urgency}">${threatMessage}</div>
       <div class="mission-control-progress">
         <div class="mission-control-progress-line">
           <strong>${label}</strong>
