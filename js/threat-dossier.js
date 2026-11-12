@@ -274,7 +274,7 @@ function liveTimestamp() {
 export function renderThreatDossier(contact, attack) {
   const urgencyClass = contact ? 'threat-dossier-contact' : `threat-dossier-${attack.urgency}`;
   return `
-    <aside class="threat-dossier ${urgencyClass}" aria-hidden="true">
+    <aside class="threat-dossier ${urgencyClass}" role="group" aria-label="Alien blueprints and defeated enemy totals">
       <div class="threat-dossier-frame">
         <div class="threat-dossier-bar">
           <span class="threat-dossier-stamp">TOP SECRET // EYES ONLY</span>
@@ -297,6 +297,7 @@ export function renderThreatDossier(contact, attack) {
               <span class="threat-codename">TRI-EYE</span>
               <span class="threat-designation">BIO-MECH SCOUT</span>
               <span class="threat-file">FILE XB-7734-C · TL-IV</span>
+              <span class="threat-dossier-kills">DESTROYED <strong class="threat-dossier-kills-count">0</strong></span>
             </div>
             <div class="threat-hex-rail" aria-hidden="true">
               <div class="threat-hex-rail-inner"></div>
@@ -388,7 +389,7 @@ function buildHexRail(dossier) {
 
 /**
  * @param {HTMLElement|null} root
- * @param {{ contact?: boolean, urgency?: string }} [opts]
+ * @param {{ contact?: boolean, urgency?: string, defeatedByType?: Record<string,number> }} [opts]
  */
 export function initThreatDossier(root, opts = {}) {
   if (!root) return () => {};
@@ -397,6 +398,7 @@ export function initThreatDossier(root, opts = {}) {
   const codenameEl = root.querySelector('.threat-codename');
   const designationEl = root.querySelector('.threat-designation');
   const fileEl = root.querySelector('.threat-file');
+  const defeatEl = root.querySelector('.threat-dossier-kills-count');
   const scrollInner = root.querySelector('.threat-dossier-scroll-inner');
   const metersEl = root.querySelector('.threat-dossier-meters');
   const tickerEl = root.querySelector('.threat-dossier-ticker');
@@ -419,6 +421,7 @@ export function initThreatDossier(root, opts = {}) {
     if (codenameEl) codenameEl.textContent = dossier.codename;
     if (designationEl) designationEl.textContent = dossier.designation;
     if (fileEl) fileEl.textContent = `FILE ${dossier.file} · TL-${dossier.threat}`;
+    if (defeatEl) defeatEl.textContent = Math.max(0, Number(opts.defeatedByType?.[dossier.key ?? '']) || 0).toLocaleString();
     scrollInner.innerHTML = buildScrollHtml(dossier);
     metersEl.innerHTML = buildMetersHtml(dossier);
     tickerEl.textContent = buildTickerText(dossier);
