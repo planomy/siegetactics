@@ -1,0 +1,58 @@
+/*
+ * Granny Boom: the site header stays fixed at the top of the scrolling page.
+ * Keep the sticky radar, defence forge, and deployment controls below it,
+ * even as the header changes height when badges wrap or mobile layout switches.
+ */
+:root {
+  --gb-sticky-header-height: 80px;
+  --gb-sticky-header-gap: 12px;
+}
+
+html {
+  scroll-padding-top: calc(var(--gb-sticky-header-height) + var(--gb-sticky-header-gap));
+}
+
+/* css/main.css deliberately sets .gb-topbar to relative; override both
+   selectors here, after all of the main stylesheets have loaded. */
+.topbar.gb-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  background: #0c0a14;
+  isolation: isolate;
+}
+
+/* Keep existing pinned panels fully visible instead of letting them
+   slide underneath the newly persistent header. */
+body.mission-mode .mission-control,
+body.mission-mode .mission-power {
+  top: calc(var(--gb-sticky-header-height) + var(--gb-sticky-header-gap));
+}
+
+body.mission-mode .mission-control {
+  max-height: calc(100dvh - var(--gb-sticky-header-height) - 24px);
+}
+
+/* The big battle cry remains reachable while the player scrolls the field. */
+.siege-deploy-panel {
+  top: calc(var(--gb-sticky-header-height) + 8px);
+}
+
+@media (max-width: 870px) {
+  /* Stacking the panels is more usable than pinning an entire sidebar
+     beneath a two-row mobile header. The header itself stays pinned. */
+  body.mission-mode .mission-control,
+  body.mission-mode .mission-power {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-height: 560px) and (min-width: 871px) {
+  /* Give very short laptop viewports enough room for the main question. */
+  body.mission-mode .mission-control,
+  body.mission-mode .mission-power {
+    position: static;
+    max-height: none;
+  }
+}

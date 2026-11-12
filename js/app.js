@@ -136,6 +136,24 @@ const screens = {
 
 const xpDisplay = document.getElementById('topbar-xp');
 const missionShell = document.getElementById('mission-shell');
+
+/* Keep all sticky panels in the correct position on desktop and mobile.
+   The topbar's height changes when achievement badges wrap. */
+const topbarForOffset = document.querySelector('.topbar');
+function syncStickyHeaderOffset() {
+  if (!topbarForOffset) return;
+  const height = Math.ceil(topbarForOffset.getBoundingClientRect().height);
+  if (height > 0) {
+    document.documentElement.style.setProperty('--gb-sticky-header-height', `${height}px`);
+  }
+}
+syncStickyHeaderOffset();
+if (topbarForOffset && typeof ResizeObserver !== 'undefined') {
+  const headerObserver = new ResizeObserver(syncStickyHeaderOffset);
+  headerObserver.observe(topbarForOffset);
+} else {
+  window.addEventListener('resize', syncStickyHeaderOffset);
+}
 let lastTrainingAnswerCorrect = null;
 const LEARNING_SCREENS = new Set([
   'home', 'timesTables', 'measurement', 'fractions', 'angles',

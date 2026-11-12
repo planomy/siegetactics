@@ -393,3 +393,44 @@ body.mission-mode #app {
   .forge-mote.is-live { opacity: .55; visibility: visible; transform: translateX(calc(var(--forge-radius) * .36)); }
   .forge-charge-flare { opacity: 0; }
 }
+
+
+/* The turret itself wakes and moves once maths starts. Ambient rings and
+   particles were already animated; this adds visible weapon movement. */
+.power-rig:not([data-stage="offline"]) .power-turret-main {
+  animation: forge-turret-hover 3.5s ease-in-out infinite;
+}
+
+.power-rig[data-stage="nearly"] .power-turret-main,
+.power-rig[data-stage="ready"] .power-turret-main {
+  animation-duration: 2s;
+}
+
+.power-rig[data-stage="charged"] .power-turret-left img,
+.power-rig[data-stage="nearly"] .power-turret-left img,
+.power-rig[data-stage="ready"] .power-turret-left img {
+  animation: forge-side-weapon 2.8s ease-in-out infinite;
+}
+
+.power-rig[data-stage="nearly"] .power-turret-right img,
+.power-rig[data-stage="ready"] .power-turret-right img {
+  animation: forge-side-weapon 2.4s ease-in-out -.65s infinite;
+}
+
+@keyframes forge-turret-hover {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@keyframes forge-side-weapon {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-5px) rotate(2deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .power-rig .power-turret-main,
+  .power-rig .power-turret-left img,
+  .power-rig .power-turret-right img {
+    animation: none !important;
+  }
+}
