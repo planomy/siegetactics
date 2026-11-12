@@ -526,37 +526,117 @@ body.mission-mode #app {
 }
 
 
-/* One unambiguous difficulty selection. Do not visually promote a second level. */
+/* The original four-button level picker, with the XP pay-off visible on every button.
+   Only the selected difficulty is accented. No competing "recommended" highlights. */
 .mission-level-control {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
-  gap: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.mission-level-control label {
-  color: #c9bfdc;
-  font-size: 0.77rem;
-  font-weight: 800;
+.mission-level-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mission-level-title {
+  color: #d7c8e7;
+  font-size: 0.78rem;
+  font-weight: 900;
   letter-spacing: 0.1em;
 }
 
-.mission-level-select {
-  min-width: 118px;
-  min-height: 45px;
-  padding: 8px 36px 8px 14px;
-  border: 1px solid rgba(226, 171, 79, 0.7);
-  border-radius: 11px;
-  background-color: #171124;
-  color: #fff5db;
-  font: inherit;
-  font-size: 1rem;
-  font-weight: 800;
-  cursor: pointer;
-  color-scheme: dark;
+.mission-level-hint {
+  color: #c9bfd7;
+  font-size: 0.74rem;
+  font-weight: 700;
+  max-width: 150px;
+  line-height: 1.2;
 }
 
-.mission-level-select:focus-visible {
+.mission-level-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid rgba(129, 103, 168, 0.5);
+  border-radius: 14px;
+  background: rgba(9, 7, 21, 0.85);
+}
+
+.mission-level-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 70px;
+  min-height: 65px;
+  padding: 7px 4px 6px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: rgba(33, 27, 49, 0.88);
+  color: #e2d9f2;
+  cursor: pointer;
+  font-family: var(--font-display);
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.mission-level-option:hover:not(.is-selected) {
+  border-color: rgba(255, 205, 115, 0.45);
+  background: rgba(57, 42, 74, 0.98);
+}
+
+.mission-level-option.is-selected {
+  border-color: #ffac35;
+  background: linear-gradient(180deg, #45301c, #30201a);
+  box-shadow: 0 0 0 1px rgba(255, 173, 53, 0.25), inset 0 0 14px rgba(255, 173, 53, 0.13);
+  color: #ffda83;
+}
+
+.mission-level-number {
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.mission-level-reward {
+  color: #c9bfd7;
+  font-family: Nunito, sans-serif;
+  font-size: 0.70rem;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.mission-level-option.is-selected .mission-level-reward {
+  color: #ffda83;
+}
+
+.mission-level-option:focus-visible {
   outline: 3px solid #ffd36b;
   outline-offset: 3px;
+}
+
+@media (max-width: 540px) {
+  .mission-level-control {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .mission-level-buttons {
+    gap: 3px;
+    padding: 4px;
+  }
+
+  .mission-level-option {
+    width: clamp(53px, 14vw, 70px);
+    min-height: 58px;
+  }
+
+  .mission-level-reward {
+    font-size: 0.65rem;
+  }
 }
