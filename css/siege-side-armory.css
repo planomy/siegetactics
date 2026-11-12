@@ -1,7 +1,7 @@
 /*
- * Siege battlefield is the hero; turrets and launch live in a permanent
- * right-hand command rail instead of below the canvas. On narrow screens,
- * replace that rail with a compact fixed-bottom turret dock.
+ * Battlefield left, full turret command rail right, compact launch card
+ * centred directly beneath the field. On narrow screens the arsenal becomes
+ * a horizontal bottom dock; the launch remains underneath the field.
  */
 body.siege-mode #app {
   max-width: 1640px;
@@ -350,5 +350,197 @@ body.siege-mode .siege-layout.is-battle-done .siege-loadout {
 @media (prefers-reduced-motion:reduce) {
   body.siege-mode .siege-loadout .shop-turrets {
     scroll-behavior: auto;
+  }
+}
+
+
+/* Launch now lives BELOW the field, centred in the unused footer space.
+   The right-hand arsenal contains turrets only, so the shop gets the full
+   height of the rail instead of sacrificing its first 260px to a banner. */
+body.siege-mode .siege-battle-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 520px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+body.siege-mode .siege-battle-footer .siege-command-bar {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7px;
+  padding: 0;
+}
+
+body.siege-mode .siege-battle-footer .siege-command-bar .btn-fire-nukes {
+  margin-left: 0;
+  max-width: 100%;
+}
+
+body.siege-mode .siege-battle-footer .siege-deploy-panel {
+  position: static;
+  top: auto;
+  z-index: auto;
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(205px, .92fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid rgba(129,231,109,.65);
+  border-radius: 12px;
+  box-shadow: inset 0 0 15px rgba(120,239,95,.07), 0 5px 15px rgba(0,0,0,.2);
+}
+
+body.siege-mode .siege-battle-footer .siege-deploy-copy {
+  min-width: 0;
+  flex: auto;
+}
+
+body.siege-mode .siege-battle-footer .siege-deploy-panel h2 {
+  display: none;
+}
+
+body.siege-mode .siege-battle-footer .siege-deploy-eyebrow {
+  display: block;
+  font-size: .7rem;
+  line-height: 1.15;
+}
+
+body.siege-mode .siege-battle-footer .siege-deploy-panel p {
+  margin: 5px 0 0;
+  color: #dfebdd;
+  font-size: .78rem;
+  line-height: 1.2;
+}
+
+body.siege-mode .siege-battle-footer .siege-deploy-summary {
+  margin: 5px 0 0;
+  font-size: .8rem;
+  line-height: 1.3;
+}
+
+body.siege-mode .siege-battle-footer .siege-launch-button {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 61px;
+  padding: 8px 12px;
+  font-size: clamp(1.25rem, 1.6vw, 1.65rem);
+  line-height: 1.05;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+body.siege-mode .siege-footer-spacer {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+/* Shorter desktop viewports still get the full turret rail, with the
+   launch card and nuke controls stacked under the field if needed. */
+@media (min-width: 960px) and (max-width: 1399px) {
+  body.siege-mode .siege-battle-footer {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 8px;
+  }
+
+  body.siege-mode .siege-battle-footer .siege-deploy-panel {
+    grid-column: 1;
+    grid-row: 1;
+    max-width: 520px;
+  }
+
+  body.siege-mode .siege-battle-footer .siege-command-bar {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  body.siege-mode .siege-footer-spacer {
+    display: none;
+  }
+}
+
+@media (max-width: 959px) {
+  /* Turrets remain in the bottom dock, but the battle cry stays below the
+     FIELD, not inside the dock where it would steal turret space. */
+  body.siege-mode #app {
+    padding-bottom: max(155px, calc(135px + env(safe-area-inset-bottom, 0px)));
+  }
+
+  body.siege-mode .siege-battle-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding-top: 4px;
+  }
+
+  body.siege-mode .siege-battle-footer .siege-deploy-panel {
+    width: 100%;
+    max-width: 520px;
+    grid-template-columns: minmax(0,1fr) minmax(165px,41%);
+    padding: 10px;
+    gap: 8px;
+    order: -1;
+  }
+
+  body.siege-mode .siege-battle-footer .siege-launch-button {
+    min-height: 49px;
+    font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  }
+
+  body.siege-mode .siege-battle-footer .siege-command-bar {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  body.siege-mode .siege-footer-spacer {
+    display: none;
+  }
+
+  body.siege-mode .siege-loadout {
+    max-height: min(25dvh, 160px);
+  }
+
+  body.siege-mode .siege-loadout .shop-bar {
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 490px) {
+  body.siege-mode .siege-battle-footer .siege-deploy-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(140px, 47%);
+  }
+
+  body.siege-mode .siege-battle-footer .siege-deploy-panel p {
+    font-size: .71rem;
+  }
+
+  body.siege-mode .siege-battle-footer .siege-deploy-summary {
+    font-size: .7rem;
+  }
+
+  body.siege-mode .siege-battle-footer .siege-launch-button {
+    font-size: 1.05rem;
+    min-height: 48px;
+    padding: 7px;
   }
 }
