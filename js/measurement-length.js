@@ -328,6 +328,7 @@ function pick(arr) {
  * @param {{
  *   difficultyLevel: DifficultyLevel,
  *   onAwardXp: (amount: number) => void,
+ *   onAnswer?: (right: boolean) => void,
  *   onSessionComplete: (result: { accuracy: number, passed: boolean }) => void,
  *   onHome: () => void,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
@@ -442,6 +443,7 @@ export function initMeasurementLength(host, callbacks) {
           });
         }
 
+        callbacks.onAnswer?.(right);
         clearAnswerTimer();
         answerTimer = setTimeout(() => {
           answerTimer = null;
