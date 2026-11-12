@@ -50,6 +50,6 @@ test('small screens continue to use fewer columns and CSS assets are loaded fres
   assert.match(css, /@media \(max-width: 540px\)/);
   assert.match(css, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(html, /ten-topic-dashboard\.css\?v=20261112l/);
-  assert.match(html, /app\.js\?v=20261112l/);
-  assert.match(app, /home\.js\?v=20261112l/);
+  assert.match(html, /app\.js\?v=20261112r/);
+  assert.match(app, /home\.js\?v=20261112r/);
 });
