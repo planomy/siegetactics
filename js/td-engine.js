@@ -101,11 +101,14 @@ const { ENEMY_PATHS, TURRET_ROWS } = FIELD_LAYOUT;
  *   mission: import('./missions-data.js').Mission,
  *   getBudget: () => number,
  *   trySpend: (type: string) => boolean,
- *   onMissionEnd: (stats: { kills: number, leaks: number, won: boolean, maxLeaks: number, wavesCleared: number }) => void,
+ *   onMissionEnd: (stats: { kills: number, leaks: number, won: boolean, maxLeaks: number, wavesCleared: number, bonusKills?: number, bonusPlayed?: boolean }) => void,
+ *   onBonusOffer?: (seconds: number) => void,
+ *   bonusSiegeSec?: number,
+ *   firstSiege?: boolean,
  *   onKillReward?: (info: { isBoss: boolean, xp: number }) => void,
  *   onWaveCleared?: (info: { wave: number, nextWave: number|null }) => void,
  *   onLeak?: (info: { leaks: number, maxLeaks: number, penalty: number }) => void,
- *   onPhaseChange?: (phase: 'deploy'|'announce'|'wave'|'done') => void,
+ *   onPhaseChange?: (phase: 'deploy'|'announce'|'wave'|'bonus-offer'|'finale'|'done') => void,
  *   audio?: {
  *     playTurretFire: (type: string) => void,
  *     playNukeFire: () => void,
@@ -175,6 +178,10 @@ export function createTDEngine(canvas, opts) {
   let siegeTimeLeft = 0;
   let siegeTimerEnded = false;
   let siegeArmed = false;
+  let bonusPlayed = false;
+  let bonusOffered = false;
+  let baseLeaks = 0;
+  let baseKills = 0;
 
   function syncNukeUi() {
     if (!opts.onNukeStateChange) return;
@@ -195,7 +202,7 @@ export function createTDEngine(canvas, opts) {
     return Boolean(opts.grannyEnabled);
   }
 
-  let phase = /** @type {'deploy'|'announce'|'wave'|'finale'|'done'} */ ('deploy');
+  let phase = /** @type {'deploy'|'announce'|'wave'|'bonus-offer'|'finale'|'done'} */ ('deploy');
   /** @type {{ won: boolean, startedAt: number }|null} */
   let pendingMissionEnd = null;
   let waveTime = 0;
@@ -226,8 +233,8 @@ export function createTDEngine(canvas, opts) {
   /** @type {Record<string, HTMLImageElement>} */
   let enemySprites = {};
 
-  const siegeDuration =
-    (opts.mission.siegeDurationSec ?? SIEGE_DURATION_SEC) + (opts.bonusSiegeSec ?? 0);
+  const siegeDuration = opts.mission.siegeDurationSec ?? SIEGE_DURATION_SEC;
+  const bonusAvailable = Math.max(0, Math.min(30, opts.bonusSiegeSec || 0));
   const maxLeaks = opts.mission.maxLeaks ?? 5;
   const leakCoinPenalty = opts.mission.leakCoinPenalty ?? ECONOMY.leakCoinPenalty;
   const killBudgetXp = opts.mission.killBudgetXp ?? 1;
@@ -384,6 +391,7 @@ export function createTDEngine(canvas, opts) {
     const waveNum = wavesCompleted + 1;
     return waveConfigFor(waveNum, {
       spawnGranddaddy: opts.spawnGranddaddy && !granddaddySpawnedThisSiege && waveNum >= 3,
+      firstSiege: Boolean(opts.firstSiege),
     });
   }
 
@@ -1151,7 +1159,7 @@ export function createTDEngine(canvas, opts) {
     });
 
     if (totalLeaks >= maxLeaks) {
-      requestMissionEnd(false);
+      requestMissionEnd(bonusPlayed);
       return;
     }
 
@@ -1202,15 +1210,44 @@ export function createTDEngine(canvas, opts) {
     if (!cfg) return;
 
     if (siegeTimerEnded || siegeTimeLeft <= 0) {
-      if (enemies.length === 0) {
-        requestMissionEnd(totalLeaks < maxLeaks);
-      }
+      if (enemies.length === 0) finishAtTimeLimit();
       return;
     }
 
     if (spawner.spawned >= cfg.totalSpawns && enemies.length === 0) {
       finishCurrentWave();
     }
+  }
+
+  /** Stop at the original minute and let students choose whether to play the
+   * earned extra time. Their 60-second result is locked in either way.
+   */
+  function finishAtTimeLimit() {
+    if (!bonusPlayed && !bonusOffered && bonusAvailable > 0 && totalLeaks < maxLeaks) {
+      bonusOffered = true;
+      baseLeaks = totalLeaks;
+      baseKills = totalKills;
+      opts.audio?.stopScuttling?.();
+      setPhase('bonus-offer');
+      opts.onBonusOffer?.(bonusAvailable);
+      return;
+    }
+    requestMissionEnd(bonusPlayed ? true : totalLeaks < maxLeaks);
+  }
+
+  /** Called only from an explicit user click on the bonus choice panel. */
+  function chooseBonusAssault(accept) {
+    if (phase !== 'bonus-offer') return false;
+    if (!accept) {
+      requestMissionEnd(true);
+      return true;
+    }
+    bonusPlayed = true;
+    siegeTimeLeft = bonusAvailable;
+    siegeTimerEnded = false;
+    opts.showToast(`BONUS ASSAULT! +${bonusAvailable}s. Your first victory is safe!`);
+    showWaveSplash(wavesCompleted + 1);
+    return true;
   }
 
   function showWaveSplash(waveNum) {
@@ -1288,7 +1325,7 @@ export function createTDEngine(canvas, opts) {
     projectiles = [];
     enemyShots = [];
     if (siegeTimeLeft <= 0 || siegeTimerEnded) {
-      requestMissionEnd(totalLeaks < maxLeaks);
+      finishAtTimeLimit();
       return;
     }
     showWaveSplash(wavesCompleted + 1);
@@ -1320,9 +1357,17 @@ export function createTDEngine(canvas, opts) {
     setPhase('done');
     cancelAnimationFrame(rafId);
     rafId = 0;
-    opts.onMissionEnd({ kills: totalKills, leaks: totalLeaks, won, maxLeaks, wavesCleared: wavesCompleted });
+    opts.onMissionEnd({
+      kills: totalKills,
+      leaks: bonusPlayed ? baseLeaks : totalLeaks,
+      won: bonusPlayed ? true : won,
+      maxLeaks,
+      wavesCleared: wavesCompleted,
+      bonusPlayed,
+      bonusKills: bonusPlayed ? Math.max(0, totalKills - baseKills) : 0,
+    });
     if (won) {
-      opts.showToast(`Time! ${wavesCompleted} wave${wavesCompleted === 1 ? '' : 's'} cleared.`);
+      opts.showToast(bonusPlayed ? 'Bonus assault complete! Granny keeps her victory!' : `Time! ${wavesCompleted} wave${wavesCompleted === 1 ? '' : 's'} cleared.`);
     } else if (!won && totalLeaks >= maxLeaks) {
       opts.showToast('Too many got through — Granny needs a redo!');
     }
@@ -1611,6 +1656,7 @@ export function createTDEngine(canvas, opts) {
     update(dt);
     render();
     if (shouldAnimate()) rafId = requestAnimationFrame(loop);
+    else rafId = 0;
   }
 
   function canvasCoords(clientX, clientY) {
@@ -1734,6 +1780,7 @@ export function createTDEngine(canvas, opts) {
       render();
     },
     startWave,
+    chooseBonusAssault,
     getWavesCompleted: () => wavesCompleted,
     setSpeed(mult) {
       speedMult = mult;
