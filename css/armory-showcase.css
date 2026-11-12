@@ -207,3 +207,150 @@
 @media (prefers-reduced-motion:reduce) {
   .armory-promo *,#weapon-unlock-notice {animation:none!important;transition:none!important;}
 }
+
+
+/* In the actual Armory, a large weapon preview makes the upgrade tangible. */
+.armory-feature {
+  display:grid;
+  grid-template-columns:minmax(210px,36%) minmax(0,1fr);
+  gap:clamp(14px,2vw,26px);
+  align-items:center;
+  margin:14px 0 24px;
+  padding:19px 24px;
+  border:1px solid rgba(237,177,87,.57);
+  border-radius:17px;
+  background:radial-gradient(ellipse at 20% 58%,rgba(169,89,28,.26),transparent 48%),linear-gradient(120deg,#20162f,#131020);
+}
+.armory-feature-visual {
+  position:relative;
+  min-height:242px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  isolation:isolate;
+}
+.armory-feature-aura {
+  position:absolute;
+  width:220px;
+  height:220px;
+  max-width:95%;
+  border-radius:50%;
+  background:radial-gradient(circle,var(--turret-color),transparent 65%);
+  filter:blur(31px);
+  opacity:.24;
+  animation:armory-ad-breathe 3.5s ease-in-out infinite;
+}
+.armory-feature-turret {
+  display:block;
+  position:relative;
+  width:100%;
+  max-height:230px;
+  object-fit:contain;
+  z-index:1;
+  filter:drop-shadow(0 8px 8px rgba(0,0,0,.55)) drop-shadow(0 0 18px var(--turret-color));
+  animation:armory-ad-float 3.8s ease-in-out infinite;
+}
+.armory-demo-lane {
+  position:absolute;
+  left:9%;right:5%;bottom:7px;
+  height:30px;
+  z-index:2;
+  overflow:hidden;
+}
+.armory-demo-lane::before {
+  content:'';
+  position:absolute;left:0;right:0;top:50%;
+  border-top:1px dashed rgba(200,158,231,.35);
+}
+.armory-demo-shot {
+  position:absolute;
+  left:-18px;top:9px;
+  width:19px;height:10px;
+  border-radius:70%;
+  background:#fff6b8;
+  box-shadow:0 0 6px 3px var(--turret-color),0 0 20px 4px var(--turret-color);
+  animation:armory-demo-shot 1.65s ease-in infinite;
+}
+.armory-demo-target {
+  position:absolute;
+  top:-2px;right:2px;
+  color:#fff5bd;
+  font-size:28px;
+  text-shadow:0 0 7px var(--turret-color);
+  animation:armory-target-flash 1.65s ease-in infinite;
+}
+.armory-feature[data-role="glue"] .armory-demo-shot,
+.armory-feature[data-role="freeze"] .armory-demo-shot {
+  border-radius:45%;width:24px;height:13px;
+  background:#8bfcdf;
+}
+.armory-feature[data-role="splash"] .armory-demo-shot {
+  width:25px;height:14px;
+}
+.armory-feature[data-role="magnet"] .armory-demo-shot,
+.armory-feature[data-role="repair"] .armory-demo-shot,
+.armory-feature[data-role="decoy"] .armory-demo-shot {
+  border-radius:50%;width:15px;height:15px;
+}
+.armory-feature-copy h3 {
+  margin:5px 0 8px;
+  font-family:var(--font-display);
+  color:#ffe6ad;
+  font-weight:400;
+  font-size:clamp(1.8rem,2.3vw,2.6rem);
+}
+.armory-feature-copy p {
+  margin:0 0 10px;color:#e6dbec;font-size:1.04rem;font-weight:700;
+}
+.armory-feature-eyebrow {
+  color:#ffc766;
+  font-size:.74rem;
+  font-weight:900;
+  letter-spacing:.1em;
+}
+.armory-feature-copy > strong {
+  display:inline-block;margin:0 0 12px;padding:7px 11px;
+  border-radius:8px;border:1px solid rgba(255,183,68,.5);
+  color:#ffe095;font-size:.8rem;letter-spacing:.03em;
+}
+.armory-feature-stats {
+  color:#d8d0e8;
+  font-size:.9rem;font-weight:800;
+  margin-bottom:9px;
+}
+.armory-feature-explain {
+  display:block;
+  color:#b9b0c6;
+  font-size:.82rem;
+  line-height:1.35;
+}
+.armory-grid-intro {
+  color:#dec7a2;font-size:.75rem;
+  font-weight:900;letter-spacing:.08em;
+  margin:10px 0;
+}
+.armory-card--previewing {
+  outline:2px solid #ffd06e;
+  outline-offset:2px;
+}
+@keyframes armory-demo-shot {
+  0%{transform:translateX(0) scale(.55);opacity:0;}
+  12%{opacity:1;}
+  80%{transform:translateX(195px) scale(1);opacity:1;}
+  100%{transform:translateX(240px) scale(.3);opacity:0;}
+}
+@keyframes armory-target-flash {
+  0%,75%,100%{transform:scale(1);opacity:.62;}
+  88%{transform:scale(1.65);opacity:1;}
+}
+@media(max-width:700px) {
+  .armory-feature {grid-template-columns:1fr;gap:3px;padding:15px;}
+  .armory-feature-visual {min-height:180px;}
+  .armory-feature-turret {max-height:185px;}
+  .armory-feature-copy {text-align:center;}
+  .armory-demo-lane {left:20%;right:20%;}
+}
+@media(prefers-reduced-motion:reduce){
+  .armory-feature *, .armory-feature-visual * {animation:none!important;}
+  .armory-demo-shot {left:48%;opacity:.65;}
+}
