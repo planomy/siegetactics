@@ -8,18 +8,33 @@ const layoutCSS = readFileSync(new URL('../css/siege-side-armory.css', import.me
 const shopJS = readFileSync(new URL('../js/shop.js', import.meta.url), 'utf8');
 const appJS = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 
-test('the battle canvas is not contained in the launch banner or turret rail', () => {
+test('the battle cry is centred beneath the field, not inside the turret shop', () => {
   const siege = html.split('<section id="screen-siege"')[1]?.split('<section id="screen-results"')[0];
   assert.ok(siege, 'siege section exists');
-  const zone = siege.match(/<div class="siege-battle-zone">([\s\S]*?)<\/div>\s*<aside class="siege-loadout"/);
-  assert.ok(zone, 'battlefield section followed by separate loadout');
-  assert.match(zone[1], /id="siege-canvas"/);
-  assert.doesNotMatch(zone[1], /id="siege-deploy-panel"/);
-  assert.doesNotMatch(zone[1], /id="shop-bar"/);
+  const field = siege.split('<div class="siege-canvas-wrap">')[1]?.split('<div class="siege-battle-footer">')[0];
+  const footer = siege.split('<div class="siege-battle-footer">')[1]?.split('<aside class="siege-loadout"')[0];
   const rail = siege.split('<aside class="siege-loadout"')[1];
-  assert.ok(rail.indexOf('id="btn-launch-siege"') >= 0);
-  assert.ok(rail.indexOf('id="shop-bar"') > rail.indexOf('id="btn-launch-siege"'));
+  assert.ok(field && footer && rail, 'battlefield, footer and turret rail all exist');
+  assert.match(field, /id="siege-canvas"/);
+  assert.doesNotMatch(field, /id="btn-launch-siege"/);
+  assert.match(footer, /id="siege-deploy-panel"/);
+  assert.match(footer, /id="btn-launch-siege"/);
+  assert.match(footer, /id="nuke-cache-panel"/);
+  assert.match(rail, /id="shop-bar"/);
+  assert.doesNotMatch(rail, /id="siege-deploy-panel"/);
+  assert.doesNotMatch(rail, /id="btn-launch-siege"/);
+  assert.ok(siege.indexOf('id="siege-canvas"') < siege.indexOf('id="btn-launch-siege"'));
 });
+
+test('the launch card stays compact and centred, giving the shop the full right rail', () => {
+  assert.match(layoutCSS, /\.siege-battle-footer\s*\{[\s\S]*grid-template-columns:/);
+  assert.match(layoutCSS, /\.siege-battle-footer \.siege-deploy-panel\s*\{[\s\S]*grid-column:\s*2;/);
+  assert.match(layoutCSS, /\.siege-battle-footer \.siege-deploy-panel\s*\{[\s\S]*position:\s*static;/);
+  assert.match(layoutCSS, /\.siege-battle-footer \.siege-command-bar\s*\{[\s\S]*grid-column:\s*1;/);
+  assert.match(layoutCSS, /\.siege-loadout \.shop-bar\s*\{[\s\S]*overflow-y:\s*auto;/);
+  assert.match(layoutCSS, /@media \(max-width: 959px\)/);
+});
+
 
 test('the command rail stays visible on desktop and becomes a compact mobile dock', () => {
   assert.match(layoutCSS, /\.siege-layout\s*\{[\s\S]*grid-template-columns:/);
