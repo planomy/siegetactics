@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="css/armory-showcase.css?v=20261112f" />
   <link rel="stylesheet" href="css/siege-deployment.css?v=20261112g" />
   <link rel="stylesheet" href="css/sticky-header.css?v=20261112h" />
+  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261112i" />
   <link rel="preload" href="assets/field.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/granny-boom-siege-logo.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/hero-village.png" as="image" type="image/png" />
@@ -120,17 +121,7 @@
 
     <section id="screen-siege" class="screen">
       <div class="siege-layout">
-        <section id="siege-deploy-panel" class="siege-deploy-panel" aria-label="Build your defences before the aliens arrive" hidden>
-          <div class="siege-deploy-copy">
-            <span class="siege-deploy-eyebrow">PHASE ONE · BUILD YOUR DEFENCES</span>
-            <h2>YOUR LAWN. YOUR RULES.</h2>
-            <p id="siege-deploy-instruction">Choose a turret below, then click an empty grass square to build. Keep building until you're ready.</p>
-            <div id="siege-deploy-summary" class="siege-deploy-summary" aria-live="polite"></div>
-          </div>
-          <button type="button" class="siege-launch-button" id="btn-launch-siege" disabled aria-label="Launch the alien attack">
-            BRING IT ON!
-          </button>
-        </section>
+        <div class="siege-battle-zone">
         <div class="siege-canvas-wrap">
           <div id="siege-bonus-panel" class="siege-bonus-panel" hidden role="dialog" aria-modal="false" aria-labelledby="siege-bonus-title">
             <div class="siege-bonus-content">
@@ -162,7 +153,25 @@
           </div>
           <button type="button" class="btn btn-fire-nukes" id="btn-fire-nukes" hidden disabled>Fire nukes</button>
         </div>
-        <div id="shop-bar" class="shop-bar"></div>
+        </div>
+        <aside class="siege-loadout" aria-label="Siege turrets and battle launch">
+        <section id="siege-deploy-panel" class="siege-deploy-panel" aria-label="Build your defences before the aliens arrive" hidden>
+          <div class="siege-deploy-copy">
+            <span class="siege-deploy-eyebrow">PHASE ONE · BUILD YOUR DEFENCES</span>
+            <h2>YOUR LAWN. YOUR RULES.</h2>
+            <p id="siege-deploy-instruction">Choose a turret below, then click an empty grass square to build. Keep building until you're ready.</p>
+            <div id="siege-deploy-summary" class="siege-deploy-summary" aria-live="polite"></div>
+          </div>
+          <button type="button" class="siege-launch-button" id="btn-launch-siege" disabled aria-label="Launch the alien attack">
+            BRING IT ON!
+          </button>
+        </section>
+          <div class="siege-loadout-heading">
+            <strong>YOUR TURRETS</strong>
+            <span>Choose a weapon, then tap the lawn.</span>
+          </div>
+          <div id="shop-bar" class="shop-bar"></div>
+        </aside>
       </div>
     </section>
 
@@ -224,6 +233,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20261112h"></script>
+  <script type="module" src="js/app.js?v=20261112i"></script>
 </body>
 </html>

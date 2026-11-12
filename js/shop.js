@@ -10,6 +10,14 @@ let popoverAnchor = null;
 /** @type {boolean} */
 let globalListenersBound = false;
 
+/** Read the live coin balance, never the amount from when the shop opened.
+ * @param {{budget:number}} state
+ * @param {{placementCost:number}} turret
+ */
+export function canAffordTurret(state, turret) {
+  return state.budget >= turret.placementCost;
+}
+
 /** @param {number} xp */
 export function formatUnlockXp(xp) {
   if (xp === 0) return 'Free';
@@ -191,7 +199,7 @@ export function renderShopBar(barEl, state) {
   deployIds.forEach((id) => {
     const t = TURRETS[id];
     const isUnlocked = true;
-    const canPlace = state.budget >= t.placementCost;
+    const canPlace = canAffordTurret(state, t);
 
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -212,8 +220,10 @@ export function renderShopBar(barEl, state) {
 
     bindShopPopover(btn, t, state);
 
+    // Affordability must be checked at click time. Kills add coins while
+    // the battle is running, so a captured initial "canPlace" becomes stale.
     btn.addEventListener('click', () => {
-      if (!canPlace) {
+      if (!canAffordTurret(state, t)) {
         showShopPopover(btn, t, state, { pulse: true });
         return;
       }
@@ -237,7 +247,7 @@ export function updateShopBar(barEl, state) {
     const id = btn.dataset.turretId;
     if (!id) return;
     const t = TURRETS[id];
-    const canPlace = state.budget >= t.placementCost;
+    const canPlace = canAffordTurret(state, t);
 
     btn.classList.toggle('selected', state.selectedId === id);
     btn.classList.toggle('cant-afford', !canPlace);

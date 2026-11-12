@@ -1,7 +1,7 @@
 import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261112g';
 import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261112g';
 import { initForge } from './forge.js';
-import { renderShopBar, updateShopBar } from './shop.js';
+import { renderShopBar, updateShopBar } from './shop.js?v=20261112i';
 import { renderArmory, nextUnlockableTurret } from './armory.js?v=20261112f';
 import { createTDEngine } from './td-engine.js?v=20261112g';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
@@ -227,6 +227,7 @@ function showScreen(id) {
   const inLearning = LEARNING_SCREENS.has(id);
   if (missionShell) missionShell.hidden = !inLearning;
   document.body.classList.toggle('mission-mode', inLearning);
+  document.body.classList.toggle('siege-mode', id === 'siege');
   Object.entries(screens).forEach(([key, el]) => {
     el?.classList.toggle('active', key === id);
   });
@@ -1048,6 +1049,7 @@ function initSiegeScreen() {
   renderShopBar(shopBarEl, shopState);
   deploymentTurretsPlaced = 0;
   bonusBankProtected = 0;
+  document.querySelector('.siege-layout')?.classList.remove('is-bonus-offer', 'is-battle-done');
   const deployPanel = document.getElementById('siege-deploy-panel');
   if (deployPanel) deployPanel.hidden = false;
   const bonusPanel = document.getElementById('siege-bonus-panel');
@@ -1228,6 +1230,9 @@ function mountTDEngine(canvas, mission) {
       }
     },
     onPhaseChange(phase) {
+      const layout = document.querySelector('.siege-layout');
+      layout?.classList.toggle('is-bonus-offer', phase === 'bonus-offer');
+      layout?.classList.toggle('is-battle-done', phase === 'done' || phase === 'finale');
       if (phase === 'deploy' || phase === 'wave' || phase === 'announce') {
         setShopActive(true);
       } else {
