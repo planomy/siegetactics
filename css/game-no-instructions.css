@@ -1,0 +1,89 @@
+/*
+ * Granny Boom's main screens should communicate through controls, numbers
+ * and animations. The optional How to Play guide keeps full explanations.
+ * Tighten gaps after removing repeated instructional paragraphs.
+ */
+
+/* No large unused pockets where helper text previously lived. */
+body.mission-mode .mission-control-inner {
+  gap: 12px;
+}
+
+body.mission-mode .mission-control-heading h2 {
+  margin-bottom: 4px;
+}
+
+body.mission-mode .mission-control-radar .inbound-radar {
+  gap: 7px;
+}
+
+body.mission-mode .mission-control-progress {
+  padding-block: 11px;
+}
+
+body.mission-mode .mission-control-progress-line {
+  margin-bottom: 7px;
+}
+
+body.mission-mode .mission-control-track {
+  margin-bottom: 3px;
+}
+
+body.mission-mode #screen-home .mission-workspace-heading {
+  margin-bottom: 0;
+}
+
+body.mission-mode #screen-home .mission-topic-heading {
+  margin-bottom: 7px;
+}
+
+/* The weapons and their charge stage have the visual space now. */
+body.mission-mode .mission-power .power-rank {
+  min-height: 0;
+}
+
+body.mission-mode .mission-power .power-heading {
+  margin-bottom: 0;
+}
+
+body.mission-mode .mission-power .power-scene {
+  margin-top: 4px;
+}
+
+body.mission-mode .armory-promo-description,
+body.mission-mode .shop-hint {
+  display: none;
+}
+
+@media (min-width: 1321px) and (min-height: 600px) {
+  body.mission-mode #screen-home .mission-mixed-card,
+  body.mission-mode #screen-home .armory-promo {
+    min-height: 133px;
+  }
+
+  body.mission-mode #screen-home .armory-promo-art {
+    min-height: 113px;
+  }
+
+  body.mission-mode #screen-home .armory-promo-art img {
+    max-height: 109px;
+  }
+
+  body.mission-mode #screen-home .mission-mixed-card {
+    gap: 4px;
+  }
+
+  body.mission-mode .mission-power .power-rank-name {
+    margin: 0;
+  }
+}
+
+/* Compact deployment card: the battle cry, placed turrets and coin count
+   already convey readiness. No need for a paragraph of instructions. */
+body.siege-mode .siege-battle-footer .siege-deploy-panel {
+  padding-block: 10px;
+}
+
+body.siege-mode .siege-loadout-heading {
+  padding-bottom: 2px;
+}
