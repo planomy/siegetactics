@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/home-gb.css" />
   <link rel="stylesheet" href="css/how-to-play.css" />
   <link rel="stylesheet" href="css/popups.css" />
+  <link rel="stylesheet" href="css/mission-layout.css?v=20261112b" />
   <link rel="preload" href="assets/field.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/granny-boom-siege-logo.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/hero-village.png" as="image" type="image/png" />
@@ -66,7 +67,10 @@
       </div>
     </section>
 
-    <section id="screen-home" class="screen">
+    <div id="mission-shell" class="mission-shell" hidden>
+      <aside id="mission-control" class="mission-control" aria-label="Granny's control room"></aside>
+      <div id="mission-workspace" class="mission-workspace">
+        <section id="screen-home" class="screen">
       <div id="home-host"></div>
     </section>
 
@@ -101,6 +105,9 @@
     <section id="screen-forge" class="screen">
       <div id="forge-host"></div>
     </section>
+
+      </div>
+    </div>
 
     <section id="screen-armory" class="screen">
       <div id="armory-host"></div>
@@ -192,6 +199,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20260819b"></script>
+  <script type="module" src="js/app.js?v=20261112b"></script>
 </body>
 </html>

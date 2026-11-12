@@ -12,8 +12,8 @@ import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel } from './difficulty.js';
 
 /** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack @param {import('./level-mastery.js').LevelMasterySave} levelMastery @param {import('./map-progress.js').MapProgressSave} mapProgress */
-function renderTrainingCards(gate, attack, levelMastery, mapProgress) {
-  return MATH_TOPICS.map((topic) => {
+function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id)) {
+  return MATH_TOPICS.filter((topic) => selectedTopics.includes(topic.id)).map((topic) => {
     const locked = !topic.available;
     const complete =
       topic.id === 'times-tables'
@@ -405,99 +405,152 @@ let threatDossierCleanup = null;
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
  * }} state
  */
-export function renderHome(host, state) {
-  if (threatDossierCleanup) {
-    threatDossierCleanup();
-    threatDossierCleanup = null;
-  }
 
+const FRONT_TOPICS = ['times-tables', 'fractions', 'operations', 'measurement-length'];
+let expandedTopicsVisible = false;
+
+/**
+ * Mission Control stays on screen while the student changes maths activities.
+ * It is mounted separately from the maths workspace, so activities can rerender
+ * without destroying the radar, progress, or controls.
+ * @param {HTMLElement} host
+ * @param {any} state
+ */
+export function renderMissionControl(host, state) {
   const attack = attackStatus(state.gate);
-  const open = attack.open;
-
+  const first = state.siegesCompleted === 0;
+  const shields = countShieldsEarned(state.levelMastery);
+  const sectors = mapPiecesEarned(state.mapProgress);
+  const progress = Math.round(attack.pct * 100);
+  const label = attack.open ? 'BATTLE READY' : 'EARN YOUR NEXT SIEGE';
   host.innerHTML = `
-    <div class="home-layout gb-home">
-      ${renderAttackHero(attack, state.gate, state.playerName, state.siegesCompleted === 0)}
-
-      <div class="gb-home-grid">
-        <div class="gb-home-main">
-          <section class="gb-training" aria-label="Training modules">
-            <div class="gb-training-head">
-              <h2 class="gb-gallery-title"><span class="gb-gallery-icon" aria-hidden="true">×</span> Choose your maths mission</h2>
-              <div class="gb-level-control">
-                <span class="gb-level-label">Level</span>
-                <div class="gb-level-picker" role="group" aria-label="Difficulty level">
-                  ${[1, 2, 3, 4]
-                    .map(
-                      (n) => `
-                    <button
-                      type="button"
-                      class="gb-level-btn${state.difficultyLevel === n ? ' is-active' : ''}${state.recommendedLevel === n && state.difficultyLevel !== n ? ' is-recommended' : ''}"
-                      data-level="${n}"
-                      aria-pressed="${state.difficultyLevel === n}"
-                      ${state.recommendedLevel === n ? `title="Granny recommends Level ${n} · ${xpMultiplierLabel(/** @type {1|2|3|4} */ (n))}"` : ''}
-                    >${n}</button>`
-                    )
-                    .join('')}
-                </div>
-              </div>
-            </div>
-            <p class="gb-level-xp-hint">Complete any 10-question activity to unlock your next siege. Better answers = more turret coins. Level ${state.difficultyLevel}: ${xpMultiplierLabel(state.difficultyLevel)}.</p>
-            <div class="gb-story-grid">${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress)}</div>
-          </section>
-        </div>
-
-        <aside class="gb-home-sidebar">
-          ${renderCommandSidebar(
-            {
-              xp: state.xp,
-              siegesCompleted: state.siegesCompleted,
-              bestKills: state.bestKills,
-              bestBankedCoins: state.bestBankedCoins,
-              difficultyLevel: state.difficultyLevel,
-              levelMastery: state.levelMastery,
-              mapProgress: state.mapProgress,
-            },
-            state.gate,
-            attack
-          )}
-        </aside>
+    <div class="mission-control-inner">
+      <div class="mission-control-heading">
+        <span class="mission-control-eyebrow">MISSION CONTROL</span>
+        <h2 class="mission-control-greeting">${first ? 'Welcome' : 'Welcome back'}, <span>${escapeHtml(state.playerName)}</span></h2>
+        <p>Do maths. Earn defences. Save Granny.</p>
       </div>
+      <div class="mission-control-radar" aria-label="Progress towards the next defence">
+        ${renderInboundRadar(attack, attack.open)}
+      </div>
+      <div class="mission-control-progress">
+        <div class="mission-control-progress-line">
+          <strong>${label}</strong>
+          <span>${attack.done} / ${attack.total} questions</span>
+        </div>
+        <div class="mission-control-track" role="progressbar" aria-label="Maths progress towards siege" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${attack.done}">
+          <div class="mission-control-fill" style="width: ${progress}%"></div>
+        </div>
+        <p>${attack.open ? 'Granny is counting on you! Press DEFEND GRANNY.' : `Only ${attack.remaining} more maths question${attack.remaining === 1 ? '' : 's'} to go.`}</p>
+      </div>
+      <div class="mission-control-metrics">
+        <div><span>FORGE XP</span><strong id="mission-control-xp">${state.xp.toLocaleString()}</strong></div>
+        <div><span>SIEGES PLAYED</span><strong>${state.siegesCompleted}</strong></div>
+      </div>
+      <details class="mission-control-details">
+        <summary>My progress <span aria-hidden="true">⌄</span></summary>
+        <div class="mission-control-detail-grid">
+          <div><span>Best blasts</span><strong>${state.bestKills.toLocaleString()}</strong></div>
+          <div><span>Shields earned</span><strong>${shields}</strong></div>
+          <div><span>Map charted</span><strong>${sectors}/${TRAINING_MODULE_IDS.length}</strong></div>
+          <div><span>Best coins banked</span><strong>${state.bestBankedCoins.toLocaleString()}</strong></div>
+        </div>
+      </details>
+      <button type="button" class="mission-control-home" id="mission-back-to-hq">⌂ &nbsp; Maths HQ</button>
+    </div>
+  `;
+  host.querySelector('#btn-hold-line')?.addEventListener('click', state.onHoldTheLine);
+  host.querySelector('#mission-back-to-hq')?.addEventListener('click', state.onHome);
+}
 
-      ${renderInterstellarMap(state.mapProgress)}
+/**
+ * The maths area is deliberately separate from Mission Control.
+ * Clicking a topic swaps only this workspace for the live activity.
+ * @param {HTMLElement} host
+ * @param {any} state
+ */
+export function renderHome(host, state) {
+  const attack = attackStatus(state.gate);
+  const otherTopics = MATH_TOPICS.map((t) => t.id).filter((id) => !FRONT_TOPICS.includes(id));
+  const mixedLabel = attack.open ? 'Battle unlocked!' : '10 quick questions across different maths topics';
+  host.innerHTML = `
+    <div class="mission-home">
+      <header class="mission-workspace-heading">
+        <span class="mission-kicker">MATHS HQ</span>
+        <h1>Choose your maths mission</h1>
+        <p>Choose a topic or try a mixed challenge. Answer ten questions to earn your next battle.</p>
+      </header>
+      <section class="mission-mixed-card" aria-label="Mixed maths mission">
+        <div class="mission-mixed-symbol" aria-hidden="true">⚡</div>
+        <div class="mission-mixed-copy">
+          <span class="mission-recommended">${attack.open ? 'READY FOR ACTION' : 'QUICK START'}</span>
+          <h2>${attack.open ? 'Granny needs you!' : 'Mixed Maths Mission'}</h2>
+          <p>${mixedLabel}</p>
+        </div>
+        ${attack.open
+          ? '<span class="mission-battle-ready">Use DEFEND GRANNY in Mission Control!</span>'
+          : `<button type="button" id="mission-start-mixed" class="gb-forge-btn">START ${attack.remaining}-QUESTION MISSION</button>`}
+      </section>
+      <section class="mission-topic-section" aria-label="Maths topics">
+        <div class="mission-topic-heading">
+          <div>
+            <h2>Or choose a topic</h2>
+            <p>Each completed activity earns progress and Forge XP.</p>
+          </div>
+          <div class="gb-level-control">
+            <span class="gb-level-label">LEVEL</span>
+            <div class="gb-level-picker" role="group" aria-label="Difficulty level">
+              ${[1, 2, 3, 4].map((n) => `
+                <button type="button"
+                  class="gb-level-btn${state.difficultyLevel === n ? ' is-active' : ''}${state.recommendedLevel === n && state.difficultyLevel !== n ? ' is-recommended' : ''}"
+                  data-level="${n}" aria-pressed="${state.difficultyLevel === n}"
+                  title="Level ${n} · ${xpMultiplierLabel(/** @type {1|2|3|4} */ (n))}">${n}</button>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="mission-topic-grid">${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress, FRONT_TOPICS)}</div>
+        <button type="button" id="mission-show-more" class="mission-more-button"
+          aria-expanded="${expandedTopicsVisible}" aria-controls="mission-extra-topics">
+          ${expandedTopicsVisible ? '− Show fewer topics' : '+ More maths topics'}
+        </button>
+        <div id="mission-extra-topics" class="mission-topic-grid mission-extra-topics" ${expandedTopicsVisible ? '' : 'hidden'}>
+          ${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress, otherTopics)}
+        </div>
+      </section>
+      <details class="mission-map-details">
+        <summary>Explore your interstellar map and achievements</summary>
+        ${renderInterstellarMap(state.mapProgress)}
+      </details>
     </div>
   `;
 
-  host.querySelector('#btn-hold-line')?.addEventListener('click', () => {
-    state.onHoldTheLine();
+  host.querySelector('#mission-start-mixed')?.addEventListener('click', state.onHoldTheLine);
+  host.querySelector('#mission-show-more')?.addEventListener('click', () => {
+    expandedTopicsVisible = !expandedTopicsVisible;
+    const more = host.querySelector('#mission-show-more');
+    const extras = host.querySelector('#mission-extra-topics');
+    if (extras) extras.hidden = !expandedTopicsVisible;
+    if (more) {
+      more.setAttribute('aria-expanded', String(expandedTopicsVisible));
+      more.textContent = expandedTopicsVisible ? '− Show fewer topics' : '+ More maths topics';
+    }
   });
 
   host.querySelectorAll('[data-topic]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-topic');
-      if (!id || btn.hasAttribute('disabled')) return;
-      state.onTopic(id);
+      if (id && !btn.hasAttribute('disabled')) state.onTopic(id);
     });
   });
 
   host.querySelectorAll('[data-level]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const level = Number(btn.getAttribute('data-level'));
-      if (level !== 1 && level !== 2 && level !== 3 && level !== 4) return;
-      if (level === state.difficultyLevel) return;
+      if (![1, 2, 3, 4].includes(level) || level === state.difficultyLevel) return;
       state.onDifficultyChange(/** @type {1|2|3|4} */ (level));
     });
   });
-
-  const dossierEl = host.querySelector('.threat-dossier');
-  if (dossierEl) {
-    threatDossierCleanup = initThreatDossier(dossierEl, {
-      contact: open,
-      urgency: attack.urgency,
-    });
-  }
-
-  playReadinessGrow(host, attack);
-  playXpGrow(host, state.xp);
 }
 
 /**

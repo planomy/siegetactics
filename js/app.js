@@ -13,7 +13,7 @@ import { computeStars, renderStarBadges } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderTopbarBadges } from './home.js';
+import { renderHome, renderMissionControl, renderTopbarBadges } from './home.js?v=20261112b';
 import { initHowToPlay } from './how-to-play.js';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20260819b';
@@ -128,6 +128,12 @@ const screens = {
 };
 
 const xpDisplay = document.getElementById('topbar-xp');
+const missionShell = document.getElementById('mission-shell');
+const LEARNING_SCREENS = new Set([
+  'home', 'timesTables', 'measurement', 'fractions', 'angles',
+  'mathsQuest', 'expanded', 'battlePrep', 'forge',
+]);
+
 
 /** @type {keyof typeof screens} */
 let armoryReturnScreen = 'home';
@@ -190,10 +196,23 @@ function toggleSound() {
 }
 
 function showScreen(id) {
+  const inLearning = LEARNING_SCREENS.has(id);
+  if (missionShell) missionShell.hidden = !inLearning;
+  document.body.classList.toggle('mission-mode', inLearning);
   Object.entries(screens).forEach(([key, el]) => {
     el?.classList.toggle('active', key === id);
   });
+  syncMissionControlAction(id);
   refreshTopbar();
+}
+
+function syncMissionControlAction(id) {
+  const action = document.getElementById('btn-hold-line');
+  // During a drill, keep the left-hand radar in view but let the child finish
+  // their maths before offering a different activity.
+  if (action) action.hidden = !isGateOpen(save.trainingGate);
+  const homeButton = document.getElementById('mission-back-to-hq');
+  if (homeButton) homeButton.hidden = id === 'home';
 }
 
 function refreshSoundButton() {
@@ -206,6 +225,8 @@ function refreshSoundButton() {
 
 function refreshTopbar() {
   if (xpDisplay) xpDisplay.textContent = save.xp.toLocaleString();
+  const missionXp = document.getElementById('mission-control-xp');
+  if (missionXp) missionXp.textContent = save.xp.toLocaleString();
   refreshSoundButton();
   renderTopbarBadges(document.getElementById('topbar-badges'), save.bestStars, SLICE_MISSION_ID);
   const armoryBtn = document.getElementById('btn-armory');
@@ -391,6 +412,7 @@ function awardScaledTrainingXp(baseAmount, level) {
   if (amount <= 0) return 0;
   save.xp += amount;
   persistSave();
+  refreshTopbar();
   return amount;
 }
 
@@ -418,6 +440,7 @@ function completeTrainingSession(moduleId, level, accuracy) {
     save.trainingGate = trainingCredit.gate;
   }
   persistSave();
+  refreshMissionControl();
 
   if (trainingCredit.added > 0) {
     const nowDone = gateProgress(save.trainingGate).done;
@@ -503,10 +526,8 @@ function getActiveMission() {
   return getMissionForDifficulty(SLICE_MISSION_ID, getDifficultyLevel());
 }
 
-function showHome() {
-  const host = document.getElementById('home-host');
-  if (!host) return;
-  renderHome(host, {
+function makeDashboardState() {
+  return {
     playerName: save.playerName || 'Recruit',
     xp: save.xp,
     siegesCompleted: save.siegesCompleted,
@@ -553,14 +574,38 @@ function showHome() {
       showToast('That training is still in the forge.');
     },
     onHoldTheLine() {
+      disposeActiveTraining?.();
+      disposeActiveTraining = null;
       if (!DEV.skipForge && !isGateOpen(save.trainingGate)) {
         showBattlePrep();
         return;
       }
       beginMission();
     },
+    onHome() {
+      disposeActiveTraining?.();
+      disposeActiveTraining = null;
+      showHome();
+    },
     showToast,
-  });
+  };
+}
+
+/** Rebuild just the persistent control room, without touching a live maths activity. */
+function refreshMissionControl() {
+  const host = document.getElementById('mission-control');
+  if (!host) return;
+  renderMissionControl(host, makeDashboardState());
+  const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'))?.[0];
+  syncMissionControlAction(active || 'home');
+}
+
+function showHome() {
+  const host = document.getElementById('home-host');
+  if (!host) return;
+  const state = makeDashboardState();
+  renderHome(host, state);
+  renderMissionControl(document.getElementById('mission-control'), state);
   renderTopbarBadges(document.getElementById('topbar-badges'), save.bestStars, SLICE_MISSION_ID);
   showScreen('home');
 }
@@ -602,6 +647,7 @@ function showBattlePrep() {
       if (shieldBonus > 0) save.xp += shieldBonus;
       battlePrepCoinBonus = save.trainingGate.bonusSiegeCoins;
       persistSave();
+      refreshMissionControl();
       const rewards = [
         `${battlePrepCoinBonus} bonus siege coins`,
         shieldsEarned > 0 ? `${shieldsEarned} shield${shieldsEarned === 1 ? '' : 's'}` : '',
