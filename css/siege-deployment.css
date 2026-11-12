@@ -1,5 +1,8 @@
 /* Player-led pre-siege deployment: no timer until they press their own battle cry. */
 .siege-deploy-panel {
+  position:sticky;
+  top:8px;
+  z-index:9;
   display:flex;
   align-items:center;
   justify-content:space-between;
