@@ -489,13 +489,21 @@ function awardScaledTrainingXp(baseAmount, level) {
  * @param {boolean} right
  */
 function creditTrainingAnswer(right) {
+  const previouslyReady = isGateOpen(save.trainingGate);
+  const previousBonus = bonusSiegeSeconds(save.trainingGate);
   const result = recordTrainingQuestions(save.trainingGate, 1, right ? 1 : 0);
   if (!result.added) return;
   save.trainingGate = result.gate;
   lastTrainingAnswerCorrect = right;
   persistSave();
   refreshMissionControl();
-  if (isGateOpen(save.trainingGate)) {
+  const extraTime = bonusSiegeSeconds(save.trainingGate);
+  if (extraTime > previousBonus) {
+    showToast(`BONUS ASSAULT EARNED! +${extraTime} seconds after your normal siege.`, {
+      variant: 'success',
+      duration: 4200,
+    });
+  } else if (!previouslyReady && isGateOpen(save.trainingGate)) {
     showToast('Defences fully charged! Finish your activity, then defend Granny!', {
       variant: 'success',
       duration: 4200,
