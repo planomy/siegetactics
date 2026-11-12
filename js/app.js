@@ -14,7 +14,7 @@ import { computeStars, renderStarBadges } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderTopbarBadges } from './home.js?v=20261112l';
+import { renderHome, renderMissionControl, renderTopbarBadges } from './home.js?v=20261112m';
 import { renderPowerCore } from './power-core.js?v=20261112f';
 import { initHowToPlay } from './how-to-play.js';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
@@ -650,12 +650,6 @@ function refreshDeploymentPanel() {
     summary.textContent = `${count} turret${count === 1 ? '' : 's'} deployed · ${run.waveBudget} coins left`;
   }
   if (btn) btn.disabled = deploymentTurretsPlaced < 1;
-  const info = document.getElementById('siege-deploy-instruction');
-  if (info) {
-    info.textContent = deploymentTurretsPlaced === 0
-      ? 'Tap a grass square to place your first turret.'
-      : 'Keep building, or launch the invasion!';
-  }
 }
 
 function showBonusAssaultOffer(seconds) {
