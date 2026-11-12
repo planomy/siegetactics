@@ -247,6 +247,8 @@ body.mission-mode #app {
 .forge-particle-field {
   position: absolute;
   inset: 0;
+  transform: scale(var(--forge-scale));
+  transform-origin: center center;
   z-index: 7;
   overflow: visible;
   pointer-events: none;
@@ -344,17 +346,17 @@ body.mission-mode #app {
 
 @keyframes forge-orbit {
   0% {
-    transform: rotate(var(--forge-angle)) translateX(calc(var(--forge-radius) * var(--forge-scale) * .7)) rotate(calc(-1 * var(--forge-angle))) scale(.55);
+    transform: rotate(var(--forge-angle)) translateX(var(--forge-radius)) scale(.55);
     opacity: 0;
   }
   18% { opacity: .85; }
   52% {
-    transform: rotate(calc(var(--forge-angle) + 180deg)) translateX(calc(var(--forge-radius) * var(--forge-scale))) rotate(calc(-1 * (var(--forge-angle) + 180deg))) scale(1.18);
+    transform: rotate(calc(var(--forge-angle) + 180deg)) translateX(var(--forge-radius)) scale(1.18);
     opacity: 1;
   }
   82% { opacity: .72; }
   100% {
-    transform: rotate(calc(var(--forge-angle) + 360deg)) translateX(calc(var(--forge-radius) * var(--forge-scale) * .7)) rotate(calc(-1 * (var(--forge-angle) + 360deg))) scale(.55);
+    transform: rotate(calc(var(--forge-angle) + 360deg)) translateX(var(--forge-radius)) scale(.55);
     opacity: 0;
   }
 }
