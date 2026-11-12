@@ -3,7 +3,7 @@ import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-bala
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js';
 import { renderArmory, nextUnlockableTurret } from './armory.js?v=20261112f';
-import { createTDEngine } from './td-engine.js';
+import { createTDEngine } from './td-engine.js?v=20261112g';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
 import { createAudio } from './audio.js';
 import { DEV } from './dev.js';
