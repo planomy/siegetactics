@@ -1280,7 +1280,10 @@ function finishRun(stats) {
     if (bankBonus > 0) {
       xpParts.push(`+${bankBonus} from banked ${ECONOMY.siegeCoinsLabel}`);
     }
-    sublineEl.textContent = `${brag.subline} ${xpParts.join(' · ')}.`;
+    if (stats.bonusPlayed) {
+      xpParts.push(`+${bonusAssaultXp} XP from ${stats.bonusKills || 0} bonus-assault kills`);
+    }
+    sublineEl.textContent = `${brag.subline} ${stats.bonusPlayed ? 'BONUS ASSAULT COMPLETED! The original win was protected. ' : ''}${xpParts.join(' · ')}.`;
   }
 
   const badgesEl = document.getElementById('results-badges');
