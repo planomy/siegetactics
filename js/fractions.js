@@ -344,6 +344,7 @@ export function initFractions(host, callbacks) {
     xpPerCorrect: FRACTIONS_LAB.xpPerCorrect,
     makeQuestion: makeFractionQuestion,
     onAwardXp: callbacks.onAwardXp,
+    onAnswer: callbacks.onAnswer,
     onSessionComplete({ accuracy }) {
       callbacks.onSessionComplete?.(accuracy);
     },
