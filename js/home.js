@@ -1,8 +1,9 @@
 import { MATH_TOPICS } from './topics-data.js';
 import {
   attackStatus,
+  bonusSiegeSeconds,
   isTopicDone,
-} from './training-gate.js?v=20261112e';
+} from './training-gate.js?v=20261112g';
 import { STAR_LABELS, STAR_HINTS, summarizeBadgeCollection, renderStarBadges } from './stars.js';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js';
 import { renderModuleLevelPips, MAP_PASSES_REQUIRED } from './level-mastery.js';
@@ -16,10 +17,11 @@ import { renderArmoryPromo } from './armory-promo.js?v=20261112f';
 function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id)) {
   return MATH_TOPICS.filter((topic) => selectedTopics.includes(topic.id)).map((topic) => {
     const locked = !topic.available;
-    const complete =
-      topic.id === 'times-tables'
-        ? attack.open
-        : Boolean(topic.unitId) && isTopicDone(gate, topic.id);
+    // A siege being ready does not mean every maths topic is complete.
+    // All topics remain replayable for optional bonus battle time.
+    const complete = topic.id === 'times-tables'
+      ? (gate.timesTablesDone?.length || 0) > 0
+      : Boolean(topic.unitId) && isTopicDone(gate, topic.id);
     const pips = !locked ? renderModuleLevelPips(levelMastery, topic.id) : '';
     const mapPip = !locked ? renderModuleMapProgress(mapProgress, topic.id) : '';
     const progressRow =
@@ -424,6 +426,8 @@ export function renderMissionControl(host, state) {
   const sectors = mapPiecesEarned(state.mapProgress);
   const progress = Math.round(attack.pct * 100);
   const label = attack.open ? 'BATTLE READY' : 'EARN YOUR NEXT SIEGE';
+  const earnedBonus = bonusSiegeSeconds(state.gate);
+  const extraQuestions = Math.max(0, 15 - (state.gate.questionsDone || 0));
   host.dataset.threat = attack.urgency;
   const threatMessage = attack.open ? 'CONTACT! DEFEND GRANNY NOW!'
     : attack.remaining <= 2 ? 'DANGER: ALIENS AT THE FENCE!'
@@ -449,7 +453,8 @@ export function renderMissionControl(host, state) {
         <div class="mission-control-track" role="progressbar" aria-label="Maths progress towards siege" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${attack.done}">
           <div class="mission-control-fill" style="width: ${progress}%"></div>
         </div>
-        <p>${attack.open ? 'Granny is counting on you! Press DEFEND GRANNY.' : `Only ${attack.remaining} more maths question${attack.remaining === 1 ? '' : 's'} to go.`}</p>
+        <p>${attack.open ? 'Ready to defend! Extra maths earns extra battle time.' : `Only ${attack.remaining} more maths question${attack.remaining === 1 ? '' : 's'} to go.`}</p>
+        ${attack.open ? `<div class="mission-bonus-progress">${earnedBonus === 30 ? '★ BONUS ASSAULT +30s earned!' : earnedBonus === 15 ? '★ +15s earned! Answer 5 more for +30s.' : `★ Answer ${extraQuestions} more maths questions for +15s bonus time.`}</div>` : ''}
       </div>
       <div class="mission-control-metrics">
         <div><span>FORGE XP</span><strong id="mission-control-xp">${state.xp.toLocaleString()}</strong></div>
@@ -480,13 +485,19 @@ export function renderMissionControl(host, state) {
 export function renderHome(host, state) {
   const attack = attackStatus(state.gate);
   const otherTopics = MATH_TOPICS.map((t) => t.id).filter((id) => !FRONT_TOPICS.includes(id));
-  const mixedLabel = attack.open ? 'Battle unlocked!' : '10 quick questions across different maths topics';
+  const extraTime = bonusSiegeSeconds(state.gate);
+  const answered = state.gate.questionsDone || 0;
+  const mixedLabel = attack.open
+    ? extraTime === 30 ? '60-second battle + a 30-second bonus assault earned!'
+      : extraTime === 15 ? '60-second battle + a 15-second bonus assault earned!'
+      : '60-second battle ready. Answer five more maths questions to earn +15 seconds!'
+    : '10 quick questions across different maths topics';
   host.innerHTML = `
     <div class="mission-home">
       <header class="mission-workspace-heading">
         <span class="mission-kicker">MATHS HQ</span>
         <h1>Choose your maths mission</h1>
-        <p>Choose a topic or try a mixed challenge. Answer ten questions to earn your next battle.</p>
+        <p>10 questions earn a battle. 15 earn a bonus +15 seconds, and 20 earn +30 seconds. You choose when to fight!</p>
       </header>
       <section class="mission-mixed-card" aria-label="Mixed maths mission">
         <div class="mission-mixed-symbol" aria-hidden="true">⚡</div>
@@ -504,7 +515,7 @@ export function renderHome(host, state) {
         <div class="mission-topic-heading">
           <div>
             <h2>Or choose a topic</h2>
-            <p>Each completed activity earns progress and Forge XP.</p>
+            <p>${answered >= 10 ? 'Keep training to unlock bonus battle time, or launch your siege!' : 'Each completed activity earns progress and Forge XP.'}</p>
           </div>
           <div class="mission-level-control">
             <div class="mission-level-intro">

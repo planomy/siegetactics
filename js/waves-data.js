@@ -1,7 +1,7 @@
 /** Real-time siege length (seconds). Game-speed buttons do not affect this clock. */
 export const SIEGE_DURATION_SEC = 60;
 
-/** Future reward: bonus seconds added to the siege timer. */
+/** Maximum optional bonus assault after the original 60-second defence. */
 export const BONUS_TIME_SEC = 30;
 
 /** Wave incoming bar length (seconds) — field stays visible; place turrets while it fills. */
@@ -177,7 +177,7 @@ function buildSpawnQueue(bp, extraTier, opts) {
 /**
  * Escalating wave config for timed sieges (wave 1, 2, 3… until the clock runs out).
  * @param {number} waveNum 1-based wave index
- * @param {{ spawnGranddaddy?: boolean }} [opts]
+ * @param {{ spawnGranddaddy?: boolean, firstSiege?: boolean }} [opts]
  * @returns {WaveDef}
  */
 export function waveConfigFor(waveNum, opts = {}) {
@@ -190,19 +190,21 @@ export function waveConfigFor(waveNum, opts = {}) {
     spawnGranddaddy: Boolean(opts.spawnGranddaddy && waveNum >= 5),
   });
 
-  const hpScale = 1 + tier * 0.13 + extraTier * 0.1;
+  const firstWaveTutorial = Boolean(opts.firstSiege && waveNum === 1);
+  const openingQueue = firstWaveTutorial ? spawnQueue.slice(0, 20) : spawnQueue;
+  const hpScale = firstWaveTutorial ? 0.88 : 1 + tier * 0.13 + extraTier * 0.1;
 
   return {
     codename: extraTier > 0 ? `${bp.codename} +${extraTier}` : bp.codename,
-    spawnQueue,
-    totalSpawns: spawnQueue.length,
+    spawnQueue: openingQueue,
+    totalSpawns: openingQueue.length,
     hpScale,
     hpRamp: bp.hpRamp ?? 0.02,
     spawnIntervalSec: Math.max(0.32, bp.spawnIntervalSec - extraTier * 0.035),
     clumpAt: bp.clumpAt + extraTier * 3,
     burstSize: bp.burstSize + Math.min(extraTier, 2),
     burstGap: Math.max(1.0, bp.burstGap - extraTier * 0.08),
-    speedMul: bp.speedMul + extraTier * 0.04,
+    speedMul: firstWaveTutorial ? 0.88 : bp.speedMul + extraTier * 0.04,
   };
 }
 

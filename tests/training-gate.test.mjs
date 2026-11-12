@@ -9,6 +9,7 @@ import {
   recordTrainingQuestions,
   markBattlePrepComplete,
   resetTrainingGate,
+  bonusSiegeSeconds,
 } from '../js/training-gate.js';
 
 test('new players begin with ten questions to earn their siege', () => {
@@ -32,12 +33,13 @@ test('one place-value forge contributes one question', () => {
   assert.equal(isGateOpen(result.gate), false);
 });
 
-test('partial progress is capped at the required amount and only credits remaining questions', () => {
+test('extra maths is recorded after the first ten and the coin bonus stops at 25', () => {
   const first = recordTrainingQuestions(defaultTrainingGate(), 6, 1).gate;
   const second = recordTrainingQuestions(first, 10, 1);
-  assert.equal(second.added, 4);
-  assert.equal(second.gate.questionsDone, GATE.questionsRequired);
+  assert.equal(second.added, 10);
+  assert.equal(second.gate.questionsDone, 16);
   assert.equal(second.gate.bonusSiegeCoins, 25);
+  assert.equal(bonusSiegeSeconds(second.gate), 15);
 });
 
 test('incorrect answers do not block the fight, but cannot earn bonus coins', () => {
@@ -46,11 +48,15 @@ test('incorrect answers do not block the fight, but cannot earn bonus coins', ()
   assert.equal(result.gate.bonusSiegeCoins, 0);
 });
 
-test('maths sessions do not grant a second siege without first fighting', () => {
+test('extra questions earn time but do not create a second siege', () => {
   const ready = recordTrainingQuestions(defaultTrainingGate(), 10, 0.7).gate;
-  const again = recordTrainingQuestions(ready, 10, 1);
-  assert.equal(again.added, 0);
-  assert.deepEqual(again.gate, ready);
+  const extra = recordTrainingQuestions(ready, 10, 1).gate;
+  assert.equal(extra.questionsDone, 20);
+  assert.equal(bonusSiegeSeconds(extra), 30);
+  assert.equal(extra.cycle, ready.cycle);
+  const beyond = recordTrainingQuestions(extra, 10, 1);
+  assert.equal(beyond.added, 0);
+  assert.deepEqual(beyond.gate, extra);
 });
 
 test('mixed battle prep credits remaining questions', () => {
