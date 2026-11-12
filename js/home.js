@@ -11,7 +11,7 @@ import { renderInterstellarMap, renderModuleMapProgress, mapPiecesEarned, TRAINI
 import { getQualifiedLevels } from './level-mastery.js';
 import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel } from './difficulty.js';
-import { renderArmoryPromo } from './armory-promo.js?v=20261112f';
+import { renderArmoryPromo } from './armory-promo.js?v=20261112m';
 
 /** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack @param {import('./level-mastery.js').LevelMasterySave} levelMastery @param {import('./map-progress.js').MapProgressSave} mapProgress */
 function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id)) {
