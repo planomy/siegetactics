@@ -185,7 +185,6 @@ export function renderShopBar(barEl, state) {
 
   barEl.innerHTML = `
     <div class="shop-budget">${ECONOMY.siegeCoinsLabel}: <strong id="shop-budget">${state.budget}</strong></div>
-    <p class="shop-hint">Unlocked turrets only · ${ECONOMY.siegeCoinsLabel} place them this fight · unlock more at HQ Armory.</p>
     <div class="shop-turrets" id="shop-turrets"></div>
   `;
 
