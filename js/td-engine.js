@@ -1582,9 +1582,10 @@ export function createTDEngine(canvas, opts) {
     const barH = Math.max(7, height * 0.012);
     const barX = margin;
     const barY = 42;
+    const prefix = bonusPlayed ? 'BONUS ' : '';
     const label = splash.codename
-      ? `Wave ${splash.waveNum} — ${splash.codename}`
-      : `Wave ${splash.waveNum} incoming`;
+      ? `${prefix}Wave ${splash.waveNum} — ${splash.codename}`
+      : `${prefix}Wave ${splash.waveNum} incoming`;
 
     ctx.save();
     ctx.font = `bold ${Math.max(11, height * 0.022)}px Bangers, sans-serif`;
@@ -1620,13 +1621,13 @@ export function createTDEngine(canvas, opts) {
     if (phase === 'wave' || phase === 'announce') {
       const waveNum = phase === 'announce' ? splash.waveNum : wavesCompleted + 1;
       const timeLabel = siegeArmed ? formatSiegeTime(siegeTimeLeft) : formatSiegeTime(siegeDuration);
-      ctx.fillText(`Time ${timeLabel}`, 12, 24);
+      ctx.fillText(`${bonusPlayed ? 'BONUS ' : ''}Time ${timeLabel}`, 12, 24);
       ctx.fillText(`Wave ${waveNum}`, 118, 24);
       ctx.fillText(`Blasted: ${totalKills}`, 200, 24);
       ctx.fillText(`Leaked: ${totalLeaks}/${maxLeaks}`, 320, 24);
       ctx.fillText(`Coins: ${budget}`, width - 110, 24);
     } else if (phase === 'deploy') {
-      ctx.fillText('Place turrets — wave starting soon', 12, 24);
+      ctx.fillText('Build your defences — YOU start the wave!', 12, 24);
       ctx.fillText(`Coins: ${budget}`, width - 110, 24);
     }
   }
