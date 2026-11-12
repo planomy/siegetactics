@@ -5,6 +5,7 @@ import { getGateTopics } from './topics-data.js';
 export const GATE = {
   requiredTables: 2,
   questionsRequired: 10,
+  maxQuestions: 20,
   /** Minimum accuracy (0–1) to count a drill toward pushing the attack back. */
   passAccuracy: 0.6,
 };
@@ -49,7 +50,7 @@ export function normalizeTrainingGate(raw) {
   const normalized = repairTrainingGate({
     cycle: typeof g.cycle === 'number' ? g.cycle : 0,
     battlePrepComplete: Boolean(g.battlePrepComplete),
-    questionsDone: Number.isFinite(g.questionsDone) ? Math.max(0, Math.min(GATE.questionsRequired, Math.floor(g.questionsDone))) : (g.battlePrepComplete ? GATE.questionsRequired : 0),
+    questionsDone: Number.isFinite(g.questionsDone) ? Math.max(0, Math.min(GATE.maxQuestions, Math.floor(g.questionsDone))) : (g.battlePrepComplete ? GATE.questionsRequired : 0),
     bonusSiegeCoins: Number.isFinite(g.bonusSiegeCoins) ? Math.max(0, Math.min(25, Math.floor(g.bonusSiegeCoins))) : 0,
     timesTablesDone: Array.isArray(g.timesTablesDone)
       ? g.timesTablesDone.filter((k) => typeof k === 'string')
@@ -67,7 +68,7 @@ export function normalizeTrainingGate(raw) {
     getGateTopics().every((topic) => normalized.topicsDone.includes(topic.id));
   return {
     ...normalized,
-    questionsDone: normalized.battlePrepComplete || legacyReady ? GATE.questionsRequired : normalized.questionsDone,
+    questionsDone: normalized.battlePrepComplete || legacyReady ? Math.max(GATE.questionsRequired, normalized.questionsDone) : normalized.questionsDone,
     battlePrepComplete: normalized.battlePrepComplete || legacyReady || normalized.questionsDone >= GATE.questionsRequired,
   };
 }
@@ -117,22 +118,32 @@ export function attackStatus(gate) {
 }
 
 /**
- * Credits completed maths questions toward one siege. Progress and the
- * accuracy-based coin bonus are saved so a page refresh cannot erase a win.
- * Completing a topic is enough to earn a fight; accuracy earns extra coins.
+ * Extra training unlocks an optional bonus assault. The basic siege still
+ * becomes available after ten questions, and a player may stop at any time.
+ * @param {TrainingGate} gate
+ */
+export function bonusSiegeSeconds(gate) {
+  const answered = Math.max(0, Math.min(GATE.maxQuestions, gate.questionsDone || 0));
+  return answered >= 20 ? 30 : answered >= 15 ? 15 : 0;
+}
+
+/**
+ * Save every answered maths question, up to twenty per siege.
+ * Only the first ten build the initial coin bonus; answers 11–20
+ * can earn optional battle time but never block a normal siege.
  * @param {TrainingGate} gate
  * @param {number} answered
  * @param {number} accuracy 0–1
  */
 export function recordTrainingQuestions(gate, answered, accuracy) {
-  const current = Math.max(0, Math.min(GATE.questionsRequired, gate.questionsDone || 0));
-  if (isGateOpen(gate)) return { added: 0, gate };
+  const current = Math.max(0, Math.min(GATE.maxQuestions, gate.questionsDone || 0));
   const safeAnswered = Math.max(0, Math.floor(Number(answered) || 0));
-  const added = Math.min(safeAnswered, GATE.questionsRequired - current);
+  const added = Math.min(safeAnswered, GATE.maxQuestions - current);
   if (added === 0) return { added: 0, gate };
   const safeAccuracy = Math.max(0, Math.min(1, Number(accuracy) || 0));
   const done = current + added;
-  const bonusSiegeCoins = Math.min(25, (gate.bonusSiegeCoins || 0) + Math.round(added * 2.5 * safeAccuracy));
+  const bonusEligible = Math.max(0, Math.min(added, GATE.questionsRequired - current));
+  const bonusSiegeCoins = Math.min(25, (gate.bonusSiegeCoins || 0) + Math.round(bonusEligible * 2.5 * safeAccuracy));
   return {
     added,
     gate: {
@@ -144,9 +155,9 @@ export function recordTrainingQuestions(gate, answered, accuracy) {
   };
 }
 
-/** Completes the guided mixed-questions mission and opens the next siege. */
+/** Completes only the remaining basic maths questions, not bonus questions. */
 export function markBattlePrepComplete(gate, accuracy = 0) {
-  return recordTrainingQuestions(gate, GATE.questionsRequired, accuracy).gate;
+  return recordTrainingQuestions(gate, Math.max(0, GATE.questionsRequired - (gate.questionsDone || 0)), accuracy).gate;
 }
 
 /** @param {number} table 0 = mixed, 2–12 */
