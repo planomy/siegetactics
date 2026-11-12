@@ -25,7 +25,7 @@ import { initFractions } from './fractions.js?v=20261112e';
 import { initAnglesShapes } from './angles-shapes.js?v=20261112e';
 import { initMathsQuest } from './maths-quest.js?v=20261112e';
 import { initExpandedMath } from './expanded-maths.js?v=20261112e';
-import { initBattlePrep } from './battle-prep.js?v=20261112e';
+import { initBattlePrep } from './battle-prep.js?v=20261112p';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js';
 import {
   normalizeLevelMastery,
