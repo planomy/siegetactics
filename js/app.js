@@ -1,10 +1,10 @@
 import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261113h1';
 import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261112g';
 import { initForge } from './forge.js';
-import { renderShopBar, updateShopBar } from './shop.js?v=20261113m7';
+import { renderShopBar, updateShopBar } from './shop.js?v=20261113n1';
 import { renderArmory } from './armory.js?v=20261113a6';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel } from './turret-upgrades.js?v=20261112a2';
-import { createTDEngine } from './td-engine.js?v=20261113m9';
+import { createTDEngine } from './td-engine.js?v=20261113n1';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
 import { createAudio } from './audio.js?v=20261113m5';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
@@ -18,19 +18,19 @@ import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20
 import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261113a1';
 import { STORY_BEATS } from './story.js?v=20261113a1';
 import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261113h1';
-import { DEV } from './dev.js?v=20261113m1';
+import { DEV } from './dev.js?v=20261113n1';
 import { HEDGE } from './maze-field.js?v=20261113m7';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
 import { ECONOMY, bankBonusForgeXp } from './economy.js';
 import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
-import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
+import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261113n1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261113m8';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261113n1';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261113a2';
-import { initHowToPlay } from './how-to-play.js?v=20261113a4';
+import { initHowToPlay } from './how-to-play.js?v=20261113n1';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261113h1';
 import { initMeasurementLength } from './measurement-length.js?v=20261113h1';
@@ -1621,7 +1621,7 @@ function initSiegeScreen() {
     onSelect: selectTurret,
     onUnlock: tryUnlockTurret,
     showToast,
-    maze: DEV.maze,
+    maze: !DEV.lanes,
   };
 
   renderShopBar(shopBarEl, shopState);
@@ -1786,7 +1786,7 @@ function mountTDEngine(canvas, mission) {
   const gearFx = gearEffects(save.gear);
   renderLeakMeter(0, (mission?.maxLeaks ?? 5) + gearFx.extraLeaks);
   tdEngine = createTDEngine(canvas, {
-    maze: DEV.maze,
+    maze: !DEV.lanes,
     mission: {
       ...mission,
       maxLeaks: (mission?.maxLeaks ?? 5) + gearFx.extraLeaks,
@@ -1846,12 +1846,15 @@ function mountTDEngine(canvas, mission) {
       save.enemyDefeated = recordEnemyDefeat(save.enemyDefeated, key);
       persistSave();
     },
-    onWaveCleared({ wave }) {
+    onWaveCleared({ wave, remaining = 0 }) {
       const bonus = mission.waveClearBudgetXp ?? 10;
       run.waveBudget += bonus;
       refreshShop();
       addCacheProgress(GRANNY_CACHE.waveClearPoints);
-      showToast(`Wave ${wave} cleared! +${bonus} ${ECONOMY.siegeCoinsLabel} — reinforce the lawn!`, {
+      const msg = remaining
+        ? `Wave ${wave} survived! +${bonus} ${ECONOMY.siegeCoinsLabel} — ${remaining} still in the maze!`
+        : `Wave ${wave} cleared! +${bonus} ${ECONOMY.siegeCoinsLabel} — reinforce the lawn!`;
+      showToast(msg, {
         variant: 'success',
       });
     },

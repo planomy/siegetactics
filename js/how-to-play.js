@@ -21,8 +21,18 @@ export const HOW_TO_QUESTIONS = [
     icon: '🛡️',
     q: 'How do I win a battle?',
     a: [
-      'Tap a turret, then tap an empty grass square to build it. Turrets shoot aliens on their own.',
+      'Tap a turret, then tap an empty square on the lawn to build it. Turrets shoot aliens on their own.',
       'Survive the full minute without too many aliens getting past. The fewer that leak through, the better your result.',
+    ],
+  },
+  {
+    icon: '🌿',
+    q: 'How do mazes work?',
+    a: [
+      'Aliens walk around everything you build. Use cheap HEDGES to make a long, twisty maze, and put turrets beside it. The longer their walk, the more you blast!',
+      'The dotted line shows where they will walk. While you hold a turret, a blue line shows the new route.',
+      'You can never block them in completely. They always need a way to the porch.',
+      'Watch out: new gates open as the battle goes on, Raiders FLY over hedges, and Bruisers smash them!',
     ],
   },
   {

@@ -5,12 +5,11 @@ import { FIELD_LAYOUT, targetPathsForRow } from './field-layout.js?v=20261112a1'
 import { drawAlienPortalVfx } from './portal-vfx.js';
 import { buildPlacementCells, pickPlacementCell } from './placement-grid.js?v=20261112a1';
 import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed } from './enemies-data.js';
-import { getFieldImage, preloadField } from './preload.js';
+import { getFieldImage, preloadField } from './preload.js?v=20261113n1';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
 import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261113h1';
 import { ECONOMY } from './economy.js';
 import {
-  MAZE_FIELD_SRC,
   MAZE_LAYOUT,
   HEDGE,
   HEDGE_MAX_HP,
@@ -47,6 +46,10 @@ const { ENEMY_PATHS, TURRET_ROWS } = FIELD_LAYOUT;
 
 /** How long a wrecked turret stays on its square, and how much of that it spends fading out. */
 const WRECK_CLEAR_SECONDS = 2.5;
+/** Maze mode: seconds after a wave's last spawn before the next wave rolls in. */
+const MAZE_WAVE_ROLL_SEC = 5;
+/** Maze mode: aliens walk right past turrets for much longer, so their shots hit softer. */
+const MAZE_ALIEN_DAMAGE = 0.5;
 const WRECK_FADE_SECONDS = 0.7;
 
 /**
@@ -279,8 +282,8 @@ export function createTDEngine(canvas, opts) {
   /** @type {string|null} */
   let selectedType = null;
 
-  /** @type {{ spawned: number, nextSpawnAt: number, burstLeft: number }} */
-  let spawner = { spawned: 0, nextSpawnAt: 0, burstLeft: 0 };
+  /** @type {{ spawned: number, nextSpawnAt: number, burstLeft: number, lastAt: number }} */
+  let spawner = { spawned: 0, nextSpawnAt: 0, burstLeft: 0, lastAt: 0 };
 
   /** @type {{ active: boolean, waveNum: number, codename: string, startMs: number, duration: number }} */
   let splash = { active: false, waveNum: 1, codename: '', startMs: 0, duration: ANNOUNCE_SPLASH_SEC };
@@ -485,15 +488,8 @@ export function createTDEngine(canvas, opts) {
       render();
     };
     portalLoader.src = MAZE_LAYOUT.portalSprite.src;
-    fieldImg = null;
-    const lawn = new Image();
-    lawn.decoding = 'async';
-    lawn.onload = () => {
-      fieldImg = lawn;
-      render();
-    };
-    lawn.src = MAZE_FIELD_SRC;
-  } else if (!fieldImg) {
+  }
+  if (!fieldImg) {
     preloadField().then((img) => {
       fieldImg = img;
       render();
@@ -583,7 +579,7 @@ export function createTDEngine(canvas, opts) {
   }
 
   function initSpawner() {
-    spawner = { spawned: 0, nextSpawnAt: 0.4, burstLeft: 0 };
+    spawner = { spawned: 0, nextSpawnAt: waveTime + 0.4, burstLeft: 0, lastAt: waveTime };
   }
 
   function spawnEnemy(path, hp, speed, bossKind = null, spriteKey = null, lawn = null) {
@@ -658,6 +654,7 @@ export function createTDEngine(canvas, opts) {
 
     spawnFromConfig(cfg, spawner.spawned);
     spawner.spawned += 1;
+    spawner.lastAt = waveTime;
     portalSpawnPulse = 1;
 
     const inClump = spawner.spawned >= cfg.clumpAt;
@@ -966,7 +963,7 @@ export function createTDEngine(canvas, opts) {
       tx: tower.x,
       ty: tower.y,
       speed: 240,
-      damage: enemy.attackDamage * (tower.type === 'hedge' ? 4 : 1),
+      damage: enemy.attackDamage * (tower.type === 'hedge' ? 4 : maze ? MAZE_ALIEN_DAMAGE : 1),
       towerRow: tower.row,
       towerCol: tower.col,
     });
@@ -1408,8 +1405,10 @@ export function createTDEngine(canvas, opts) {
       return;
     }
 
+    // Maze waves overlap: aliens still in the maze keep walking (and getting
+    // shot) through the next wave's announcement instead of freezing.
+    const rolling = maze && phase === 'announce' && enemies.length > 0;
     if (phase === 'announce') {
-      tickBuildTimers(dt);
       tickPortalAnim(dt);
       tickGrannyRock(dt);
       if (siegeArmed) tickSiegeClock(dt);
@@ -1417,10 +1416,11 @@ export function createTDEngine(canvas, opts) {
         splash.active = false;
         beginWaveCombat();
       }
-      return;
-    }
-
-    if (phase === 'wave') {
+      if (!rolling) {
+        tickBuildTimers(dt);
+        return;
+      }
+    } else if (phase === 'wave') {
       tickPortalAnim(dt);
       tickGrannyRock(dt);
     } else {
@@ -1428,10 +1428,10 @@ export function createTDEngine(canvas, opts) {
     }
 
     tickBuildTimers(dt * speedMult);
-    tickSiegeClock(dt);
+    if (!rolling) tickSiegeClock(dt);
 
     waveTime += dt;
-    updateSpawner();
+    if (phase === 'wave') updateSpawner();
 
     enemies.forEach((e) => {
       let spd = e.speed;
@@ -1494,7 +1494,7 @@ export function createTDEngine(canvas, opts) {
     });
     enemyShots = enemyShots.filter((s) => s.speed > 0);
 
-    checkWaveClear();
+    if (phase === 'wave') checkWaveClear();
     syncNukeUi();
   }
 
@@ -1507,7 +1507,10 @@ export function createTDEngine(canvas, opts) {
       return;
     }
 
-    if (spawner.spawned >= cfg.totalSpawns && enemies.length === 0) {
+    if (spawner.spawned < cfg.totalSpawns) return;
+    // In the maze a long route must not cost waves, so the next one rolls in
+    // a few seconds after the last alien appears.
+    if (enemies.length === 0 || (maze && waveTime - spawner.lastAt >= MAZE_WAVE_ROLL_SEC)) {
       finishCurrentWave();
     }
   }
@@ -1565,11 +1568,13 @@ export function createTDEngine(canvas, opts) {
 
   function beginWaveCombat() {
     setPhase('wave');
-    waveTime = 0;
     waveKills = 0;
-    enemies = [];
-    projectiles = [];
-    enemyShots = [];
+    if (!maze) {
+      waveTime = 0;
+      enemies = [];
+      projectiles = [];
+      enemyShots = [];
+    }
     cupcakeMissiles = [];
     cupcakeSalvo = { active: false, remaining: 0, cooldown: 0 };
     cupcakeBursts = [];
@@ -1616,9 +1621,12 @@ export function createTDEngine(canvas, opts) {
     opts.onWaveCleared?.({
       wave: wavesCompleted,
       nextWave: siegeTimeLeft > 0 ? wavesCompleted + 1 : null,
+      remaining: enemies.length,
     });
-    projectiles = [];
-    enemyShots = [];
+    if (!maze) {
+      projectiles = [];
+      enemyShots = [];
+    }
     if (siegeTimeLeft <= 0 || siegeTimerEnded) {
       finishAtTimeLimit();
       return;

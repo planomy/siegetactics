@@ -79,7 +79,7 @@ export const THREAT_DOSSIERS = [
       'WEAPONRY ............... DUAL HYDRAULIC PINCERS',
       'SENSORS ................ BINOCULAR PLASMA OPTICS',
       'MOBILITY ............... SHORT BURST SPRINT',
-      'FIELD INTEL ............ MULTI-LANE INGRESS',
+      'FIELD INTEL ............ MULTI-GATE INGRESS',
       'ACTION ................. MAINTAIN TRAINING POSTURE',
     ],
     meters: [

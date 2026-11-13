@@ -3,7 +3,9 @@ let fieldCache = null;
 /** @type {Promise<HTMLImageElement>|null} */
 let fieldPromise = null;
 
-export const FIELD_SRC = 'assets/field.png';
+import { DEV } from './dev.js?v=20261113n1';
+
+export const FIELD_SRC = DEV.lanes ? 'assets/field.png' : 'assets/field-lawn.jpg';
 
 /** Start loading the field art as early as possible. */
 export function preloadField() {

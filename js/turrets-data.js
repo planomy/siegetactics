@@ -185,7 +185,7 @@ export const TURRETS = {
     unlockXp: 5500,
     placementCost: 24,
     color: '#b565ff',
-    desc: 'Splashes lane — aliens crawl',
+    desc: 'Splashes goo — aliens crawl',
     role: 'glue',
     damage: 0,
     range: 88,

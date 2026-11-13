@@ -74,7 +74,7 @@ export function turretStatLine(t) {
   if (t.role === 'decoy') return 'Distracts alien fire';
   if (t.role === 'magnet') return `+${t.magnetBonus ?? 1} coin on nearby kills`;
   if (t.role === 'repair') return `Heals turrets within ${t.repairRadius ?? 90}px`;
-  if (t.role === 'glue') return 'Slows whole lane';
+  if (t.role === 'glue') return 'Slows every alien in range';
   if (t.role === 'freeze') return 'Freezing icy blast';
   if (t.damage > 0) return `${t.damage} dmg · ${t.range} range`;
   if (t.slow) return 'Slows enemies';

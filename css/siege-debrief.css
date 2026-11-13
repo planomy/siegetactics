@@ -13,7 +13,7 @@
   z-index: -1;
   background:
     radial-gradient(ellipse at 50% 45%, rgba(12, 8, 22, .55), rgba(6, 4, 12, .92) 70%),
-    url('../assets/field.png') center / cover no-repeat;
+    url('../assets/field-lawn.jpg') center / cover no-repeat;
   filter: saturate(.85);
 }
 
