@@ -1,4 +1,4 @@
-/** @typedef {'gun1'|'gun2'|'gun3'|'gun4'|'electro'|'slime'|'lazer1'|'lazer2'|'lazer3'|'missile'|'nukeFire'|'nukeExplosion'|'death'|'mothership'|'granddaddy'|'wave1warning'|'wave2warning'|'wave3warning'|'granddaddywarning'|'scuttling1'|'scuttling2'|'coreEarned'|'coreCollect'|'turretUpgrade'|'correct'|'wrong'} SoundId */
+/** @typedef {'gun1'|'gun2'|'gun3'|'gun4'|'electro'|'slime'|'lazer1'|'lazer2'|'lazer3'|'missile'|'nukeFire'|'nukeExplosion'|'death'|'mothership'|'granddaddy'|'wave1warning'|'wave2warning'|'wave3warning'|'granddaddywarning'|'scuttling1'|'scuttling2'|'coreEarned'|'coreCollect'|'turretUpgrade'|'correct'|'wrong'|'lightsaber'|'lockAndLoad'} SoundId */
 
 /** @type {Record<SoundId, string>} */
 const SOUND_SRC = {
@@ -28,6 +28,8 @@ const SOUND_SRC = {
   turretUpgrade: 'assets/sounds/turret-upgrade.mp3',
   correct: 'assets/sounds/correct.mp3',
   wrong: 'assets/sounds/wrong.mp3',
+  lightsaber: 'assets/sounds/lightsaber-hover.m4a',
+  lockAndLoad: 'assets/sounds/lock-and-load.m4a',
 };
 
 /** @type {Record<string, { id: SoundId, volume: number, rate: number, gap?: number }>} */
@@ -189,6 +191,14 @@ export function createAudio(opts) {
     /** A maths answer is wrong. */
     playWrong() {
       play('wrong', { volume: 0.5, gap: 0.15 });
+    },
+    /** "Lock and load!" with a gun cock, when Defend Granny is pressed. */
+    playLockAndLoad() {
+      play('lockAndLoad', { volume: 0.85, gap: 0.6 });
+    },
+    /** Mouse glides onto a topic card. */
+    playCardHover() {
+      play('lightsaber', { volume: 0.32, gap: 0.12 });
     },
     /** Call once after a user tap so mobile browsers allow playback. */
     warmUp() {

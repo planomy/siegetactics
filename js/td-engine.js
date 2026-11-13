@@ -9,6 +9,34 @@ import { getFieldImage, preloadField } from './preload.js';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
 import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261113h1';
 import { ECONOMY } from './economy.js';
+import {
+  MAZE_FIELD_SRC,
+  MAZE_LAYOUT,
+  HEDGE,
+  HEDGE_MAX_HP,
+  HEDGE_SPRITES,
+  CELL_COUNT,
+  cellIndex,
+  cellColRow,
+  cellCenter,
+  cellSize,
+  cellAtPoint,
+  isGoalCell,
+  isReservedCell,
+  computeFlowField,
+  nextCell,
+  bestEntryCell,
+  traceRoute,
+  blockingKeepsRoute,
+  drawHedge,
+  MAZE_GATES,
+  openGates,
+  gateOpeningAfter,
+  gateForUnit,
+  FLYING_UNITS,
+  HEDGE_SMASHERS,
+} from './maze-field.js?v=20261113m7';
+import { createGardenLife, LAWN_SCENE, LANE_SCENE } from './garden-life.js?v=20261113g2';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
 export function buildTimeForPlacementCost(cost) {
@@ -38,6 +66,7 @@ const WRECK_FADE_SECONDS = 0.7;
  * @property {boolean} wrecked
  * @property {number} buildRemaining - Seconds until turret is operational
  * @property {number} buildTotal
+ * @property {number} [variant] - Which hedge design (hedges only)
  */
 
 /**
@@ -61,6 +90,15 @@ const WRECK_FADE_SECONDS = 0.7;
  * @property {number} attackRate
  * @property {number} attackDamage
  * @property {number} attackRange
+ * @property {number} [nx] - Maze mode: normalised position
+ * @property {number} [ny]
+ * @property {number} [cell] - Maze mode: cell index it last arrived in (-1 = still at the gate)
+ * @property {number} [targetCell] - Maze mode: cell index it is walking to (-2 = porch)
+ * @property {number} [jx] - Maze mode: personal offset inside each cell so crowds spread out
+ * @property {number} [jy]
+ * @property {boolean} [reached]
+ * @property {boolean} [flying] - Maze mode: floats straight over hedges to the porch
+ * @property {{x:number,y:number}} [from] - Maze mode: where a flyer set off
  */
 
 /**
@@ -191,6 +229,20 @@ export function createTDEngine(canvas, opts) {
   let baseLeaks = 0;
   let baseKills = 0;
 
+  const maze = Boolean(opts.maze);
+  let mazeBlocked = new Uint8Array(CELL_COUNT);
+  let mazeDist = computeFlowField(mazeBlocked);
+  /** @typedef {{ gate: import('./maze-field.js').MazeGate, route: {col:number,row:number}[] }} GateRoute */
+  /** @param {Float64Array} dist @param {Uint8Array} blocked @returns {GateRoute[]} */
+  const routesFor = (dist, blocked) => MAZE_GATES.map((gate) => ({ gate, route: traceRoute(dist, blocked, gate) }));
+  let mazeRoutes = routesFor(mazeDist, mazeBlocked);
+  /** Routes the aliens would take if the hovered placement went ahead. */
+  /** @type {GateRoute[]|null} */
+  let mazeGhostRoutes = null;
+  let mazeCellW = 0;
+  let mazeCellH = 0;
+  const garden = createGardenLife(maze ? LAWN_SCENE : LANE_SCENE);
+
   function syncNukeUi() {
     if (!opts.onNukeStateChange) return;
     const sig = [
@@ -275,7 +327,68 @@ export function createTDEngine(canvas, opts) {
       const sz = Math.max(36, cellRadius() * 2.6);
       crumbled.forEach((t) => spawnNukeKillBurst(t.x, t.y - sz * 0.4, false, 0.85));
       towers = towers.filter((t) => !crumbled.includes(t));
+      if (maze) rebuildMaze();
     }
+  }
+
+  /** Hedges live outside TURRETS so they never reach the Armory or upgrades. */
+  function defOf(type) {
+    return type === 'hedge' ? HEDGE : effectiveTurret(type);
+  }
+
+  /** Lane mode: a turret row only covers the dirt tracks beside it. Maze mode: range alone decides. */
+  function rowCoversEnemy(row, enemy) {
+    return maze || targetPathsForRow(row).has(enemy.path);
+  }
+
+  function rebuildMaze() {
+    mazeBlocked = new Uint8Array(CELL_COUNT);
+    towers.forEach((t) => {
+      mazeBlocked[cellIndex(t.col, t.row)] = 1;
+    });
+    mazeDist = computeFlowField(mazeBlocked);
+    mazeRoutes = routesFor(mazeDist, mazeBlocked);
+  }
+
+  function currentWaveNum() {
+    return wavesCompleted + 1;
+  }
+
+  /** Turret sprites stand on the lower part of their cell; hedges fill it. */
+  function mazeCellPx(col, row) {
+    const c = cellCenter(col, row);
+    const cx = c.x * width;
+    const cy = c.y * height;
+    return { cx, cy, x: cx, y: cy + mazeCellH * 0.36 };
+  }
+
+  /** Cells aliens are standing in or walking into — building there is not allowed. */
+  function mazeCellsUnderfoot() {
+    const cells = new Set();
+    enemies.forEach((e) => {
+      if (e.flying) return;
+      if (e.cell !== undefined && e.cell >= 0) cells.add(e.cell);
+      if (e.targetCell !== undefined && e.targetCell >= 0) cells.add(e.targetCell);
+    });
+    return cells;
+  }
+
+  /**
+   * @returns {{ x: number, y: number, valid: boolean, cell: PlacementCell|null, reason?: string, routes?: GateRoute[] }}
+   */
+  function pickMazeCell(px, py) {
+    const hit = width > 0 && height > 0 ? cellAtPoint(px / width, py / height) : null;
+    if (!hit) return { x: px, y: py, valid: false, cell: null, reason: 'off' };
+    const pos = mazeCellPx(hit.col, hit.row);
+    const cell = /** @type {PlacementCell} */ ({ row: hit.row, col: hit.col, x: pos.x, y: pos.y });
+    const base = { x: pos.x, y: pos.y, cell };
+    if (isCellOccupied(hit.row, hit.col)) return { ...base, valid: false, reason: 'taken' };
+    if (isReservedCell(hit.col, hit.row)) return { ...base, valid: false, reason: 'reserved' };
+    const underfoot = mazeCellsUnderfoot();
+    if (underfoot.has(cellIndex(hit.col, hit.row))) return { ...base, valid: false, reason: 'alien' };
+    const check = blockingKeepsRoute(mazeBlocked, hit.col, hit.row, [...underfoot]);
+    if (!check.ok || !check.trial) return { ...base, valid: false, reason: 'blocks' };
+    return { ...base, valid: true, routes: routesFor(check.dist, check.trial) };
   }
 
   function setPhase(next) {
@@ -351,7 +464,36 @@ export function createTDEngine(canvas, opts) {
     cupcakeImg = cupcakeLoader;
     render();
   };
-  if (!fieldImg) {
+  /** @type {HTMLImageElement|null} */
+  let mazePortalImg = null;
+  /** @type {(HTMLImageElement|null)[]} */
+  const hedgeImgs = HEDGE_SPRITES.map(() => null);
+  let hedgesPlaced = 0;
+  let flyerWarned = false;
+  if (maze) {
+    HEDGE_SPRITES.forEach((src, i) => {
+      const img = new Image();
+      img.onload = () => {
+        hedgeImgs[i] = img;
+        render();
+      };
+      img.src = src;
+    });
+    const portalLoader = new Image();
+    portalLoader.onload = () => {
+      mazePortalImg = portalLoader;
+      render();
+    };
+    portalLoader.src = MAZE_LAYOUT.portalSprite.src;
+    fieldImg = null;
+    const lawn = new Image();
+    lawn.decoding = 'async';
+    lawn.onload = () => {
+      fieldImg = lawn;
+      render();
+    };
+    lawn.src = MAZE_FIELD_SRC;
+  } else if (!fieldImg) {
     preloadField().then((img) => {
       fieldImg = img;
       render();
@@ -360,6 +502,7 @@ export function createTDEngine(canvas, opts) {
 
   function cellRadius() {
     if (width <= 0) return 12;
+    if (maze) return Math.max(8, Math.min(mazeCellW, mazeCellH * 1.15) * 0.44);
     const cols = FIELD_LAYOUT.gridColX;
     const colW =
       cols.length > 1 ? (cols[1] - cols[0]) * width : ((pathEndX - pathStartX) * width) / 7;
@@ -373,6 +516,13 @@ export function createTDEngine(canvas, opts) {
   function updatePlacementPreview(px, py) {
     if (!selectedType || !canPlaceTurrets() || width <= 0 || height <= 0) {
       placementPreview = { x: px, y: py, valid: false, cell: null };
+      mazeGhostRoutes = null;
+      return;
+    }
+    if (maze) {
+      const pick = pickMazeCell(px, py);
+      placementPreview = { x: pick.x, y: pick.y, valid: pick.valid, cell: pick.cell };
+      mazeGhostRoutes = pick.routes ?? null;
       return;
     }
     const pick = pickPlacementCell(padPositions, px, py, width, height, isCellOccupied);
@@ -398,7 +548,16 @@ export function createTDEngine(canvas, opts) {
     pathStartX = width * FIELD_LAYOUT.pathStartX;
     pathEndX = width * FIELD_LAYOUT.pathEndX;
     padPositions = buildPlacementCells(width, height);
+    const mc = cellSize();
+    mazeCellW = mc.w * width;
+    mazeCellH = mc.h * height;
     towers.forEach((tower) => {
+      if (maze) {
+        const pos = mazeCellPx(tower.col, tower.row);
+        tower.x = pos.x;
+        tower.y = pos.y;
+        return;
+      }
       const cell = padPositions.find((c) => c.row === tower.row && c.col === tower.col);
       if (cell) {
         tower.x = cell.x;
@@ -427,7 +586,7 @@ export function createTDEngine(canvas, opts) {
     spawner = { spawned: 0, nextSpawnAt: 0.4, burstLeft: 0 };
   }
 
-  function spawnEnemy(path, hp, speed, bossKind = null, spriteKey = null) {
+  function spawnEnemy(path, hp, speed, bossKind = null, spriteKey = null, lawn = null) {
     const bobBase = Math.max(2, height * 0.007);
     const sizeScale = bossKind === 'granddaddy' ? 0.35 : bossKind === 'mothership' ? 0.45 : 1;
     const attackRate =
@@ -454,7 +613,12 @@ export function createTDEngine(canvas, opts) {
       attackRate,
       attackDamage,
       attackRange,
+      ...(maze ? spawnOnLawn(lawn ?? lawnSpawnFor(spriteKey ?? bossKind ?? 'monster1', 0)) : {}),
     });
+    if (maze && !flyerWarned && enemies[enemies.length - 1]?.flying && bossKind !== 'mothership') {
+      flyerWarned = true;
+      opts.showToast('Raiders FLY over hedges — only turrets can stop them!');
+    }
     if (bossKind === 'mothership') opts.audio?.playBoss('mothership');
     if (bossKind === 'granddaddy') opts.audio?.playGranddaddyWarning();
   }
@@ -477,13 +641,13 @@ export function createTDEngine(canvas, opts) {
 
     if (slot.unit === 'mothership') {
       const hp = scaledHp('mothership', cfg.hpScale, ramp);
-      spawnEnemy(2, hp, scaledSpeed('mothership', cfg.speedMul, rush), 'mothership');
+      spawnEnemy(2, hp, scaledSpeed('mothership', cfg.speedMul, rush), 'mothership', null, maze ? lawnSpawnFor('mothership', index) : null);
       return;
     }
 
     const hp = scaledHp(slot.unit, cfg.hpScale, ramp);
     const speed = scaledSpeed(slot.unit, cfg.speedMul, rush);
-    spawnEnemy(path, hp, speed, null, slot.unit);
+    spawnEnemy(path, hp, speed, null, slot.unit, maze ? lawnSpawnFor(slot.unit, index) : null);
   }
 
   function updateSpawner() {
@@ -508,7 +672,102 @@ export function createTDEngine(canvas, opts) {
     }
   }
 
+  /** @param {string} unit @param {number} index */
+  function lawnSpawnFor(unit, index) {
+    const gate = unit === 'granddaddy' ? MAZE_GATES[0] : gateForUnit(unit, index, openGates(currentWaveNum()));
+    return { gate, flying: FLYING_UNITS.has(unit) };
+  }
+
+  /** @param {{ gate: import('./maze-field.js').MazeGate, flying: boolean }} lawn */
+  function spawnOnLawn(lawn) {
+    const { gate, flying } = lawn;
+    const entry = bestEntryCell(mazeDist, gate) ?? gate.entries[0];
+    const sideways = gate.id === 'west' ? 0 : (Math.random() - 0.5) * 0.03;
+    const nx = gate.spawn.x + sideways;
+    const ny = gate.spawn.y + (gate.id === 'west' ? (Math.random() - 0.5) * 0.04 : 0);
+    return {
+      nx,
+      ny,
+      flying,
+      from: { x: nx, y: ny },
+      cell: -1,
+      targetCell: flying ? -2 : cellIndex(entry.col, entry.row),
+      jx: (Math.random() - 0.5) * 0.36,
+      jy: (Math.random() - 0.5) * 0.36,
+      reached: false,
+    };
+  }
+
+  /** Normalised point an alien heads for: its target cell (with its own offset) or the porch. */
+  function mazeTargetPoint(e) {
+    if (e.targetCell === -2) return MAZE_LAYOUT.porch;
+    const { col, row } = cellColRow(e.targetCell ?? 0);
+    const c = cellCenter(col, row);
+    const s = cellSize();
+    return { x: c.x + (e.jx ?? 0) * s.w, y: c.y + (e.jy ?? 0) * s.h };
+  }
+
+  /** Arrived at a cell: follow the flow field one step further (or onto the porch). */
+  function mazeAdvance(e) {
+    if (e.targetCell === -2) {
+      e.reached = true;
+      return;
+    }
+    e.cell = e.targetCell ?? -1;
+    const { col, row } = cellColRow(e.cell);
+    if (isGoalCell(col, row)) {
+      e.targetCell = -2;
+      return;
+    }
+    const next = nextCell(mazeDist, mazeBlocked, col, row);
+    if (next) e.targetCell = cellIndex(next.col, next.row);
+  }
+
+  function mazeMove(e, pxStep) {
+    if (e.flying) {
+      const p = MAZE_LAYOUT.porch;
+      const dx = (p.x - (e.nx ?? 0)) * width;
+      const dy = (p.y - (e.ny ?? 0)) * height;
+      const d = Math.hypot(dx, dy);
+      if (d <= pxStep) {
+        e.nx = p.x;
+        e.ny = p.y;
+        e.reached = true;
+        e.progress = 1;
+        return;
+      }
+      e.nx = (e.nx ?? 0) + (dx / d) * pxStep / width;
+      e.ny = (e.ny ?? 0) + (dy / d) * pxStep / height;
+      const from = e.from ?? p;
+      const total = Math.hypot((p.x - from.x) * width, (p.y - from.y) * height) || 1;
+      e.progress = Math.min(0.999, 1 - d / total);
+      return;
+    }
+    let left = pxStep;
+    for (let guard = 0; guard < 4 && left > 0 && !e.reached; guard++) {
+      const tp = mazeTargetPoint(e);
+      const dx = (tp.x - (e.nx ?? 0)) * width;
+      const dy = (tp.y - (e.ny ?? 0)) * height;
+      const d = Math.hypot(dx, dy);
+      if (d <= left) {
+        e.nx = tp.x;
+        e.ny = tp.y;
+        left -= d;
+        const before = e.targetCell;
+        mazeAdvance(e);
+        if (before === e.targetCell && !e.reached) break;
+      } else {
+        e.nx = (e.nx ?? 0) + dx / d * left / width;
+        e.ny = (e.ny ?? 0) + dy / d * left / height;
+        left = 0;
+      }
+    }
+    const here = e.cell !== undefined && e.cell >= 0 ? mazeDist[e.cell] : mazeDist[e.targetCell ?? 0] + 1;
+    e.progress = e.reached ? 1 : Math.min(0.999, 1 - (Number.isFinite(here) ? here + 1 : CELL_COUNT) / (CELL_COUNT * 1.5));
+  }
+
   function enemyWorldPos(enemy) {
+    if (maze) return { x: (enemy.nx ?? 0) * width, y: (enemy.ny ?? 0) * height };
     const x = pathStartX + (pathEndX - pathStartX) * enemy.progress;
     return { x, y: pathY[enemy.path] };
   }
@@ -544,12 +803,11 @@ export function createTDEngine(canvas, opts) {
   }
 
   function findTarget(tower) {
-    const def = effectiveTurret(tower.type);
-    const paths = targetPathsForRow(tower.row);
+    const def = defOf(tower.type);
     let best = null;
     let bestP = -1;
     for (const e of enemies) {
-      if (!paths.has(e.path)) continue;
+      if (!rowCoversEnemy(tower.row, e)) continue;
       const pos = enemyWorldPos(e);
       const dist = Math.hypot(pos.x - tower.x, pos.y - tower.y);
       if (dist > def.range) continue;
@@ -563,8 +821,8 @@ export function createTDEngine(canvas, opts) {
 
   function fireTower(tower, dt) {
     if (tower.wrecked || tower.buildRemaining > 0) return;
-    const def = effectiveTurret(tower.type);
-    if (def.role === 'decoy' || def.role === 'magnet' || def.role === 'repair') return;
+    const def = defOf(tower.type);
+    if (def.role === 'decoy' || def.role === 'magnet' || def.role === 'repair' || def.role === 'wall') return;
 
     tower.cooldown -= dt;
     if (tower.cooldown > 0) return;
@@ -612,10 +870,11 @@ export function createTDEngine(canvas, opts) {
     let bestDist = Infinity;
     for (const t of towers) {
       if (t.wrecked || t.buildRemaining > 0) continue;
-      if (!targetPathsForRow(t.row).has(enemy.path)) continue;
+      if (!rowCoversEnemy(t.row, enemy)) continue;
       const dist = Math.hypot(pos.x - t.x, pos.y - t.y);
       if (dist > enemy.attackRange) continue;
-      const def = effectiveTurret(t.type);
+      const def = defOf(t.type);
+      if (def.role === 'wall' && !HEDGE_SMASHERS.has(enemy.spriteKey ?? '')) continue;
       if (def.role === 'decoy') {
         if (dist < bestDecoyDist) {
           bestDecoyDist = dist;
@@ -633,19 +892,18 @@ export function createTDEngine(canvas, opts) {
     const pos = enemyWorldPos(enemy);
     for (const t of towers) {
       if (t.wrecked || t.buildRemaining > 0) continue;
-      const def = effectiveTurret(t.type);
+      const def = defOf(t.type);
       if (def.role !== 'decoy') continue;
-      if (!targetPathsForRow(t.row).has(enemy.path)) continue;
+      if (!rowCoversEnemy(t.row, enemy)) continue;
       if (Math.hypot(pos.x - t.x, pos.y - t.y) <= enemy.attackRange) return true;
     }
     return false;
   }
 
   function splashGlueGoo(tower, def) {
-    const paths = targetPathsForRow(tower.row);
     let hit = false;
     for (const e of enemies) {
-      if (!paths.has(e.path)) continue;
+      if (!rowCoversEnemy(tower.row, e)) continue;
       const pos = enemyWorldPos(e);
       if (Math.hypot(pos.x - tower.x, pos.y - tower.y) > def.range) continue;
       e.slowUntil = Math.max(e.slowUntil, waveTime + (def.slowDuration ?? 3));
@@ -655,7 +913,7 @@ export function createTDEngine(canvas, opts) {
   }
 
   function applyTurretStatus(sourceType, x, y, aoe, primaryId) {
-    const def = effectiveTurret(sourceType);
+    const def = defOf(sourceType);
     if (!def) return;
     const tag = (e) => {
       if (def.slow || def.slowDuration || def.role === 'glue') {
@@ -684,7 +942,7 @@ export function createTDEngine(canvas, opts) {
   function updateRepairTowers(dt) {
     for (const shed of towers) {
       if (!isTowerOperational(shed)) continue;
-      const def = effectiveTurret(shed.type);
+      const def = defOf(shed.type);
       if (def.role !== 'repair') continue;
       for (const t of towers) {
         if (t === shed || t.wrecked || t.hp >= t.maxHp) continue;
@@ -708,7 +966,7 @@ export function createTDEngine(canvas, opts) {
       tx: tower.x,
       ty: tower.y,
       speed: 240,
-      damage: enemy.attackDamage,
+      damage: enemy.attackDamage * (tower.type === 'hedge' ? 4 : 1),
       towerRow: tower.row,
       towerCol: tower.col,
     });
@@ -721,10 +979,10 @@ export function createTDEngine(canvas, opts) {
     if (tower.hp <= 0) {
       tower.wrecked = true;
       tower.wreckAge = 0;
-      const name = effectiveTurret(tower.type)?.name ?? 'Turret';
+      const name = defOf(tower.type)?.name ?? 'Turret';
       if (waveTime - wreckToastAt > 2.2) {
         wreckToastAt = waveTime;
-        opts.showToast(`${name} wrecked!`);
+        opts.showToast(tower.type === 'hedge' ? 'A Bruiser smashed a hedge!' : `${name} wrecked!`);
       }
     }
   }
@@ -786,8 +1044,10 @@ export function createTDEngine(canvas, opts) {
   }
 
   function grannyPoseConfig() {
-    if (grannyNukePose && grannyNukeImg) return FIELD_LAYOUT.grannyNuke ?? FIELD_LAYOUT.grannyPorch;
-    return FIELD_LAYOUT.grannyPorch;
+    if (grannyNukePose && grannyNukeImg) {
+      return { ...FIELD_LAYOUT.grannyNuke, ...(maze ? MAZE_LAYOUT.grannyNuke : {}) };
+    }
+    return { ...FIELD_LAYOUT.grannyPorch, ...(maze ? MAZE_LAYOUT.grannyPorch : {}) };
   }
 
   function grannyLayout() {
@@ -1063,7 +1323,7 @@ export function createTDEngine(canvas, opts) {
     if (x != null && y != null) {
       for (const t of towers) {
         if (t.wrecked) continue;
-        const def = effectiveTurret(t.type);
+        const def = defOf(t.type);
         if (def.role !== 'magnet' || !isTowerOperational(t)) continue;
         if (Math.hypot(x - t.x, y - t.y) <= (def.magnetRadius ?? 100)) {
           xp += def.magnetBonus ?? 1;
@@ -1128,6 +1388,7 @@ export function createTDEngine(canvas, opts) {
   }
 
   function update(dt) {
+    garden.update(dt);
     if (phase === 'finale') {
       tickBurstEffects(dt);
       if (
@@ -1177,7 +1438,8 @@ export function createTDEngine(canvas, opts) {
       if (e.freezeUntil > waveTime) spd = 0;
       else if (e.slowUntil > waveTime) spd *= 0.45;
       if (enemyLuredByDecoy(e)) spd *= 0.35;
-      e.progress += spd * dt * speedMult;
+      if (maze) mazeMove(e, spd * dt * speedMult * (pathEndX - pathStartX));
+      else e.progress += spd * dt * speedMult;
     });
 
     enemies = enemies.filter((e) => {
@@ -1283,6 +1545,8 @@ export function createTDEngine(canvas, opts) {
 
   function showWaveSplash(waveNum) {
     const cfg = getWaveConfig();
+    const opening = maze ? MAZE_GATES.find((g) => g.opensAtWave === waveNum && g.announce) : null;
+    if (opening?.announce) opts.showToast(opening.announce);
     splash = {
       active: true,
       waveNum,
@@ -1404,8 +1668,111 @@ export function createTDEngine(canvas, opts) {
     }
   }
 
+  /** @param {GateRoute} gr */
+  function traceRouteLine({ gate, route }) {
+    ctx.beginPath();
+    ctx.moveTo(gate.spawn.x * width, gate.spawn.y * height);
+    route.forEach(({ col, row }) => {
+      const c = cellCenter(col, row);
+      ctx.lineTo(c.x * width, c.y * height);
+    });
+    ctx.lineTo(MAZE_LAYOUT.porch.x * width, MAZE_LAYOUT.porch.y * height);
+  }
+
+  /** Grid and alien route on the lawn while the player is building. */
+  function drawMazeOverlay() {
+    const placing = Boolean(selectedType) && canPlaceTurrets();
+    if (!placing && phase !== 'deploy') return;
+    ctx.save();
+    if (placing) {
+      for (let row = 0; row < MAZE_LAYOUT.rows; row++) {
+        for (let col = 0; col < MAZE_LAYOUT.cols; col++) {
+          const c = cellCenter(col, row);
+          const x = c.x * width - mazeCellW / 2;
+          const y = c.y * height - mazeCellH / 2;
+          if (isReservedCell(col, row)) {
+            ctx.fillStyle = 'rgba(255, 210, 80, 0.12)';
+            ctx.fillRect(x + 1, y + 1, mazeCellW - 2, mazeCellH - 2);
+          }
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x + 0.5, y + 0.5, mazeCellW - 1, mazeCellH - 1);
+        }
+      }
+    }
+    const pulse = 0.55 + 0.25 * Math.sin(portalAnimTime * 3);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.setLineDash([2, 10]);
+    ctx.lineDashOffset = -portalAnimTime * 30;
+    const waveNum = currentWaveNum();
+    const soon = gateOpeningAfter(waveNum);
+    const shown = (/** @type {GateRoute} */ gr) => gr.gate.opensAtWave <= waveNum || gr.gate === soon;
+    const ghosts = pointerActive ? mazeGhostRoutes : null;
+    ctx.lineWidth = 5;
+    mazeRoutes.filter(shown).forEach((gr) => {
+      if (!gr.route.length) return;
+      traceRouteLine(gr);
+      const upcoming = gr.gate.opensAtWave > waveNum;
+      ctx.strokeStyle = upcoming
+        ? `rgba(255, 120, 60, ${ghosts ? 0.25 : pulse * 0.6})`
+        : `rgba(255, 214, 90, ${ghosts ? 0.35 : pulse})`;
+      ctx.stroke();
+    });
+    ghosts?.filter(shown).forEach((gr) => {
+      if (!gr.route.length) return;
+      traceRouteLine(gr);
+      ctx.strokeStyle = `rgba(120, 240, 255, ${pulse + 0.2})`;
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  /** Side gates swirl once open; the next one to open flashes a warning. */
+  function drawGateMarkers() {
+    const waveNum = currentWaveNum();
+    MAZE_GATES.forEach((gate) => {
+      if (gate.id === 'west' || gate.opensAtWave > waveNum) return;
+      drawAlienPortalVfx(ctx, {
+        width,
+        height,
+        time: portalAnimTime + gate.opensAtWave,
+        portal: { cx: gate.spawn.x, cy: gate.spawn.y, radius: 0.05, socketCount: 6 },
+        spawnPulse: 1,
+      });
+    });
+    const soon = gateOpeningAfter(waveNum);
+    if (!soon || phase === 'done' || phase === 'finale') return;
+    const x = soon.spawn.x * width;
+    const y = Math.min(height - 22, Math.max(22, soon.spawn.y * height));
+    const r = Math.max(12, height * 0.026);
+    const blink = 0.55 + 0.45 * Math.sin(portalAnimTime * 6);
+    ctx.save();
+    ctx.fillStyle = `rgba(220, 40, 30, ${0.55 + blink * 0.4})`;
+    ctx.strokeStyle = '#fff3d6';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, r * (1 + blink * 0.12), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = `${Math.round(r * 1.4)}px Bangers, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('!', x, y + 1);
+    ctx.font = `${Math.round(r * 0.85)}px Bangers, sans-serif`;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(40, 10, 0, 0.85)';
+    const label = `${soon.name.toUpperCase()} OPENS NEXT WAVE`;
+    const ly = soon.spawn.y > 0.5 ? y - r * 1.9 : y + r * 1.9;
+    ctx.strokeText(label, x, ly);
+    ctx.fillStyle = '#ffd36b';
+    ctx.fillText(label, x, ly);
+    ctx.restore();
+  }
+
   function drawPortalVfx() {
-    const portal = FIELD_LAYOUT.alienPortal;
+    const portal = maze ? MAZE_LAYOUT.portal : FIELD_LAYOUT.alienPortal;
     if (!portal) return;
     drawAlienPortalVfx(ctx, {
       width,
@@ -1419,6 +1786,12 @@ export function createTDEngine(canvas, opts) {
   function drawField() {
     if (fieldImg) {
       ctx.drawImage(fieldImg, 0, 0, width, height);
+      if (maze && mazePortalImg) {
+        const ps = MAZE_LAYOUT.portalSprite;
+        const pw = ps.w * width;
+        const ph = ps.h * height;
+        ctx.drawImage(mazePortalImg, ps.cx * width - ps.anchorX * pw, ps.cy * height - ps.anchorY * ph, pw, ph);
+      }
     } else {
       const grd = ctx.createLinearGradient(0, 0, 0, height);
       grd.addColorStop(0, '#1a3d1a');
@@ -1437,10 +1810,27 @@ export function createTDEngine(canvas, opts) {
     }
   }
 
-  function drawTurretAt(type, x, y, { wrecked = false, ghost = false, valid = true } = {}) {
+  function drawTurretAt(type, x, y, { wrecked = false, ghost = false, valid = true, variant = 0 } = {}) {
     const sz = Math.max(36, cellRadius() * 2.6);
     const anchorY = FIELD_LAYOUT.turretAnchorY;
-    const def = effectiveTurret(type);
+    const def = defOf(type);
+    if (type === 'hedge') {
+      ctx.save();
+      if (wrecked || (ghost && !valid)) ctx.filter = 'grayscale(1) brightness(0.55)';
+      if (ghost) ctx.globalAlpha = valid ? 0.85 : 0.7;
+      const img = hedgeImgs[variant % hedgeImgs.length];
+      if (img) {
+        // Square top-down tiles: overfill the cell a touch so neighbours knit into one wall.
+        const dw = mazeCellW * 1.08;
+        const dh = mazeCellH * 1.12;
+        const cy = y - mazeCellH * 0.36;
+        ctx.drawImage(img, x - dw / 2, cy - dh / 2, dw, dh);
+      } else {
+        drawHedge(ctx, x, y - mazeCellH * 0.36, mazeCellW, mazeCellH);
+      }
+      ctx.restore();
+      return;
+    }
     const img = wrecked ? wreckedSprites[type] ?? turretSprites[type] : turretSprites[type];
 
     ctx.save();
@@ -1480,6 +1870,7 @@ export function createTDEngine(canvas, opts) {
   function drawPlacementPreview() {
     if (!selectedType || !canPlaceTurrets() || !pointerActive) return;
     drawTurretAt(selectedType, placementPreview.x, placementPreview.y, {
+      variant: hedgesPlaced,
       ghost: true,
       valid: placementPreview.valid,
     });
@@ -1512,7 +1903,7 @@ export function createTDEngine(canvas, opts) {
   function drawUpgradeAura(t, sz) {
     const level = turretLevel(t.type);
     if (level < 2) return;
-    const def = effectiveTurret(t.type);
+    const def = defOf(t.type);
     const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 260 + t.x);
     const cy = t.y - sz * 0.05;
     const r = sz * (level === 3 ? 0.62 : 0.52) * (0.92 + pulse * 0.1);
@@ -1567,12 +1958,13 @@ export function createTDEngine(canvas, opts) {
   function drawTowers() {
     const sz = Math.max(36, cellRadius() * 2.6);
     const anchorY = FIELD_LAYOUT.turretAnchorY;
-    towers.forEach((t) => {
+    const drawOrder = maze ? [...towers].sort((a, b) => a.y - b.y) : towers;
+    drawOrder.forEach((t) => {
       const building = t.buildRemaining > 0 && !t.wrecked;
       if (building) {
         ctx.save();
         ctx.globalAlpha = 0.72;
-        drawTurretAt(t.type, t.x, t.y, { wrecked: t.wrecked });
+        drawTurretAt(t.type, t.x, t.y, { wrecked: t.wrecked, variant: t.variant });
         ctx.restore();
       } else if (t.wrecked) {
         // Shakes, then fades and sinks as it crumbles away.
@@ -1582,11 +1974,11 @@ export function createTDEngine(canvas, opts) {
         ctx.save();
         ctx.globalAlpha = crumbling;
         ctx.translate(shake, (1 - crumbling) * sz * 0.25);
-        drawTurretAt(t.type, t.x, t.y, { wrecked: true });
+        drawTurretAt(t.type, t.x, t.y, { wrecked: true, variant: t.variant });
         ctx.restore();
       } else {
         drawUpgradeAura(t, sz);
-        drawTurretAt(t.type, t.x, t.y, { wrecked: false });
+        drawTurretAt(t.type, t.x, t.y, { wrecked: false, variant: t.variant });
         drawUpgradeStars(t, sz);
       }
       drawBuildRing(t);
@@ -1610,6 +2002,13 @@ export function createTDEngine(canvas, opts) {
       const img = enemySprites[key];
       const size = spriteSizeForEnemy(e, baseSize);
 
+      if (e.flying) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.beginPath();
+        ctx.ellipse(pos.x, pos.y + size * 0.75, size * 0.36, size * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       if (img) {
         ctx.drawImage(img, pos.x - size / 2, pos.y - size / 2, size, size);
       } else {
@@ -1631,7 +2030,7 @@ export function createTDEngine(canvas, opts) {
   function drawProjectiles() {
     const scale = Math.max(0.85, height / 576);
     projectiles.forEach((p) => {
-      const def = effectiveTurret(p.type);
+      const def = defOf(p.type);
       const ammo = AMMO[p.type];
       const img = ammoSprites[p.type];
       const size = (ammo?.size ?? (def?.boltSize ?? 5) * 4) * scale;
@@ -1739,11 +2138,15 @@ export function createTDEngine(canvas, opts) {
   function render() {
     drawField();
     if (phase !== 'finale') {
+      if (maze) drawMazeOverlay();
+      garden.draw(ctx, width, height, 'ground');
       drawPortalVfx();
+      if (maze) drawGateMarkers();
       drawGranny();
       drawTowers();
       drawPlacementPreview();
       drawEnemies();
+      garden.draw(ctx, width, height, 'air');
       drawProjectiles();
       drawEnemyShots();
       drawCupcakeMissiles();
@@ -1784,19 +2187,33 @@ export function createTDEngine(canvas, opts) {
     }
     const { x, y } = canvasCoords(clientX, clientY);
     updatePlacementPreview(x, y);
-    const pick = pickPlacementCell(padPositions, x, y, width, height, isCellOccupied);
+    const pick = maze
+      ? pickMazeCell(x, y)
+      : pickPlacementCell(padPositions, x, y, width, height, isCellOccupied);
     if (!pick.cell) {
-      opts.showToast('Stay on the grass lanes — not the dirt tracks.');
+      opts.showToast(maze ? 'Build on the open lawn.' : 'Stay on the grass lanes — not the dirt tracks.');
       return;
     }
     if (!pick.valid) {
-      opts.showToast('That spot is taken.');
+      const reason = 'reason' in pick ? pick.reason : 'taken';
+      opts.showToast(
+        reason === 'blocks'
+          ? "That would trap the aliens — leave them a path!"
+          : reason === 'reserved'
+            ? 'Keep the gate and porch steps clear.'
+            : reason === 'alien'
+              ? 'An alien is standing there!'
+              : 'That spot is taken.'
+      );
       return;
     }
     if (!opts.trySpend(selectedType)) return;
-    const def = effectiveTurret(selectedType);
-    const maxHp = TURRET_MAX_HP[/** @type {keyof typeof TURRET_MAX_HP} */ (selectedType)] ?? 80;
-    const buildTotal = buildTimeForPlacementCost(def?.placementCost ?? 15);
+    const def = defOf(selectedType);
+    const maxHp =
+      selectedType === 'hedge'
+        ? HEDGE_MAX_HP
+        : TURRET_MAX_HP[/** @type {keyof typeof TURRET_MAX_HP} */ (selectedType)] ?? 80;
+    const buildTotal = selectedType === 'hedge' ? 0 : buildTimeForPlacementCost(def?.placementCost ?? 15);
     towers.push({
       type: selectedType,
       row: pick.cell.row,
@@ -1809,7 +2226,12 @@ export function createTDEngine(canvas, opts) {
       wrecked: false,
       buildRemaining: buildTotal,
       buildTotal,
+      variant: selectedType === 'hedge' ? hedgesPlaced++ % HEDGE_SPRITES.length : 0,
     });
+    if (maze) {
+      rebuildMaze();
+      updatePlacementPreview(x, y);
+    }
     opts.onTurretPlaced?.();
     tryAutoStartWave();
     render();

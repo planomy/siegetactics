@@ -1,12 +1,12 @@
 import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261113h1';
 import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261112g';
 import { initForge } from './forge.js';
-import { renderShopBar, updateShopBar } from './shop.js?v=20261112m';
+import { renderShopBar, updateShopBar } from './shop.js?v=20261113m7';
 import { renderArmory } from './armory.js?v=20261113a6';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel } from './turret-upgrades.js?v=20261112a2';
-import { createTDEngine } from './td-engine.js?v=20261113h1';
+import { createTDEngine } from './td-engine.js?v=20261113m9';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
-import { createAudio } from './audio.js?v=20261113h1';
+import { createAudio } from './audio.js?v=20261113m5';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
 import { topicXpMultiplier } from './hot-topic.js?v=20261112a1';
 import { normalizeSiegeRecord, recordSiege, siegeRankLevel, renderRankResult } from './siege-ranks.js?v=20261112a2';
@@ -18,7 +18,8 @@ import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20
 import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261113a1';
 import { STORY_BEATS } from './story.js?v=20261113a1';
 import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261113h1';
-import { DEV } from './dev.js';
+import { DEV } from './dev.js?v=20261113m1';
+import { HEDGE } from './maze-field.js?v=20261113m7';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
 import { ECONOMY, bankBonusForgeXp } from './economy.js';
@@ -26,7 +27,7 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261113d3';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261113m8';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261113a2';
 import { initHowToPlay } from './how-to-play.js?v=20261113a4';
@@ -134,6 +135,14 @@ let tdEngine = null;
 
 /** @type {ReturnType<typeof createAudio>} */
 const audio = createAudio({ getEnabled: () => save.settings.sound });
+
+document.addEventListener('pointerover', (e) => {
+  if (e.pointerType !== 'mouse') return;
+  const card = /** @type {HTMLElement|null} */ (e.target instanceof Element ? e.target.closest('.gb-topic-campaign-card') : null);
+  if (!card || card.matches(':disabled, .gb-story-locked')) return;
+  if (e.relatedTarget instanceof Node && card.contains(e.relatedTarget)) return;
+  audio.playCardHover();
+});
 const music = createMusic({ getEnabled: () => save.settings.sound && save.settings.music });
 /** Right answers in a row; five or more brings in the hot-streak music. */
 let answerStreak = 0;
@@ -748,7 +757,7 @@ function tryUpgradeTurret(id) {
 }
 
 function selectTurret(id) {
-  if (!isUnlocked(id)) return;
+  if (id !== 'hedge' && !isUnlocked(id)) return;
   run.selectedTurret = id;
   shopState.selectedId = id;
   tdEngine?.setSelectedType(id);
@@ -1211,6 +1220,8 @@ function makeDashboardState() {
       showToast('That training is still in the forge.');
     },
     onHoldTheLine() {
+      audio.warmUp();
+      audio.playLockAndLoad();
       disposeActiveTraining?.();
       disposeActiveTraining = null;
       if (!DEV.skipForge && !isGateOpen(save.trainingGate)) {
@@ -1610,6 +1621,7 @@ function initSiegeScreen() {
     onSelect: selectTurret,
     onUnlock: tryUnlockTurret,
     showToast,
+    maze: DEV.maze,
   };
 
   renderShopBar(shopBarEl, shopState);
@@ -1774,6 +1786,7 @@ function mountTDEngine(canvas, mission) {
   const gearFx = gearEffects(save.gear);
   renderLeakMeter(0, (mission?.maxLeaks ?? 5) + gearFx.extraLeaks);
   tdEngine = createTDEngine(canvas, {
+    maze: DEV.maze,
     mission: {
       ...mission,
       maxLeaks: (mission?.maxLeaks ?? 5) + gearFx.extraLeaks,
@@ -1805,11 +1818,11 @@ function mountTDEngine(canvas, mission) {
     },
     getBudget: () => run.waveBudget,
     trySpend: (type) => {
-      if (!isUnlocked(type)) {
+      if (type !== 'hedge' && !isUnlocked(type)) {
         showToast(`Unlock that turret with ${ECONOMY.forgeXpLabel} first.`, { variant: 'shop' });
         return false;
       }
-      const cost = TURRETS[type]?.placementCost ?? 0;
+      const cost = type === 'hedge' ? HEDGE.placementCost : TURRETS[type]?.placementCost ?? 0;
       if (run.waveBudget < cost) {
         showToast(`Need ${cost} ${ECONOMY.siegeCoinsLabel} to place that.`, { variant: 'warn' });
         return false;

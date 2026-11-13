@@ -33,10 +33,16 @@ test('after owning a weapon, the advert advances to the next locked turret', () 
   assert.notEqual(second.id, first.id);
 });
 
-test('the Armory promotion celebrates a complete collection', () => {
+test('the Armory promotion celebrates a complete collection once every turret is maxed', async () => {
+  const { setTurretLevels } = await import('../js/turret-upgrades.js?v=20261112a2');
   const result = armoryPromoState(99999, new Set(TURRET_ORDER));
   assert.equal(result.complete, true);
-  assert.match(renderArmoryPromo(99999, new Set(TURRET_ORDER)), /YOU'VE UNLOCKED THEM ALL/);
+  setTurretLevels(Object.fromEntries(TURRET_ORDER.map((id) => [id, 3])));
+  try {
+    assert.match(renderArmoryPromo(99999, new Set(TURRET_ORDER)), /YOU'VE UNLOCKED THEM ALL/);
+  } finally {
+    setTurretLevels({});
+  }
 });
 
 test('power particles increase with every question without exceeding a sensible cap', () => {
@@ -49,4 +55,18 @@ test('power particles increase with every question without exceeding a sensible 
   assert.ok(powerParticleCount(10) <= 40);
   assert.equal(powerParticleCount(-1), powerParticleCount(0));
   assert.equal(powerParticleCount(100), powerParticleCount(10));
+});
+
+test('with every turret owned, the promo features the next upgrade instead of an empty card', async () => {
+  const { TURRET_ORDER } = await import('../js/turrets-data.js');
+  const { upgradePromoState } = await import('../js/armory-promo.js');
+  const all = new Set(TURRET_ORDER);
+  const broke = upgradePromoState(all, 0);
+  assert.ok(broke);
+  assert.equal(broke.ready, false);
+  assert.equal(broke.nextLevel, 2);
+  const html = renderArmoryPromo(999999, all, 1);
+  assert.match(html, /UPGRADE READY!/);
+  assert.match(html, /TURRETS AT MAX LEVEL/);
+  assert.doesNotMatch(html, /armory-promo-complete/);
 });

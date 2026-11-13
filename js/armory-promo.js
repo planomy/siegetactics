@@ -1,5 +1,68 @@
 import { TURRETS, TURRET_ORDER } from './turrets-data.js';
 import { nextLockedTurret, nextUnlockableTurret } from './armory.js?v=20261112f';
+import { TURRET_MAX_LEVEL, nextUpgrade, turretLevel } from './turret-upgrades.js?v=20261112a2';
+
+/**
+ * Once every turret is owned, the promo features the next one worth upgrading:
+ * one the player can afford now, else the lowest-levelled.
+ * @param {Set<string>} unlocked @param {number} cores
+ */
+export function upgradePromoState(unlocked, cores) {
+  const owned = TURRET_ORDER.filter((id) => unlocked.has(id));
+  const climbing = owned.filter((id) => turretLevel(id) < TURRET_MAX_LEVEL);
+  const maxed = owned.length - climbing.length;
+  const id =
+    climbing.find((t) => nextUpgrade(t, cores, true)?.ready) ??
+    [...climbing].sort((a, b) => turretLevel(a) - turretLevel(b))[0];
+  if (!id) return null;
+  const up = /** @type {NonNullable<ReturnType<typeof nextUpgrade>>} */ (nextUpgrade(id, cores, true));
+  const turret = TURRETS[id];
+  return {
+    id,
+    name: turret.name,
+    sprite: turret.sprite,
+    flipX: Boolean(turret.flipX),
+    level: turretLevel(id),
+    nextLevel: up.level,
+    cost: up.cost,
+    ready: up.ready,
+    short: up.short,
+    cores,
+    maxed,
+    owned: owned.length,
+  };
+}
+
+/** @param {NonNullable<ReturnType<typeof upgradePromoState>>} u */
+function renderUpgradePromo(u) {
+  const status = u.ready ? 'ENOUGH CRYSTALS NOW!' : `ONLY ${u.short} MORE CRYSTAL${u.short === 1 ? '' : 'S'}!`;
+  const have = Math.min(u.cores, u.cost);
+  return `
+    <section class="armory-promo armory-promo-upgrade${u.ready ? ' armory-promo-ready' : ''}" aria-label="Granny's Armory turret upgrades">
+      <div class="armory-promo-art">
+        <div class="armory-promo-art-ring" aria-hidden="true"></div>
+        <img src="${u.sprite}" alt="" class="${u.flipX ? 'flip-x' : ''}" loading="lazy" width="170" height="170" />
+        <span class="armory-promo-art-badge">${u.ready ? 'UPGRADE READY!' : `LEVEL ${u.nextLevel} NEXT`}</span>
+      </div>
+      <div class="armory-promo-copy">
+        <span class="armory-promo-eyebrow">GRANNY'S ARMORY · TURRET UPGRADES</span>
+        <h2>${u.ready ? 'POWER UP YOUR TURRETS!' : 'MAKE THEM UNSTOPPABLE!'}</h2>
+        <p class="armory-promo-featured">${u.name} <span>· Level ${u.level} → ${u.nextLevel}: harder hits, longer reach, faster fire</span></p>
+        <div class="armory-promo-progress">
+          <div class="armory-promo-progress-label">
+            <strong>${status}</strong>
+            <span>${have} / ${u.cost} CRYSTALS</span>
+          </div>
+          <div class="armory-promo-track" role="progressbar" aria-label="Crystals toward upgrading ${u.name}" aria-valuemin="0" aria-valuemax="${u.cost}" aria-valuenow="${have}">
+            <span class="armory-promo-fill" style="width: ${Math.round((have / u.cost) * 100)}%"></span>
+          </div>
+        </div>
+        <button type="button" class="armory-promo-cta" id="mission-armory-open">${u.ready ? 'UPGRADE IN THE ARMORY' : 'VIEW YOUR ARMORY'}</button>
+        <span class="armory-promo-footnote">${u.maxed} / ${u.owned} TURRETS AT MAX LEVEL</span>
+      </div>
+    </section>
+  `;
+}
 
 /**
  * Preview only. Forge XP is a permanent milestone score, NOT a spendable balance.
@@ -31,9 +94,12 @@ export function armoryPromoState(xp, unlocked) {
  * The main-screen advertisement for weapon upgrades.
  * @param {number} xp
  * @param {Set<string>} unlocked
+ * @param {number} [cores] - Crystals available for turret upgrades
  */
-export function renderArmoryPromo(xp, unlocked) {
+export function renderArmoryPromo(xp, unlocked, cores = 0) {
   const p = armoryPromoState(xp, unlocked);
+  const upgrade = p.complete ? upgradePromoState(unlocked, cores) : null;
+  if (upgrade) return renderUpgradePromo(upgrade);
   if (p.complete) {
     return `
       <section class="armory-promo armory-promo-complete" aria-label="Granny's Armory">

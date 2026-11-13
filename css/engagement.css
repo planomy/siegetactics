@@ -352,17 +352,21 @@
 .story-title {
   display: block;
   margin-bottom: 6px;
-  font-size: .75rem;
-  font-weight: 900;
-  letter-spacing: .12em;
-  color: #a05a00;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 400;
+  letter-spacing: .06em;
+  color: #c0560a;
+  text-shadow: 1px 1px 0 #ffd88a;
 }
 
 .story-line {
   min-height: 3.4em;
   margin: 0 0 10px;
-  font-size: 1.05rem;
-  line-height: 1.45;
+  font-family: var(--font-math);
+  font-size: 1.15rem;
+  line-height: 1.4;
+  color: #3a2208;
 }
 
 .story-next {
@@ -370,11 +374,24 @@
   padding: 8px 16px;
   border: none;
   border-radius: 10px;
-  background: #e97a20;
+  background: linear-gradient(180deg, #ffa53a, #e0650f);
+  box-shadow: 0 4px 0 #9c4206, 0 6px 12px rgba(0, 0, 0, .25);
   color: #fff;
-  font: inherit;
-  font-weight: 900;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  letter-spacing: .06em;
+  text-shadow: 2px 2px 0 #8a3a05;
   cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.story-next:hover {
+  transform: translateY(-1px) scale(1.04);
+}
+
+.story-next:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #9c4206;
 }
 
 /* My Defender */

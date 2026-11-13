@@ -29,7 +29,7 @@ test('mixed maths, armory promotion and maths topic choices share the wide-scree
   assert.match(css, /mission-mixed-card\s*\{\s*grid-area: mixed;/);
   assert.match(css, /armory-promo\s*\{\s*grid-area: armory;/);
   assert.match(css, /mission-topic-section\s*\{\s*grid-area: topics;/);
-  assert.match(home, /renderArmoryPromo\(state\.xp, state\.unlockedTurrets\)/);
+  assert.match(home, /renderArmoryPromo\(state\.xp, state\.unlockedTurrets, state\.crystalsToSpend \?\? 0\)/);
   assert.match(home, /class="mission-topic-section"/);
 });
 

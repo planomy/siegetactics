@@ -1,5 +1,11 @@
 import { TURRETS, TURRET_ORDER } from './turrets-data.js';
 import { ECONOMY } from './economy.js';
+import { HEDGE, hedgeIconUrl } from './maze-field.js?v=20261113m7';
+
+/** @param {string} id */
+function shopItem(id) {
+  return id === 'hedge' ? { ...HEDGE, sprite: hedgeIconUrl() } : TURRETS[id];
+}
 
 /** @type {HTMLElement|null} */
 let popoverEl = null;
@@ -39,7 +45,7 @@ function ensurePopover() {
 
 /** @param {import('./turrets-data.js').TurretDef} t @param {Parameters<typeof renderShopBar>[1]} state */
 function turretStatus(t, state) {
-  const isUnlocked = state.unlocked.has(t.id);
+  const isUnlocked = t.id === 'hedge' || state.unlocked.has(t.id);
   if (isUnlocked && state.budget >= t.placementCost) {
     return { tone: 'ready', label: 'Ready to place', detail: `${t.placementCost} ${ECONOMY.siegeCoinsLabel}` };
   }
@@ -64,6 +70,7 @@ function turretStatus(t, state) {
 
 /** @param {import('./turrets-data.js').TurretDef} t */
 export function turretStatLine(t) {
+  if (t.role === 'wall') return 'Blocks the path — aliens walk around';
   if (t.role === 'decoy') return 'Distracts alien fire';
   if (t.role === 'magnet') return `+${t.magnetBonus ?? 1} coin on nearby kills`;
   if (t.role === 'repair') return `Heals turrets within ${t.repairRadius ?? 90}px`;
@@ -172,6 +179,7 @@ function bindShopPopover(btn, t, state) {
  *   onSelect: (id: string) => void,
  *   onUnlock: (id: string) => boolean,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
+ *   maze?: boolean,
  * }} state
  */
 export function renderShopBar(barEl, state) {
@@ -189,14 +197,17 @@ export function renderShopBar(barEl, state) {
   `;
 
   const turretsEl = barEl.querySelector('#shop-turrets');
-  const deployIds = TURRET_ORDER.filter((id) => state.unlocked.has(id));
+  const deployIds = [
+    ...(state.maze ? ['hedge'] : []),
+    ...TURRET_ORDER.filter((id) => state.unlocked.has(id)),
+  ];
   if (deployIds.length === 0) {
     turretsEl.innerHTML = `<p class="shop-empty">No turrets unlocked — visit the Armory at HQ.</p>`;
     return;
   }
 
   deployIds.forEach((id) => {
-    const t = TURRETS[id];
+    const t = shopItem(id);
     const isUnlocked = true;
     const canPlace = canAffordTurret(state, t);
 
@@ -245,7 +256,7 @@ export function updateShopBar(barEl, state) {
   barEl.querySelectorAll('.shop-buy-btn').forEach((btn) => {
     const id = btn.dataset.turretId;
     if (!id) return;
-    const t = TURRETS[id];
+    const t = shopItem(id);
     const canPlace = canAffordTurret(state, t);
 
     btn.classList.toggle('selected', state.selectedId === id);

@@ -9,7 +9,7 @@ import { topicRankProgress, getTopicRecord } from './topic-progression.js?v=2026
 import { getQualifiedLevels } from './level-mastery.js';
 import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel, xpMultiplierFor } from './difficulty.js';
-import { renderArmoryPromo } from './armory-promo.js?v=20261113a1';
+import { renderArmoryPromo } from './armory-promo.js?v=20261113m8';
 import { animateTally } from './tally.js';
 import { ENEMY_SPRITE_SRC, GRUNT_STATS, BOSS_STATS } from './enemies-data.js';
 
@@ -814,7 +814,7 @@ export function renderHome(host, state) {
           </div>
         </div>
       </section>
-      ${renderArmoryPromo(state.xp, state.unlockedTurrets)}
+      ${renderArmoryPromo(state.xp, state.unlockedTurrets, state.crystalsToSpend ?? 0)}
       <section class="mission-topic-section" aria-label="Maths topics">
         <div class="mission-topic-grid mission-all-topics" aria-label="All ten maths topics">
           ${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress, TOPIC_DISPLAY_ORDER, state.topicProgress)}
