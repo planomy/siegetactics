@@ -498,3 +498,124 @@
     animation: none;
   }
 }
+
+/* The long-term goal under the vault: chart every sector, then fly to the Alien Homeland. */
+.homeland-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 12px;
+  border: 1px solid rgba(170, 120, 255, .55);
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(40, 20, 80, .85), rgba(20, 30, 70, .85));
+  color: #e9ddff;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 0 14px rgba(150, 90, 255, .25);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.homeland-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(170, 110, 255, .5);
+}
+
+.homeland-chip-ship {
+  font-size: 1.2rem;
+  animation: homeland-bob 2.6s ease-in-out infinite;
+}
+
+.homeland-chip-text {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: .06em;
+  color: #d9c4ff;
+}
+
+.homeland-chip-count {
+  font-size: .72rem;
+  font-weight: 900;
+  color: #ffe07a;
+}
+
+.gb-sheet.homeland-sheet {
+  width: min(100%, 820px);
+}
+
+@keyframes homeland-bob {
+  50% { transform: translateY(-3px) rotate(-6deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homeland-chip-ship { animation: none; }
+}
+
+/* All-time crystals: a red seven-segment display bolted over the vault's front lights.
+   Each vault's art puts its light panel in a slightly different place. */
+@font-face {
+  font-family: 'DSEG7';
+  src: url('../assets/fonts/DSEG7Classic-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+.vault-odo {
+  --odo-l: 37.5%;
+  --odo-t: 83.6%;
+  --odo-w: 25%;
+  --odo-h: 6.8%;
+  position: absolute;
+  left: var(--odo-l);
+  top: var(--odo-t);
+  width: var(--odo-w);
+  height: var(--odo-h);
+  display: grid;
+  place-items: center;
+  padding: 1px 4%;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #1a0404, #0a0101);
+  box-shadow: inset 0 0 0 1px rgba(255, 80, 60, .25), inset 0 2px 6px rgba(0, 0, 0, .9), 0 0 8px rgba(255, 40, 20, .25);
+}
+
+.crystal-vault--bronze .vault-odo { --odo-l: 40%; --odo-t: 83.4%; --odo-w: 20%; --odo-h: 8%; }
+.crystal-vault--silver .vault-odo { --odo-l: 38.5%; --odo-t: 87.2%; --odo-w: 23%; --odo-h: 5.6%; }
+.crystal-vault--gold .vault-odo { --odo-l: 33%; --odo-t: 83.8%; --odo-w: 33%; --odo-h: 6%; }
+.crystal-vault--legend .vault-odo { --odo-l: 40%; --odo-t: 81.5%; --odo-w: 21%; --odo-h: 9%; }
+
+.vault-odo svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.vault-odo text {
+  font-family: 'DSEG7', monospace;
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: 1px;
+}
+
+.vault-odo-ghost {
+  fill: rgba(255, 40, 30, .12);
+}
+
+.vault-odo-digits {
+  fill: #ff3b24;
+  filter: drop-shadow(0 0 2px rgba(255, 60, 30, .95)) drop-shadow(0 0 5px rgba(255, 30, 10, .7));
+}
+
+.vault-odo.is-tick .vault-odo-digits {
+  animation: odo-tick .9s steps(6, end);
+}
+
+@keyframes odo-tick {
+  0%, 30%, 60% { opacity: .25; }
+  15%, 45%, 75%, 100% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vault-odo.is-tick .vault-odo-digits { animation: none; }
+}

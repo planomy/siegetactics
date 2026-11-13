@@ -444,3 +444,413 @@
 @media (prefers-reduced-motion: reduce) {
   .armory-upgrade-btn { animation: none; }
 }
+
+/* Mystery turrets: a dark silhouette with a purple glow until they are close to unlocking. */
+.armory-card img.is-mystery,
+.armory-feature-turret.is-mystery {
+  filter: brightness(0) drop-shadow(0 0 6px rgba(170, 110, 255, .9)) drop-shadow(0 0 14px rgba(120, 60, 255, .5)) !important;
+}
+
+/* Firing range preview. One 2.4s loop: three shots leave the muzzle at 0s, 0.5s and 1s,
+   hit the alien 0.45s later, the alien pops at 1.5s and a new one walks in. */
+.armory-feature {
+  grid-template-columns: minmax(300px, 46%) minmax(0, 1fr);
+}
+
+.armory-feature-visual:has(.armory-range) .armory-feature-turret {
+  width: 58%;
+  margin-right: auto;
+  animation: range-recoil 2.4s ease-out infinite;
+}
+
+.armory-feature-visual:has(.armory-range--support) .armory-feature-turret {
+  animation: armory-ad-float 3.8s ease-in-out infinite;
+}
+
+.armory-range {
+  --range-from: 46%;
+  --range-to: 80%;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.range-muzzle {
+  position: absolute;
+  left: calc(var(--range-from) - 4%);
+  top: 44%;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 20%, var(--turret-color) 45%, transparent 70%);
+  opacity: 0;
+  animation: range-muzzle 2.4s linear infinite;
+}
+
+.range-shot {
+  position: absolute;
+  top: 46%;
+  left: var(--range-from);
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  opacity: 0;
+  filter: drop-shadow(0 0 6px var(--turret-color));
+  animation: range-shot 2.4s linear infinite;
+}
+
+.range-shot--2 { animation-delay: .5s; }
+.range-shot--3 { animation-delay: 1s; }
+
+.range-alien {
+  position: absolute;
+  left: var(--range-to);
+  top: 34%;
+  width: 64px;
+  animation: range-alien 2.4s linear infinite;
+}
+
+.range-alien img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .6));
+  animation: range-alien-hit 2.4s linear infinite;
+}
+
+.range-hp {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: -8px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, .6);
+  overflow: hidden;
+}
+
+.range-hp i {
+  display: block;
+  height: 100%;
+  background: #7cfc00;
+  animation: range-hp 2.4s steps(1, end) infinite;
+}
+
+.range-pop {
+  position: absolute;
+  left: calc(var(--range-to) - 2%);
+  top: 30%;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 4px solid var(--turret-color);
+  box-shadow: 0 0 20px var(--turret-color), inset 0 0 18px #fff6b8;
+  opacity: 0;
+  animation: range-pop 2.4s ease-out infinite;
+}
+
+.armory-range[data-role="splash"] .range-pop { width: 130px; height: 130px; left: calc(var(--range-to) - 6%); top: 22%; }
+
+/* Freeze frosts the alien; slime and glue turn it green. */
+.armory-range[data-role="freeze"] .range-alien img { animation-name: range-alien-hit, range-frost; animation-duration: 2.4s; animation-iteration-count: infinite; }
+.armory-range[data-role="glue"] .range-alien img { animation-name: range-alien-hit, range-goo; animation-duration: 2.4s; animation-iteration-count: infinite; }
+
+/* Support turrets: the alien just hovers while the turret does its job. */
+.armory-range--support .range-alien,
+.armory-range--support .range-alien img,
+.armory-range--support .range-hp i { animation: none; }
+.armory-range--support .range-pop,
+.armory-range--support .range-muzzle { display: none; }
+.armory-range--support .range-alien { animation: range-hover 2.4s ease-in-out infinite; }
+
+.range-coin {
+  position: absolute;
+  left: var(--range-to);
+  top: 42%;
+  font-size: 22px;
+  opacity: 0;
+  animation: range-coin 2.4s ease-in infinite;
+}
+.range-coin--2 { animation-delay: .8s; }
+.range-coin--3 { animation-delay: 1.6s; }
+
+.range-spark {
+  position: absolute;
+  bottom: 18%;
+  color: #7cff9a;
+  font-size: 20px;
+  font-weight: 900;
+  text-shadow: 0 0 8px #3cff70;
+  opacity: 0;
+  animation: range-spark 2.4s ease-out infinite;
+}
+.range-spark--1 { left: 12%; }
+.range-spark--2 { left: 26%; animation-delay: .6s; }
+.range-spark--3 { left: 40%; animation-delay: 1.2s; }
+.range-spark--4 { left: 20%; animation-delay: 1.8s; }
+
+.range-huh {
+  position: absolute;
+  left: calc(var(--range-to) + 2%);
+  top: 18%;
+  color: #ffd65a;
+  font-family: var(--font-display);
+  font-size: 26px;
+  text-shadow: 0 2px 0 #4a2c00;
+  animation: range-huh 2.4s ease-in-out infinite;
+}
+
+@keyframes range-recoil {
+  0%, 20.8%, 41.7%, 100% { transform: translateX(0); }
+  2%, 22.8%, 43.7% { transform: translateX(-7px) rotate(-1.5deg); }
+  8%, 28.8%, 49.7% { transform: translateX(0); }
+}
+
+@keyframes range-muzzle {
+  0%, 20.8%, 41.7% { opacity: 1; transform: scale(1.15); }
+  4%, 24.8%, 45.7% { opacity: 0; transform: scale(.6); }
+  5%, 20.7%, 25%, 41.6%, 46%, 100% { opacity: 0; }
+}
+
+@keyframes range-shot {
+  0% { left: var(--range-from); opacity: 0; transform: scale(.6); }
+  2% { opacity: 1; transform: scale(1); }
+  18.5% { left: var(--range-to); opacity: 1; transform: scale(1); }
+  19.5%, 100% { left: var(--range-to); opacity: 0; transform: scale(1.4); }
+}
+
+@keyframes range-alien-hit {
+  0%, 18.6%, 22%, 39.5%, 43%, 60.3%, 100% { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .6)); transform: translateX(0); }
+  18.75%, 39.6%, 60.4% { filter: brightness(3) drop-shadow(0 0 10px #fff); transform: translateX(6px) rotate(6deg); }
+  20%, 41%, 61.5% { transform: translateX(-3px) rotate(-4deg); }
+}
+
+@keyframes range-hp {
+  0% { width: 100%; }
+  18.75% { width: 66%; }
+  39.6% { width: 33%; }
+  60.4% { width: 0; }
+  87.5% { width: 100%; }
+}
+
+@keyframes range-alien {
+  0%, 60.4% { opacity: 1; transform: none; }
+  62.5% { opacity: 0; transform: scale(.4) rotate(40deg); }
+  87.4% { opacity: 0; transform: translateX(60px); }
+  87.5% { opacity: 0; transform: translateX(60px); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes range-pop {
+  0%, 60.3% { opacity: 0; transform: scale(.2); }
+  61% { opacity: 1; transform: scale(.5); }
+  72% { opacity: 0; transform: scale(1.4); }
+  100% { opacity: 0; }
+}
+
+@keyframes range-frost {
+  0%, 18.6% { filter: none; }
+  20%, 60.4% { filter: hue-rotate(180deg) saturate(.6) brightness(1.3) drop-shadow(0 0 8px #8fe8ff); }
+}
+
+@keyframes range-goo {
+  0%, 18.6% { filter: none; }
+  20%, 60.4% { filter: hue-rotate(70deg) saturate(1.6) drop-shadow(0 0 8px #9dff3c); }
+}
+
+@keyframes range-hover {
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes range-coin {
+  0% { opacity: 0; left: var(--range-to); transform: scale(.6); }
+  10% { opacity: 1; transform: scale(1); }
+  70% { opacity: 1; left: 30%; transform: scale(.9); }
+  80%, 100% { opacity: 0; left: 26%; transform: scale(.4); }
+}
+
+@keyframes range-spark {
+  0% { opacity: 0; transform: translateY(0) scale(.6); }
+  15% { opacity: 1; }
+  70% { opacity: 0; transform: translateY(-70px) scale(1.1); }
+  100% { opacity: 0; }
+}
+
+@keyframes range-huh {
+  0%, 100% { transform: translateY(0) rotate(-6deg); }
+  50% { transform: translateY(-6px) rotate(6deg); }
+}
+
+@media (max-width: 700px) {
+  .armory-feature { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .armory-range * { animation: none !important; }
+  .range-shot--1 { opacity: 1; left: 62%; }
+}
+
+/* Bigger target, and a filled burst rather than a plain ring when it pops. */
+.range-alien { width: 80px; top: 31%; }
+.range-shot { width: 36px; height: 36px; top: 44%; }
+.range-pop {
+  background: radial-gradient(circle, #fff 0 12%, #fff6b8 22%, var(--turret-color) 42%, transparent 68%);
+  border-width: 3px;
+}
+
+/* Upgrade button: label and crystal cost sit on one centred line; the cost is a neat
+   dark-gold chip with the gem fully inside it. */
+.armory-upgrade-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.armory-upgrade-btn .armory-upgrade-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 0;
+  padding: 4px 12px 4px 7px;
+  border: 2px solid rgba(255, 236, 170, .9);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #4a2a06, #2a1700);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 2px 6px rgba(80, 40, 0, .35);
+  color: #fff3c4;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.armory-upgrade-btn .armory-upgrade-cost .core-gem {
+  --gem-size: 1.25em;
+  vertical-align: 0;
+  filter: drop-shadow(0 0 4px rgba(80, 255, 170, .7));
+}
+
+/* Armory tabs: turrets and Granny's Gear. */
+.armory-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
+
+.armory-tabs button {
+  padding: 9px 18px;
+  border: 2px solid rgba(255, 210, 120, .35);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .25);
+  color: #e8d9bd;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: .05em;
+  cursor: pointer;
+}
+
+.armory-tabs button.is-active {
+  border-color: #ffd65a;
+  background: linear-gradient(180deg, #ffe27a, #f3a512);
+  color: #2a1700;
+  box-shadow: 0 0 14px rgba(255, 200, 60, .4);
+}
+
+/* Granny's Gear shelf */
+.gear-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.gear-card {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  padding: 16px 14px 14px;
+  border: 1px solid rgba(255, 210, 120, .28);
+  border-radius: 16px;
+  background: radial-gradient(ellipse at 50% 28%, rgba(255, 190, 80, .16), transparent 62%), linear-gradient(170deg, #22192f, #141020);
+  text-align: center;
+}
+
+.gear-card h3 {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.35rem;
+  color: #ffe6ad;
+}
+
+.gear-card p {
+  min-height: 2.7em;
+  margin: 0;
+  color: #d8d0e8;
+  font-size: .88rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.gear-art {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, .55));
+  transition: transform .25s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.gear-card:hover .gear-art {
+  transform: translateY(-4px) scale(1.06) rotate(-2deg);
+}
+
+.gear-card--owned {
+  border-color: rgba(110, 255, 150, .55);
+  box-shadow: 0 0 18px rgba(80, 255, 140, .18);
+}
+
+.gear-card--owned .gear-art {
+  filter: drop-shadow(0 0 14px rgba(110, 255, 150, .55)) drop-shadow(0 8px 12px rgba(0, 0, 0, .55));
+}
+
+.gear-card--needs .gear-art,
+.gear-card--short .gear-art {
+  filter: grayscale(.55) brightness(.75) drop-shadow(0 8px 12px rgba(0, 0, 0, .55));
+}
+
+.gear-card .gear-buy {
+  width: auto;
+  min-width: 150px;
+  margin-top: 4px;
+}
+
+.gear-card .gear-buy:disabled {
+  animation: none;
+  filter: grayscale(.7) brightness(.8);
+  cursor: not-allowed;
+}
+
+.gear-owned,
+.gear-needs {
+  margin-top: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  font-size: .85rem;
+}
+
+.gear-owned {
+  background: rgba(80, 255, 140, .14);
+  color: #9dff7a;
+}
+
+.gear-needs {
+  background: rgba(255, 255, 255, .06);
+  color: #c9bfd8;
+}
+
+.gb-pop .gear-pop-art {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}

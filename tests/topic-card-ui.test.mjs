@@ -47,10 +47,10 @@ test('standalone questions, mixed questions, and forge successes all advance the
 });
 
 test('fresh CSS and script modules are loaded so the browser does not show old shields', () => {
-  assert.match(html, /topic-campaign-cards\.css\?v=20261112a6/);
-  assert.match(html, /app\.js\?v=20261112d4/);
-  assert.match(app, /home\.js\?v=20261112z7/);
-  assert.match(app, /battle-prep\.js\?v=20261112q/);
+  assert.match(html, /topic-campaign-cards\.css\?v=20261113a3/);
+  assert.match(html, /app\.js\?v=20261113c8/);
+  assert.match(app, /home\.js\?v=20261113b6/);
+  assert.match(app, /battle-prep\.js\?v=20261113a1/);
   assert.match(home, /topic-progression\.js\?v=20261112p/);
 });
 
@@ -60,7 +60,7 @@ test('two rows share the height Maths HQ has left, and the art scales to fit its
   assert.match(css, /--topic-row: calc\(\(100cqh - var\(--topic-head\) - 20px - 7px\) \/ 2\);/);
   assert.match(css, /--topic-art-w: calc\(min\(\(var\(--topic-row\) - var\(--topic-meta\)\) \* var\(--topic-art-ratio\), \(100cqw - 24px - 4 \* 12px\) \/ 5\)\);/);
   assert.match(css, /grid-template-columns: repeat\(5, var\(--topic-art-w\)\);/);
-  assert.match(css, /min-height: calc\(var\(--topic-head\) \+ 2 \* \(120px \+ 25px\) \+ 7px \+ 20px\);/);
+  assert.match(css, /min-height: calc\(var\(--topic-head\) \+ 2 \* \(120px \+ 33px\) \+ 7px \+ 20px\);/);
   assert.doesNotMatch(css, /\.gb-topic-campaign-card\s*\{[^}]*\bheight:\s*\d+px/, 'no fixed card heights that chop the art');
   assert.doesNotMatch(css, /max-height:\s*clamp\(/, 'no guessed image height caps');
   assert.match(css, /@media \(max-width: 870px\)/);

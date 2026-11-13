@@ -2,13 +2,22 @@ import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=
 import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261112g';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261112m';
-import { renderArmory, nextUnlockableTurret } from './armory.js?v=20261112j';
+import { renderArmory, nextUnlockableTurret } from './armory.js?v=20261113a6';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel } from './turret-upgrades.js?v=20261112a2';
-import { createTDEngine } from './td-engine.js?v=20261112t';
+import { createTDEngine } from './td-engine.js?v=20261113a2';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
 import { createAudio } from './audio.js?v=20261112a3';
+import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
 import { topicXpMultiplier } from './hot-topic.js?v=20261112a1';
 import { normalizeSiegeRecord, recordSiege, siegeRankLevel, renderRankResult } from './siege-ranks.js?v=20261112a2';
+import { normalizeStreak, recordStreakAnswer, streakStatus, localDayKey } from './streak.js?v=20261113a1';
+import { GEAR, normalizeGear, gearStatus, gearEffects } from './gear.js?v=20261113a3';
+import { SIEGE_DURATION_SEC } from './waves-data.js?v=20261112g';
+import { normalizeDaily, recordChallengeEvent, rollLuckyDrop, DAILY_CHEST_XP } from './daily-challenges.js?v=20261113a1';
+import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20261113a2';
+import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261113a1';
+import { STORY_BEATS } from './story.js?v=20261113a1';
+import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras } from './engagement-ui.js?v=20261113a6';
 import { DEV } from './dev.js';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
@@ -17,10 +26,10 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade } from './home.js?v=20261112z7';
-import { normalizeEnemyDefeats, recordEnemyDefeat } from './enemy-tally.js?v=20261112n';
-import { renderPowerCore, pickForgeSquad } from './power-core.js?v=20261112o';
-import { initHowToPlay } from './how-to-play.js?v=20261112a4';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261113b6';
+import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
+import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261113a2';
+import { initHowToPlay } from './how-to-play.js?v=20261113a4';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261112f';
 import { initMeasurementLength } from './measurement-length.js?v=20261112f';
@@ -28,7 +37,7 @@ import { initFractions } from './fractions.js?v=20261112f';
 import { initAnglesShapes } from './angles-shapes.js?v=20261112f';
 import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261112f';
 import { initExpandedMath } from './expanded-maths.js?v=20261112f';
-import { initBattlePrep } from './battle-prep.js?v=20261112q';
+import { initBattlePrep } from './battle-prep.js?v=20261113a1';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js';
 import {
   normalizeLevelMastery,
@@ -36,11 +45,10 @@ import {
   recordTrainingProgress,
   recommendModuleLevel,
   recommendGlobalLevel,
-  MAP_PASSES_REQUIRED,
 } from './level-mastery.js';
-import { defaultMapProgress, normalizeMapProgress } from './map-progress.js';
+import { defaultMapProgress, normalizeMapProgress, allMapPiecesEarned, mapPiecesEarned } from './map-progress.js';
 import { getTopic } from './topics-data.js?v=20261112o';
-import { normalizeTopicProgress, recordTopicAnswer, recordTopicSession } from './topic-progression.js?v=20261112p';
+import { normalizeTopicProgress, recordTopicAnswer, recordTopicSession, getTopicRecord, topicRankProgress } from './topic-progression.js?v=20261112p';
 import {
   defaultTrainingGate,
   normalizeTrainingGate,
@@ -59,7 +67,7 @@ import { setGateRemainingProvider } from './gate-status.js?v=20261112a1';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 
-/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js').TopicProgressSave, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, settings: { sound: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js').TopicProgressSave, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -85,7 +93,17 @@ const defaultSave = {
   upgradeCores: 0,
   crystalsCollected: 0,
   siegeRecord: normalizeSiegeRecord(null),
-  settings: { sound: true, difficultyLevel: 1 },
+  streak: normalizeStreak(null),
+  daily: null,
+  records: normalizeRecords(null),
+  trophies: {},
+  title: null,
+  storySeen: 0,
+  activeChallenge: null,
+  lastChallengeCode: null,
+  gear: [],
+  stretchCoins: 0,
+  settings: { sound: true, music: true, difficultyLevel: 1 },
 };
 
 /** @type {SaveData} */
@@ -116,6 +134,9 @@ let tdEngine = null;
 
 /** @type {ReturnType<typeof createAudio>} */
 const audio = createAudio({ getEnabled: () => save.settings.sound });
+const music = createMusic({ getEnabled: () => save.settings.sound && save.settings.music });
+/** Right answers in a row; five or more brings in the hot-streak music. */
+let answerStreak = 0;
 
 /** @type {HTMLElement|null} */
 let shopBarEl = null;
@@ -170,6 +191,8 @@ if (topbarForOffset && typeof ResizeObserver !== 'undefined') {
 let lastTrainingAnswerCorrect = null;
 /** The turrets shown in the forge; reshuffled each time the player returns to Maths HQ. @type {{ main: string, left: string, right: string }|null} */
 let forgeSquad = null;
+/** The forge's title for this visit to Maths HQ. */
+let forgeTitle = '';
 const LEARNING_SCREENS = new Set([
   'home', 'timesTables', 'measurement', 'fractions', 'angles',
   'mathsQuest', 'expanded', 'battlePrep', 'forge',
@@ -197,6 +220,7 @@ function loadSave() {
     if (!data.bestBankedCoins) data.bestBankedCoins = {};
     data.settings = {
       sound: data.settings?.sound !== false,
+      music: data.settings?.music !== false,
       difficultyLevel: normalizeDifficultyLevel(data.settings?.difficultyLevel),
     };
     data.enemyDefeated = normalizeEnemyDefeats(data.enemyDefeated);
@@ -209,6 +233,19 @@ function loadSave() {
     const spent = Object.values(data.turretLevels).reduce((sum, level) => sum + (level >= 3 ? 3 : level >= 2 ? 1 : 0), 0);
     data.crystalsCollected = Math.max(normalizeCores(data.crystalsCollected), data.upgradeCores + spent);
     data.siegeRecord = normalizeSiegeRecord(data.siegeRecord, data.siegesCompleted);
+    data.streak = normalizeStreak(data.streak);
+    data.records = normalizeRecords(data.records);
+    // Older saves already know some personal bests.
+    data.records.bestKills.v = Math.max(data.records.bestKills.v, Math.floor(Number(data.bestKills?.[SLICE_MISSION_ID]) || 0));
+    data.records.siegesWon = Math.max(data.records.siegesWon, data.siegeRecord.won);
+    data.trophies = data.trophies && typeof data.trophies === 'object' ? data.trophies : {};
+    data.title = typeof data.title === 'string' && data.trophies[data.title] ? data.title : null;
+    // Existing players see the story for the rank they already hold, once.
+    data.storySeen = Number.isFinite(data.storySeen) ? data.storySeen : Math.max(0, siegeRankLevel(data.siegeRecord) - 1);
+    data.activeChallenge = data.activeChallenge && Number.isFinite(data.activeChallenge.score) ? data.activeChallenge : null;
+    data.lastChallengeCode = typeof data.lastChallengeCode === 'string' ? data.lastChallengeCode : null;
+    data.gear = normalizeGear(data.gear);
+    data.stretchCoins = Math.max(0, Math.floor(Number(data.stretchCoins) || 0));
     // Preserve old players' real mastered levels and map passes as a one-time rank baseline.
     data.topicProgress = normalizeTopicProgress(data.topicProgress, data.levelMastery, data.mapProgress);
     if (DEV.enabled && DEV.unlockAll) {
@@ -233,22 +270,36 @@ function isUnlocked(id) {
   return save.unlockedTurrets.includes(id);
 }
 
+/** The sound button steps through: everything on, music off (effects still on), everything off. */
 function toggleSound() {
-  save.settings.sound = !save.settings.sound;
+  const { sound, music: musicOn } = save.settings;
+  if (sound && musicOn) save.settings.music = false;
+  else if (sound) save.settings.sound = false;
+  else save.settings = { ...save.settings, sound: true, music: true };
   persistSave();
   refreshSoundButton();
   if (!save.settings.sound) audio.stopScuttling();
+  if (!save.settings.sound || !save.settings.music) music.mute();
+  else if (document.body.classList.contains('siege-mode')) music.startBattle();
   const btn = document.getElementById('btn-sound');
   btn?.blur();
-  showToast(save.settings.sound ? 'Blasters, booms, and Granny\'s porch rock are on.' : 'Game sounds are off.', {
-    variant: 'info',
-    title: save.settings.sound ? 'Sound on' : 'Sound muted',
-    icon: save.settings.sound ? '🔊' : '🔇',
-  });
+  const state = !save.settings.sound ? 'off' : save.settings.music ? 'all' : 'effects';
+  showToast(
+    state === 'all' ? 'Music, blasters and booms are all on.' : state === 'effects' ? 'Music is off. Sound effects are still on. Tap again to mute everything.' : 'All game sounds are off.',
+    { variant: 'info', title: state === 'all' ? 'Sound on' : state === 'effects' ? 'Music off' : 'Sound muted', icon: state === 'off' ? '🔇' : state === 'effects' ? '🔈' : '🔊' },
+  );
 }
 
 function showScreen(id) {
   const inLearning = LEARNING_SCREENS.has(id);
+  // A hot streak carries from one question screen to the next and into the battle it earns.
+  if (id === 'siege') {
+    endAnswerStreak();
+    music.startBattle();
+  } else if (id === 'home' || id === 'results' || id === 'armory' || id === 'welcome') {
+    endAnswerStreak();
+    music.stop();
+  }
   const previousScreen = Object.entries(screens)
     .find(([, element]) => element?.classList.contains('active'))?.[0];
   if (!inLearning) stopMissionDossier();
@@ -281,8 +332,36 @@ function refreshSoundButton() {
   const btn = document.getElementById('btn-sound');
   if (btn) {
     btn.classList.toggle('is-muted', !save.settings.sound);
-    btn.setAttribute('aria-label', save.settings.sound ? 'Mute sound' : 'Unmute sound');
+    btn.classList.toggle('music-off', save.settings.sound && !save.settings.music);
+    btn.setAttribute('aria-label', !save.settings.sound ? 'Unmute sound' : save.settings.music ? 'Turn music off' : 'Mute all sound');
   }
+}
+
+/** Right answers in a row drive the hot-streak music and the ON FIRE badge; a wrong answer resets it. @param {boolean} right */
+function trackAnswerStreak(right) {
+  answerStreak = right ? answerStreak + 1 : 0;
+  music.setStreak(answerStreak);
+  let badge = document.getElementById('onfire-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'onfire-badge';
+    badge.className = 'onfire-badge';
+    badge.setAttribute('aria-live', 'polite');
+    document.body.append(badge);
+  }
+  badge.hidden = answerStreak < STREAK_MUSIC_FROM;
+  if (!badge.hidden) {
+    badge.textContent = `🔥 ON FIRE ×${answerStreak}`;
+    badge.classList.remove('is-bump');
+    void badge.offsetWidth;
+    badge.classList.add('is-bump');
+  }
+}
+
+function endAnswerStreak() {
+  answerStreak = 0;
+  const badge = document.getElementById('onfire-badge');
+  if (badge) badge.hidden = true;
 }
 
 function refreshTopbar() {
@@ -293,7 +372,8 @@ function refreshTopbar() {
   const missionXp = document.getElementById('mission-control-xp');
   if (missionXp) missionXp.textContent = save.xp.toLocaleString();
   refreshSoundButton();
-  renderTopbarBadges(document.getElementById('topbar-badges'), save.siegeRecord);
+  renderTopbarBadges(document.getElementById('topbar-badges'), save.siegeRecord, { title: trophyTitle(save.title), onOpen: () => openProfile() });
+  refreshEngagementPills();
   const armoryBtn = document.getElementById('btn-armory');
   if (armoryBtn) {
     armoryBtn.classList.toggle('topbar-armory-ready', Boolean(nextUnlockableTurret(save.xp, getUnlockedSet())) || anyUpgradeReady(save.upgradeCores, getUnlockedSet()));
@@ -319,8 +399,30 @@ function renderArmoryScreen() {
     },
     onBack: closeArmory,
     showToast,
+    tab: armoryTab,
+    gear: save.gear,
+    onTab(tab) {
+      armoryTab = tab === 'gear' ? 'gear' : 'turrets';
+      renderArmoryScreen();
+    },
+    onBuyGear(id) {
+      const def = GEAR.find((g) => g.id === id);
+      const st = gearStatus(id, save.gear, save.upgradeCores);
+      if (!def || st.state !== 'ready') return;
+      save.upgradeCores -= st.cost;
+      save.gear = [...save.gear, id];
+      persistSave();
+      audio.playTurretUpgrade();
+      refreshTopbar();
+      refreshMissionControl();
+      showPop(`<img class="gear-pop-art" src="assets/gear/${id}.png" alt="" />`, 'GEAR UNLOCKED!', def.name);
+      renderArmoryScreen();
+    },
   });
 }
+
+/** Which Armory tab is showing. @type {'turrets'|'gear'} */
+let armoryTab = 'turrets';
 
 function openArmory() {
   dismissWeaponAnnouncement();
@@ -379,10 +481,10 @@ function tryUnlockTurret(id) {
  * the header counter. Tapping it opens the Armory to spend it.
  * @param {string} reason
  */
-function awardUpgradeCore(reason, from) {
+function awardUpgradeCore(reason, from, amount = 1) {
   const tierBefore = vaultTierFor(save.crystalsCollected).id;
-  save.upgradeCores += 1;
-  save.crystalsCollected += 1;
+  save.upgradeCores += amount;
+  save.crystalsCollected += amount;
   persistSave();
   refreshTopbar();
   refreshMissionControl();
@@ -395,6 +497,161 @@ function awardUpgradeCore(reason, from) {
       audio.playTurretUpgrade();
     }, 3400);
   }
+}
+
+/* ---------- Streaks, daily challenges, lucky drops, trophies, records, friend challenges, story ---------- */
+
+/** Bonus crystals drop in mid-screen without blocking, so a drill is never interrupted. */
+function screenCentre() {
+  return { x: window.innerWidth / 2, y: window.innerHeight * 0.42 };
+}
+
+/** Today's challenges and lucky-drop tally, reset at local midnight. */
+function dailyState() {
+  save.daily = normalizeDaily(save.daily, localDayKey());
+  return save.daily;
+}
+
+function refreshEngagementPills() {
+  renderStreakPill(document.getElementById('topbar-streak'), streakStatus(save.streak));
+  renderDailyPill(document.getElementById('topbar-daily'), dailyState());
+}
+
+/** @param {import('./daily-challenges.js').ChallengeEvent} event @param {{ amount?: number, topic?: string, level?: number }} [info] */
+function challengeEvent(event, info) {
+  const r = recordChallengeEvent(dailyState(), event, info);
+  save.daily = r.daily;
+  if (!r.completed.length && !r.chestOpened) return;
+  persistSave();
+  r.completed.forEach((c, i) => {
+    window.setTimeout(() => showPop('<img class="daily-dart" src="assets/ui/daily-target.png" alt="" />', 'CHALLENGE DONE!', `${c.text} · +${c.xp} XP`), i * 700);
+    creditForgeXp(c.xp);
+  });
+  if (r.chestOpened) {
+    creditForgeXp(DAILY_CHEST_XP);
+    window.setTimeout(() => awardUpgradeCore('GRANNY’S CHEST OPENED', screenCentre()), 1200);
+  }
+  refreshEngagementPills();
+}
+
+/** Every right maths answer: records, streak, daily challenges and a chance of a lucky drop. */
+function creditEngagementAnswer(topicId, level) {
+  save.records.rightAnswers += 1;
+  const s = recordStreakAnswer(save.streak);
+  save.streak = s.streak;
+  if (s.extended) {
+    showPop('🔥', `${s.streak.count} DAY STREAK!`, s.shieldUsed ? 'Your streak shield saved it!' : 'Come back tomorrow to keep it going.');
+  }
+  if (s.shieldEarned) window.setTimeout(() => showPop('🛡️', 'STREAK SHIELD EARNED', 'It saves your streak if you miss a day.'), 900);
+  if (s.milestoneCrystals) {
+    window.setTimeout(() => awardUpgradeCore(`${s.streak.count}-DAY STREAK`, screenCentre(), s.milestoneCrystals), 1500);
+  }
+  challengeEvent('right', { topic: topicId, level });
+  const lucky = rollLuckyDrop(dailyState());
+  if (lucky?.kind === 'xp') {
+    creditForgeXp(lucky.amount);
+    showPop('🍀', 'LUCKY DROP!', `+${lucky.amount} bonus Forge XP`);
+  } else if (lucky?.kind === 'crystal') {
+    save.daily = { ...dailyState(), luckyCrystals: dailyState().luckyCrystals + 1 };
+    awardUpgradeCore('LUCKY DROP!', screenCentre());
+  }
+  persistSave();
+  refreshEngagementPills();
+  checkNewTrophies();
+}
+
+function trophyContext() {
+  return {
+    records: save.records,
+    rankLevel: siegeRankLevel(save.siegeRecord),
+    streakBest: save.streak.best,
+    crystals: save.crystalsCollected,
+    maxTurretLevel: Math.max(1, ...TURRET_ORDER.map((id) => turretLevel(id))),
+    ownsAllTurrets: TURRET_ORDER.every((id) => save.unlockedTurrets.includes(id)),
+    mapComplete: allMapPiecesEarned(save.mapProgress),
+    topicRank: (id) => topicRankProgress(getTopicRecord(save.topicProgress, id).xp).rank,
+    granddaddyDefeated: enemyDefeatCount(save.enemyDefeated, 'granddaddy') > 0,
+  };
+}
+
+/** @param {{ quiet?: boolean }} [opts] Quiet on load, so old feats are recorded without a burst of pop-ups. */
+function checkNewTrophies(opts = {}) {
+  const r = checkTrophies(save.trophies, trophyContext(), localDayKey());
+  if (!r.fresh.length) return;
+  save.trophies = r.earned;
+  persistSave();
+  if (!opts.quiet) r.fresh.forEach((t, i) => window.setTimeout(() => showTrophyPop(t), 600 + i * 1100));
+}
+
+/** @param {'ranks'|'trophies'|'records'|'challenge'} [tab] */
+function openProfile(tab) {
+  checkNewTrophies({ quiet: true });
+  showProfile({
+    level: siegeRankLevel(save.siegeRecord),
+    record: save.siegeRecord,
+    title: save.title,
+    earned: save.trophies,
+    records: save.records,
+    streakBest: save.streak.best,
+    crystals: save.crystalsCollected,
+    playerName: save.playerName,
+    siegesPlayed: save.siegesCompleted,
+    shields: countShieldsEarned(save.levelMastery),
+    lastCode: save.lastChallengeCode,
+    activeChallenge: save.activeChallenge,
+    tab,
+    onSetTitle(id) {
+      save.title = id;
+      persistSave();
+      refreshTopbar();
+    },
+    onAcceptChallenge(code, from) {
+      const score = readChallengeCode(code);
+      if (score == null) return 'That code doesn’t look right. Check the letters and try again.';
+      save.activeChallenge = { score, from: from.slice(0, 16) };
+      persistSave();
+      showToast(`Challenge accepted! Beat ${from || 'your friend'}’s ${score} aliens in your next siege.`, { variant: 'success' });
+      return save.activeChallenge;
+    },
+  });
+}
+
+/** After a siege: records, daily challenge progress, friend challenge result and a code to share. */
+function recordSiegeEngagement(stats, prevBestKills) {
+  const today = localDayKey();
+  const newRecord = prevBestKills > 0 && stats.kills > prevBestKills;
+  if (stats.kills > save.records.bestKills.v) save.records.bestKills = { v: stats.kills, d: today };
+  if (stats.won) {
+    save.records.siegesWon += 1;
+    if (stats.leaks === 0) save.records.zeroLeakWins += 1;
+    challengeEvent('siege-won');
+    if (stats.leaks <= 3) challengeEvent('siege-won-3');
+  }
+  challengeEvent('siege-kills', { amount: stats.kills });
+  let challenge = null;
+  if (save.activeChallenge) {
+    const won = stats.kills > save.activeChallenge.score;
+    challenge = { ...save.activeChallenge, won };
+    if (won) {
+      save.records.challengesWon += 1;
+      save.activeChallenge = null;
+    }
+  }
+  const code = makeChallengeCode(stats.kills);
+  save.lastChallengeCode = code;
+  persistSave();
+  checkNewTrophies();
+  return { newRecord, kills: stats.kills, prevBest: prevBestKills, code, challenge };
+}
+
+/** Granny's Log for a newly earned rank, after the rank-up celebration has played. */
+function showPendingStory() {
+  const level = siegeRankLevel(save.siegeRecord);
+  const beat = STORY_BEATS[level];
+  if (!beat || level <= save.storySeen) return;
+  save.storySeen = level;
+  persistSave();
+  window.setTimeout(() => showStory(beat), 3200);
 }
 
 /**
@@ -704,8 +961,9 @@ function announceTopicRankReward(topicId, result) {
  * Correct answers earn the accuracy-based siege-coin boost.
  * Progress is saved immediately, including when students leave mid-session.
  * @param {boolean} right
+ * @param {number} [level] Level 3 and 4 bonus answers (after the first ten) also pay stretch coins.
  */
-function creditTrainingAnswer(right) {
+function creditTrainingAnswer(right, level = 1) {
   // Only right answers charge Granny's defences, so a siege always means ten correct answers.
   if (!right) {
     lastTrainingAnswerCorrect = false;
@@ -717,6 +975,7 @@ function creditTrainingAnswer(right) {
   if (!result.added) return;
   save.trainingGate = result.gate;
   lastTrainingAnswerCorrect = right;
+  if (previouslyReady && level >= STRETCH_MIN_LEVEL) save.stretchCoins += STRETCH_COINS_PER_ANSWER;
   persistSave();
   refreshMissionControl();
   if (!previouslyReady && isGateOpen(save.trainingGate)) awardUpgradeCore('MISSION COMPLETE');
@@ -770,14 +1029,10 @@ function completeTrainingSession(moduleId, level, accuracy) {
   }
 
   if (result.mapPieceEarned) {
-    window.setTimeout(
-      () =>
-        showToast(`Map piece recovered! Sector charted (${MAP_PASSES_REQUIRED}/${MAP_PASSES_REQUIRED}).`, {
-          variant: 'success',
-          duration: 4500,
-        }),
-      result.shieldEarned ? 800 : 0
-    );
+    window.setTimeout(() => {
+      showMapPieceFound(moduleId, mapPiecesEarned(save.mapProgress));
+      audio.playTurretUpgrade();
+    }, result.shieldEarned ? 1400 : 300);
   }
 
   if (result.nudge) {
@@ -798,8 +1053,10 @@ function createTrainingHandlers(moduleId) {
     onAnswer(right) {
       if (right) audio.playCorrect();
       else audio.playWrong();
+      trackAnswerStreak(right);
+      if (right) creditEngagementAnswer(moduleId, level);
       creditTopicAnswer(moduleId, level, right);
-      creditTrainingAnswer(right);
+      creditTrainingAnswer(right, level);
     },
     onSessionComplete(accuracy) {
       return completeTrainingSession(moduleId, level, accuracy);
@@ -928,7 +1185,7 @@ function makeDashboardState() {
       disposeActiveTraining?.();
       disposeActiveTraining = null;
       if (!DEV.skipForge && !isGateOpen(save.trainingGate)) {
-        showBattlePrep();
+        showBattlePrep({ special: isSpecialMission() });
         return;
       }
       beginMission();
@@ -954,6 +1211,7 @@ function refreshMissionControl() {
   const ownedTurrets = TURRET_ORDER.filter((id) => save.unlockedTurrets.includes(id));
   if (!forgeSquad || ![forgeSquad.main, forgeSquad.left, forgeSquad.right].every((id) => ownedTurrets.includes(id))) {
     forgeSquad = pickForgeSquad(ownedTurrets, turretLevel);
+    forgeTitle = pickForgeTitle(forgeTitle);
   }
   renderPowerCore(powerHost, {
     done: gateProgress(save.trainingGate).done,
@@ -961,6 +1219,7 @@ function refreshMissionControl() {
     correct: lastTrainingAnswerCorrect,
     squad: forgeSquad,
     mainLevel: turretLevel(forgeSquad.main),
+    title: forgeTitle,
   });
   renderSiegeStats(powerHost, state);
   const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'))?.[0];
@@ -971,64 +1230,67 @@ function showHome() {
   const host = document.getElementById('home-host');
   if (!host) return;
   const state = makeDashboardState();
+  rerollMissionArt();
   renderHome(host, state);
   forgeSquad = null;
   refreshMissionControl();
-  renderTopbarBadges(document.getElementById('topbar-badges'), save.siegeRecord);
+  renderTopbarBadges(document.getElementById('topbar-badges'), save.siegeRecord, { title: trophyTitle(save.title), onOpen: () => openProfile() });
   showScreen('home');
+  showPendingStory();
   showPendingWeaponAnnouncement();
 }
 
-function showBattlePrep() {
+/** Level 3 and 4 players are offered more questions after their ten, for bonus time and coins. */
+const STRETCH_MIN_LEVEL = 3;
+const STRETCH_COINS_PER_ANSWER = 5;
+
+/** @param {number} level @returns {{ more: number, seconds: number, coins: number }|null} */
+function stretchOffer(level) {
+  if (level < STRETCH_MIN_LEVEL) return null;
+  const done = Math.max(0, save.trainingGate.questionsDone || 0);
+  if (done < GATE.questionsRequired || done >= GATE.maxQuestions) return null;
+  const target = done < 15 ? 15 : GATE.maxQuestions;
+  return { more: target - done, seconds: target === 15 ? 15 : 30, coins: STRETCH_COINS_PER_ANSWER };
+}
+
+/** @param {{ special?: boolean }} [opts] A special mission doubles the Forge XP from its answers. */
+function showBattlePrep(opts = {}) {
   const host = document.getElementById('battle-prep-host');
   if (!host) return;
   disposeActiveTraining?.();
   disposeActiveTraining = null;
   const level = getDifficultyLevel();
+  const xpBoost = opts.special ? SPECIAL_MISSION_XP_MULTIPLIER : 1;
+  if (opts.special) {
+    window.setTimeout(() => showPop('<img class="gear-pop-art" src="assets/ui/alien-crystal.png" alt="" />', 'SPECIAL MISSION!', `${SPECIAL_MISSION_XP_MULTIPLIER}× Forge XP for every right answer`), 300);
+  }
   let prepRecorded = false;
   disposeActiveTraining = initBattlePrep(host, {
     level,
     cycle: save.trainingGate.cycle,
     questionsNeeded: GATE.questionsRequired - gateProgress(save.trainingGate).done,
     remainingNeeded: () => GATE.questionsRequired - gateProgress(save.trainingGate).done,
+    stretchOffer: () => stretchOffer(level),
     onAwardXp(baseAmount) {
-      awardScaledTrainingXp(baseAmount, level);
+      awardScaledTrainingXp(baseAmount * xpBoost, level);
     },
     onAnswer(right, moduleId) {
       if (right) audio.playCorrect();
       else audio.playWrong();
+      trackAnswerStreak(right);
+      if (right) creditEngagementAnswer(moduleId, level);
       creditTopicAnswer(moduleId, level, right);
-      creditTrainingAnswer(right);
+      creditTrainingAnswer(right, level);
     },
-    onFinished(moduleResults, overall) {
+    onFinished() {
+      // A random mission asks only one or two questions per topic, so it does not count towards
+      // map sectors or level shields; those need a full topic drill or Maths Quest.
       if (prepRecorded) return;
       prepRecorded = true;
-      let mastery = save.levelMastery;
-      let mapProgress = save.mapProgress;
-      let shieldBonus = 0;
-      let shieldsEarned = 0;
-      let mapPiecesEarned = 0;
-      for (const [moduleId, stats] of Object.entries(moduleResults)) {
-        if (stats.attempts === 0) continue;
-        const result = recordTrainingProgress(mastery, mapProgress, moduleId, level, stats.accuracy);
-        mastery = result.mastery;
-        mapProgress = result.mapProgress;
-        shieldBonus += result.firstClearBonus;
-        if (result.shieldEarned) shieldsEarned += 1;
-        if (result.mapPieceEarned) mapPiecesEarned += 1;
-      }
-      save.levelMastery = mastery;
-      save.mapProgress = mapProgress;
-      if (shieldBonus > 0) creditForgeXp(shieldBonus);
       battlePrepCoinBonus = save.trainingGate.bonusSiegeCoins;
       persistSave();
       refreshMissionControl();
-      const rewards = [
-        `${battlePrepCoinBonus} bonus siege coins`,
-        shieldsEarned > 0 ? `${shieldsEarned} shield${shieldsEarned === 1 ? '' : 's'}` : '',
-        mapPiecesEarned > 0 ? `${mapPiecesEarned} map piece${mapPiecesEarned === 1 ? '' : 's'}` : '',
-      ].filter(Boolean).join(' · ');
-      showToast(`Battle Prep logged · ${rewards}`, { variant: 'success' });
+      showToast(`Battle Prep logged · ${battlePrepCoinBonus} bonus siege coins`, { variant: 'success' });
     },
     onReady() {
       disposeActiveTraining?.();
@@ -1154,7 +1416,10 @@ function showMathsQuest() {
     onSessionComplete(accuracy) {
       training.onSessionComplete(accuracy);
       creditGateModule('maths-quest', accuracy);
-      if (accuracy >= MATHS_QUEST.accuracyBonusThreshold) awardUpgradeCore('MATHS QUEST CLEARED');
+      if (accuracy >= MATHS_QUEST.accuracyBonusThreshold) {
+        awardUpgradeCore('MATHS QUEST CLEARED');
+        challengeEvent('quest80');
+      }
     },
     onHome: () => disposeTrainingAndGoHome(training.onHome),
     showToast: training.showToast,
@@ -1328,8 +1593,10 @@ function onForgeSuccess(rewards) {
   const forgeXp = scaleTrainingXp(baseForgeXp, level);
   const placementBudget = rewards.placementBudget ?? mission?.rewards.placementBudget ?? 90;
 
-  run.waveBudget = placementBudget;
-  run.startCoins = placementBudget;
+  const startCoins = placementBudget + gearEffects(save.gear).extraStartCoins + save.stretchCoins;
+  save.stretchCoins = 0;
+  run.waveBudget = startCoins;
+  run.startCoins = startCoins;
   run.runForgeXpEarned = forgeXp;
   run.selectedTurret = null;
   battlePrepCoinBonus = 0;
@@ -1346,7 +1613,7 @@ function onForgeSuccess(rewards) {
     forgeXp > 0
       ? `+${forgeXp} ${ECONOMY.forgeXpLabel} (unlocks gear) · `
       : 'Maths mission cleared · ';
-  showToast(`${xpLine}${placementBudget} ${ECONOMY.siegeCoinsLabel} for this fight.`);
+  showToast(`${xpLine}${startCoins} ${ECONOMY.siegeCoinsLabel} for this fight.`);
   if (save.grannyUnlocked) {
     addCacheProgress(GRANNY_CACHE.forgeBonusPoints);
   }
@@ -1374,6 +1641,33 @@ function launchTestSiege() {
   preloadDeployAssets({ unlocked: getUnlockedSet(), grannyUnlocked: save.grannyUnlocked });
   showScreen('siege');
   initSiegeScreen();
+  if (save.activeChallenge) {
+    const { from, score } = save.activeChallenge;
+    window.setTimeout(() => showPop('🤝', 'CHALLENGE ON!', `Beat ${from || 'your friend'}’s ${score} aliens!`), 600);
+  }
+}
+
+/**
+ * Granny's porch: one heart per alien she can afford to let through. Each leak smashes a heart,
+ * shakes the meter and flashes the field red, so kids always see it happen.
+ * @param {number} leaks @param {number} max @param {boolean} [hit]
+ */
+function renderLeakMeter(leaks, max, hit = false) {
+  const el = document.getElementById('leak-meter');
+  if (!el) return;
+  const left = Math.max(0, max - leaks);
+  el.innerHTML = `<span class="leak-meter-label">PORCH</span>${Array.from({ length: max }, (_, i) =>
+    `<span class="leak-heart${i < left ? '' : ' is-lost'}${hit && i === left ? ' is-breaking' : ''}" aria-hidden="true">${i < left ? '❤️' : '🖤'}</span>`).join('')}`;
+  el.setAttribute('aria-label', `${left} of ${max} porch hearts left`);
+  el.classList.toggle('is-danger', left <= 2);
+  if (!hit) return;
+  el.classList.remove('is-hit');
+  void el.offsetWidth;
+  el.classList.add('is-hit');
+  const wrap = el.closest('.siege-canvas-wrap');
+  wrap?.classList.remove('is-leak-flash');
+  void wrap?.offsetWidth;
+  wrap?.classList.add('is-leak-flash');
 }
 
 function mountTDEngine(canvas, mission) {
@@ -1381,8 +1675,15 @@ function mountTDEngine(canvas, mission) {
 
   audio.warmUp();
   nukeCacheWasReady = false;
+  const gearFx = gearEffects(save.gear);
+  renderLeakMeter(0, (mission?.maxLeaks ?? 5) + gearFx.extraLeaks);
   tdEngine = createTDEngine(canvas, {
-    mission,
+    mission: {
+      ...mission,
+      maxLeaks: (mission?.maxLeaks ?? 5) + gearFx.extraLeaks,
+      siegeDurationSec: (mission?.siegeDurationSec ?? SIEGE_DURATION_SEC) + gearFx.extraSeconds,
+    },
+    nukeBoost: { damage: gearFx.nukeDamageMul, aoe: gearFx.nukeAoeMul, salvo: gearFx.nukeSalvoMul },
     firstSiege: save.siegesCompleted === 0,
     bonusSiegeSec: bonusSiegeSeconds(save.trainingGate),
     onBonusOffer: showBonusAssaultOffer,
@@ -1421,10 +1722,14 @@ function mountTDEngine(canvas, mission) {
       return true;
     },
     onKillReward({ xp, isBoss, screenX, screenY }) {
-      run.waveBudget += xp;
+      run.waveBudget += Math.round(xp * gearEffects(save.gear).coinMultiplier);
       refreshShop();
       addCacheProgress(isBoss ? GRANNY_CACHE.bossKillPoints : GRANNY_CACHE.killPoints);
-      if (isBoss) awardUpgradeCore('BOSS DEFEATED', { x: screenX, y: screenY });
+      if (isBoss) {
+        awardUpgradeCore('BOSS DEFEATED', { x: screenX, y: screenY });
+        save.records.bosses += 1;
+        challengeEvent('boss');
+      }
     },
     onEnemyDestroyed({ key }) {
       save.enemyDefeated = recordEnemyDefeat(save.enemyDefeated, key);
@@ -1440,6 +1745,7 @@ function mountTDEngine(canvas, mission) {
       });
     },
     onLeak({ leaks, maxLeaks, penalty }) {
+      renderLeakMeter(leaks, maxLeaks, true);
       run.waveBudget = Math.max(0, run.waveBudget - penalty);
       refreshShop();
       showToast(`Leak! −${penalty} ${ECONOMY.siegeCoinsLabel} (${leaks}/${maxLeaks})`, { variant: 'warn' });
@@ -1539,6 +1845,7 @@ function finishRun(stats) {
 
   const badgesEl = document.getElementById('results-badges');
   if (badgesEl) badgesEl.innerHTML = renderRankResult(save.siegeRecord, prevRankLevel, badgeSrc);
+  renderResultsExtras(document.getElementById('results-extras'), recordSiegeEngagement(stats, prevBestKills));
 
   const maxLeaksEl = document.getElementById('results-max-leaks');
   if (maxLeaksEl) maxLeaksEl.textContent = '0';
@@ -1584,8 +1891,35 @@ function finishRun(stats) {
   }
 }
 
+/**
+ * Browsers only allow fullscreen from a click or key press, so the first one of each visit
+ * switches to fullscreen. If the player leaves it with Esc, the game does not force them back.
+ */
+function enterFullscreenOnFirstTap() {
+  const root = document.documentElement;
+  const request = root.requestFullscreen ?? root.webkitRequestFullscreen;
+  if (!request) return;
+  const go = () => {
+    window.removeEventListener('pointerdown', go, true);
+    window.removeEventListener('keydown', go, true);
+    if (document.fullscreenElement || document.webkitFullscreenElement) return;
+    try {
+      const result = request.call(root);
+      result?.catch?.(() => {});
+    } catch {
+      /* Some browsers refuse inside an embedded frame; the game simply stays windowed. */
+    }
+  };
+  window.addEventListener('pointerdown', go, true);
+  window.addEventListener('keydown', go, true);
+}
+
 function bindUI() {
   initPopups();
+  enterFullscreenOnFirstTap();
+
+  document.getElementById('topbar-streak')?.addEventListener('click', () => showStreakPanel(streakStatus(save.streak)));
+  document.getElementById('topbar-daily')?.addEventListener('click', () => showDailyPanel(dailyState()));
 
   document.getElementById('btn-launch-siege')?.addEventListener('click', () => {
     if (deploymentTurretsPlaced < 1) {
@@ -1624,6 +1958,8 @@ function bindUI() {
     if (tdEngine?.fireNukes()) {
       run.cacheProgress -= GRANNY_CACHE.cost;
       showToast('Nukes away!', { variant: 'success' });
+      save.records.nukes += 1;
+      challengeEvent('nuke');
       updateNukeCachePanel();
     }
   });
@@ -1634,7 +1970,7 @@ function bindUI() {
     const cur = Number(btn.dataset.speed) || 1;
     const next = speeds[(speeds.indexOf(cur) + 1) % speeds.length];
     btn.dataset.speed = String(next);
-    btn.textContent = `${next}×`;
+    btn.textContent = `${next}× SPEED`;
     tdEngine?.setSpeed(next);
   });
 
@@ -1677,6 +2013,7 @@ function bindUI() {
 }
 
 bindUI();
+checkNewTrophies({ quiet: true });
 if (DEV.skipToSiege) {
   if (!save.playerName) save.playerName = 'Dev';
   launchTestSiege();

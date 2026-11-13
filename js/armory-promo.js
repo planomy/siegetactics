@@ -46,12 +46,14 @@ export function renderArmoryPromo(xp, unlocked) {
       </section>
     `;
   }
+  // Within touching distance of the next turret, the promo shouts about it.
+  const close = !p.ready && p.needed <= Math.max(150, p.required * 0.12);
   const status = p.ready
     ? 'NEW WEAPON AVAILABLE NOW!'
     : `ONLY ${p.needed.toLocaleString()} XP TO GO!`;
   const button = p.ready ? 'UNLOCK IN THE ARMORY' : 'EXPLORE THE ARMORY';
   return `
-    <section class="armory-promo${p.ready ? ' armory-promo-ready' : ''}" aria-label="Granny's Armory weapon upgrades">
+    <section class="armory-promo${p.ready ? ' armory-promo-ready' : ''}${close ? ' armory-promo-close' : ''}" aria-label="Granny's Armory weapon upgrades">
       <div class="armory-promo-art">
         <div class="armory-promo-art-ring" aria-hidden="true"></div>
         <img src="${p.sprite}" alt="" class="${p.flipX ? 'flip-x' : ''}" loading="lazy" width="170" height="170" />

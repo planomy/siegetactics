@@ -4,12 +4,12 @@ import { badgeSrc } from './stars.js';
 import { SIEGE_RANKS, siegeRankLevel, rankProgressText } from './siege-ranks.js?v=20261112a2';
 import { hotTopicId } from './hot-topic.js?v=20261112a1';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261112n';
-import { renderInterstellarMap, mapPiecesEarned, TRAINING_MODULE_IDS } from './map-progress.js';
+import { renderInterstellarMap, mapPiecesEarned, TRAINING_MODULE_IDS, MAP_SECTORS } from './map-progress.js';
 import { topicRankProgress, getTopicRecord } from './topic-progression.js?v=20261112p';
 import { getQualifiedLevels } from './level-mastery.js';
 import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel } from './difficulty.js';
-import { renderArmoryPromo } from './armory-promo.js?v=20261112m';
+import { renderArmoryPromo } from './armory-promo.js?v=20261113a1';
 
 /**
  * Ten clean campaign cards. Mastery is a small permanent mark, while each
@@ -202,7 +202,7 @@ function playXpGrow(host, targetXp) {
 }
 
 /** @param {import('./level-mastery.js').LevelMasterySave} mastery */
-function countShieldsEarned(mastery) {
+export function countShieldsEarned(mastery) {
   return TRAINING_MODULE_IDS.reduce((n, id) => n + getQualifiedLevels(mastery, id).length, 0);
 }
 
@@ -333,8 +333,6 @@ function renderInboundRadar(attack, open) {
     `;
   }
 
-  const drillCaption = 'questions left';
-
   return `
     <div class="inbound-radar inbound-radar-${attack.urgency}">
       <div
@@ -345,9 +343,17 @@ function renderInboundRadar(attack, open) {
         <div class="inbound-radar-sweep" aria-hidden="true"></div>
         ${renderRadarEscorts(attack, blipDeg, blipR)}
         <div class="inbound-radar-blip" aria-hidden="true"></div>
-        <div class="inbound-radar-hub">
-          <span class="inbound-radar-num">${attack.remaining}</span>
-          <span class="inbound-radar-unit">${drillCaption}</span>
+        <div class="inbound-radar-galaxy" aria-hidden="true"></div>
+        <div class="inbound-radar-planets" aria-hidden="true">
+          <span class="radar-planet radar-planet--ringed"></span>
+          <span class="radar-planet radar-planet--blue"><i class="radar-moon"></i></span>
+          <span class="radar-planet radar-planet--red"></span>
+          <span class="radar-planet radar-planet--ice"></span>
+          <span class="radar-comet"></span>
+        </div>
+        <div class="inbound-radar-hub inbound-radar-hub-scan">
+          <span class="inbound-radar-scan">DETECTING</span>
+          <span class="inbound-radar-unit">ALIEN HORDE</span>
         </div>
       </div>
     </div>
@@ -484,18 +490,16 @@ export function renderMissionControl(host, state) {
  */
 export function renderSiegeStats(host, state) {
   if (!host) return;
-  const shields = countShieldsEarned(state.levelMastery);
   const sectors = mapPiecesEarned(state.mapProgress);
   const prior = host.querySelector('.mission-battle-stats');
   const html = `
     <div class="mission-battle-stats">
       ${renderCrystalVault(state.crystalsCollected ?? 0, state.crystalsToSpend ?? 0)}
-      <div class="mission-progress-strip">
-        <span>Sieges <strong>${state.siegesCompleted}</strong></span>
-        <span>Best blasts <strong>${state.bestKills.toLocaleString()}</strong></span>
-        <span>Shields <strong>${shields}</strong></span>
-        <span>Map <strong>${sectors}/${TRAINING_MODULE_IDS.length}</strong></span>
-      </div>
+      <button type="button" class="homeland-chip" aria-haspopup="dialog">
+        <span class="homeland-chip-ship" aria-hidden="true">🛸</span>
+        <span class="homeland-chip-text">ALIEN HOMELAND</span>
+        <span class="homeland-chip-count">${sectors}/${TRAINING_MODULE_IDS.length} map pieces</span>
+      </button>
     </div>
   `;
   const template = document.createElement('template');
@@ -504,7 +508,8 @@ export function renderSiegeStats(host, state) {
   if (prior) prior.replaceWith(stats);
   else host.append(stats);
   stats.querySelector('.crystal-vault-spend')?.addEventListener('click', () => state.onArmory?.());
-  lastVaultCount = state.crystalsCollected ?? 0;
+  stats.querySelector('.homeland-chip')?.addEventListener('click', () => showHomelandMap(state.mapProgress));
+  lastVaultCount = state.crystalsToSpend ?? 0;
 }
 
 const VAULT_TIERS = [
@@ -518,6 +523,28 @@ const VAULT_TIERS = [
 /** @param {number} collected */
 export function vaultTierFor(collected) {
   return VAULT_TIERS.find((t) => collected >= t.at) ?? VAULT_TIERS[VAULT_TIERS.length - 1];
+}
+
+/**
+ * A big moment when a topic's map sector is charted; the tenth one opens the route to the Alien Homeland.
+ * @param {string} moduleId @param {number} earned Sectors charted so far, including this one.
+ */
+export function showMapPieceFound(moduleId, earned) {
+  const sector = MAP_SECTORS.find((s) => s.moduleId === moduleId);
+  const total = TRAINING_MODULE_IDS.length;
+  const done = earned >= total;
+  document.querySelector('.map-up')?.remove();
+  const el = document.createElement('div');
+  el.className = 'rank-up vault-up map-up';
+  el.setAttribute('role', 'status');
+  el.innerHTML = `
+    <span class="core-reward-rays" aria-hidden="true"></span>
+    <span class="map-up-art" aria-hidden="true">${done ? '🛸' : '🗺️'}</span>
+    <strong class="rank-up-title">${done ? 'ROUTE UNLOCKED!' : 'MAP PIECE FOUND!'}</strong>
+    <span class="rank-up-name">${done ? 'THE ALIEN HOMELAND AWAITS' : `${(sector?.label ?? 'SECTOR').toUpperCase()} · ${earned} / ${total}`}</span>`;
+  document.body.append(el);
+  window.setTimeout(() => el.classList.add('is-leaving'), 3200);
+  window.setTimeout(() => el.remove(), 3800);
 }
 
 /** A short celebration when the Crystal Vault upgrades to a new tier. @param {number} collected */
@@ -537,25 +564,66 @@ export function showVaultUpgrade(collected) {
   window.setTimeout(() => el.remove(), 3600);
 }
 
+/** Chance that the green Special Mission button (double Forge XP) shows instead of a gold one. */
+export const SPECIAL_MISSION_CHANCE = 0.1;
+export const SPECIAL_MISSION_XP_MULTIPLIER = 2;
+
+/** Which Random Mission button is showing: a gold one (1–4) or the green special one. @type {number|'special'} */
+let missionArt = 1 + Math.floor(Math.random() * 4);
+
+/** A different alien each time the player comes back to Maths HQ; now and then, the green special. */
+export function rerollMissionArt(random = Math.random) {
+  if (random() < SPECIAL_MISSION_CHANCE) {
+    missionArt = 'special';
+    return;
+  }
+  const others = [1, 2, 3, 4].filter((n) => n !== missionArt);
+  missionArt = others[Math.floor(random() * others.length)];
+}
+
+export function isSpecialMission() {
+  return missionArt === 'special';
+}
+
 /** Crystals shown so far, so a newly collected one can drop into the pile. @type {number|null} */
 let lastVaultCount = null;
+/** All-time count last shown on the vault's front display, so it flickers when it goes up. @type {number|null} */
+let lastOdometer = null;
 
 /**
- * The Crystal Vault: a glass vault that physically fills with crystals as the player collects them,
- * the all-time total, the next vault tier to chase, and a shortcut to spend crystals in the Armory.
- * @param {number} collected @param {number} toSpend
+ * The red LED counter on the front of the vault: every crystal ever collected. Unlit "8888"
+ * segments sit behind the digits, like a real seven-segment display.
+ * @param {number} collected
+ */
+function renderVaultOdometer(collected) {
+  const value = String(Math.min(9999, Math.max(0, collected))).padStart(4, '0');
+  const ticked = lastOdometer != null && collected > lastOdometer;
+  lastOdometer = collected;
+  return `
+    <div class="vault-odo${ticked ? ' is-tick' : ''}" title="All-time crystals collected">
+      <svg viewBox="0 0 100 32" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <text class="vault-odo-ghost" x="50" y="26" text-anchor="middle">8888</text>
+        <text class="vault-odo-digits" x="50" y="26" text-anchor="middle">${value}</text>
+      </svg>
+    </div>`;
+}
+
+/**
+ * The Crystal Vault holds the crystals a player can spend: spend some in the Armory and they
+ * leave the glass. The vault itself upgrades (Bronze, Silver…) from every crystal ever collected,
+ * so spending never downgrades it.
+ * @param {number} collected All-time crystals, for the vault tier. @param {number} toSpend Crystals in the vault now.
  */
 function renderCrystalVault(collected, toSpend) {
   const tier = vaultTierFor(collected);
   const next = [...VAULT_TIERS].reverse().find((t) => t.at > collected);
-  // One crystal in the glass for every crystal collected in this vault's tier. Crystals are sized
-  // for the tier, so the glass is exactly full when the vault upgrades.
-  const room = next ? next.at - tier.at : 24;
-  const shown = Math.min(room, Math.max(0, collected - tier.at));
-  const cols = Math.max(3, Math.ceil(Math.sqrt(room * 1.05)));
+  // The glass holds up to 20; beyond that the number keeps counting.
+  const room = 20;
+  const shown = Math.min(room, Math.max(0, toSpend));
+  const cols = 5;
   const rows = Math.ceil(room / cols);
   const cell = 100 / cols;
-  const fresh = lastVaultCount != null && collected > lastVaultCount;
+  const fresh = lastVaultCount != null && toSpend > lastVaultCount;
   const crystals = Array.from({ length: shown }, (_, i) => {
     const row = Math.floor(i / cols);
     const col = i % cols;
@@ -566,26 +634,45 @@ function renderCrystalVault(collected, toSpend) {
     return `<span class="crystal-vault-crystal${isNew ? ' is-new' : ''}" style="left:${left.toFixed(1)}%;bottom:${bottom.toFixed(1)}%;width:${(cell * 1.15).toFixed(1)}%;--turn:${turn}deg"></span>`;
   }).join('');
   return `
-    <section class="crystal-vault crystal-vault--${tier.id}" aria-label="Crystal vault: ${collected} alien crystals collected">
-      <div class="crystal-vault-jar" aria-hidden="true">
-        <div class="crystal-vault-pile">${crystals}</div>
-        <div class="crystal-vault-glass"></div>
+    <section class="crystal-vault crystal-vault--${tier.id}" aria-label="Crystal vault: ${toSpend} alien crystals to spend">
+      <div class="crystal-vault-jar">
+        <div class="crystal-vault-pile" aria-hidden="true">${crystals}</div>
+        <div class="crystal-vault-glass" aria-hidden="true"></div>
+        ${renderVaultOdometer(collected)}
       </div>
       <div class="crystal-vault-copy">
-        <span class="crystal-vault-tier">${tier.name}</span>
-        <strong class="crystal-vault-count">${collected.toLocaleString()}</strong>
-        <span class="crystal-vault-label">CRYSTALS COLLECTED</span>
-        ${next ? `<span class="crystal-vault-next">${next.at - collected} more for ${next.name}</span>` : '<span class="crystal-vault-next">Every vault unlocked!</span>'}
-        ${toSpend > 0 ? `<button type="button" class="crystal-vault-spend"><span class="core-gem" aria-hidden="true"></span>${toSpend} READY TO SPEND →</button>` : ''}
+        <div class="crystal-vault-info">
+          <span class="crystal-vault-tier">${tier.name}</span>
+          ${next ? `<span class="crystal-vault-next"><img class="crystal-vault-next-art" src="assets/ui/vaults/${next.art}.png?v=2" alt="" />Collect ${next.at - collected} more for ${next.name}</span>` : '<span class="crystal-vault-next">Every vault unlocked!</span>'}
+        </div>
+        ${toSpend > 0 ? '<button type="button" class="crystal-vault-spend"><span class="core-gem" aria-hidden="true"></span>SPEND IN THE ARMORY →</button>' : ''}
       </div>
     </section>`;
 }
 
-/** Scroll an opened details panel into view, so its contents never open out of sight. */
-function revealWhenOpened(details) {
-  details?.addEventListener('toggle', () => {
-    if (details.open) requestAnimationFrame(() => details.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
-  });
+/**
+ * The Alien Homeland map as a pop-up: every topic charted reveals a sector, and all ten open the
+ * route to the Alien Homeland.
+ * @param {any} mapProgress
+ */
+function showHomelandMap(mapProgress) {
+  document.querySelector('.gb-sheet-backdrop')?.remove();
+  const earned = mapPiecesEarned(mapProgress);
+  const backdrop = document.createElement('div');
+  backdrop.className = 'gb-sheet-backdrop';
+  backdrop.innerHTML = `
+    <div class="gb-sheet homeland-sheet" role="dialog" aria-modal="true" aria-label="Map to the Alien Homeland">
+      <h2 class="gb-sheet-title">🛸 THE ALIEN HOMELAND</h2>
+      <p class="gb-sheet-sub">${earned >= TRAINING_MODULE_IDS.length
+        ? 'Every sector charted! The route to the Alien Homeland is open.'
+        : `Chart all ${TRAINING_MODULE_IDS.length} sectors to find where the aliens come from, then fly there and take the fight to them!`}</p>
+      ${renderInterstellarMap(mapProgress)}
+      <button type="button" class="gb-sheet-x" aria-label="Close">×</button>
+    </div>`;
+  const close = () => backdrop.remove();
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+  backdrop.querySelector('.gb-sheet-x')?.addEventListener('click', close);
+  document.body.append(backdrop);
 }
 
 /**
@@ -610,7 +697,7 @@ export function renderHome(host, state) {
         </div>
         ${attack.open
           ? '<span class="mission-battle-ready">Use DEFEND GRANNY in Mission Control!</span>'
-          : `<button type="button" id="mission-start-mixed" class="gb-forge-btn" aria-label="Random mission: ${attack.remaining} more right answers needed, from every topic">🎲 RANDOM MISSION</button>`}
+          : `<button type="button" id="mission-start-mixed" class="mission-start-art${missionArt === 'special' ? ' is-special' : ''}" aria-label="${missionArt === 'special' ? 'Special mission: double Forge XP' : 'Random mission'}: ${attack.remaining} more right answers needed, from every topic"><img src="assets/ui/random-mission-${missionArt}.png?v=2" alt="" width="760" height="203" /></button>`}
         <div class="mission-level-control">
           <div class="mission-level-intro">
             <span class="mission-level-title">LEVEL</span>
@@ -633,16 +720,11 @@ export function renderHome(host, state) {
           ${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress, TOPIC_DISPLAY_ORDER, state.topicProgress)}
         </div>
       </section>
-      <details class="mission-map-details">
-        <summary>Explore your interstellar map and achievements</summary>
-        ${renderInterstellarMap(state.mapProgress)}
-      </details>
     </div>
   `;
 
   host.querySelector('#mission-start-mixed')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-armory-open')?.addEventListener('click', state.onArmory);
-  revealWhenOpened(host.querySelector('.mission-map-details'));
   host.querySelectorAll('[data-topic]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-topic');
@@ -662,8 +744,9 @@ export function renderHome(host, state) {
 /**
  * @param {HTMLElement|null} container
  * @param {import('./siege-ranks.js').SiegeRecord} record
+ * @param {{ title?: string, onOpen?: (level: number) => void }} [opts]
  */
-export function renderTopbarBadges(container, record) {
+export function renderTopbarBadges(container, record, opts = {}) {
   if (!container) return;
   const level = siegeRankLevel(record);
   const rankedUp = lastBadgeLevel != null && level > lastBadgeLevel;
@@ -679,10 +762,11 @@ export function renderTopbarBadges(container, record) {
       <span class="rank-badge-art"><img src="${badgeSrc(shown)}" alt="" width="57" height="57" />${level ? '' : '<span class="rank-badge-lock" aria-hidden="true">🔒</span>'}</span>
       <span class="rank-badge-copy">
         <strong class="rank-badge-name">${level ? name.toUpperCase() : 'NO RANK YET'}</strong>
+        ${opts.title ? `<span class="rank-badge-title">“${escapeHtml(opts.title)}”</span>` : ''}
         <span class="rank-badge-next">${next ? `Next: ${next.name} · ${progress}` : 'Top rank!'}</span>
       </span>
     </button>`;
-  container.querySelector('.rank-badge')?.addEventListener('click', () => showRankLadder(level, record));
+  container.querySelector('.rank-badge')?.addEventListener('click', () => (opts.onOpen ? opts.onOpen(level) : showRankLadder(level, record)));
   if (rankedUp) showRankUp(name, shown);
 }
 

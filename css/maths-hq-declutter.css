@@ -399,27 +399,143 @@ body.mission-mode #screen-home .mission-mixed-card .mission-level-option.is-sele
     min-height: 0;
   }
 
-  /* With the taller half, the vault stacks: a big jar on top, the count and tier underneath. */
+  /* With the taller half, the vault stacks: the jar takes the height, with one compact block
+     underneath (the count beside the tier and next goal, then the spend button). */
   body.mission-mode .crystal-vault {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
     justify-items: center;
-    gap: 6px;
-    text-align: center;
+    gap: 4px;
+    padding: 8px 10px 10px;
   }
 
   body.mission-mode .crystal-vault-jar {
     width: auto;
     height: 100%;
     max-width: none;
-    max-height: 360px;
+    max-height: 460px;
   }
 
   body.mission-mode .crystal-vault-copy {
+    display: grid;
+    grid-template-columns: auto auto;
     align-items: center;
+    justify-content: center;
+    column-gap: 12px;
+    row-gap: 6px;
+  }
+
+  body.mission-mode .crystal-vault-total {
+    display: grid;
+    justify-items: center;
+    line-height: 1;
   }
 
   body.mission-mode .crystal-vault-count {
-    font-size: clamp(3rem, 4vw, 4.4rem);
+    font-size: clamp(2.4rem, 3vw, 3.2rem);
+  }
+
+  body.mission-mode .crystal-vault-label {
+    font-size: .58rem;
+    letter-spacing: .14em;
+  }
+
+  body.mission-mode .crystal-vault-info {
+    display: grid;
+    gap: 2px;
+    text-align: left;
+  }
+
+  body.mission-mode .crystal-vault-next {
+    margin-top: 0;
+    white-space: nowrap;
+  }
+
+  body.mission-mode .crystal-vault-spend {
+    grid-column: 1 / -1;
+    justify-self: center;
+    margin-top: 0;
+  }
+}
+
+/* The crystal sum, so the vault total and the spendable crystals never look mismatched. */
+body.mission-mode .crystal-vault-sum {
+  grid-column: 1 / -1;
+  justify-self: center;
+  font-size: .7rem;
+  font-weight: 800;
+  color: rgba(214, 255, 232, .78);
+}
+
+body.mission-mode .crystal-vault-sum b {
+  color: #9dff7a;
+}
+
+/* Random Mission: the alien button art is the button. It bobs and glows instead of a box pulse,
+   because the alien pokes out above the pill. */
+body.mission-mode #screen-home #mission-start-mixed.mission-start-art {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  cursor: pointer;
+  animation: mission-art-pulse 1.8s ease-in-out infinite;
+}
+
+body.mission-mode #screen-home #mission-start-mixed.mission-start-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 120px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+body.mission-mode #screen-home #mission-start-mixed.mission-start-art:hover {
+  animation-play-state: paused;
+  transform: translateY(-3px) scale(1.03);
+  filter: brightness(1.12) drop-shadow(0 0 16px rgba(255, 180, 40, .8));
+}
+
+body.mission-mode #screen-home #mission-start-mixed.mission-start-art:active {
+  transform: scale(.97);
+}
+
+@keyframes mission-art-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 4px 10px rgba(255, 140, 0, .35)); }
+  50% { transform: scale(1.025); filter: drop-shadow(0 0 18px rgba(255, 175, 40, .75)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.mission-mode #screen-home #mission-start-mixed.mission-start-art { animation: none; }
+}
+
+/* The rare green Special Mission glows green so it stands out from the gold ones. */
+body.mission-mode #screen-home #mission-start-mixed.mission-start-art.is-special {
+  animation-name: mission-art-special;
+}
+
+@keyframes mission-art-special {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 4px 12px rgba(120, 255, 80, .45)); }
+  50% { transform: scale(1.035); filter: drop-shadow(0 0 24px rgba(140, 255, 90, .95)); }
+}
+
+/* The jar is the count now (the header pill shows the number), so it gets the room. */
+@media (min-width: 1321px) and (min-height: 600px) {
+  body.mission-mode .crystal-vault-jar {
+    max-height: 600px;
+  }
+
+  body.mission-mode .crystal-vault-copy {
+    grid-template-columns: auto;
+    justify-items: center;
+  }
+
+  body.mission-mode .crystal-vault-info {
+    justify-items: center;
+    text-align: center;
   }
 }

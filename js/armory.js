@@ -2,6 +2,68 @@ import { TURRETS, TURRET_ORDER } from './turrets-data.js';
 import { ECONOMY } from './economy.js';
 import { formatUnlockXp, turretStatLine } from './shop.js';
 import { TURRET_MAX_LEVEL, effectiveTurret, nextUpgrade, turretLevel } from './turret-upgrades.js?v=20261112a2';
+import { AMMO } from './ammo-data.js?v=20261112a1';
+import { GEAR, gearArt, gearStatus } from './gear.js?v=20261113a3';
+
+/** @param {number} n */
+function crystalText(n) {
+  return `${n} alien ${n === 1 ? 'crystal' : 'crystals'}`;
+}
+
+/** Granny's Gear shelf: one card per item with its art, what it does and its crystal price. */
+function renderGearShelf(owned, cores) {
+  const cards = GEAR.map((g) => {
+    const st = gearStatus(g.id, owned, cores);
+    const action = st.state === 'owned'
+      ? '<span class="gear-owned">✓ OWNED</span>'
+      : st.state === 'needs'
+        ? `<span class="gear-needs">Needs ${st.needs} first</span>`
+        : `<button type="button" class="armory-upgrade-btn gear-buy" data-gear-id="${g.id}" ${st.state === 'ready' ? '' : 'disabled'}>
+            ${st.state === 'ready' ? 'BUY' : 'NEED MORE'} <span class="armory-upgrade-cost"><span class="core-gem" aria-hidden="true"></span>${st.cost}</span>
+          </button>`;
+    return `
+      <article class="gear-card gear-card--${st.state}">
+        <img class="gear-art" src="${gearArt(g.id)}" alt="" width="160" height="160" loading="lazy" />
+        <h3>${g.name}</h3>
+        <p>${g.what}</p>
+        ${action}
+      </article>`;
+  }).join('');
+  return `
+    <p class="armory-grid-intro">GRANNY’S GEAR · BUY ONCE WITH ALIEN CRYSTALS, KEEP FOREVER</p>
+    <div class="gear-grid">${cards}</div>`;
+}
+
+/** Which alien takes the hits in each turret's firing-range preview. */
+const RANGE_ALIENS = ['monster1', 'monster2', 'monster3', 'monster4', 'monster5'];
+
+/**
+ * A mini firing range: the turret fires its real ammo at an alien, which flashes, loses health
+ * and pops, then a new one arrives. Support turrets show what they do instead of shooting.
+ * @param {string} id @param {string} role @param {boolean} mystery
+ */
+function renderFiringRange(id, role, mystery) {
+  if (mystery) return '';
+  const alien = RANGE_ALIENS[TURRET_ORDER.indexOf(id) % RANGE_ALIENS.length];
+  const ammo = AMMO[id]?.sprite ?? (role === 'glue' ? AMMO['slime-spitter']?.sprite : null);
+  const support = role === 'magnet' || role === 'repair' || role === 'decoy';
+  const shots = !support && ammo
+    ? [1, 2, 3].map((n) => `<img class="range-shot range-shot--${n}" src="${ammo}" alt="" />`).join('')
+    : '';
+  const extras = role === 'magnet'
+    ? [1, 2, 3].map((n) => `<span class="range-coin range-coin--${n}">🪙</span>`).join('')
+    : role === 'repair'
+      ? [1, 2, 3, 4].map((n) => `<span class="range-spark range-spark--${n}">✚</span>`).join('')
+      : role === 'decoy' ? '<span class="range-huh">?!</span>' : '';
+  return `
+    <div class="armory-range${support ? ' armory-range--support' : ''}" data-role="${role}" aria-hidden="true">
+      <span class="range-muzzle"></span>
+      ${shots}
+      <div class="range-alien"><img src="assets/enemies/${alien}.png" alt="" /><span class="range-hp"><i></i></span></div>
+      <span class="range-pop"></span>
+      ${extras}
+    </div>`;
+}
 
 /**
  * @param {number} xp
@@ -53,10 +115,22 @@ function armoryCardStatus(t, xp, cores, isUnlocked) {
  * @param {number} xp
  * @param {Set<string>} unlocked
  */
+/**
+ * Turrets further away than the next unlock stay a mystery: a glowing silhouette and "???",
+ * so there is always something new on the horizon.
+ * @param {string} id @param {number} xp @param {Set<string>} unlocked
+ */
+export function isMysteryTurret(id, xp, unlocked) {
+  if (unlocked.has(id) || xp >= TURRETS[id].unlockXp) return false;
+  const teaser = TURRET_ORDER.find((t) => !unlocked.has(t) && xp < TURRETS[t].unlockXp);
+  return id !== teaser;
+}
+
 function renderArmoryFeature(id, xp, cores, unlocked) {
   const turret = TURRETS[id];
   if (!turret) return '';
   const owned = unlocked.has(id);
+  const mystery = isMysteryTurret(id, xp, unlocked);
   const ready = !owned && xp >= turret.unlockXp;
   const level = owned ? turretLevel(id) : 1;
   const up = nextUpgrade(id, cores, owned);
@@ -77,18 +151,15 @@ function renderArmoryFeature(id, xp, cores, unlocked) {
     <div class="armory-feature armory-level-${level}" data-role="${role}" style="--turret-color:${turret.color}">
       <div class="armory-feature-visual" aria-hidden="true">
         <div class="armory-feature-aura"></div>
-        <img class="armory-feature-turret ${turret.flipX ? 'flip-x' : ''}" src="${turret.sprite}" alt="" width="230" height="230" />
-        <div class="armory-demo-lane">
-          <span class="armory-demo-shot"></span>
-          <span class="armory-demo-target">✺</span>
-        </div>
+        <img class="armory-feature-turret ${turret.flipX ? 'flip-x' : ''}${mystery ? ' is-mystery' : ''}" src="${turret.sprite}" alt="" width="230" height="230" />
+        ${renderFiringRange(id, role, mystery)}
       </div>
       <div class="armory-feature-copy">
         <span class="armory-feature-eyebrow">WEAPON SPOTLIGHT · FIELD TEST</span>
-        <h3>${turret.name} ${owned ? levelStars(id) : ''}</h3>
-        <p>${turret.desc}</p>
+        <h3>${mystery ? 'MYSTERY TURRET' : turret.name} ${owned ? levelStars(id) : ''}</h3>
+        <p>${mystery ? 'Nobody knows what this one does yet. Keep earning Forge XP to find out!' : turret.desc}</p>
         <strong>${state}</strong>
-        <div class="armory-feature-stats">${turretStatLine(owned ? current : turret)}</div>
+        <div class="armory-feature-stats">${mystery ? '??? · ??? · ???' : turretStatLine(owned ? current : turret)}</div>
         ${upgradeButton}
         <span class="armory-feature-explain">${explain}</span>
       </div>
@@ -110,6 +181,8 @@ function renderArmoryFeature(id, xp, cores, unlocked) {
  */
 export function renderArmory(host, callbacks) {
   const { xp, cores, unlocked, onUnlock, onUpgrade, onBack, showToast } = callbacks;
+  const tab = callbacks.tab === 'gear' ? 'gear' : 'turrets';
+  const gearOwned = callbacks.gear ?? [];
   const owned = TURRET_ORDER.filter((id) => unlocked.has(id)).length;
   const next = nextLockedTurret(xp, unlocked);
   const nextT = next ? TURRETS[next] : null;
@@ -136,21 +209,22 @@ export function renderArmory(host, callbacks) {
     const status = armoryCardStatus(t, xp, cores, isUnlocked);
     const canUnlock = !isUnlocked && xp >= t.unlockXp;
     const level = isUnlocked ? turretLevel(id) : 1;
+    const mystery = isMysteryTurret(id, xp, unlocked);
     return `
       <button
         type="button"
         class="armory-card armory-card--${status.tone}${canUnlock || status.tone === 'upgrade' ? ' armory-card--ready' : ''} armory-level-${level}"
         data-turret-id="${id}"
         style="--turret-color: ${t.color}"
-        aria-label="View ${t.name}${canUnlock ? ', ready to unlock' : ''}${status.tone === 'upgrade' ? ', upgrade ready' : ''}"
+        aria-label="View ${mystery ? 'mystery turret' : t.name}${canUnlock ? ', ready to unlock' : ''}${status.tone === 'upgrade' ? ', upgrade ready' : ''}"
       >
         <span class="armory-card-badge armory-card-badge--${status.tone}">${status.label}</span>
         <span class="armory-card-art">
-          <img src="${t.sprite}" alt="" class="${t.flipX ? 'flip-x' : ''}" width="72" height="72" loading="lazy" />
+          <img src="${t.sprite}" alt="" class="${t.flipX ? 'flip-x' : ''}${mystery ? ' is-mystery' : ''}" width="72" height="72" loading="lazy" />
         </span>
-        <span class="armory-card-name">${t.name}</span>
+        <span class="armory-card-name">${mystery ? '???' : t.name}</span>
         ${isUnlocked ? levelStars(id) : ''}
-        <span class="armory-card-stat">${turretStatLine(isUnlocked ? effectiveTurret(id) : t)}</span>
+        <span class="armory-card-stat">${mystery ? 'Mystery weapon' : turretStatLine(isUnlocked ? effectiveTurret(id) : t)}</span>
         <span class="armory-card-price">${isUnlocked ? 'Owned' : formatUnlockXp(t.unlockXp)}</span>
         <span class="armory-card-detail">${status.detail}</span>
       </button>
@@ -160,21 +234,32 @@ export function renderArmory(host, callbacks) {
   host.innerHTML = `
     <div class="panel armory-panel">
       <button type="button" class="btn btn-ghost btn-sm times-back" id="armory-back">← Back</button>
-      <p class="mission-tag">Field armory</p>
-      <h2 class="panel-title">Turret arsenal</h2>
-      <p class="granny-line armory-lead">${headline}${/[.!?]$/.test(headline) ? '' : '.'} ${ECONOMY.forgeXpLabel} unlocks and upgrades gear forever — ${ECONOMY.siegeCoinsLabel} only place them during a siege.</p>
+      <p class="mission-tag">Granny’s Armory</p>
+      <nav class="armory-tabs" role="tablist">
+        <button type="button" role="tab" data-armory-tab="turrets" class="${tab === 'turrets' ? 'is-active' : ''}">TURRETS</button>
+        <button type="button" role="tab" data-armory-tab="gear" class="${tab === 'gear' ? 'is-active' : ''}">GRANNY’S GEAR</button>
+      </nav>
+      <p class="granny-line armory-lead">${tab === 'gear'
+        ? `Permanent power-ups for every siege. You have ${crystalText(cores)} to spend.`
+        : `${headline}${/[.!?]$/.test(headline) ? '' : '.'} ${ECONOMY.forgeXpLabel} unlocks turrets forever. Crystals upgrade them.`}</p>
       <div class="armory-xp-bar">
         <span class="armory-xp-label">${ECONOMY.forgeXpLabel}</span>
         <span class="armory-xp-val">${xp.toLocaleString()}</span>
         <span class="armory-cores"><span class="core-gem" aria-hidden="true"></span><strong>${cores}</strong> alien ${cores === 1 ? 'crystal' : 'crystals'}</span>
       </div>
+      ${tab === 'gear' ? renderGearShelf(gearOwned, cores) : `
       <div id="armory-feature-host">${renderArmoryFeature(featuredId, xp, cores, unlocked)}</div>
       <p class="armory-grid-intro">CHOOSE ANY TURRET TO PREVIEW IT · UNLOCK AND UPGRADE WEAPONS BELOW</p>
-      <div class="armory-grid">${cards}</div>
+      <div class="armory-grid">${cards}</div>`}
     </div>
   `;
 
   host.querySelector('#armory-back')?.addEventListener('click', onBack);
+  host.querySelectorAll('[data-armory-tab]').forEach((b) => b.addEventListener('click', () => callbacks.onTab?.(b.getAttribute('data-armory-tab'))));
+  host.querySelectorAll('.gear-buy').forEach((b) => b.addEventListener('click', () => {
+    const id = b.getAttribute('data-gear-id');
+    if (id) callbacks.onBuyGear?.(id);
+  }));
 
   const bindUpgrade = () => {
     host.querySelector('.armory-upgrade-btn')?.addEventListener('click', (event) => {

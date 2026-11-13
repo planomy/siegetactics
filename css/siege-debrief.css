@@ -1,0 +1,76 @@
+/* Siege debrief: one landscape card with no scrolling on a laptop screen, over the
+   battlefield it was fought on, dimmed so the numbers stay readable. */
+
+#screen-results.active {
+  position: relative;
+  isolation: isolate;
+}
+
+#screen-results.active::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(12, 8, 22, .55), rgba(6, 4, 12, .92) 70%),
+    url('../assets/field.png') center / cover no-repeat;
+  filter: saturate(.85);
+}
+
+#screen-results .results-panel {
+  background: linear-gradient(165deg, rgba(30, 24, 48, .94), rgba(16, 12, 26, .96));
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+@media (min-width: 900px) {
+  #screen-results .results-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 22px;
+    width: min(100% - 32px, 1080px);
+    max-width: none;
+    margin: 12px auto;
+    padding: 22px 26px;
+  }
+
+  #screen-results .results-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  #screen-results .brag-hero-stat {
+    margin: 4px 0 0;
+    padding: 14px 12px;
+  }
+
+  #screen-results .results-extras {
+    margin: 0;
+    width: 100%;
+  }
+
+  #screen-results .results-badges {
+    margin: 0;
+  }
+
+  #screen-results .results-badges .rank-result {
+    width: 100%;
+  }
+
+  #screen-results .results-stats-compact {
+    margin: 0;
+  }
+
+  #screen-results .next-goal-card {
+    margin: 0;
+  }
+
+  #screen-results #btn-results-done {
+    align-self: center;
+    min-width: 220px;
+    margin-top: 2px;
+  }
+}

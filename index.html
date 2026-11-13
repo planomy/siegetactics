@@ -13,18 +13,21 @@
   <link rel="stylesheet" href="css/popups.css" />
   <link rel="stylesheet" href="css/mission-layout.css?v=20261112t" />
   <link rel="stylesheet" href="css/defence-forge.css?v=20261112i" />
-  <link rel="stylesheet" href="css/armory-showcase.css?v=20261112a1" />
+  <link rel="stylesheet" href="css/armory-showcase.css?v=20261113b4" />
   <link rel="stylesheet" href="css/siege-deployment.css?v=20261112h" />
   <link rel="stylesheet" href="css/sticky-header.css?v=20261112h" />
-  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261112k" />
+  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261113a4" />
   <link rel="stylesheet" href="css/maths-hq-cockpit.css?v=20261112t" />
   <link rel="stylesheet" href="css/ten-topic-dashboard.css?v=20261112b3" />
   <link rel="stylesheet" href="css/game-no-instructions.css?v=20261112m" />
   <link rel="stylesheet" href="css/mission-blueprint-stats.css?v=20261112n" />
-  <link rel="stylesheet" href="css/topic-campaign-cards.css?v=20261112a6" />
-  <link rel="stylesheet" href="css/maths-hq-declutter.css?v=20261112d4" />
-  <link rel="stylesheet" href="css/upgrade-cores.css?v=20261112a7" />
-  <link rel="stylesheet" href="css/rank-badge.css?v=20261112a5" />
+  <link rel="stylesheet" href="css/topic-campaign-cards.css?v=20261113a3" />
+  <link rel="stylesheet" href="css/maths-hq-declutter.css?v=20261113b5" />
+  <link rel="stylesheet" href="css/upgrade-cores.css?v=20261113a3" />
+  <link rel="stylesheet" href="css/rank-badge.css?v=20261113a1" />
+  <link rel="stylesheet" href="css/engagement.css?v=20261113a4" />
+  <link rel="stylesheet" href="css/siege-debrief.css?v=20261113a2" />
+  <link rel="stylesheet" href="css/hq-polish.css?v=20261113b1" />
   <link rel="preload" href="assets/field.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/granny-boom-siege-logo.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/hero-village.png" as="image" type="image/png" />
@@ -49,6 +52,8 @@
       <button type="button" class="core-pill" id="topbar-cores-pill" aria-label="Alien crystals: spend them in the Armory">
         <span class="core-gem" aria-hidden="true"></span><span id="topbar-cores">0</span>
       </button>
+      <button type="button" class="streak-pill" id="topbar-streak" aria-label="Daily streak"></button>
+      <button type="button" class="daily-pill" id="topbar-daily" aria-label="Daily challenges"></button>
     </div>
     <div class="topbar-actions">
       <button type="button" class="topbar-action-btn" id="btn-sound" aria-label="Mute sound">
@@ -146,8 +151,9 @@
               </div>
             </div>
             <canvas id="siege-canvas" aria-label="Siege field"></canvas>
+            <div id="leak-meter" class="leak-meter" aria-live="polite"></div>
             <div class="wave-controls">
-              <button type="button" class="btn btn-ghost btn-sm" id="btn-speed" data-speed="1">1×</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-speed" data-speed="1" aria-label="Battle speed: tap to speed up">1× SPEED</button>
             </div>
           </div>
 
@@ -191,39 +197,45 @@
 
     <section id="screen-results" class="screen">
       <div class="panel results-panel brag-panel">
-        <p class="brag-eyebrow">Siege debrief</p>
-        <h2 class="brag-headline" id="results-headline">Minute survived!</h2>
-        <p class="granny-line" id="results-subline">Granny counted every blast from the porch.</p>
+        <div class="results-col results-col-main">
+          <p class="brag-eyebrow">Siege debrief</p>
+          <h2 class="brag-headline" id="results-headline">Minute survived!</h2>
+          <p class="granny-line" id="results-subline">Granny counted every blast from the porch.</p>
 
-        <div class="brag-hero-stat">
-          <span class="stat-num" id="results-kills">0</span>
-          <span class="stat-label">aliens blasted this siege</span>
+          <div class="brag-hero-stat">
+            <span class="stat-num" id="results-kills">0</span>
+            <span class="stat-label">aliens blasted this siege</span>
+          </div>
+
+          <div class="results-extras" id="results-extras"></div>
+
+          <button type="button" class="btn btn-primary btn-lg" id="btn-results-done">Back to HQ</button>
         </div>
 
-        <div class="results-badges" id="results-badges" aria-label="Your siege rank"></div>
+        <div class="results-col results-col-side">
+          <div class="results-badges" id="results-badges" aria-label="Your siege rank"></div>
 
-        <div class="results-stats results-stats-compact">
-          <div class="stat-box">
-            <span class="stat-num stat-num-sm" id="results-leaks">0</span>
-            <span class="stat-label">Leaked (max <span id="results-max-leaks">10</span>)</span>
+          <div class="results-stats results-stats-compact">
+            <div class="stat-box">
+              <span class="stat-num stat-num-sm" id="results-leaks">0</span>
+              <span class="stat-label">Leaked (max <span id="results-max-leaks">10</span>)</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-num stat-num-sm" id="results-forge-xp">0</span>
+              <span class="stat-label">Forge XP earned</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-num stat-num-sm" id="results-coins-left">0</span>
+              <span class="stat-label">Siege coins banked</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-num stat-num-sm" id="results-best">0</span>
+              <span class="stat-label">Your best blasts</span>
+            </div>
           </div>
-          <div class="stat-box">
-            <span class="stat-num stat-num-sm" id="results-forge-xp">0</span>
-            <span class="stat-label">Forge XP earned</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-num stat-num-sm" id="results-coins-left">0</span>
-            <span class="stat-label">Siege coins banked</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-num stat-num-sm" id="results-best">0</span>
-            <span class="stat-label">Your best blasts</span>
-          </div>
+
+          <div class="next-goal-card" id="results-next-goal" aria-label="Your next goal"></div>
         </div>
-
-        <div class="next-goal-card" id="results-next-goal" aria-label="Your next goal"></div>
-
-        <button type="button" class="btn btn-primary btn-lg" id="btn-results-done">Back to HQ</button>
       </div>
     </section>
   </main>
@@ -247,6 +259,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20261112d4"></script>
+  <script type="module" src="js/app.js?v=20261113c8"></script>
 </body>
 </html>

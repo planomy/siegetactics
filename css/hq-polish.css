@@ -1,0 +1,390 @@
+/* Maths HQ polish: a forge that looks alive at 0/10, a loud near-miss on the next turret,
+   a galaxy radar, a prominent kill count, bigger header pills and topic rank stars.
+   Loaded last so these win over the older layout sheets. */
+
+/* 1. The forge at 0/10: dimmed but alive, waiting for the player, never a dead grey slab. */
+body.mission-mode .mission-power .power-rig[data-stage="offline"] .power-turret-main img {
+  filter: grayscale(.35) brightness(.78) drop-shadow(0 0 14px rgba(120, 255, 90, .35));
+  animation: forge-idle 3.2s ease-in-out infinite;
+}
+
+body.mission-mode .mission-power .power-rig[data-stage="offline"] .power-turret-left,
+body.mission-mode .mission-power .power-rig[data-stage="offline"] .power-turret-right {
+  opacity: .38;
+}
+
+body.mission-mode .mission-power .power-rig[data-stage="offline"] .power-halo {
+  opacity: .5;
+  animation: forge-halo-idle 3.2s ease-in-out infinite;
+}
+
+body.mission-mode .mission-power .power-rig[data-stage="offline"] .power-rank-name {
+  display: block;
+  font-size: clamp(.95rem, 1.1vw, 1.15rem);
+  color: #b9ffa0;
+  letter-spacing: .06em;
+  text-shadow: 0 0 10px rgba(120, 255, 90, .55);
+  animation: forge-call 1.8s ease-in-out infinite;
+}
+
+@keyframes forge-idle {
+  50% { filter: grayscale(.2) brightness(.92) drop-shadow(0 0 22px rgba(120, 255, 90, .55)); transform: translateY(3px) scale(.95); }
+}
+
+@keyframes forge-halo-idle {
+  50% { opacity: .85; }
+}
+
+@keyframes forge-call {
+  50% { opacity: .65; }
+}
+
+/* 2. Near-miss: a few XP from the next turret, the promo shouts it. */
+body.mission-mode #screen-home .armory-promo.armory-promo-close .armory-promo-progress-label {
+  justify-content: space-between;
+}
+
+body.mission-mode #screen-home .armory-promo.armory-promo-close .armory-promo-progress-label strong {
+  display: inline;
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 1.5vw, 1.55rem);
+  letter-spacing: .04em;
+  color: #ffe14a;
+  text-shadow: 0 0 12px rgba(255, 210, 60, .85), 0 2px 0 #4a2c00;
+  animation: near-miss 1.1s ease-in-out infinite;
+}
+
+body.mission-mode #screen-home .armory-promo.armory-promo-close .armory-promo-fill {
+  background: linear-gradient(90deg, #ffb300, #ffe14a, #fff6b8);
+  box-shadow: 0 0 14px rgba(255, 210, 60, .9);
+  animation: near-miss-bar 1.1s ease-in-out infinite;
+}
+
+body.mission-mode #screen-home .armory-promo.armory-promo-close .armory-promo-art img {
+  animation: near-miss-turret 1.1s ease-in-out infinite;
+}
+
+@keyframes near-miss {
+  50% { transform: scale(1.06); }
+}
+
+@keyframes near-miss-bar {
+  50% { filter: brightness(1.35); }
+}
+
+@keyframes near-miss-turret {
+  50% { transform: translateY(-3px) scale(1.04); filter: drop-shadow(0 0 18px rgba(255, 220, 80, .8)); }
+}
+
+/* 3. Radar: a faint galaxy inside the dish, and "DETECTING ALIEN HORDE" in the hub. */
+body.mission-mode .inbound-radar-dish {
+  isolation: isolate;
+}
+
+body.mission-mode .inbound-radar-galaxy {
+  position: absolute;
+  inset: 3%;
+  z-index: 1;
+  border-radius: 50%;
+  opacity: .7;
+  mix-blend-mode: screen;
+  /* The radar is tinted red for the alien side; this cancels the tint so the galaxy keeps its colours. */
+  filter: hue-rotate(125deg) saturate(1.1);
+  background:
+    radial-gradient(2px 2px at 18% 30%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 72% 22%, #fff 50%, transparent 51%),
+    radial-gradient(2.4px 2.4px at 60% 68%, #ffe9c4 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 30% 78%, #cfe3ff 50%, transparent 51%),
+    radial-gradient(2px 2px at 84% 54%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 44% 14%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 12% 58%, #ffd6f2 50%, transparent 51%),
+    radial-gradient(2.4px 2.4px at 52% 42%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 66% 86%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 24% 46%, #e6f0ff 50%, transparent 51%),
+    radial-gradient(2px 2px at 78% 38%, #fff6d8 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 38% 62%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 90% 70%, #ffd6f2 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 8% 40%, #fff 50%, transparent 51%),
+    radial-gradient(2px 2px at 48% 90%, #cfe3ff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 58% 8%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 34% 24%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 70% 52%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 20% 86%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 86% 16%, #fff 50%, transparent 51%),
+    /* a bright spiral band through the middle, a glowing core and coloured nebula clouds */
+    radial-gradient(ellipse 58% 13% at 50% 50%, rgba(255, 235, 255, .12), transparent 72%),
+    radial-gradient(ellipse 74% 24% at 50% 50%, rgba(175, 105, 255, .38), transparent 72%),
+    radial-gradient(ellipse 11% 11% at 50% 50%, rgba(255, 240, 220, .15), transparent 100%),
+    radial-gradient(ellipse 38% 46% at 28% 32%, rgba(70, 150, 255, .4), transparent 70%),
+    radial-gradient(ellipse 40% 32% at 72% 68%, rgba(255, 80, 170, .36), transparent 70%),
+    radial-gradient(ellipse 30% 24% at 70% 24%, rgba(80, 235, 220, .2), transparent 70%),
+    radial-gradient(ellipse 26% 30% at 26% 74%, rgba(255, 160, 80, .16), transparent 70%);
+  transform: rotate(-24deg);
+  animation: radar-galaxy 90s linear infinite;
+  pointer-events: none;
+}
+
+body.mission-mode .inbound-radar-grid {
+  z-index: 2;
+  opacity: 1;
+  background:
+    repeating-radial-gradient(
+      circle at 50% 50%,
+      transparent 0,
+      transparent 18px,
+      rgba(93, 255, 138, .32) 18px,
+      rgba(93, 255, 138, .32) 19px
+    );
+  pointer-events: none;
+}
+
+/* Planets and a comet inside the radar. They orbit slowly and stay clear of the centre text.
+   Like the galaxy, they cancel the radar's red tint so they keep their own colours. */
+body.mission-mode .inbound-radar-planets {
+  position: absolute;
+  inset: 3%;
+  z-index: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  opacity: .55;
+  filter: hue-rotate(125deg) saturate(.85);
+  animation: radar-orbit 160s linear infinite;
+  pointer-events: none;
+}
+
+body.mission-mode .radar-planet {
+  position: absolute;
+  border-radius: 50%;
+  animation: planet-counter 160s linear infinite;
+}
+
+/* Ringed gas giant, upper left. */
+body.mission-mode .radar-planet--ringed {
+  left: 16%;
+  top: 18%;
+  width: 8%;
+  height: 8%;
+  background: radial-gradient(circle at 35% 30%, #ffe9b0, #e8a24a 45%, #8a4a1a 80%, #3a1a08);
+  box-shadow: inset -2px -2px 4px rgba(0, 0, 0, .55), 0 0 5px rgba(255, 190, 100, .25);
+}
+
+body.mission-mode .radar-planet--ringed::before {
+  content: '';
+  position: absolute;
+  left: -45%;
+  top: 38%;
+  width: 190%;
+  height: 26%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 225, 170, .6);
+  border-top-color: transparent;
+  transform: rotate(-18deg);
+}
+
+/* Blue planet with a little moon, lower right. */
+body.mission-mode .radar-planet--blue {
+  right: 16%;
+  bottom: 20%;
+  width: 7%;
+  height: 7%;
+  background: radial-gradient(circle at 35% 30%, #c8f4ff, #3aa0ff 45%, #1a3a9a 80%, #0a1438);
+  box-shadow: inset -2px -2px 4px rgba(0, 0, 0, .55), 0 0 5px rgba(80, 170, 255, .3);
+}
+
+body.mission-mode .radar-moon {
+  position: absolute;
+  right: -45%;
+  top: -20%;
+  width: 34%;
+  height: 34%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #aab 60%, #556);
+  animation: moon-bob 6s ease-in-out infinite;
+}
+
+/* Small red planet, lower left. */
+body.mission-mode .radar-planet--red {
+  left: 22%;
+  bottom: 16%;
+  width: 4.5%;
+  height: 4.5%;
+  background: radial-gradient(circle at 35% 30%, #ffc4a8, #e2503a 50%, #7a1a12 85%);
+  box-shadow: inset -1px -1px 3px rgba(0, 0, 0, .55), 0 0 4px rgba(255, 90, 60, .3);
+}
+
+/* Tiny ice world, upper right. */
+body.mission-mode .radar-planet--ice {
+  right: 22%;
+  top: 14%;
+  width: 3.5%;
+  height: 3.5%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #b9fff4 45%, #3a9a9a 85%);
+  box-shadow: inset -1px -1px 2px rgba(0, 0, 0, .5), 0 0 4px rgba(160, 255, 240, .3);
+}
+
+/* A comet that streaks across now and then. */
+body.mission-mode .radar-comet {
+  position: absolute;
+  left: -20%;
+  top: 30%;
+  width: 22%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(200, 230, 255, .2) 40%, #fff);
+  box-shadow: 0 0 6px rgba(200, 230, 255, .9);
+  opacity: 0;
+  transform: rotate(18deg);
+  animation: radar-comet 9s ease-in 2s infinite;
+}
+
+@keyframes radar-orbit {
+  to { transform: rotate(360deg); }
+}
+
+/* Planets turn the other way as they orbit, so the ringed planet's rings stay level. */
+@keyframes planet-counter {
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes moon-bob {
+  50% { transform: translate(-3px, 3px); }
+}
+
+@keyframes radar-comet {
+  0% { opacity: 0; left: -20%; top: 22%; }
+  4% { opacity: 1; }
+  14% { opacity: 0; left: 105%; top: 62%; }
+  100% { opacity: 0; left: 105%; top: 62%; }
+}
+
+/* A second, slower layer of stars that twinkles over the first. */
+body.mission-mode .inbound-radar-galaxy::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(1.8px 1.8px at 26% 18%, #fff 50%, transparent 51%),
+    radial-gradient(1.8px 1.8px at 80% 30%, #fff 50%, transparent 51%),
+    radial-gradient(2px 2px at 42% 74%, #fff 50%, transparent 51%),
+    radial-gradient(1.8px 1.8px at 14% 66%, #fff 50%, transparent 51%),
+    radial-gradient(1.8px 1.8px at 64% 58%, #fff 50%, transparent 51%);
+  animation: radar-twinkle 2.6s ease-in-out infinite;
+}
+
+@keyframes radar-twinkle {
+  50% { opacity: .2; }
+}
+
+@keyframes radar-galaxy {
+  to { transform: rotate(336deg); }
+}
+
+body.mission-mode .inbound-radar-hub-scan {
+  gap: 1px;
+  z-index: 3;
+  padding: 8px 12px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(8, 4, 14, .78), rgba(8, 4, 14, .45) 70%, transparent);
+}
+
+body.mission-mode .inbound-radar-hub-scan span {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .95), 0 0 10px rgba(0, 0, 0, .8);
+}
+
+body.mission-mode .inbound-radar-scan {
+  font-family: var(--font-display);
+  font-size: clamp(.95rem, 1.2vw, 1.25rem);
+  letter-spacing: .08em;
+  color: #ffd0a8;
+  text-shadow: 0 0 10px rgba(255, 120, 60, .8);
+  animation: radar-scan 1.4s ease-in-out infinite;
+}
+
+body.mission-mode .inbound-radar-hub-scan .inbound-radar-unit {
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+
+@keyframes radar-scan {
+  50% { opacity: .45; }
+}
+
+/* 4. Blueprint: the kill count is the satisfying bit, so it gets the spotlight. */
+body.mission-mode .threat-dossier-kills {
+  margin-top: 6px;
+  padding: 5px 8px;
+  border: 1px solid rgba(93, 255, 138, .55) !important;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(25, 80, 40, .55), rgba(10, 40, 20, .55));
+  font-size: .8rem;
+  letter-spacing: .12em;
+  box-shadow: 0 0 12px rgba(93, 255, 138, .25);
+}
+
+body.mission-mode .threat-dossier-kills-count {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 1.9vw, 2rem);
+  line-height: 1;
+  color: #eaffef;
+  text-shadow: 0 0 14px rgba(93, 255, 138, .8);
+}
+
+/* 5. Header pills: bigger and easier to tap. A new streak invites rather than shows a zero,
+   and unfinished daily challenges gently pulse. */
+body .topbar-stats .forge-xp-pill,
+body .topbar-stats .core-pill,
+body .topbar-stats .streak-pill,
+body .topbar-stats .daily-pill {
+  padding: 7px 14px 7px 11px;
+  font-size: 1.05rem;
+  gap: 6px;
+}
+
+body .topbar-stats .core-pill .core-gem {
+  --gem-size: 1.35em;
+}
+
+body .topbar-stats .daily-pill .daily-dart {
+  width: 26px;
+  height: 26px;
+}
+
+body .topbar-stats .streak-pill.is-new {
+  border-color: rgba(255, 170, 60, .8);
+  color: #ffd9a0;
+}
+
+body .topbar-stats .streak-pill.is-new .streak-flame {
+  filter: none;
+  animation: streak-wait 1.6s ease-in-out infinite;
+}
+
+body .topbar-stats .streak-pill.is-new strong {
+  font-size: .8em;
+  letter-spacing: .1em;
+}
+
+body .topbar-stats .daily-pill.is-pending {
+  animation: daily-pending 2.2s ease-in-out infinite;
+}
+
+@keyframes daily-pending {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(120, 200, 255, .45); }
+  50% { box-shadow: 0 0 0 7px rgba(120, 200, 255, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.mission-mode .mission-power .power-rig[data-stage="offline"] *,
+  body.mission-mode #screen-home .armory-promo.armory-promo-close *,
+  body.mission-mode .inbound-radar-galaxy,
+  body.mission-mode .inbound-radar-galaxy::after,
+  body.mission-mode .inbound-radar-planets,
+  body.mission-mode .inbound-radar-planets *,
+  body.mission-mode .inbound-radar-scan,
+  body .topbar-stats .streak-pill.is-new .streak-flame,
+  body .topbar-stats .daily-pill.is-pending {
+    animation: none !important;
+  }
+}

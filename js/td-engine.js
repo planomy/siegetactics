@@ -242,6 +242,11 @@ export function createTDEngine(canvas, opts) {
   const siegeDuration = opts.mission.siegeDurationSec ?? SIEGE_DURATION_SEC;
   const bonusAvailable = Math.max(0, Math.min(BONUS_TIME_SEC, opts.bonusSiegeSec || 0));
   const maxLeaks = opts.mission.maxLeaks ?? 5;
+  /** Granny's Gear can make the cupcake nukes bigger and fire more of them. */
+  const nukeBoost = { damage: 1, aoe: 1, salvo: 1, ...(opts.nukeBoost ?? {}) };
+  const NUKE_DAMAGE = CUPCAKE.damage * nukeBoost.damage;
+  const NUKE_AOE = CUPCAKE.aoe * nukeBoost.aoe;
+  const NUKE_SALVO = Math.round(CUPCAKE.salvoCount * nukeBoost.salvo);
   const leakCoinPenalty = opts.mission.leakCoinPenalty ?? ECONOMY.leakCoinPenalty;
   const killBudgetXp = opts.mission.killBudgetXp ?? 1;
   const bossKillBudgetXp = opts.mission.bossKillBudgetXp ?? 4;
@@ -745,14 +750,14 @@ export function createTDEngine(canvas, opts) {
   function applyCupcakeExplosion(x, y) {
     const hadBoss = enemies.some((e) => {
       const pos = enemyWorldPos(e);
-      return e.isBoss && Math.hypot(pos.x - x, pos.y - y) <= CUPCAKE.aoe;
+      return e.isBoss && Math.hypot(pos.x - x, pos.y - y) <= NUKE_AOE;
     });
     opts.audio?.playNukeExplosion({ isBoss: hadBoss });
     cupcakeBursts.push({ x, y, time: 0, duration: 0.5 });
     enemies.forEach((e) => {
       const pos = enemyWorldPos(e);
-      if (Math.hypot(pos.x - x, pos.y - y) <= CUPCAKE.aoe) {
-        e.hp -= CUPCAKE.damage;
+      if (Math.hypot(pos.x - x, pos.y - y) <= NUKE_AOE) {
+        e.hp -= NUKE_DAMAGE;
       }
     });
     for (let i = enemies.length - 1; i >= 0; i--) {
@@ -830,7 +835,7 @@ export function createTDEngine(canvas, opts) {
     grannyNukePose = true;
     cupcakeSalvo = {
       active: true,
-      remaining: CUPCAKE.salvoCount,
+      remaining: NUKE_SALVO,
       cooldown: 0.15,
     };
     opts.showToast('Eat my cupcakes!');
@@ -956,7 +961,7 @@ export function createTDEngine(canvas, opts) {
     cupcakeBursts.forEach((b) => {
       const t = b.time / b.duration;
       const alpha = (1 - t) * 0.75;
-      const radius = CUPCAKE.aoe * (0.35 + t * 0.85);
+      const radius = NUKE_AOE * (0.35 + t * 0.85);
       const grd = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, radius);
       grd.addColorStop(0, `rgba(255, 245, 200, ${alpha})`);
       grd.addColorStop(0.35, `rgba(255, 140, 40, ${alpha * 0.8})`);
@@ -1720,7 +1725,6 @@ export function createTDEngine(canvas, opts) {
       ctx.fillText(`${bonusPlayed ? 'BONUS ' : ''}Time ${timeLabel}`, 12, 24);
       ctx.fillText(`Wave ${waveNum}`, 118, 24);
       ctx.fillText(`Blasted: ${totalKills}`, 200, 24);
-      ctx.fillText(`Leaked: ${totalLeaks}/${maxLeaks}`, 320, 24);
       ctx.fillText(`Coins: ${budget}`, width - 110, 24);
     } else if (phase === 'deploy') {
       ctx.fillText('Build your defences — YOU start the wave!', 12, 24);

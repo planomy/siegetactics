@@ -371,3 +371,17 @@
   object-fit: contain;
   filter: drop-shadow(0 0 28px rgba(255, 200, 60, .85));
 }
+
+/* Map piece found: the map (or the ship, for the final sector) instead of a vault. */
+.map-up-art {
+  position: relative;
+  font-size: min(150px, 22vh);
+  line-height: 1;
+  filter: drop-shadow(0 0 26px rgba(170, 110, 255, .9));
+  animation: map-up-spin .9s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+@keyframes map-up-spin {
+  from { transform: rotate(-25deg) scale(.3); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}

@@ -148,6 +148,7 @@ function bonusQuestions(level, cycle, count) {
  *   cycle: number,
  *   questionsNeeded?: number,
  *   remainingNeeded?: () => number,
+ *   stretchOffer?: () => ({ more: number, seconds: number, coins: number }|null),
  *   onAwardXp: (amount: number) => void,
  *   onAnswer?: (right: boolean, moduleId: string) => void,
  *   onFinished: (results: Record<string, {correct:number, attempts:number, accuracy:number}>, overall:number) => void,
@@ -267,16 +268,29 @@ export function initBattlePrep(host, callbacks) {
     }
     const overall = deck.length > 0 ? totalCorrect / deck.length : 0;
     callbacks.onFinished(results, overall);
+    const offer = callbacks.stretchOffer?.() ?? null;
     host.innerHTML = `
       <div class="panel times-panel times-done prep-panel prep-done">
         <p class="mission-tag">Battle Prep complete</p>
         <h2 class="panel-title">Cleared to defend Granny</h2>
         <p class="granny-line">${totalCorrect} right out of ${deck.length}. Accuracy: ${Math.round(overall * 100)}%.</p>
+        ${offer ? `
+        <button type="button" class="prep-stretch" id="prep-stretch">
+          <strong>🔥 KEEP GOING!</strong>
+          <span>${offer.more} more right = +${offer.seconds}s bonus battle time · +${offer.coins} coins each</span>
+        </button>` : ''}
         <div class="times-done-actions">
           <button type="button" class="btn btn-primary" id="prep-defend">Defend Granny</button>
           <button type="button" class="btn btn-ghost" id="prep-home-done">Home</button>
         </div>
       </div>`;
+    host.querySelector('#prep-stretch')?.addEventListener('click', () => {
+      if (!offer || disposed) return;
+      finished = false;
+      answered = false;
+      deck.push(...bonusQuestions(callbacks.level, callbacks.cycle, offer.more));
+      renderQuestion();
+    });
     host.querySelector('#prep-defend')?.addEventListener('click', () => callbacks.onReady(overall));
     host.querySelector('#prep-home-done')?.addEventListener('click', callbacks.onHome);
   }

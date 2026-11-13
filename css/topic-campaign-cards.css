@@ -16,7 +16,7 @@ body.mission-mode #screen-home .mission-all-topics {
 }
 
 body.mission-mode #screen-home .mission-all-topics {
-  --topic-meta: 25px;
+  --topic-meta: 33px;
   /* Topic art is about 193 x 240 (width / height). */
   --topic-art-ratio: .8;
   display: grid;
@@ -183,7 +183,7 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-t
   position: static;
   width: 100%;
   min-width: 0;
-  height: 20px;
+  height: 26px;
   justify-content: center;
   align-items: center;
   gap: 6px;
@@ -199,13 +199,15 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-line[data-
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-rank {
-  padding: 1px 7px;
+  padding: 3px 11px 3px 9px;
+  border: 1px solid #ffe9a8;
   border-radius: 999px;
   background: linear-gradient(180deg, #ffd65a, #e09a12);
   color: #2a1700;
-  font-size: .66rem;
+  font-size: .95rem;
   font-weight: 800;
-  box-shadow: 0 0 8px rgba(255, 200, 60, .45);
+  line-height: 1;
+  box-shadow: 0 0 12px rgba(255, 200, 60, .65), 0 2px 0 #7a4a00;
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-rank strong {
@@ -239,22 +241,24 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-track {
   width: 100%;
   height: 2px;
   margin-bottom: 1px;
-  background: rgba(195, 220, 188, .13);
+  background: rgba(120, 70, 190, .28);
   pointer-events: none;
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-fill {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #4bdc79, #fbd268);
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8a3cff, #d14bff 45%, #ff8a1f);
+  box-shadow: 0 0 6px rgba(255, 120, 40, .7), 0 0 10px rgba(170, 70, 255, .45);
   transition: width .3s ease;
 }
 
 /* The prize: an alien crystal waits at the end of every topic's XP bar, and pulses when close. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-track {
   position: relative;
-  height: 4px;
-  border-radius: 2px;
+  height: 6px;
+  border-radius: 3px;
   overflow: visible;
 }
 
@@ -325,7 +329,7 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
     display: flex;
     flex-direction: column;
     container-type: size;
-    min-height: calc(var(--topic-head) + 2 * (120px + 25px) + 7px + 20px);
+    min-height: calc(var(--topic-head) + 2 * (120px + 33px) + 7px + 20px);
   }
 
   /* Each column is exactly one card wide: the largest card that fits two rows in the

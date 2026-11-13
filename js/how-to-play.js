@@ -41,7 +41,7 @@ export const HOW_TO_QUESTIONS = [
     a: [
       'Spend them in the Armory to upgrade a turret. 1 crystal takes it to level 2, then 2 more take it to level 3.',
       'Upgraded turrets hit harder, reach further, fire faster and glow so everyone can see them.',
-      'Every crystal you ever collect also fills your Crystal Vault. Fill it to reach Bronze, Silver, Gold and Legendary vaults.',
+      'Your crystals sit in your Crystal Vault until you spend them. Collecting more upgrades the vault to Bronze, Silver, Gold and Legendary, and spending never downgrades it.',
     ],
   },
   {
@@ -60,6 +60,14 @@ export const HOW_TO_QUESTIONS = [
     a: [
       'Every alien you blast fills Granny’s nuke cache. Big bosses and cleared waves fill it faster.',
       'When it is full, hit FIRE NUKES and Granny rains cupcake missiles on every alien!',
+    ],
+  },
+  {
+    icon: '🧰',
+    q: 'What is Granny’s Gear?',
+    a: [
+      'Open the Armory and tap GRANNY’S GEAR. Each item is bought once with Alien Crystals and works in every siege after that.',
+      'Gear like the Reinforced Porch, the Coin Purse and Mega Cupcakes makes your defence stronger. Save up for the Double Batch!',
     ],
   },
   {
@@ -92,6 +100,43 @@ export const HOW_TO_QUESTIONS = [
     ],
   },
   {
+    icon: '🔥',
+    q: 'What is my streak?',
+    a: [
+      'Get 10 maths questions right in a day to keep your streak going. Tap the flame to see how many more you need today.',
+      'Day 3, 7, 14 and 30 pay Alien Crystals. Every 7 days you earn a streak shield, which saves your streak if you miss a day.',
+    ],
+  },
+  {
+    icon: '🎯',
+    q: 'What are daily challenges?',
+    a: [
+      'Three new goals every day. Each one pays bonus XP.',
+      'Finish all three to open Granny’s chest for an Alien Crystal!',
+    ],
+  },
+  {
+    icon: '🍀',
+    q: 'What is a lucky drop?',
+    a: ['Sometimes a right answer drops a surprise: bonus XP, or even an Alien Crystal. The more you answer, the more chances you get!'],
+  },
+  {
+    icon: '🏆',
+    q: 'How do I get trophies and titles?',
+    a: [
+      'Tap your rank badge at the top, then TROPHIES. Each trophy is a feat, like winning without any aliens getting through.',
+      'Every trophy unlocks a title. Tap it to wear it under your rank so everyone can see!',
+    ],
+  },
+  {
+    icon: '🤝',
+    q: 'How do I challenge a friend?',
+    a: [
+      'After a siege you get a code like GRAN-7Q4K. Give it to a friend.',
+      'They tap their rank badge, choose CHALLENGE and type it in. Their next siege is the same battle. Can they beat your score?',
+    ],
+  },
+  {
     icon: '⏱️',
     q: 'Can I get more time in a battle?',
     a: [
@@ -100,10 +145,11 @@ export const HOW_TO_QUESTIONS = [
   },
   {
     icon: '🗺️',
-    q: 'What is the interstellar map?',
+    q: 'What is the Alien Homeland map?',
     a: [
-      `Every topic is one piece of the map. Score 80% or better ${MAP_PASSES_REQUIRED} times in a topic to reveal its piece.`,
-      'Get 100% on a level to earn a shield for that topic.',
+      'Tap ALIEN HOMELAND under your Crystal Vault to see it. Every topic is one piece of the map.',
+      `Score 80% or better in a full topic drill ${MAP_PASSES_REQUIRED} times to reveal that topic’s piece. Find all 10 to unlock the route to the Alien Homeland!`,
+      'Get 100% in a topic drill to earn a shield for that level. Random missions don’t count towards the map or shields.',
     ],
   },
 ];

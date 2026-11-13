@@ -5,13 +5,43 @@
  * of truth, including after a page reload.
  */
 const STAGES = [
-  { min: 0, id: 'offline', name: 'SYSTEMS OFFLINE', detail: 'Answer maths questions to wake up Granny’s defences.' },
+  { min: 0, id: 'offline', name: 'GET 10 RIGHT TO POWER UP!', detail: 'Answer maths questions to wake up Granny’s defences.' },
   { min: 1, id: 'warming', name: 'POWERING UP', detail: 'The engines are warming up.' },
   { min: 3, id: 'sparking', name: 'WEAPONS ONLINE', detail: 'Turrets are coming to life!' },
   { min: 6, id: 'charged', name: 'MIGHTY DEFENCES', detail: 'Energy surging through the system.' },
   { min: 9, id: 'nearly', name: 'MAXIMUM POWER', detail: 'One final charge before battle!' },
   { min: 10, id: 'ready', name: 'FULLY ARMED!', detail: 'Defences charged. Granny is ready for the aliens!' },
 ];
+
+/** The forge's title; a new one is picked each time the player comes back to Maths HQ. */
+export const FORGE_TITLES = [
+  'BUILD YOUR MIGHT',
+  'UNLEASH YOUR FURY',
+  'ASSAULT AND BATTER THEM',
+  'PREHEAT THE OVEN',
+  'WHISK UP SOME TROUBLE',
+  'BAKE THEM A BEATING',
+  'SPRINKLES OF DOOM',
+  'CHARGE THE CANNONS',
+  'WAKE THE TURRETS',
+  'FEED THE FORGE',
+  'LOCK AND LOAD',
+  'MAXIMUM MAYHEM',
+  'BOOST THE BOOM',
+  'STIR UP A STORM',
+  'SHAKE THE PORCH',
+  'FUEL THE FIRE',
+  'GRANNY’S GETTING READY',
+  'TIME TO GET SPICY',
+  'ICE THE INVADERS',
+  'CRUMBS FOR THE ALIENS',
+];
+
+/** @param {string} [previous] @param {() => number} [random] Never the same title twice in a row. */
+export function pickForgeTitle(previous = '', random = Math.random) {
+  const pool = FORGE_TITLES.filter((t) => t !== previous);
+  return pool[Math.floor(random() * pool.length)];
+}
 
 /** What the badge says once the forge is fully charged; one is picked each time it fills. */
 export const FULLY_ARMED_LINES = [
@@ -81,7 +111,7 @@ export function pickForgeSquad(owned, levelOf, random = Math.random) {
 
 /**
  * @param {HTMLElement|null} host
- * @param {{done:number,total?:number,correct?:boolean|null,squad?:{main:string,left:string,right:string},mainLevel?:number}} state
+ * @param {{done:number,total?:number,correct?:boolean|null,squad?:{main:string,left:string,right:string},mainLevel?:number,title?:string}} state
  */
 export function renderPowerCore(host, state) {
   if (!host) return;
@@ -128,6 +158,8 @@ export function renderPowerCore(host, state) {
   }
   const rig = host.querySelector('.power-rig');
   if (!rig) return;
+  const heading = rig.querySelector('.power-heading h2');
+  if (heading && state.title && heading.textContent !== state.title) heading.textContent = state.title;
   if (state.squad) {
     for (const side of /** @type {const} */ (['main', 'left', 'right'])) {
       const img = rig.querySelector(`.power-turret-${side} img`);

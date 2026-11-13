@@ -22,7 +22,7 @@ export const MAP_PASS_ACCURACY = 0.8;
 /** Passes at 80%+ required to earn one map piece for a module. */
 export const MAP_PASSES_REQUIRED = 10;
 
-/** Full interstellar chart shown on Home HQ. */
+/** The Alien Homeland map art, shown in the map pop-up. */
 export const MAP_IMAGE = 'assets/home/interstellar-map.jpg';
 
 /**
@@ -126,7 +126,7 @@ export function renderInterstellarMap(progress) {
   }).join('');
 
   return `
-    <section class="gb-map-panel" aria-label="Interstellar chart">
+    <section class="gb-map-panel" aria-label="Alien Homeland map">
       <div class="gb-map-bar">
         <span class="gb-map-stamp">Nav chart</span>
         <span class="gb-map-count">${earned} / ${TRAINING_MODULE_IDS.length} sectors</span>
@@ -135,7 +135,7 @@ export function renderInterstellarMap(progress) {
         <img
           class="gb-map-img"
           src="${MAP_IMAGE}"
-          alt="Interstellar training chart"
+          alt="Alien Homeland map"
           width="1024"
           height="576"
           loading="lazy"
