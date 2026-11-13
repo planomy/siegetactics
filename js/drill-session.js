@@ -3,6 +3,7 @@ import { GATE } from './training-gate.js';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
+import { renderDoneActions, bindDoneActions } from './done-actions.js';
 
 /**
  * Shared multiple-choice drill UI for topic modules.
@@ -19,6 +20,8 @@ import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20
  *   onAnswer?: (right: boolean) => void,
  *   onSessionComplete?: (result: { accuracy: number, passed: boolean }) => void,
  *   onHome: () => void,
+ *   siegeReady?: () => boolean,
+ *   onAction?: () => void,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
  *   unitDone?: boolean,
  *   gatePassMessage?: string,
@@ -176,14 +179,17 @@ export function initDrillSession(host, config) {
           <span class="times-done-xp-num">+${sessionXp}</span>
           <span class="times-done-xp-label">${ECONOMY.forgeXpLabel}</span>
         </div>
-        <div class="times-done-actions">
-          <button type="button" class="btn btn-primary" id="drill-again">Try again</button>
-          <button type="button" class="btn btn-ghost" id="drill-home-done">Home</button>
-        </div>
+        ${renderDoneActions({ againLabel: 'Try again', siegeReady: config.siegeReady, onAction: config.onAction })}
       </div>
     `;
-    host.querySelector('#drill-again')?.addEventListener('click', startSession);
-    host.querySelector('#drill-home-done')?.addEventListener('click', goHome);
+    bindDoneActions(host, { onAgain: startSession, onHome: goHome, onAction: goToAction });
+  }
+
+  function goToAction() {
+    if (disposed) return;
+    clearAnswerTimer();
+    disposed = true;
+    config.onAction?.();
   }
 
   startSession();

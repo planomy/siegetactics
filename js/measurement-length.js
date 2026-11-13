@@ -3,6 +3,7 @@ import { GATE } from './training-gate.js';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js';
 import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
+import { renderDoneActions, bindDoneActions } from './done-actions.js';
 
 /** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
 
@@ -485,14 +486,10 @@ export function initMeasurementLength(host, callbacks) {
           <span class="times-done-xp-num">+${sessionXp}</span>
           <span class="times-done-xp-label">${ECONOMY.forgeXpLabel}</span>
         </div>
-        <div class="times-done-actions">
-          <button type="button" class="btn btn-primary" id="length-again">Try again</button>
-          <button type="button" class="btn btn-ghost" id="length-home-done">Home</button>
-        </div>
+        ${renderDoneActions({ againLabel: 'Try again', siegeReady: callbacks.siegeReady, onAction: callbacks.onAction })}
       </div>
     `;
-    host.querySelector('#length-again')?.addEventListener('click', startSession);
-    host.querySelector('#length-home-done')?.addEventListener('click', goHome);
+    bindDoneActions(host, { onAgain: startSession, onHome: goHome, onAction: callbacks.onAction });
   }
 
   startSession();

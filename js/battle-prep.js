@@ -1,9 +1,9 @@
-import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20261112f';
+import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20261113h1';
 import { makePlaceValueVariant } from './missions-data.js?v=20260819b';
-import { makeLengthQuestion } from './measurement-length.js?v=20261112f';
-import { makeFractionQuestion } from './fractions.js?v=20261112f';
-import { makeAnglesQuestion } from './angles-shapes.js?v=20261112f';
-import { makeExpandedQuestion } from './expanded-maths.js?v=20261112f';
+import { makeLengthQuestion } from './measurement-length.js?v=20261113h1';
+import { makeFractionQuestion } from './fractions.js?v=20261113h1';
+import { makeAnglesQuestion } from './angles-shapes.js?v=20261113h1';
+import { makeExpandedQuestion } from './expanded-maths.js?v=20261113h1';
 import { difficultyTrainingTag } from './difficulty.js';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
 
@@ -144,6 +144,8 @@ function bonusQuestions(level, cycle, count) {
 /**
  * @param {HTMLElement} host
  * @param {{
+ *   mode?: 'prep'|'zap',
+ *   doneTitle?: (right: number) => string,
  *   level: number,
  *   cycle: number,
  *   questionsNeeded?: number,
@@ -158,7 +160,11 @@ function bonusQuestions(level, cycle, count) {
  * }} callbacks
  */
 export function initBattlePrep(host, callbacks) {
-  let deck = buildBattlePrepDeck(callbacks.level, callbacks.cycle, callbacks.questionsNeeded ?? 10);
+  // Zap mode: after the siege is earned, a short mixed run where each right answer zaps a scout.
+  const zap = callbacks.mode === 'zap';
+  let deck = zap
+    ? bonusQuestions(callbacks.level, callbacks.cycle, Math.max(1, Math.floor(callbacks.questionsNeeded ?? 1)))
+    : buildBattlePrepDeck(callbacks.level, callbacks.cycle, callbacks.questionsNeeded ?? 10);
   const initialTotal = deck.length;
   const coreQuestions = questionsPerCoreModule(callbacks.level);
   let index = 0;
@@ -201,17 +207,19 @@ export function initBattlePrep(host, callbacks) {
     host.innerHTML = `
       <div class="panel times-panel prep-panel">
         <button type="button" class="btn btn-ghost btn-sm times-back" id="prep-home">← Home</button>
-        <p class="mission-tag">Battle Prep · ${difficultyTrainingTag(callbacks.level)}</p>
+        <p class="mission-tag">${zap ? 'Zap the scouts' : 'Battle Prep'} · ${difficultyTrainingTag(callbacks.level)}</p>
         <h2 class="panel-title">${escapeHtml(item.moduleTitle)}</h2>
-        <div class="prep-module-rail" aria-label="Battle Prep module progress">${moduleRail}</div>
+        ${zap ? '' : `<div class="prep-module-rail" aria-label="Battle Prep module progress">${moduleRail}</div>`}
         <div class="prep-track"><span style="width:${Math.round((index / deck.length) * 100)}%"></span></div>
         <div class="times-quiz-header">
-          <span class="times-quiz-tag">Module ${modulePosition} / ${PREP_MODULES.length}</span>
-          <span class="times-quiz-progress">${item.rescue ? 'Bonus question' : `Question ${moduleQuestion} / ${moduleTarget}`} · Overall ${index + 1} / ${deck.length}</span>
+          <span class="times-quiz-tag">${zap ? 'Mixed maths' : `Module ${modulePosition} / ${PREP_MODULES.length}`}</span>
+          <span class="times-quiz-progress">${zap ? `Question ${index + 1} / ${deck.length}` : `${item.rescue ? 'Bonus question' : `Question ${moduleQuestion} / ${moduleTarget}`} · Overall ${index + 1} / ${deck.length}`}</span>
         </div>
         <div class="times-question-wrap"><p class="times-question length-question">${escapeHtml(item.prompt)}</p></div>
         <div class="times-answers">${options}</div>
-        <p class="prep-summary-line">Get ${initialTotal} right to earn your siege. Every right answer charges Granny’s defences.</p>
+        <p class="prep-summary-line">${zap
+          ? 'Every right answer zaps a scout and adds coins to your war chest.'
+          : `Get ${initialTotal} right to earn your siege. Every right answer charges Granny’s defences.`}</p>
       </div>`;
     host.querySelector('#prep-home')?.addEventListener('click', callbacks.onHome);
     host.querySelectorAll('.prep-answer').forEach((button) => {
@@ -268,6 +276,21 @@ export function initBattlePrep(host, callbacks) {
     }
     const overall = deck.length > 0 ? totalCorrect / deck.length : 0;
     callbacks.onFinished(results, overall);
+    if (zap) {
+      host.innerHTML = `
+        <div class="panel times-panel times-done prep-panel prep-done">
+          <p class="mission-tag">Zap run complete</p>
+          <h2 class="panel-title">${escapeHtml(callbacks.doneTitle?.(totalCorrect) ?? `${totalCorrect} right!`)}</h2>
+          <p class="granny-line">${totalCorrect} right out of ${deck.length}. Check your war chest in Mission Control.</p>
+          <div class="times-done-actions has-action">
+            <button type="button" class="btn btn-ghost" id="prep-home-done">Home</button>
+            <button type="button" class="btn btn-primary done-action-btn" id="prep-defend">Take me to the action!</button>
+          </div>
+        </div>`;
+      host.querySelector('#prep-defend')?.addEventListener('click', () => callbacks.onReady(overall));
+      host.querySelector('#prep-home-done')?.addEventListener('click', callbacks.onHome);
+      return;
+    }
     const offer = callbacks.stretchOffer?.() ?? null;
     host.innerHTML = `
       <div class="panel times-panel times-done prep-panel prep-done">

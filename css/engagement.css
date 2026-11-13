@@ -160,8 +160,10 @@
 
 /* Streak */
 .streak-sheet-flame {
-  font-size: 4.5rem;
-  text-align: center;
+  display: block;
+  width: 84px;
+  height: auto;
+  margin: 0 auto;
   filter: grayscale(.8) brightness(.7);
 }
 

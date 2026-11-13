@@ -88,12 +88,6 @@
     font-size: .91rem;
   }
 
-  body.mission-mode #screen-home .mission-battle-ready {
-    width: 100%;
-    font-size: .7rem;
-    text-align: center;
-  }
-
   body.mission-mode #screen-home .armory-promo {
     grid-area: armory;
     display: grid;

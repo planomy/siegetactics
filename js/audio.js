@@ -259,6 +259,11 @@ export function createAudio(opts) {
       play('nukeFire', { volume: 0.62, gap: 0.08 });
     },
 
+    /** A porch heart bursts when an alien gets through: the explosion, pitched up into a sharp pop. */
+    playHeartBurst() {
+      play('nukeExplosion', { volume: 0.5, gap: 0.15, gapKey: 'heart-burst', playbackRate: 1.6 });
+    },
+
     /** @param {{ isBoss?: boolean }} [info] */
     playNukeExplosion(info = {}) {
       play('nukeExplosion', { volume: info.isBoss ? 0.78 : 0.68, gap: info.isBoss ? 0.2 : 0.12 });

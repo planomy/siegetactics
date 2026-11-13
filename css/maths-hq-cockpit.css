@@ -282,12 +282,6 @@
     font-size: .94rem;
   }
 
-  body.mission-mode #screen-home .mission-battle-ready {
-    align-self: stretch;
-    text-align: center;
-    font-size: .75rem;
-  }
-
   body.mission-mode #screen-home .armory-promo {
     grid-area: armory;
     min-height: 164px;

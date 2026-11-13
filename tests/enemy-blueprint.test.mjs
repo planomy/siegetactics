@@ -57,5 +57,6 @@ test('the forge sits above the Crystal Vault and lifetime stats', () => {
   assert.match(home, /export function renderSiegeStats\(host, state\)/);
   assert.match(app, /renderSiegeStats\(powerHost, state\)/);
   assert.match(home, /renderCrystalVault\(state\.crystalsCollected/);
-  assert.match(home, /class="homeland-chip"/);
+  assert.match(home, /class="homeland-track"/);
+  assert.doesNotMatch(home, /class="homeland-chip"/);
 });

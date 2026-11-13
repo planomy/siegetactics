@@ -32,7 +32,7 @@ export const MATH_TOPICS = [
     available: true,
     earnsXp: true,
     gateEligible: false,
-    moduleArt: 'assets/topics/times-tables.jpg',
+    moduleArt: 'assets/topics/cards/times-tables.png?v=1',
   },
   {
     id: 'place-value-siege',
@@ -45,7 +45,7 @@ export const MATH_TOPICS = [
     gateEligible: true,
     unitId: 'number-place-value-patrol',
     trainingMode: 'forge',
-    moduleArt: 'assets/topics/place-value-siege.jpg',
+    moduleArt: 'assets/topics/cards/place-value-siege.png?v=1',
   },
   {
     id: 'measurement-length',
@@ -58,7 +58,7 @@ export const MATH_TOPICS = [
     gateEligible: true,
     unitId: 'measurement-length-lab',
     trainingMode: 'drill',
-    moduleArt: 'assets/topics/measurement-length.jpg',
+    moduleArt: 'assets/topics/cards/measurement-length.png?v=1',
   },
   {
     id: 'fractions',
@@ -71,7 +71,7 @@ export const MATH_TOPICS = [
     gateEligible: true,
     unitId: 'fractions-fence',
     trainingMode: 'drill',
-    moduleArt: 'assets/topics/fractions.jpg',
+    moduleArt: 'assets/topics/cards/fractions.png?v=1',
   },
   {
     id: 'angles',
@@ -84,7 +84,7 @@ export const MATH_TOPICS = [
     gateEligible: true,
     unitId: 'angles-shapes-lab',
     trainingMode: 'drill',
-    moduleArt: 'assets/topics/angles.jpg',
+    moduleArt: 'assets/topics/cards/angles.png?v=1',
   },
   {
     id: 'mass-capacity',
@@ -97,7 +97,7 @@ export const MATH_TOPICS = [
     gateEligible: false,
     unitId: 'mass-capacity-depot',
     trainingMode: 'drill',
-    moduleArt: 'assets/topics/mass-capacity.jpg',
+    moduleArt: 'assets/topics/cards/mass-capacity.png?v=1',
   },
   {
     id: 'operations',
@@ -110,7 +110,7 @@ export const MATH_TOPICS = [
     gateEligible: false,
     unitId: 'operations-hq',
     trainingMode: 'drill',
-    moduleArt: 'assets/topics/operations.jpg',
+    moduleArt: 'assets/topics/cards/operations.png?v=1',
   },
   {
     id: 'decimals-percent',
@@ -123,7 +123,7 @@ export const MATH_TOPICS = [
     gateEligible: false,
     unitId: 'decimals-percent-base',
     trainingMode: 'drill',
-    moduleArt: 'assets/topics/decimals-percent.jpg',
+    moduleArt: 'assets/topics/cards/decimals-percent.png?v=1',
   },
   {
     id: 'time',
@@ -136,7 +136,7 @@ export const MATH_TOPICS = [
     gateEligible: false,
     unitId: 'time-command',
     trainingMode: 'drill',
-    moduleArt: 'assets/topics/time.jpg',
+    moduleArt: 'assets/topics/cards/time.png?v=1',
   },
   {
     id: 'maths-quest',
@@ -149,7 +149,7 @@ export const MATH_TOPICS = [
     gateEligible: false,
     unitId: 'maths-quest-set',
     trainingMode: 'quest',
-    moduleArt: 'assets/topics/maths-quest.jpg',
+    moduleArt: 'assets/topics/cards/maths-quest.png?v=1',
   },
 ];
 

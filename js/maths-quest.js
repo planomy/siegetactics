@@ -2,6 +2,7 @@ import { ECONOMY } from './economy.js';
 import { difficultyTrainingTag } from './difficulty.js';
 import { createQuestSet, getQuestSetsForLevel } from './maths-quest-data.js?v=20260819b';
 import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
+import { renderDoneActions, bindDoneActions } from './done-actions.js';
 
 export const MATHS_QUEST = {
   problemsPerSet: 10,
@@ -274,17 +275,17 @@ export function initMathsQuest(host, callbacks) {
           <span class="times-done-xp-label">${ECONOMY.forgeXpLabel}</span>
         </div>
         ${bonus > 0 ? `<p class="times-bonus-note">Accuracy bonus +${bonus} XP!</p>` : ''}
-        <div class="times-done-actions">
-          <button type="button" class="btn btn-primary" id="quest-again">Another set</button>
-          <button type="button" class="btn btn-ghost" id="quest-home-done">Home</button>
-        </div>
+        ${renderDoneActions({ againLabel: 'Another set', siegeReady: callbacks.siegeReady, onAction: callbacks.onAction })}
       </div>
     `;
-    host.querySelector('#quest-again')?.addEventListener('click', () => {
-      generatedSet = createQuestSet(callbacks.difficultyLevel);
-      startSet(generatedSet);
+    bindDoneActions(host, {
+      onAgain: () => {
+        generatedSet = createQuestSet(callbacks.difficultyLevel);
+        startSet(generatedSet);
+      },
+      onHome: goHome,
+      onAction: callbacks.onAction,
     });
-    host.querySelector('#quest-home-done')?.addEventListener('click', goHome);
   }
 
   render();

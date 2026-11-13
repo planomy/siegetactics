@@ -2,6 +2,7 @@ import { ECONOMY } from './economy.js';
 import { GATE, tableKey } from './training-gate.js';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js';
+import { renderDoneActions, bindDoneActions } from './done-actions.js';
 
 /** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
 
@@ -299,14 +300,10 @@ export function initTimesTables(host, callbacks) {
         </div>
         ${bonus > 0 ? `<p class="times-bonus-note">Accuracy bonus +${bonus} XP!</p>` : ''}
         ${gateAdded ? '<p class="times-gate-added">SIEGE UNLOCKED!</p>' : ''}
-        <div class="times-done-actions">
-          <button type="button" class="btn btn-primary" id="times-again">Drill again</button>
-          <button type="button" class="btn btn-ghost" id="times-home-done">Home</button>
-        </div>
+        ${renderDoneActions({ againLabel: 'Drill again', siegeReady: callbacks.siegeReady, onAction: callbacks.onAction })}
       </div>
     `;
-    host.querySelector('#times-again')?.addEventListener('click', startSession);
-    host.querySelector('#times-home-done')?.addEventListener('click', callbacks.onHome);
+    bindDoneActions(host, { onAgain: startSession, onHome: callbacks.onHome, onAction: callbacks.onAction });
   }
 
   render();

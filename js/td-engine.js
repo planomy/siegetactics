@@ -7,7 +7,7 @@ import { buildPlacementCells, pickPlacementCell } from './placement-grid.js?v=20
 import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed } from './enemies-data.js';
 import { getFieldImage, preloadField } from './preload.js';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
-import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261112g';
+import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261113h1';
 import { ECONOMY } from './economy.js';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
@@ -110,6 +110,8 @@ const WRECK_FADE_SECONDS = 0.7;
  *   onBonusOffer?: (seconds: number) => void,
  *   bonusSiegeSec?: number,
  *   firstSiege?: boolean,
+ *   hordeRank?: number,
+ *   zapped?: number,
  *   onKillReward?: (info: { isBoss: boolean, xp: number, screenX?: number, screenY?: number }) => void,
  *   onEnemyDestroyed?: (info: { key: import('./enemies-data.js').EnemySpriteKey }) => void,
  *   onWaveCleared?: (info: { wave: number, nextWave: number|null }) => void,
@@ -411,6 +413,8 @@ export function createTDEngine(canvas, opts) {
     return waveConfigFor(waveNum, {
       spawnGranddaddy: opts.spawnGranddaddy && !granddaddySpawnedThisSiege && waveNum >= 3,
       firstSiege: Boolean(opts.firstSiege),
+      rank: opts.hordeRank ?? 0,
+      zapped: opts.zapped ?? 0,
     });
   }
 

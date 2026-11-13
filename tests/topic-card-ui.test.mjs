@@ -42,15 +42,15 @@ test('topic stats persist separately from Forge XP and existing level mastery', 
 test('standalone questions, mixed questions, and forge successes all advance the right topic', () => {
   assert.match(app, /creditTopicAnswer\(moduleId, level, right\)/);
   assert.match(mixed, /callbacks\.onAnswer\?\.\(right, item\.moduleId\)/);
-  assert.match(app, /onAnswer\(right, moduleId\)\s*\{/);
+  assert.match(app, /onAnswer: \(right, moduleId\) => creditMixedAnswer\(right, moduleId, level\)/);
   assert.match(app, /creditTopicAnswer\(\'place-value-siege\', level, true\)/);
 });
 
 test('fresh CSS and script modules are loaded so the browser does not show old shields', () => {
-  assert.match(html, /topic-campaign-cards\.css\?v=20261113a3/);
-  assert.match(html, /app\.js\?v=20261113c8/);
-  assert.match(app, /home\.js\?v=20261113b6/);
-  assert.match(app, /battle-prep\.js\?v=20261113a1/);
+  assert.match(html, /topic-campaign-cards\.css\?v=20261113a4/);
+  assert.match(html, /app\.js\?v=20261113f2/);
+  assert.match(app, /home\.js\?v=20261113d3/);
+  assert.match(app, /battle-prep\.js\?v=20261113a4/);
   assert.match(home, /topic-progression\.js\?v=20261112p/);
 });
 

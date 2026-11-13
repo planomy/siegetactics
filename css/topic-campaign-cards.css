@@ -257,8 +257,8 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-fill {
 /* The prize: an alien crystal waits at the end of every topic's XP bar, and pulses when close. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-track {
   position: relative;
-  height: 6px;
-  border-radius: 3px;
+  height: 4px;
+  border-radius: 2px;
   overflow: visible;
 }
 

@@ -1,4 +1,4 @@
-import { initDrillSession } from './drill-session.js?v=20261112f';
+import { initDrillSession } from './drill-session.js?v=20261113h1';
 
 /** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
 
@@ -349,6 +349,8 @@ export function initFractions(host, callbacks) {
       callbacks.onSessionComplete?.(accuracy);
     },
     onHome: callbacks.onHome,
+    siegeReady: callbacks.siegeReady,
+    onAction: callbacks.onAction,
     showToast: callbacks.showToast,
     optionClass: 'fractions-opt',
   });

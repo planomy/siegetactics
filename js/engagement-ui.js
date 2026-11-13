@@ -9,6 +9,13 @@ import { TROPHIES } from './trophies.js?v=20261113a2';
 import { SIEGE_RANKS, rankProgressText } from './siege-ranks.js?v=20261112a2';
 import { badgeSrc } from './stars.js';
 
+/** The painted header icon set, one family with the header buttons (see scripts/process-header-icons.py). */
+export const ICONS = {
+  flame: 'assets/ui/icons/flame.png?v=1',
+  target: 'assets/ui/icons/target.png?v=1',
+  chest: 'assets/ui/icons/chest.png?v=1',
+};
+
 /** @param {string} s */
 function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -38,7 +45,7 @@ export function renderStreakPill(el, status) {
   el.classList.toggle('is-lit', status.doneToday);
   el.classList.toggle('is-waiting', !status.doneToday && status.count > 0);
   el.classList.toggle('is-new', status.count === 0 && !status.doneToday);
-  el.innerHTML = `<span class="streak-flame" aria-hidden="true">🔥</span><strong>${status.count === 0 && !status.doneToday ? 'START' : status.count}</strong>`;
+  el.innerHTML = `<img class="streak-flame" src="${ICONS.flame}" alt="" /><strong>${status.count === 0 && !status.doneToday ? 'START' : status.count}</strong>`;
   el.setAttribute('aria-label', `${status.count} day streak. ${status.doneToday ? 'Today is done.' : `${status.toGo} more right answers today to keep it going.`}`);
 }
 
@@ -48,7 +55,7 @@ export function renderDailyPill(el, daily) {
   const done = daily.done.length;
   el.classList.toggle('is-complete', daily.chest);
   el.classList.toggle('is-pending', !daily.chest);
-  el.innerHTML = `${daily.chest ? '<span aria-hidden="true">🎁</span>' : '<img class="daily-dart" src="assets/ui/daily-target.png" alt="" />'}<strong>${done}/3</strong>`;
+  el.innerHTML = `<img class="daily-dart" src="${daily.chest ? ICONS.chest : ICONS.target}" alt="" /><strong>${done}/3</strong>`;
   el.setAttribute('aria-label', `Daily challenges: ${done} of 3 done`);
 }
 
@@ -59,7 +66,7 @@ export function showStreakPanel(status) {
   const next = Object.keys(STREAK_MILESTONES).map(Number).find((n) => n > status.count);
   const pct = Math.round((status.todayRight / STREAK_DAILY_GOAL) * 100);
   openSheet('streak-sheet', `
-    <div class="streak-sheet-flame${status.doneToday ? ' is-lit' : ''}" aria-hidden="true">🔥</div>
+    <img class="streak-sheet-flame${status.doneToday ? ' is-lit' : ''}" src="${ICONS.flame}" alt="" />
     <h2 class="gb-sheet-title">${status.count} DAY STREAK</h2>
     <p class="gb-sheet-sub">${status.doneToday ? 'Today is locked in. See you tomorrow, Defender!' : `Get ${status.toGo} more right today to keep your streak alive.`}</p>
     <div class="gb-bar"><span style="width:${pct}%"></span></div>
@@ -87,7 +94,7 @@ export function showDailyPanel(daily) {
       </li>`;
   }).join('');
   openSheet('daily-sheet', `
-    <img class="daily-sheet-dart" src="assets/ui/daily-target.png" alt="" />
+    <img class="daily-sheet-dart" src="${ICONS.target}" alt="" />
     <h2 class="gb-sheet-title">DAILY CHALLENGES</h2>
     <p class="gb-sheet-sub">New ones every day. Finish all three to open Granny’s chest!</p>
     <ol class="daily-list">${list}</ol>

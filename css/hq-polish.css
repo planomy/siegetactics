@@ -51,17 +51,17 @@ body.mission-mode #screen-home .armory-promo.armory-promo-close .armory-promo-pr
   letter-spacing: .04em;
   color: #ffe14a;
   text-shadow: 0 0 12px rgba(255, 210, 60, .85), 0 2px 0 #4a2c00;
-  animation: near-miss 1.1s ease-in-out infinite;
+  animation: near-miss 2.2s ease-in-out infinite;
 }
 
 body.mission-mode #screen-home .armory-promo.armory-promo-close .armory-promo-fill {
   background: linear-gradient(90deg, #ffb300, #ffe14a, #fff6b8);
   box-shadow: 0 0 14px rgba(255, 210, 60, .9);
-  animation: near-miss-bar 1.1s ease-in-out infinite;
+  animation: near-miss-bar 2.2s ease-in-out infinite;
 }
 
 body.mission-mode #screen-home .armory-promo.armory-promo-close .armory-promo-art img {
-  animation: near-miss-turret 1.1s ease-in-out infinite;
+  animation: near-miss-turret 4.4s ease-in-out infinite;
 }
 
 @keyframes near-miss {
@@ -138,18 +138,55 @@ body.mission-mode .inbound-radar-grid {
   pointer-events: none;
 }
 
-/* Planets and a comet inside the radar. They orbit slowly and stay clear of the centre text.
-   Like the galaxy, they cancel the radar's red tint so they keep their own colours. */
+/* Planets and a comet inside the radar, shown as faint red radar shapes. They orbit slowly and stay clear of the centre text.
+   The radar's -125deg hue tint is applied after these filters, so red here is written as hue-rotate(90deg). */
 body.mission-mode .inbound-radar-planets {
   position: absolute;
   inset: 3%;
   z-index: 1;
   border-radius: 50%;
   overflow: hidden;
-  opacity: .55;
-  filter: hue-rotate(125deg) saturate(.85);
+  opacity: .5;
+  filter: grayscale(1) sepia(1) saturate(3) hue-rotate(90deg) brightness(.85);
   animation: radar-orbit 160s linear infinite;
   pointer-events: none;
+}
+
+/* Contacts sit still so each one can flash into full colour exactly as the sweep's bright edge passes it. */
+body.mission-mode .inbound-radar-contacts {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+body.mission-mode .radar-contact {
+  position: absolute;
+  width: 9%;
+  height: auto;
+  transform: translate(-50%, -50%);
+  opacity: .4;
+  filter: grayscale(1) sepia(1) saturate(3) hue-rotate(90deg) brightness(.8);
+  animation: radar-contact-ping var(--sweep-speed, 3.6s) linear infinite;
+  animation-delay: calc(var(--sweep-speed, 3.6s) * (var(--sweep-at, 0) - 1));
+}
+
+@keyframes radar-contact-ping {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.12);
+    filter: grayscale(0) sepia(0) saturate(1) hue-rotate(125deg) brightness(1.15);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    filter: grayscale(0) sepia(0) saturate(1) hue-rotate(125deg) brightness(1);
+  }
+  45%, 100% {
+    opacity: .4;
+    transform: translate(-50%, -50%) scale(1);
+    filter: grayscale(1) sepia(1) saturate(3) hue-rotate(90deg) brightness(.8);
+  }
 }
 
 body.mission-mode .radar-planet {
@@ -331,48 +368,486 @@ body.mission-mode .threat-dossier-kills-count {
   text-shadow: 0 0 14px rgba(93, 255, 138, .8);
 }
 
-/* 5. Header pills: bigger and easier to tap. A new streak invites rather than shows a zero,
-   and unfinished daily challenges gently pulse. */
-body .topbar-stats .forge-xp-pill,
-body .topbar-stats .core-pill,
-body .topbar-stats .streak-pill,
-body .topbar-stats .daily-pill {
-  padding: 7px 14px 7px 11px;
-  font-size: 1.05rem;
+/* Forge XP under the greeting: the medallion and a big gold total. It flares and counts up when XP is earned,
+   and opens the Armory to spend it. */
+body.mission-mode .mission-xp {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto;
+  padding: 4px 20px 4px 5px;
+  border: 1px solid rgba(255, 200, 70, .45);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(74, 46, 10, .75), rgba(26, 16, 6, .85));
+  box-shadow: 0 0 18px rgba(255, 170, 40, .22), inset 0 1px 0 rgba(255, 230, 150, .18);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+body.mission-mode .mission-xp:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 215, 100, .85);
+  box-shadow: 0 0 24px rgba(255, 180, 50, .45), inset 0 1px 0 rgba(255, 230, 150, .25);
+}
+
+body.mission-mode .mission-xp-emblem {
+  display: block;
+  width: 56px;
+  height: auto;
+  filter: drop-shadow(0 0 10px rgba(255, 180, 40, .55));
+  animation: xp-emblem-idle 3.2s ease-in-out infinite;
+}
+
+body.mission-mode .mission-xp-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+
+body.mission-mode .mission-xp-value {
+  font-family: var(--font-display);
+  font-size: 2.05rem;
+  letter-spacing: .03em;
+  color: #ffd84a;
+  text-shadow: 0 2px 0 #6a3a00, 0 0 14px rgba(255, 190, 50, .55);
+  font-variant-numeric: tabular-nums;
+}
+
+body.mission-mode .mission-xp-label {
+  margin-top: 2px;
+  font-size: .7rem;
+  font-weight: 900;
+  letter-spacing: .2em;
+  color: rgba(255, 225, 160, .8);
+}
+
+body.mission-mode .mission-xp.is-gaining {
+  border-color: #ffd65a;
+  box-shadow: 0 0 30px rgba(255, 190, 50, .7), inset 0 1px 0 rgba(255, 240, 180, .3);
+}
+
+body.mission-mode .mission-xp.is-gaining .mission-xp-emblem {
+  animation: xp-emblem-gain .38s ease-in-out infinite alternate;
+}
+
+body.mission-mode .mission-xp.is-gaining .mission-xp-value {
+  color: #fff4b8;
+}
+
+@keyframes xp-emblem-idle {
+  0%, 100% { transform: rotate(-4deg); filter: drop-shadow(0 0 8px rgba(255, 180, 40, .45)); }
+  50% { transform: rotate(4deg); filter: drop-shadow(0 0 16px rgba(255, 200, 60, .8)); }
+}
+
+@keyframes xp-emblem-gain {
+  from { transform: scale(1) rotate(-8deg); filter: drop-shadow(0 0 12px rgba(255, 200, 60, .8)) brightness(1.05); }
+  to { transform: scale(1.18) rotate(8deg); filter: drop-shadow(0 0 26px rgba(255, 220, 90, 1)) brightness(1.3); }
+}
+
+/* Contact: the radar's centre becomes the big red launch button. The radar section is tinted red by
+   a -125deg hue filter, so the button and the lit contacts rotate back by 125deg to keep true colours. */
+body.mission-mode .radar-launch,
+body.mission-mode .radar-launch-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+body.mission-mode .radar-launch {
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 3px solid #ffd27a;
+  background: radial-gradient(circle at 35% 28%, #ff9a88 0%, #ec2a1e 42%, #8e0a08 100%);
+  box-shadow:
+    0 6px 0 #5a0604,
+    0 0 24px rgba(255, 60, 40, .85),
+    inset 0 -6px 12px rgba(0, 0, 0, .35),
+    inset 0 5px 9px rgba(255, 255, 255, .35);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 1.7vw, 1.4rem);
+  line-height: .95;
+  letter-spacing: .04em;
+  text-shadow: 0 2px 0 #5a0604;
+  filter: hue-rotate(125deg);
+  cursor: pointer;
+  animation: radar-launch-throb 1.3s ease-in-out infinite;
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+
+body.mission-mode .radar-launch:hover {
+  filter: hue-rotate(125deg) brightness(1.12);
+}
+
+body.mission-mode .radar-launch:active {
+  animation: none;
+  transform: translate(-50%, -46%);
+  box-shadow: 0 2px 0 #5a0604, 0 0 30px rgba(255, 80, 50, 1), inset 0 -4px 10px rgba(0, 0, 0, .4), inset 0 5px 9px rgba(255, 255, 255, .3);
+}
+
+body.mission-mode .radar-launch-ring {
+  z-index: 2;
+  border: 3px solid rgba(255, 80, 60, .85);
+  filter: hue-rotate(125deg);
+  pointer-events: none;
+  animation: radar-launch-ring 1.3s ease-out infinite;
+}
+
+@keyframes radar-launch-throb {
+  50% { transform: translate(-50%, -50%) scale(1.05); }
+}
+
+@keyframes radar-launch-ring {
+  from { transform: translate(-50%, -50%) scale(1); opacity: .9; }
+  to { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+/* The dish's alert ring is written in the radar's own green so the red tint turns it red, like the rest
+   of the radar (a red ring here would come out blue). With the button as the centrepiece the dish
+   gives up a little size, which keeps the face-off and the blueprint on screen. */
+body.mission-mode .mission-control-radar .inbound-radar-dish-alert {
+  border-color: rgba(110, 255, 150, .9);
+  animation: radar-dish-contact 1.3s ease-in-out infinite;
+}
+
+body.mission-mode .mission-control-radar .inbound-radar-sweep-fast {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(110, 255, 150, .6) 14deg,
+    rgba(110, 255, 150, .12) 38deg,
+    transparent 50deg
+  );
+}
+
+@keyframes radar-dish-contact {
+  0%, 100% { box-shadow: inset 0 0 40px rgba(0, 0, 0, .6), 0 0 18px rgba(93, 255, 138, .25); }
+  50% { box-shadow: inset 0 0 40px rgba(0, 0, 0, .6), 0 0 34px rgba(93, 255, 138, .55); }
+}
+
+@media (min-width: 1321px) and (min-height: 600px) {
+  body.mission-mode .mission-control-radar .inbound-radar-contact .inbound-radar-dish {
+    width: min(228px, 16vw, 25.5dvh);
+  }
+}
+
+body.mission-mode .inbound-radar-dish-alert .radar-contact {
+  animation: none;
+  opacity: .9;
+  filter: hue-rotate(125deg);
+}
+
+/* Contact: the incoming horde against the player's war chest, in the same gold-bevelled slate as the
+   header. Alien counts are red, the player's side gold. */
+body.mission-mode .horde-faceoff {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0 8px;
+  padding: 7px 12px 6px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, #2c2443, #161122) padding-box,
+    linear-gradient(180deg, #ffe39a, #d29a35 40%, #8a5a16) border-box;
+  box-shadow: inset 0 -3px 6px rgba(0, 0, 0, .45), 0 2px 8px rgba(0, 0, 0, .5);
+}
+
+body.mission-mode .faceoff-side {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+body.mission-mode .faceoff-label {
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+  color: rgba(255, 225, 160, .75);
+}
+
+body.mission-mode .faceoff-horde .faceoff-label {
+  color: #ff8a6a;
+}
+
+body.mission-mode .faceoff-troops {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body.mission-mode .faceoff-troop {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 3px;
+  line-height: 1;
+}
+
+body.mission-mode .faceoff-troop img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 5px rgba(255, 80, 60, .55));
+}
+
+body.mission-mode .faceoff-troop b {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: #ff9a7a;
+  text-shadow: 0 2px 0 #3a0a04;
+}
+
+body.mission-mode .faceoff-troop span {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin-top: 1px;
+  font-size: .55rem;
+  font-weight: 800;
+  color: rgba(255, 200, 185, .75);
+}
+
+body.mission-mode .faceoff-troops.is-many .faceoff-troop span {
+  display: none;
+}
+
+body.mission-mode .faceoff-zapped {
+  align-self: center;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(60, 200, 110, .2);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: .04em;
+  color: #7dffb0;
+}
+
+/* Every activity has its own Home button, so Mission Control's copy gives its room to the face-off. */
+body.mission-mode .mission-control-inner:has(.horde-faceoff) .mission-control-home {
+  display: none;
+}
+
+body.mission-mode .faceoff-vs {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: #ffd84a;
+  text-shadow: 0 2px 0 #4a2c00;
+}
+
+body.mission-mode .faceoff-chest-row {
+  display: flex;
+  align-items: center;
   gap: 6px;
 }
 
+body.mission-mode .faceoff-chest-art {
+  width: 34px;
+  height: auto;
+  filter: drop-shadow(0 0 6px rgba(255, 200, 80, .5));
+}
+
+body.mission-mode .faceoff-coins {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1;
+  color: #ffd84a;
+  text-shadow: 0 2px 0 #4a2c00;
+}
+
+body.mission-mode .faceoff-coins-label {
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+  color: rgba(255, 225, 160, .8);
+}
+
+body.mission-mode .faceoff-zap {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 5px;
+  padding: 4px 10px 5px;
+  white-space: nowrap;
+  border: 1px solid rgba(140, 255, 180, .55);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2fbf6a, #157a3e);
+  box-shadow: 0 3px 0 #0b4a25, 0 0 12px rgba(90, 255, 150, .35);
+  color: #effff4;
+  font: inherit;
+  cursor: pointer;
+  transition: transform .1s ease, filter .15s ease;
+}
+
+body.mission-mode .faceoff-zap:hover {
+  filter: brightness(1.1);
+}
+
+body.mission-mode .faceoff-zap:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #0b4a25, 0 0 12px rgba(90, 255, 150, .35);
+}
+
+body.mission-mode .faceoff-zap strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 400;
+  letter-spacing: .06em;
+  text-shadow: 0 2px 0 #0b4a25;
+}
+
+body.mission-mode .faceoff-zap span {
+  font-size: .6rem;
+  font-weight: 800;
+  color: rgba(225, 255, 235, .9);
+}
+
+body.mission-mode .faceoff-tip {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  text-align: center;
+  font-size: .66rem;
+  font-weight: 800;
+  color: #bfe9c9;
+}
+
+/* 5. Header counters: the same gold-bevelled slate as the sound, how-to and GB buttons, the same
+   height, and the same gold numbers. Colour comes only from the painted icon; a state that wants
+   attention (an upgrade to buy, a streak or challenge still to do) glows rather than changing frame. */
+body .topbar-stats .core-pill,
+body .topbar-stats .streak-pill,
+body .topbar-stats .daily-pill {
+  --plate-glow: rgba(255, 200, 80, 0);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 16px 0 10px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, #2c2443, #161122) padding-box,
+    linear-gradient(180deg, #ffe39a, #d29a35 40%, #8a5a16) border-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .08),
+    inset 0 -3px 6px rgba(0, 0, 0, .45),
+    0 2px 6px rgba(0, 0, 0, .55),
+    0 0 14px var(--plate-glow);
+  color: #ffd84a;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 400;
+  letter-spacing: .04em;
+  line-height: 1;
+  text-shadow: 0 2px 0 #4a2c00;
+  transition: transform .15s ease, filter .15s ease;
+}
+
+/* One gap between every header item, and the rank stands free as the header's emblem. */
+body .topbar-hud .topbar-stats,
+body .topbar-hud .topbar-actions {
+  gap: 8px;
+}
+
+body .topbar-hud .rank-badge {
+  background: none;
+}
+
+body .topbar-hud .rank-badge-name,
+body .topbar-hud .rank-badge-title {
+  text-shadow: 0 2px 0 #3a2400, 0 0 6px #000, 0 0 10px #000;
+}
+
+body .topbar-stats .core-pill:hover,
+body .topbar-stats .streak-pill:hover,
+body .topbar-stats .daily-pill:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+body .topbar-stats strong {
+  font-weight: 400;
+}
+
 body .topbar-stats .core-pill .core-gem {
-  --gem-size: 1.35em;
+  --gem-size: 28px;
+  vertical-align: middle;
 }
 
-body .topbar-stats .daily-pill .daily-dart {
-  width: 26px;
-  height: 26px;
+body .topbar-stats .streak-flame,
+body .topbar-stats .daily-dart {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .6));
 }
 
-body .topbar-stats .streak-pill.is-new {
-  border-color: rgba(255, 170, 60, .8);
-  color: #ffd9a0;
-}
-
-body .topbar-stats .streak-pill.is-new .streak-flame {
-  filter: none;
-  animation: streak-wait 1.6s ease-in-out infinite;
+/* Not done today: the flame is unlit until the streak is safe. */
+body .topbar-stats .streak-pill:not(.is-lit) .streak-flame {
+  filter: grayscale(1) brightness(.75) drop-shadow(0 1px 2px rgba(0, 0, 0, .6));
 }
 
 body .topbar-stats .streak-pill.is-new strong {
-  font-size: .8em;
+  font-size: 1.05rem;
   letter-spacing: .1em;
 }
 
+body .topbar-stats .core-pill.core-pill--ready,
+body .topbar-stats .streak-pill.is-waiting,
+body .topbar-stats .streak-pill.is-new,
 body .topbar-stats .daily-pill.is-pending {
-  animation: daily-pending 2.2s ease-in-out infinite;
+  animation: plate-attention 2.2s ease-in-out infinite;
 }
 
-@keyframes daily-pending {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(120, 200, 255, .45); }
-  50% { box-shadow: 0 0 0 7px rgba(120, 200, 255, 0); }
+body .topbar-stats .core-pill.core-pill--ready { --plate-glow-on: rgba(110, 255, 170, .65); }
+body .topbar-stats .streak-pill.is-waiting,
+body .topbar-stats .streak-pill.is-new { --plate-glow-on: rgba(255, 150, 50, .6); }
+body .topbar-stats .daily-pill.is-pending { --plate-glow-on: rgba(255, 210, 90, .55); }
+
+body .topbar-stats .streak-pill.is-lit,
+body .topbar-stats .daily-pill.is-complete {
+  --plate-glow: rgba(255, 190, 60, .4);
+}
+
+@keyframes plate-attention {
+  50% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), inset 0 -3px 6px rgba(0, 0, 0, .45), 0 2px 6px rgba(0, 0, 0, .55), 0 0 18px var(--plate-glow-on); }
+}
+
+@media (max-width: 640px) {
+  body .topbar-stats .core-pill,
+  body .topbar-stats .streak-pill,
+  body .topbar-stats .daily-pill {
+    gap: 6px;
+    height: 38px;
+    padding: 0 12px 0 8px;
+    font-size: 1.2rem;
+  }
+
+  body .topbar-stats .core-pill .core-gem { --gem-size: 24px; }
+
+  body .topbar-stats .streak-flame,
+  body .topbar-stats .daily-dart {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -382,6 +857,10 @@ body .topbar-stats .daily-pill.is-pending {
   body.mission-mode .inbound-radar-galaxy::after,
   body.mission-mode .inbound-radar-planets,
   body.mission-mode .inbound-radar-planets *,
+  body.mission-mode .radar-contact,
+  body.mission-mode .mission-xp-emblem,
+  body.mission-mode .radar-launch,
+  body.mission-mode .radar-launch-ring,
   body.mission-mode .inbound-radar-scan,
   body .topbar-stats .streak-pill.is-new .streak-flame,
   body .topbar-stats .daily-pill.is-pending {

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/main.css?v=20261113h6" />
   <link rel="stylesheet" href="css/home-gb.css?v=20261112t" />
   <link rel="stylesheet" href="css/how-to-play.css?v=20261112a1" />
   <link rel="stylesheet" href="css/popups.css" />
@@ -16,18 +16,18 @@
   <link rel="stylesheet" href="css/armory-showcase.css?v=20261113b4" />
   <link rel="stylesheet" href="css/siege-deployment.css?v=20261112h" />
   <link rel="stylesheet" href="css/sticky-header.css?v=20261112h" />
-  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261113a4" />
+  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261113h2" />
   <link rel="stylesheet" href="css/maths-hq-cockpit.css?v=20261112t" />
   <link rel="stylesheet" href="css/ten-topic-dashboard.css?v=20261112b3" />
   <link rel="stylesheet" href="css/game-no-instructions.css?v=20261112m" />
   <link rel="stylesheet" href="css/mission-blueprint-stats.css?v=20261112n" />
-  <link rel="stylesheet" href="css/topic-campaign-cards.css?v=20261113a3" />
-  <link rel="stylesheet" href="css/maths-hq-declutter.css?v=20261113b5" />
-  <link rel="stylesheet" href="css/upgrade-cores.css?v=20261113a3" />
-  <link rel="stylesheet" href="css/rank-badge.css?v=20261113a1" />
-  <link rel="stylesheet" href="css/engagement.css?v=20261113a4" />
+  <link rel="stylesheet" href="css/topic-campaign-cards.css?v=20261113a4" />
+  <link rel="stylesheet" href="css/maths-hq-declutter.css?v=20261113c1" />
+  <link rel="stylesheet" href="css/upgrade-cores.css?v=20261113h4" />
+  <link rel="stylesheet" href="css/rank-badge.css?v=20261113h3" />
+  <link rel="stylesheet" href="css/engagement.css?v=20261113h1" />
   <link rel="stylesheet" href="css/siege-debrief.css?v=20261113a2" />
-  <link rel="stylesheet" href="css/hq-polish.css?v=20261113b1" />
+  <link rel="stylesheet" href="css/hq-polish.css?v=20261113c9" />
   <link rel="preload" href="assets/field.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/granny-boom-siege-logo.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/hero-village.png" as="image" type="image/png" />
@@ -43,34 +43,32 @@
         alt="Granny Boom — Siege Tactics"
       />
     </div>
-    <div class="topbar-stats">
+    <div class="topbar-hud">
       <div class="topbar-badges" id="topbar-badges" aria-label="Military badges earned"></div>
-      <button type="button" class="topbar-armory-btn" id="btn-armory" aria-label="Open turret shop">
-        <img class="topbar-armory-icon" src="assets/ui/topbar-shop.png" width="763" height="777" alt="" />
-      </button>
-      <span class="forge-xp-pill"><span id="topbar-xp">0</span> XP</span>
-      <button type="button" class="core-pill" id="topbar-cores-pill" aria-label="Alien crystals: spend them in the Armory">
-        <span class="core-gem" aria-hidden="true"></span><span id="topbar-cores">0</span>
-      </button>
-      <button type="button" class="streak-pill" id="topbar-streak" aria-label="Daily streak"></button>
-      <button type="button" class="daily-pill" id="topbar-daily" aria-label="Daily challenges"></button>
-    </div>
-    <div class="topbar-actions">
-      <button type="button" class="topbar-action-btn" id="btn-sound" aria-label="Mute sound">
-        <img class="topbar-action-icon" src="assets/ui/topbar-sound.png" width="269" height="276" alt="" />
-      </button>
-      <button type="button" class="topbar-action-btn" id="btn-howto" aria-label="How to play">
-        <img class="topbar-action-icon" src="assets/ui/topbar-howto.png" width="270" height="277" alt="" />
-      </button>
-      <a
-        class="topbar-action-btn"
-        href="https://grannyboom.com"
-        target="_blank"
-        rel="noopener"
-        aria-label="Granny Boom main game"
-      >
-        <img class="topbar-action-icon" src="assets/ui/topbar-gb.png" width="270" height="276" alt="" />
-      </a>
+      <div class="topbar-stats">
+        <button type="button" class="core-pill" id="topbar-cores-pill" aria-label="Alien crystals: spend them in the Armory">
+          <span class="core-gem" aria-hidden="true"></span><span id="topbar-cores">0</span>
+        </button>
+        <button type="button" class="streak-pill" id="topbar-streak" aria-label="Daily streak"></button>
+        <button type="button" class="daily-pill" id="topbar-daily" aria-label="Daily challenges"></button>
+      </div>
+      <div class="topbar-actions">
+        <button type="button" class="topbar-action-btn" id="btn-sound" aria-label="Mute sound">
+          <img class="topbar-action-icon" src="assets/ui/topbar-sound.png" width="269" height="276" alt="" />
+        </button>
+        <button type="button" class="topbar-action-btn" id="btn-howto" aria-label="How to play">
+          <img class="topbar-action-icon" src="assets/ui/topbar-howto.png" width="270" height="277" alt="" />
+        </button>
+        <a
+          class="topbar-action-btn"
+          href="https://grannyboom.com"
+          target="_blank"
+          rel="noopener"
+          aria-label="Granny Boom main game"
+        >
+          <img class="topbar-action-icon" src="assets/ui/topbar-gb.png" width="270" height="276" alt="" />
+        </a>
+      </div>
     </div>
   </header>
 
@@ -259,6 +257,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20261113c8"></script>
+  <script type="module" src="js/app.js?v=20261113f2"></script>
 </body>
 </html>

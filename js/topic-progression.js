@@ -1,4 +1,4 @@
-import { MATH_TOPICS } from './topics-data.js?v=20261112o';
+import { MATH_TOPICS } from './topics-data.js?v=20261113h1';
 
 /**
  * Topic Rank is an endlessly repeatable *game* progression, separate from

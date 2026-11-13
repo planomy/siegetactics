@@ -9,7 +9,7 @@
   flex: none;
   width: var(--gem-size);
   height: var(--gem-size);
-  background: url('../assets/ui/alien-crystal-small.png') center / contain no-repeat;
+  background: url('../assets/ui/icons/crystal.png?v=1') center / contain no-repeat;
   vertical-align: -0.3em;
 }
 
@@ -499,45 +499,162 @@
   }
 }
 
-/* The long-term goal under the vault: chart every sector, then fly to the Alien Homeland. */
-.homeland-chip {
+/* The long-term goal along the bottom of Maths HQ: ten checkpoints, one per map piece, ending at the
+   Alien Homeland. A ship patrols the route. */
+.homeland-track {
+  grid-area: map;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 18px;
   width: 100%;
-  padding: 7px 12px;
-  border: 1px solid rgba(170, 120, 255, .55);
+  min-height: 52px;
+  padding: 8px 26px 8px 16px;
+  border: 1px solid rgba(170, 120, 255, .45);
   border-radius: 12px;
   background: linear-gradient(90deg, rgba(40, 20, 80, .85), rgba(20, 30, 70, .85));
   color: #e9ddff;
   font: inherit;
+  text-align: left;
   cursor: pointer;
-  box-shadow: 0 0 14px rgba(150, 90, 255, .25);
-  transition: transform .15s ease, box-shadow .15s ease;
+  box-shadow: 0 0 14px rgba(150, 90, 255, .2);
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
 
-.homeland-chip:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 20px rgba(170, 110, 255, .5);
+.homeland-track:hover {
+  border-color: rgba(195, 155, 255, .85);
+  box-shadow: 0 0 20px rgba(170, 110, 255, .45);
 }
 
-.homeland-chip-ship {
-  font-size: 1.2rem;
-  animation: homeland-bob 2.6s ease-in-out infinite;
+.homeland-track-title {
+  display: grid;
+  flex: none;
+  line-height: 1.05;
 }
 
-.homeland-chip-text {
+.homeland-track-title strong {
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1.1rem;
+  font-weight: 400;
   letter-spacing: .06em;
   color: #d9c4ff;
 }
 
-.homeland-chip-count {
-  font-size: .72rem;
+.homeland-track-title small {
+  font-size: .7rem;
   font-weight: 900;
   color: #ffe07a;
+}
+
+.homeland-track-rail {
+  position: relative;
+  flex: 1 1 auto;
+  height: 5px;
+  margin-left: 6px;
+  border-radius: 3px;
+  background: rgba(120, 80, 200, .3);
+}
+
+.homeland-track-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7a3cff, #c04bff 60%, #5dff9a);
+  box-shadow: 0 0 8px rgba(170, 90, 255, .7);
+}
+
+.homeland-track-node {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(170, 130, 255, .55);
+  border-radius: 50%;
+  background: #170f2c;
+  color: rgba(220, 205, 255, .6);
+  font-size: .62rem;
+  font-weight: 900;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+}
+
+.homeland-track-node.is-reached {
+  border-color: #8dffbd;
+  background: radial-gradient(circle, #5dffa4, #14a85a);
+  color: #04210f;
+  box-shadow: 0 0 10px rgba(90, 255, 160, .8);
+}
+
+.homeland-track-home {
+  width: 34px;
+  height: 34px;
+  border-color: rgba(255, 120, 200, .6);
+  background: radial-gradient(circle, #3a1450, #12081f);
+  font-size: 1.2rem;
+  box-shadow: 0 0 14px rgba(255, 100, 200, .45);
+}
+
+.homeland-track-home.is-reached {
+  border-color: #ffd65a;
+  background: radial-gradient(circle, #6a2a80, #2a0f3a);
+  box-shadow: 0 0 20px rgba(255, 210, 90, .9);
+}
+
+/* The ship patrols the whole route and back, bobbing as it goes, with its glow on the bar beneath it. */
+.homeland-track-ship {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  z-index: 1;
+  font-size: 1.25rem;
+  line-height: 1;
+  transform: translate(-50%, -120%);
+  pointer-events: none;
+  animation: homeland-patrol 7s ease-in-out infinite alternate;
+}
+
+.homeland-track-ship > span {
+  display: block;
+  filter: drop-shadow(0 0 6px rgba(150, 255, 200, .7));
+  animation: homeland-bob 2.4s ease-in-out infinite;
+}
+
+/* Sits on the rail (the ship is lifted 120% of its height above the rail's centre). */
+.homeland-track-ship::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: calc(120% - 4px);
+  width: 20px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(170, 255, 210, .95), rgba(120, 255, 180, .35) 45%, transparent 72%);
+  transform: translateX(-50%);
+  animation: homeland-beam 2.4s ease-in-out infinite;
+}
+
+@media (max-width: 540px) {
+  .homeland-track {
+    gap: 12px;
+    padding: 8px 22px 8px 12px;
+  }
+
+  .homeland-track-title strong {
+    font-size: .95rem;
+  }
+
+  .homeland-track-node {
+    width: 16px;
+    height: 16px;
+    font-size: .52rem;
+  }
+
+  .homeland-track-home {
+    width: 28px;
+    height: 28px;
+    font-size: 1rem;
+  }
 }
 
 .gb-sheet.homeland-sheet {
@@ -545,11 +662,24 @@
 }
 
 @keyframes homeland-bob {
-  50% { transform: translateY(-3px) rotate(-6deg); }
+  0%, 100% { transform: translateY(2px) rotate(4deg); }
+  50% { transform: translateY(-7px) rotate(-5deg); }
+}
+
+@keyframes homeland-beam {
+  0%, 100% { opacity: .95; transform: translateX(-50%) scale(1.15); }
+  50% { opacity: .3; transform: translateX(-50%) scale(.55); }
+}
+
+@keyframes homeland-patrol {
+  from { left: 0; }
+  to { left: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .homeland-chip-ship { animation: none; }
+  .homeland-track-ship,
+  .homeland-track-ship > span,
+  .homeland-track-ship::after { animation: none; }
 }
 
 /* All-time crystals: a red seven-segment display bolted over the vault's front lights.

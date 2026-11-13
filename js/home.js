@@ -1,15 +1,17 @@
-import { MATH_TOPICS } from './topics-data.js?v=20261112o';
+import { MATH_TOPICS } from './topics-data.js?v=20261113h1';
 import { attackStatus } from './training-gate.js?v=20261112h';
 import { badgeSrc } from './stars.js';
 import { SIEGE_RANKS, siegeRankLevel, rankProgressText } from './siege-ranks.js?v=20261112a2';
 import { hotTopicId } from './hot-topic.js?v=20261112a1';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261112n';
-import { renderInterstellarMap, mapPiecesEarned, TRAINING_MODULE_IDS, MAP_SECTORS } from './map-progress.js';
+import { renderInterstellarMap, mapPiecesEarned, hasMapPiece, getMapPasses, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS, MAP_SECTORS } from './map-progress.js';
 import { topicRankProgress, getTopicRecord } from './topic-progression.js?v=20261112p';
 import { getQualifiedLevels } from './level-mastery.js';
 import { ECONOMY } from './economy.js';
-import { xpMultiplierLabel } from './difficulty.js';
+import { xpMultiplierLabel, xpMultiplierFor } from './difficulty.js';
 import { renderArmoryPromo } from './armory-promo.js?v=20261113a1';
+import { animateTally } from './tally.js';
+import { ENEMY_SPRITE_SRC, GRUNT_STATS, BOSS_STATS } from './enemies-data.js';
 
 /**
  * Ten clean campaign cards. Mastery is a small permanent mark, while each
@@ -156,49 +158,23 @@ function playReadinessGrow(host, attack) {
 }
 
 /**
+ * Earned XP counts up from the last total shown while the emblem flares; spending just updates the number.
  * @param {HTMLElement} host
  * @param {number} targetXp
  */
-function playXpGrow(host, targetXp) {
-  const sidebarXp = host.querySelector('#home-forge-xp');
-  const topbarXp = document.getElementById('topbar-xp');
-  const metric = sidebarXp?.closest('.gb-metric');
-  const xpPill = document.querySelector('.forge-xp-pill');
-
+function playMissionXp(host, targetXp) {
+  const value = host.querySelector('#mission-control-xp');
+  const badge = host.querySelector('.mission-xp');
   const startXp = lastHomeXp ?? targetXp;
-  const shouldAnimate =
-    lastHomeXp !== null &&
-    startXp !== targetXp &&
-    !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  if (!shouldAnimate) {
-    if (sidebarXp) sidebarXp.textContent = formatForgeXp(targetXp);
-    if (topbarXp) topbarXp.textContent = formatForgeXp(targetXp);
-    lastHomeXp = targetXp;
+  lastHomeXp = targetXp;
+  if (!value) return;
+  if (startXp >= targetXp || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    value.textContent = formatForgeXp(targetXp);
     return;
   }
-
-  metric?.classList.add('gb-metric-xp-growing');
-  xpPill?.classList.add('forge-xp-pill-growing');
-
-  Promise.all([
-    animateTally(sidebarXp, targetXp, {
-      from: startXp,
-      delay: HOME_GROW_DELAY_MS,
-      duration: HOME_GROW_DURATION_MS,
-      format: formatForgeXp,
-    }),
-    animateTally(topbarXp, targetXp, {
-      from: startXp,
-      delay: HOME_GROW_DELAY_MS,
-      duration: HOME_GROW_DURATION_MS,
-      format: formatForgeXp,
-    }),
-  ]).then(() => {
-    lastHomeXp = targetXp;
-    metric?.classList.remove('gb-metric-xp-growing');
-    xpPill?.classList.remove('forge-xp-pill-growing');
-  });
+  badge?.classList.add('is-gaining');
+  animateTally(value, targetXp, { from: startXp, duration: HOME_GROW_DURATION_MS, format: formatForgeXp })
+    .then(() => badge?.classList.remove('is-gaining'));
 }
 
 /** @param {import('./level-mastery.js').LevelMasterySave} mastery */
@@ -304,6 +280,52 @@ function renderRadarEscorts(attack, blipDeg, blipR) {
   return `<div class="inbound-radar-escorts" aria-hidden="true">${dots.join('')}</div>`;
 }
 
+const RADAR_CONTACT_ART = ['ufo', 'rocket', 'satellite', 'meteor', 'asteroid', 'space-station', 'alien-egg', 'wormhole', 'helmet', 'supply-crate'];
+/** Spots around the dish, clear of the centre text: degrees clockwise from the top, and distance from the centre in %. */
+const RADAR_CONTACT_SLOTS = [[28, 36], [96, 37], [158, 35], [212, 37], [276, 36], [334, 35]];
+const RADAR_CONTACTS_SHOWN = 4;
+/** Where the bright edge of the sweep sits when the sweep starts, in degrees. */
+const RADAR_SWEEP_EDGE_DEG = 12;
+
+let radarContacts = pickRadarContacts();
+
+function pickRadarContacts(random = Math.random) {
+  const shuffle = (list) => list.map((item) => [random(), item]).sort((a, b) => a[0] - b[0]).map(([, item]) => item);
+  const art = shuffle(RADAR_CONTACT_ART);
+  return shuffle(RADAR_CONTACT_SLOTS)
+    .slice(0, RADAR_CONTACTS_SHOWN)
+    .map(([deg, r], i) => ({ art: art[i], deg, r }));
+}
+
+/** Faint red shapes on the radar that flash into full colour as the sweep passes over them. */
+function renderRadarContacts() {
+  const contacts = radarContacts.map(({ art, deg, r }) => {
+    const rad = (deg * Math.PI) / 180;
+    const left = 50 + r * Math.sin(rad);
+    const top = 50 - r * Math.cos(rad);
+    const sweepAt = (((deg - RADAR_SWEEP_EDGE_DEG) % 360) + 360) % 360 / 360;
+    return `<img class="radar-contact" src="assets/radar/${art}.png?v=2" alt="" style="left:${left.toFixed(1)}%;top:${top.toFixed(1)}%;--sweep-at:${sweepAt.toFixed(3)}" />`;
+  });
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(syncRadarContacts);
+  return `<div class="inbound-radar-contacts" aria-hidden="true">${contacts.join('')}</div>`;
+}
+
+/** The sweep's animation can start earlier than the contacts', so their flashes are lined up with it after each render. */
+function syncRadarContacts() {
+  document.querySelectorAll('.inbound-radar-dish').forEach((dish) => {
+    const sweep = dish.querySelector('.inbound-radar-sweep')?.getAnimations?.()[0];
+    const pings = [...dish.querySelectorAll('.radar-contact')].flatMap((contact) => contact.getAnimations());
+    if (!sweep || !pings.length) return;
+    Promise.all([sweep.ready, ...pings.map((ping) => ping.ready)])
+      .then(() => {
+        pings.forEach((ping) => {
+          ping.currentTime = sweep.currentTime;
+        });
+      })
+      .catch(() => {});
+  });
+}
+
 /**
  * @param {ReturnType<typeof attackStatus>} attack
  * @param {boolean} open
@@ -321,14 +343,10 @@ function renderInboundRadar(attack, open) {
           <div class="inbound-radar-grid" aria-hidden="true"></div>
           <div class="inbound-radar-sweep inbound-radar-sweep-fast" aria-hidden="true"></div>
           ${renderRadarEscorts(attack, blipDeg, minR)}
-          <div class="inbound-radar-blip inbound-radar-blip-center" aria-hidden="true"></div>
-          <div class="inbound-radar-hub inbound-radar-hub-alert">
-            <span class="inbound-radar-num">!</span>
-            <span class="inbound-radar-unit">contact</span>
-          </div>
+          ${renderRadarContacts()}
+          <span class="radar-launch-ring" aria-hidden="true"></span>
+          <button type="button" class="radar-launch" id="btn-hold-line">DEFEND<br />GRANNY</button>
         </div>
-        <p class="inbound-radar-label">Porch perimeter breached</p>
-        <button type="button" class="gb-forge-btn gb-attack-hero-cta" id="btn-hold-line">DEFEND GRANNY</button>
       </div>
     `;
   }
@@ -351,6 +369,7 @@ function renderInboundRadar(attack, open) {
           <span class="radar-planet radar-planet--ice"></span>
           <span class="radar-comet"></span>
         </div>
+        ${renderRadarContacts()}
         <div class="inbound-radar-hub inbound-radar-hub-scan">
           <span class="inbound-radar-scan">DETECTING</span>
           <span class="inbound-radar-unit">ALIEN HORDE</span>
@@ -438,6 +457,47 @@ const TOPIC_DISPLAY_ORDER = [
 ];
 
 /**
+ * Once a siege is earned: what is coming (the opening assault, by alien type) against what the player
+ * takes into battle. Extra right answers grow the chest and zap scouts out of the horde, live.
+ * @param {ReturnType<typeof import('./waves-data.js').openingHorde>} horde
+ * @param {{ coins: number, bonusSeconds: number, extraLeft: number, coinsPerAnswer: number }} chest
+ */
+function renderHordeFaceoff(horde, chest) {
+  const troops = horde.troops.map(({ unit, count }) => `
+    <li class="faceoff-troop" title="${GRUNT_STATS[unit]?.codename ?? BOSS_STATS[unit]?.codename ?? unit}">
+      <img src="${ENEMY_SPRITE_SRC[unit]}" alt="" />
+      <b>×${count}</b>
+      <span>${GRUNT_STATS[unit]?.codename ?? BOSS_STATS[unit]?.codename ?? unit}</span>
+    </li>`).join('');
+  const canZap = horde.zapped < horde.zapCap;
+  const action = chest.extraLeft <= 0
+    ? '<p class="faceoff-tip">Maths maxed out. Go get them!</p>'
+    : `<button type="button" class="faceoff-zap">
+        <strong>${canZap ? 'ZAP SCOUTS' : 'MORE COINS'}</strong>
+        <span>+${chest.coinsPerAnswer} coins${canZap ? ' &amp; a zap' : ''} per right answer</span>
+      </button>`;
+  return `
+    <section class="horde-faceoff" aria-label="Incoming horde: ${horde.total} aliens. Your war chest: ${chest.coins} coins.">
+      <div class="faceoff-side faceoff-horde">
+        <span class="faceoff-label">INCOMING HORDE</span>
+        <ul class="faceoff-troops${horde.troops.length > 2 ? ' is-many' : ''}">${troops}${horde.zapped
+          ? `<li class="faceoff-zapped" title="${horde.zapped} scout${horde.zapped === 1 ? '' : 's'} zapped by extra maths">−${horde.zapped}</li>`
+          : ''}</ul>
+      </div>
+      <span class="faceoff-vs" aria-hidden="true">VS</span>
+      <div class="faceoff-side faceoff-chest">
+        <span class="faceoff-label">WAR CHEST</span>
+        <span class="faceoff-chest-row">
+          <img class="faceoff-chest-art" src="assets/ui/icons/chest.png?v=1" alt="" />
+          <strong class="faceoff-coins">${chest.coins}</strong>
+        </span>
+        <span class="faceoff-coins-label">COINS${chest.bonusSeconds ? ` · +${chest.bonusSeconds}s` : ''}</span>
+      </div>
+      ${action}
+    </section>`;
+}
+
+/**
  * Mission Control stays on screen while the student changes maths activities.
  * It is mounted separately from the maths workspace, so activities can rerender
  * without destroying the radar, progress, or controls.
@@ -452,8 +512,7 @@ export function renderMissionControl(host, state) {
   const attack = attackStatus(state.gate);
   const first = state.siegesCompleted === 0;
   host.dataset.threat = attack.urgency;
-  const threatMessage = attack.open ? 'CONTACT! DEFEND GRANNY NOW!'
-    : attack.remaining <= 2 ? 'DANGER: ALIENS AT THE FENCE!'
+  const threatMessage = attack.remaining <= 2 ? 'DANGER: ALIENS AT THE FENCE!'
     : attack.remaining <= 5 ? 'WARNING: ALIENS CLOSING IN!'
     : attack.remaining <= 8 ? 'ENEMY SIGNAL DETECTED'
     : 'DISTANT ALIEN SIGNAL';
@@ -462,11 +521,20 @@ export function renderMissionControl(host, state) {
       <div class="mission-control-heading">
         <span class="mission-control-eyebrow">MISSION CONTROL</span>
         <h2 class="mission-control-greeting">${first ? 'Welcome' : 'Welcome back'}, <span>${escapeHtml(state.playerName)}</span></h2>
+        <button type="button" class="mission-xp" aria-label="${formatForgeXp(state.xp)} Forge XP. Spend it in the Armory.">
+          <img class="mission-xp-emblem" src="assets/ui/xp-emblem.png?v=1" alt="" width="317" height="320" />
+          <span class="mission-xp-copy">
+            <span class="mission-xp-value" id="mission-control-xp">${formatForgeXp(lastHomeXp ?? state.xp)}</span>
+            <span class="mission-xp-label">FORGE XP</span>
+          </span>
+        </button>
       </div>
       <div class="mission-control-radar" aria-label="Alien radar and progress towards the next defence">
         ${renderInboundRadar(attack, attack.open)}
       </div>
-      <div class="mission-control-alert" data-urgency="${attack.urgency}">${threatMessage}</div>
+      ${attack.open
+        ? renderHordeFaceoff(state.horde, state.warChest)
+        : `<div class="mission-control-alert" data-urgency="${attack.urgency}">${threatMessage}</div>`}
       <div class="mission-control-blueprint">
         ${renderThreatDossier(attack.open, attack)}
       </div>
@@ -480,6 +548,9 @@ export function renderMissionControl(host, state) {
   });
   host.querySelector('#btn-hold-line')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-back-to-hq')?.addEventListener('click', state.onHome);
+  host.querySelector('.mission-xp')?.addEventListener('click', () => state.onArmory?.());
+  host.querySelector('.faceoff-zap')?.addEventListener('click', () => state.onZap?.());
+  playMissionXp(host, state.xp);
 }
 
 /**
@@ -490,16 +561,10 @@ export function renderMissionControl(host, state) {
  */
 export function renderSiegeStats(host, state) {
   if (!host) return;
-  const sectors = mapPiecesEarned(state.mapProgress);
   const prior = host.querySelector('.mission-battle-stats');
   const html = `
     <div class="mission-battle-stats">
       ${renderCrystalVault(state.crystalsCollected ?? 0, state.crystalsToSpend ?? 0)}
-      <button type="button" class="homeland-chip" aria-haspopup="dialog">
-        <span class="homeland-chip-ship" aria-hidden="true">🛸</span>
-        <span class="homeland-chip-text">ALIEN HOMELAND</span>
-        <span class="homeland-chip-count">${sectors}/${TRAINING_MODULE_IDS.length} map pieces</span>
-      </button>
     </div>
   `;
   const template = document.createElement('template');
@@ -508,7 +573,6 @@ export function renderSiegeStats(host, state) {
   if (prior) prior.replaceWith(stats);
   else host.append(stats);
   stats.querySelector('.crystal-vault-spend')?.addEventListener('click', () => state.onArmory?.());
-  stats.querySelector('.homeland-chip')?.addEventListener('click', () => showHomelandMap(state.mapProgress));
   lastVaultCount = state.crystalsToSpend ?? 0;
 }
 
@@ -573,6 +637,7 @@ let missionArt = 1 + Math.floor(Math.random() * 4);
 
 /** A different alien each time the player comes back to Maths HQ; now and then, the green special. */
 export function rerollMissionArt(random = Math.random) {
+  radarContacts = pickRadarContacts(random);
   if (random() < SPECIAL_MISSION_CHANCE) {
     missionArt = 'special';
     return;
@@ -583,6 +648,11 @@ export function rerollMissionArt(random = Math.random) {
 
 export function isSpecialMission() {
   return missionArt === 'special';
+}
+
+/** @param {1|2|3|4} level @param {boolean} special */
+function levelRewardLabel(level, special) {
+  return special ? `${xpMultiplierFor(level) * SPECIAL_MISSION_XP_MULTIPLIER}× XP` : xpMultiplierLabel(level);
 }
 
 /** Crystals shown so far, so a newly collected one can drop into the pile. @type {number|null} */
@@ -651,6 +721,35 @@ function renderCrystalVault(collected, toSpend) {
 }
 
 /**
+ * The long-term goal along the bottom of Maths HQ: one checkpoint per map piece, the last being the
+ * Alien Homeland itself. The fill also creeps towards the next checkpoint as the closest topic charts.
+ * @param {import('./map-progress.js').MapProgressSave} mapProgress
+ */
+function renderHomelandTrack(mapProgress) {
+  const total = TRAINING_MODULE_IDS.length;
+  const earned = mapPiecesEarned(mapProgress);
+  const closest = Math.max(0, ...TRAINING_MODULE_IDS.filter((id) => !hasMapPiece(mapProgress, id)).map((id) => getMapPasses(mapProgress, id)));
+  const pct = earned >= total ? 100 : ((earned + closest / MAP_PASSES_REQUIRED) / total) * 100;
+  const nodes = Array.from({ length: total }, (_, i) => {
+    const n = i + 1;
+    const home = n === total;
+    return `<span class="homeland-track-node${home ? ' homeland-track-home' : ''}${n <= earned ? ' is-reached' : ''}" style="left:${(n / total) * 100}%">${home ? '🪐' : n}</span>`;
+  }).join('');
+  return `
+    <button type="button" class="homeland-track" aria-label="Alien Homeland: ${earned} of ${total} map pieces. Show the map.">
+      <span class="homeland-track-title">
+        <strong>ALIEN HOMELAND</strong>
+        <small>${earned}/${total} map pieces</small>
+      </span>
+      <span class="homeland-track-rail" aria-hidden="true">
+        <span class="homeland-track-fill" style="width:${pct.toFixed(1)}%"></span>
+        ${nodes}
+        <span class="homeland-track-ship"><span>🛸</span></span>
+      </span>
+    </button>`;
+}
+
+/**
  * The Alien Homeland map as a pop-up: every topic charted reveals a sector, and all ten open the
  * route to the Alien Homeland.
  * @param {any} mapProgress
@@ -683,32 +782,33 @@ function showHomelandMap(mapProgress) {
  */
 export function renderHome(host, state) {
   const attack = attackStatus(state.gate);
+  const special = missionArt === 'special' && !attack.open;
   host.innerHTML = `
     <div class="mission-home">
       <header class="mission-workspace-heading">
         <span class="mission-kicker">MATHS HQ</span>
         <h1>Maths missions</h1>
       </header>
-      <section class="mission-mixed-card" aria-label="Mixed maths mission">
+      <section class="mission-mixed-card${attack.open ? ' is-under-attack' : ''}" aria-label="Mixed maths mission">
         <div class="mission-mixed-symbol" aria-hidden="true">⚡</div>
         <div class="mission-mixed-copy">
           <span class="mission-recommended">${attack.open ? 'READY FOR ACTION' : 'QUICK START'}</span>
-          <h2>${attack.open ? 'Granny needs you!' : 'Mixed Maths Mission'}</h2>
+          <h2>${attack.open ? 'Granny’s under attack!' : 'Mixed Maths Mission'}</h2>
         </div>
         ${attack.open
-          ? '<span class="mission-battle-ready">Use DEFEND GRANNY in Mission Control!</span>'
-          : `<button type="button" id="mission-start-mixed" class="mission-start-art${missionArt === 'special' ? ' is-special' : ''}" aria-label="${missionArt === 'special' ? 'Special mission: double Forge XP' : 'Random mission'}: ${attack.remaining} more right answers needed, from every topic"><img src="assets/ui/random-mission-${missionArt}.png?v=2" alt="" width="760" height="203" /></button>`}
+          ? ''
+          : `<button type="button" id="mission-start-mixed" class="mission-start-art${special ? ' is-special' : ''}" aria-label="${special ? `Special mission: ${SPECIAL_MISSION_XP_MULTIPLIER}× Forge XP` : 'Random mission'}: ${attack.remaining} more right answers needed, from every topic"><img src="assets/ui/random-mission-${missionArt}.png?v=2" alt="" width="760" height="203" />${special ? `<span class="mission-special-badge" aria-hidden="true">${SPECIAL_MISSION_XP_MULTIPLIER}× XP</span>` : ''}</button>`}
         <div class="mission-level-control">
           <div class="mission-level-intro">
             <span class="mission-level-title">LEVEL</span>
           </div>
-          <div class="mission-level-buttons" role="group" aria-label="Choose maths difficulty and XP reward">
+          <div class="mission-level-buttons${special ? ' is-boosted' : ''}" role="group" aria-label="Choose maths difficulty and XP reward">
             ${[1, 2, 3, 4].map((n) => `
               <button type="button" class="mission-level-option${state.difficultyLevel === n ? ' is-selected' : ''}"
                 data-level="${n}" aria-pressed="${state.difficultyLevel === n}"
-                aria-label="Level ${n}, ${xpMultiplierLabel(/** @type {1|2|3|4} */ (n))}">
+                aria-label="Level ${n}, ${levelRewardLabel(/** @type {1|2|3|4} */ (n), special)}">
                 <span class="mission-level-number">${n}</span>
-                <span class="mission-level-reward">${xpMultiplierLabel(/** @type {1|2|3|4} */ (n))}</span>
+                <span class="mission-level-reward">${levelRewardLabel(/** @type {1|2|3|4} */ (n), special)}</span>
               </button>
             `).join('')}
           </div>
@@ -720,11 +820,13 @@ export function renderHome(host, state) {
           ${renderTrainingCards(state.gate, attack, state.levelMastery, state.mapProgress, TOPIC_DISPLAY_ORDER, state.topicProgress)}
         </div>
       </section>
+      ${renderHomelandTrack(state.mapProgress)}
     </div>
   `;
 
   host.querySelector('#mission-start-mixed')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-armory-open')?.addEventListener('click', state.onArmory);
+  host.querySelector('.homeland-track')?.addEventListener('click', () => showHomelandMap(state.mapProgress));
   host.querySelectorAll('[data-topic]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-topic');
@@ -763,7 +865,6 @@ export function renderTopbarBadges(container, record, opts = {}) {
       <span class="rank-badge-copy">
         <strong class="rank-badge-name">${level ? name.toUpperCase() : 'NO RANK YET'}</strong>
         ${opts.title ? `<span class="rank-badge-title">“${escapeHtml(opts.title)}”</span>` : ''}
-        <span class="rank-badge-next">${next ? `Next: ${next.name} · ${progress}` : 'Top rank!'}</span>
       </span>
     </button>`;
   container.querySelector('.rank-badge')?.addEventListener('click', () => (opts.onOpen ? opts.onOpen(level) : showRankLadder(level, record)));

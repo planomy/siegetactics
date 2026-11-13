@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { balanceMission, startingSiegeCoins, nextBattleCry, BATTLE_CRIES } from '../js/battle-balance.js';
 import { MISSIONS } from '../js/missions-data.js';
-import { waveConfigFor, SIEGE_DURATION_SEC } from '../js/waves-data.js';
+import { waveConfigFor, openingHorde, ZAP_CAP_SHARE, SIEGE_DURATION_SEC } from '../js/waves-data.js';
 import { bonusSiegeSeconds, defaultTrainingGate, recordTrainingQuestions, normalizeTrainingGate } from '../js/training-gate.js';
 
 const mission = MISSIONS[0];
@@ -33,6 +33,27 @@ test('new players get 20 slightly slower first-wave enemies', () => {
   assert.ok(intro.speedMul < usual.speedMul);
   assert.ok(intro.hpScale < usual.hpScale);
   assert.equal(waveConfigFor(2, { firstSiege: true }).totalSpawns, waveConfigFor(2).totalSpawns);
+});
+
+test('the horde grows with siege rank, gently, and never on the first siege', () => {
+  const totals = [0, 1, 2, 3, 4, 5].map((rank) => openingHorde({ rank }).total);
+  assert.deepEqual(totals.slice(0, 2), [30, 30], 'no rank and Recruit face the usual opening');
+  for (let i = 2; i < totals.length; i++) assert.ok(totals[i] > totals[i - 1], `rank ${i} is bigger than rank ${i - 1}`);
+  assert.ok(totals[5] <= 60, 'even Marshal faces at most double the usual opening');
+  assert.equal(openingHorde({ rank: 3 }).troops.length, 3, 'higher ranks add tougher troop types');
+  assert.equal(openingHorde({ firstSiege: true, rank: 5 }).total, 20);
+  assert.equal(waveConfigFor(3, { rank: 1 }).totalSpawns, waveConfigFor(3).totalSpawns);
+});
+
+test('extra right answers zap scouts from the opening assault, capped at a fifth of it', () => {
+  const base = openingHorde({ rank: 1 });
+  const some = openingHorde({ rank: 1, extraRight: 3 });
+  const lots = openingHorde({ rank: 1, extraRight: 10 });
+  assert.equal(some.zapped, 3);
+  assert.equal(some.total, base.total - 3);
+  assert.equal(lots.zapCap, Math.floor(base.total * ZAP_CAP_SHARE));
+  assert.equal(lots.zapped, lots.zapCap);
+  assert.equal(waveConfigFor(1, { rank: 1, zapped: 3 }).totalSpawns, some.total, 'the siege sends what the preview shows');
 });
 
 test('launch labels are humorous and do not immediately repeat', () => {
