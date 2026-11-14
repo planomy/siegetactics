@@ -553,20 +553,67 @@ body.mission-mode #screen-home #mission-start-mixed.mission-start-art.is-special
 
 body.mission-mode #screen-home .mission-special-badge {
   position: absolute;
-  top: -6px;
-  right: 2%;
-  padding: 3px 10px 2px;
-  border: 2px solid #1d3a0c;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #d9ff6a, #7ee33a);
-  box-shadow: 0 0 12px rgba(150, 255, 90, .8), 0 2px 0 #1d3a0c;
-  color: #102205;
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  letter-spacing: .04em;
-  line-height: 1.1;
-  transform: rotate(6deg);
+  top: -24px;
+  right: 6px;
+  z-index: 2;
+  width: 70px;
+  height: 70px;
+  rotate: 10deg;
+  animation: mission-special-badge-pulse 1.6s ease-in-out infinite;
   pointer-events: none;
+}
+
+body.mission-mode #screen-home .mission-special-disc {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff7a4d 0%, #e3241c 55%, #a10f18 100%);
+  box-shadow: 0 4px 0 #6e0810, 0 0 18px rgba(255, 90, 50, .75);
+  color: #fff;
+  font-family: var(--font-display);
+  line-height: .9;
+  text-align: center;
+}
+
+body.mission-mode #screen-home .mission-special-badge b {
+  font-size: 2rem;
+  font-weight: 400;
+  text-shadow: 2px 2px 0 #6e0810;
+}
+
+body.mission-mode #screen-home .mission-special-badge small {
+  color: #ffc21a;
+  font-size: 1rem;
+  letter-spacing: .08em;
+  text-shadow: 1px 1px 0 #6e0810;
+}
+
+/* Gold sunburst turning slowly behind the badge. */
+body.mission-mode #screen-home .mission-special-rays {
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 210, 60, .85) 0deg 12deg, transparent 12deg 30deg);
+  mask: radial-gradient(circle, #000 45%, transparent 72%);
+  animation: mission-special-rays-spin 8s linear infinite;
+}
+
+@keyframes mission-special-badge-pulse {
+  50% { scale: 1.1; }
+}
+
+@keyframes mission-special-rays-spin {
+  to { rotate: 360deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.mission-mode #screen-home .mission-special-badge,
+  body.mission-mode #screen-home .mission-special-rays {
+    animation: none;
+  }
 }
 
 /* While a Special Mission is up, the level buttons show the doubled reward in the same green. */

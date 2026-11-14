@@ -797,7 +797,7 @@ export function renderHome(host, state) {
         </div>
         ${attack.open
           ? ''
-          : `<button type="button" id="mission-start-mixed" class="mission-start-art${special ? ' is-special' : ''}" aria-label="${special ? `Special mission: ${SPECIAL_MISSION_XP_MULTIPLIER}× Forge XP` : 'Random mission'}: ${attack.remaining} more right answers needed, from every topic"><img src="assets/ui/random-mission-${missionArt}.png?v=2" alt="" width="760" height="203" />${special ? `<span class="mission-special-badge" aria-hidden="true">${SPECIAL_MISSION_XP_MULTIPLIER}× XP</span>` : ''}</button>`}
+          : `<button type="button" id="mission-start-mixed" class="mission-start-art${special ? ' is-special' : ''}" aria-label="${special ? `Special mission: ${SPECIAL_MISSION_XP_MULTIPLIER}× Forge XP` : 'Random mission'}: ${attack.remaining} more right answers needed, from every topic"><img src="assets/ui/random-mission-${missionArt}.png?v=2" alt="" width="760" height="203" />${special ? `<span class="mission-special-badge" aria-hidden="true"><span class="mission-special-rays"></span><span class="mission-special-disc"><b>${SPECIAL_MISSION_XP_MULTIPLIER}×</b><small>XP</small></span></span>` : ''}</button>`}
         <div class="mission-level-control">
           <div class="mission-level-intro">
             <span class="mission-level-title">LEVEL</span>
