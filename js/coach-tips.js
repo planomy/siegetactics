@@ -9,6 +9,7 @@
  * @typedef {Object} CoachTip
  * @property {string} title
  * @property {string} text
+ * @property {string} [punch] - Short gold line under the text
  * @property {string[]} targets - CSS selectors of what the tip points at
  * @property {number} [step] - Number shown in the badge (opening tour only)
  * @property {boolean} [between] - Sit the card level with the gap between two stacked targets,
@@ -22,8 +23,9 @@ export const TOUR_TIPS = ['pick', 'level', 'armory'];
 export const COACH_TIPS = {
   pick: {
     step: 1,
-    title: 'CHARGE GRANNY’S DEFENCES!',
-    text: 'Get 10 maths questions right. Hit the big MISSION button up here, or pick a topic down there!',
+    title: 'GET READY TO DESTROY SOME ALIENS!',
+    text: 'Select either a RANDOM MISSION or a TOPIC CARD and answer 10 maths questions.',
+    punch: 'Practice makes KABOOM!',
     targets: ['#mission-start-mixed', '.mission-all-topics'],
     between: true,
   },
@@ -184,6 +186,7 @@ export function showCoachTips(ids, handlers = {}) {
     <div class="coach-body">
       <h3 class="coach-title"></h3>
       <p class="coach-text"></p>
+      <p class="coach-punch" hidden></p>
       <div class="coach-actions">
         <button type="button" class="coach-off">Turn off these tips</button>
         <button type="button" class="coach-next">NEXT ▸</button>
@@ -194,6 +197,7 @@ export function showCoachTips(ids, handlers = {}) {
 
   const titleEl = /** @type {HTMLElement} */ (card.querySelector('.coach-title'));
   const textEl = /** @type {HTMLElement} */ (card.querySelector('.coach-text'));
+  const punchEl = /** @type {HTMLElement} */ (card.querySelector('.coach-punch'));
   const stepEl = /** @type {HTMLElement} */ (card.querySelector('.coach-step'));
   const nextBtn = /** @type {HTMLButtonElement} */ (card.querySelector('.coach-next'));
 
@@ -306,6 +310,8 @@ export function showCoachTips(ids, handlers = {}) {
     targets.forEach((el) => el.addEventListener('click', onTargetTap, true));
     titleEl.textContent = tip.title;
     textEl.textContent = tip.text;
+    punchEl.textContent = tip.punch ?? '';
+    punchEl.hidden = !tip.punch;
     stepEl.textContent = tip.step ? String(tip.step) : '!';
     nextBtn.textContent = index >= queue.length - 1 ? 'GOT IT!' : 'NEXT ▸';
     card.classList.remove('coach-card-in');

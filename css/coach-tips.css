@@ -92,11 +92,13 @@
   background-size: 200px auto;
   background-position: -88px -44px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+  /* Mirrored so she looks into the card. */
+  scale: -1 1;
   animation: coach-granny-bob 2.4s ease-in-out infinite;
 }
 
 @keyframes coach-granny-bob {
-  50% { transform: translateY(-3px) rotate(-4deg); }
+  50% { transform: translateY(-3px) rotate(4deg); }
 }
 
 .coach-step {
@@ -133,6 +135,15 @@
   font-family: var(--font-math);
   font-size: 1.08rem;
   line-height: 1.35;
+}
+
+.coach-punch {
+  margin: -8px 0 14px;
+  color: #ffc21a;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+  text-shadow: 2px 2px 0 #6e0810;
 }
 
 .coach-actions {
