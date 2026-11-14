@@ -684,7 +684,32 @@ function renderVaultOdometer(collected) {
  * so spending never downgrades it.
  * @param {number} collected All-time crystals, for the vault tier. @param {number} toSpend Crystals in the vault now.
  */
+let vaultShimmerTimer = 0;
+
+/** Light catches the vault glass now and then, each sweep a little different. */
+function scheduleVaultShimmer() {
+  if (vaultShimmerTimer || typeof window === 'undefined') return;
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  const next = () => {
+    vaultShimmerTimer = window.setTimeout(() => {
+      const el = /** @type {HTMLElement|null} */ (document.querySelector('.crystal-vault-shimmer'));
+      if (el && !document.hidden && el.getClientRects().length) {
+        el.style.setProperty('--shimmer-dur', `${(0.8 + Math.random() * 0.9).toFixed(2)}s`);
+        el.style.setProperty('--shimmer-angle', `${Math.round(95 + Math.random() * 35)}deg`);
+        el.style.setProperty('--shimmer-glow', (0.45 + Math.random() * 0.45).toFixed(2));
+        el.classList.toggle('is-reverse', Math.random() < 0.3);
+        el.classList.remove('is-sweeping');
+        void el.offsetWidth;
+        el.classList.add('is-sweeping');
+      }
+      next();
+    }, 2500 + Math.random() * 6000);
+  };
+  next();
+}
+
 function renderCrystalVault(collected, toSpend) {
+  scheduleVaultShimmer();
   const tier = vaultTierFor(collected);
   const next = [...VAULT_TIERS].reverse().find((t) => t.at > collected);
   // The glass holds up to 20; beyond that the number keeps counting.
@@ -708,6 +733,7 @@ function renderCrystalVault(collected, toSpend) {
       <div class="crystal-vault-jar">
         <div class="crystal-vault-pile" aria-hidden="true">${crystals}</div>
         <div class="crystal-vault-glass" aria-hidden="true"></div>
+        <div class="crystal-vault-shimmer" aria-hidden="true"></div>
         ${renderVaultOdometer(collected)}
       </div>
       <div class="crystal-vault-copy">

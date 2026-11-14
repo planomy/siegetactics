@@ -415,6 +415,56 @@
   pointer-events: none;
 }
 
+.crystal-vault-shimmer {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  top: 30%;
+  bottom: 28%;
+  overflow: hidden;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.crystal-vault-shimmer::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 70%;
+  background: linear-gradient(var(--shimmer-angle, 110deg),
+    transparent 30%,
+    rgba(255, 255, 255, calc(var(--shimmer-glow, .7) * .5)) 44%,
+    rgba(255, 255, 255, var(--shimmer-glow, .7)) 50%,
+    rgba(255, 255, 255, calc(var(--shimmer-glow, .7) * .5)) 54%,
+    transparent 58%,
+    rgba(255, 255, 255, calc(var(--shimmer-glow, .7) * .35)) 64%,
+    transparent 67%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: translateX(-110%);
+}
+
+.crystal-vault-shimmer.is-sweeping::before {
+  animation: crystal-vault-shimmer var(--shimmer-dur, 1.2s) ease-in-out;
+}
+
+.crystal-vault-shimmer.is-reverse.is-sweeping::before {
+  animation-direction: reverse;
+}
+
+@keyframes crystal-vault-shimmer {
+  0% { opacity: 0; transform: translateX(-110%); }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(160%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crystal-vault-shimmer { display: none; }
+}
+
 .crystal-vault-copy {
   display: flex;
   flex-direction: column;
