@@ -1,6 +1,7 @@
 import { initDrillSession } from './drill-session.js?v=20261114m1';
 import { legacyLevel } from './difficulty.js?v=20261114k1';
-import { extraLevelQuestion } from './extra-levels.js?v=20261114k1';
+import { extraLevelQuestion } from './extra-levels.js?v=20261114v1';
+import { noteType, labelQuestion } from './maths-skills.js';
 
 const MODULES = {
   operations: { title: 'Operations HQ', tag: 'Number · Operations', quiz: 'Calculate & reason' },
@@ -72,6 +73,7 @@ function clock24(totalMinutes) {
 function operationsQuestion(level) {
   const limit = [0, 100, 1000, 10000, 100000][level];
   const kind = rand(0, level === 1 ? 3 : level === 2 ? 4 : level === 3 ? 6 : 8);
+  noteType(['add', 'subtract', 'multiply', 'divide', 'add-after-multiply', 'multiply-2-digit', 'missing-factor', 'multiply-teens', 'brackets'][kind]);
   if (kind === 0) {
     const a = rand(Math.floor(limit / 10), Math.floor(limit * 0.65));
     const b = rand(5, Math.floor(limit * 0.3));
@@ -97,6 +99,7 @@ function operationsQuestion(level) {
     const b = rand(2, 9);
     const c = rand(2, 8);
     if (level === 2) {
+      noteType('groups-plus-more');
       return q(`${b} boxes hold ${c} bolts each, then Granny adds ${a} more. How many bolts altogether?`, b * c + a, [b * c, (a + b) * c, a + b + c]);
     }
     return q(`${a} + ${b} × ${c} = ?`, a + b * c, [(a + b) * c, a + b + c, a * b + c]);
@@ -129,6 +132,7 @@ function decimalQuestion(level) {
     const dollars = rand(2, 20);
     const cents = rand(1, 9) * 10;
     const kind = rand(0, 2);
+    noteType(['dollars-and-cents', 'dollars-to-cents', 'half-of'][kind]);
     if (kind === 0) return q(`$${dollars}.${cents} is how many cents?`, dollars * 100 + cents);
     if (kind === 1) return q(`${dollars} dollars equals how many cents?`, dollars * 100, [dollars * 10, dollars, dollars * 100 + 10]);
     return q(`Half of ${dollars * 2} is ?`, dollars, [dollars * 2, dollars + 2, Math.max(1, dollars - 2)]);
@@ -136,6 +140,7 @@ function decimalQuestion(level) {
   if (level === 2) {
     const digit = rand(1, 9);
     const kind = rand(0, 3);
+    noteType(['tenths-in-whole', 'tenths-value', 'hundredths-value', 'half-as-decimal'][kind]);
     if (kind === 0) return q(`How many tenths make one whole?`, 10, [1, 5, 100]);
     if (kind === 1) return q(`What is the value of ${digit} in 4.${digit}7?`, tidy(digit / 10), [digit, tidy(digit / 100), digit * 10]);
     if (kind === 2) return q(`What is the value of ${digit} in 3.4${digit}?`, tidy(digit / 100), [digit, tidy(digit / 10), digit * 10]);
@@ -144,6 +149,7 @@ function decimalQuestion(level) {
   const a = tidy(rand(10, 99) / 10);
   const b = tidy(rand(1, 49) / 10);
   const kind = rand(0, level >= 4 ? 7 : 6);
+  noteType(['add-decimals', 'subtract-decimals', 'tenths-value', 'times-100', 'percent-25', 'percent-10', 'share-ratio', 'discount'][kind]);
   if (kind === 0) return q(`${a} + ${b} = ?`, tidy(a + b), [tidy(a + b + 0.1), tidy(a + b - 0.1), tidy(a + b + 1)]);
   if (kind === 1) {
     const high = Math.max(a, b);
@@ -168,6 +174,7 @@ function decimalQuestion(level) {
   }
   if (kind === 6) {
     if (level === 3) {
+      noteType('percent-50');
       const base = rand(2, 18) * 10;
       return q(`50% of ${base} = ?`, base / 2, [base / 4, base / 10, base]);
     }
@@ -182,6 +189,7 @@ function decimalQuestion(level) {
 function timeQuestion(level) {
   if (level === 1) {
     const kind = rand(0, 4);
+    noteType(['hours-to-minutes', 'minutes-elapsed', 'hours-elapsed', 'half-hour', 'compare-durations'][kind]);
     if (kind === 0) {
       const hours = rand(1, 3);
       return q(`${hours} hour${hours === 1 ? '' : 's'} equals how many minutes?`, hours * 60, [hours * 30, hours * 100, hours * 60 + 30]);
@@ -203,6 +211,7 @@ function timeQuestion(level) {
 
   if (level === 2) {
     const kind = rand(0, 4);
+    noteType(['quarter-hours', 'elapsed-12h', 'finish-time', 'hours-minutes-to-minutes', 'compare-durations'][kind]);
     const start = rand(1, 8) * 60 + [0, 15, 30, 45][rand(0, 3)];
     const duration = [30, 45, 60, 75, 90][rand(0, 4)];
     const finish = start + duration;
@@ -217,6 +226,7 @@ function timeQuestion(level) {
 
   if (level === 3) {
     const kind = rand(0, 5);
+    noteType(['to-12-hour', 'to-24-hour', 'mission-duration', 'arrival-time', 'duration-to-minutes', 'timetable-gap'][kind]);
     const hour24 = rand(13, 22);
     if (kind === 0) return choice(`${hour24}:00 in 12-hour time is __`, `${hour24 - 12}:00 pm`, [`${hour24}:00 pm`, `${hour24 - 12}:00 am`, `${hour24 - 11}:00 pm`]);
     if (kind === 1) {
@@ -238,6 +248,7 @@ function timeQuestion(level) {
   }
 
   const kind = rand(0, 5);
+  noteType(['add-24h', 'duration-24h', 'multi-leg', 'days-to-hours', 'past-midnight', 'departures'][kind]);
   const start = rand(7, 20) * 60 + [0, 10, 20, 30, 40, 50][rand(0, 5)];
   const duration = [70, 85, 95, 110, 125][rand(0, 4)];
   const finish = start + duration;
@@ -265,6 +276,7 @@ function timeQuestion(level) {
 function supplyQuestion(level) {
   if (level === 1) {
     const kind = rand(0, 4);
+    noteType(['heavier-grams', 'unit-for-bag', 'unit-for-bottle', 'bottles-total-ml', 'container-add'][kind]);
     if (kind === 0) {
       const lighter = rand(2, 7) * 100;
       const heavier = lighter + rand(1, 2) * 100;
@@ -284,6 +296,7 @@ function supplyQuestion(level) {
 
   if (level === 2) {
     const kind = rand(0, 4);
+    noteType(['kg-to-g', 'l-to-ml', 'packs-total-g', 'bottles-total-ml', 'kg-vs-g'][kind]);
     const unit = rand(1, 5);
     if (kind === 0) return q(`${unit} kg equals how many grams?`, unit * 1000, [unit * 100, unit * 10, unit]);
     if (kind === 1) return q(`${unit} L equals how many millilitres?`, unit * 1000, [unit * 100, unit * 10, unit]);
@@ -302,6 +315,7 @@ function supplyQuestion(level) {
 
   if (level === 3) {
     const kind = rand(0, 5);
+    noteType(['kg-to-g', 'l-to-ml', 'g-to-kg', 'ml-to-l', 'packs-total-g', 'bottles-total-ml'][kind]);
     const unit = rand(2, 9);
     if (kind === 0) return q(`${unit} kg equals how many grams?`, unit * 1000, [unit * 100, unit * 10, unit]);
     if (kind === 1) return q(`${unit} L equals how many millilitres?`, unit * 1000, [unit * 100, unit * 10, unit]);
@@ -324,6 +338,7 @@ function supplyQuestion(level) {
   }
 
   const kind = rand(0, 5);
+  noteType(['crate-volume', 'bottles-to-litres', 'packs-to-kg', 'tank-space', 'three-bottles', 'bag-loses'][kind]);
   if (kind === 0) {
     const l = rand(3, 10);
     const w = rand(2, 8);
@@ -347,6 +362,11 @@ function supplyQuestion(level) {
 
 /** @param {string} topicId @param {number} level */
 export function makeExpandedQuestion(topicId, level) {
+  return labelQuestion(expandedQuestionCore(topicId, level), topicId);
+}
+
+/** @param {string} topicId @param {number} level */
+function expandedQuestionCore(topicId, level) {
   if (level <= 1 || level >= 6) return extraLevelQuestion(topicId, level <= 1 ? 1 : 6);
   const legacy = legacyLevel(level);
   if (topicId === 'operations') return operationsQuestion(legacy);

@@ -1,3 +1,5 @@
+import { noteType } from './maths-skills.js';
+
 /**
  * Questions for the two levels outside the original four:
  * Level 1 (Year 2) and Level 6 (Year 7). Levels 2–5 reuse each topic's
@@ -154,6 +156,7 @@ function shapeSvg(name) {
 const year2 = {
   operations() {
     const kind = rand(0, 8);
+    noteType(['y2-make-ten', 'y2-make-twenty', 'y2-add-within-20', 'y2-subtract-from-teens', 'y2-add-ones', 'y2-add-tens', 'y2-double', 'y2-equal-groups', 'y2-skip-count'][kind]);
     if (kind === 0) { const a = rand(1, 9); return num(`${a} + ? = 10`, 10 - a); }
     if (kind === 1) { const a = rand(3, 17); return num(`${a} + ? = 20`, 20 - a); }
     if (kind === 2) { const a = rand(3, 12); const b = rand(2, 20 - a); return num(`${a} + ${b} = ?`, a + b); }
@@ -171,6 +174,7 @@ const year2 = {
 
   fractions() {
     const kind = rand(0, 3);
+    noteType(['y2-shaded-shape', 'y2-shaded-shape', 'y2-half-of-number', 'y2-parts-in-whole'][kind]);
     if (kind <= 1) {
       const parts = pick([2, 4, 8]);
       const shaded = parts === 2 ? 1 : pick([1, 1, parts / 2]);
@@ -191,6 +195,7 @@ const year2 = {
   angles() {
     const names = /** @type {(keyof typeof SHAPES)[]} */ (Object.keys(SHAPES));
     const kind = rand(0, 3);
+    noteType(['y2-name-shape', 'y2-name-shape', 'y2-count-corners', 'y2-shape-facts'][kind]);
     if (kind <= 1) {
       const name = pick(names);
       return text('What is this shape called?', name, shuffle(names.filter((n) => n !== name)).slice(0, 3), {
@@ -206,8 +211,8 @@ const year2 = {
       });
     }
     return pick([
-      () => num('How many quarter turns make a full turn?', 4, [2, 3, 1]),
-      () => num('How many quarter turns make a half turn?', 2, [1, 4, 3]),
+      () => (noteType('y2-quarter-turns'), num('How many quarter turns make a full turn?', 4, [2, 3, 1])),
+      () => (noteType('y2-quarter-turns'), num('How many quarter turns make a half turn?', 2, [1, 4, 3])),
       () => text('Which shape has no corners?', 'circle', ['square', 'triangle', 'hexagon']),
       () => text('Which shape has 3 sides?', 'triangle', ['square', 'pentagon', 'circle']),
     ])();
@@ -215,6 +220,7 @@ const year2 = {
 
   time() {
     const kind = rand(0, 3);
+    noteType(['y2-read-clock', 'y2-read-clock', 'y2-hour-later', 'y2-time-facts'][kind]);
     if (kind <= 1) {
       const hour = rand(1, 12);
       const minute = pick([0, 30, 15, 45]);
@@ -247,6 +253,7 @@ const year2 = {
 
   length() {
     const kind = rand(0, 4);
+    noteType(['y2-longest', 'y2-join-ribbons', 'y2-difference', 'y2-choose-unit', 'y2-cm-in-metre'][kind]);
     if (kind === 0) {
       const lengths = shuffle([rand(2, 6), rand(7, 11), rand(12, 16), rand(17, 25)]);
       const longest = Math.max(...lengths);
@@ -263,6 +270,7 @@ const year2 = {
 
   mass() {
     const kind = rand(0, 4);
+    noteType(['y2-heaviest', 'y2-holds-most', 'y2-jugs-to-cups', 'y2-add-kg', 'y2-choose-unit'][kind]);
     if (kind === 0) {
       const set = pick([['an elephant', 'a dog', 'an apple', 'a feather'], ['a car', 'a bike', 'a book', 'a leaf'], ['a horse', 'a cat', 'a shoe', 'a pencil']]);
       return text('Which is the heaviest?', set[0], set.slice(1));
@@ -279,6 +287,7 @@ const year2 = {
 
   money() {
     const kind = rand(0, 4);
+    noteType(['y2-coins-in-dollar', 'y2-add-coins', 'y2-change', 'y2-double-price', 'y2-worth-most'][kind]);
     if (kind === 0) { const [coin, count] = pick([[10, 10], [20, 5], [50, 2]]); return num(`How many ${coin}c coins make $1?`, count, [count + 1, count * 2]); }
     if (kind === 1) {
       const coins = [pick([50, 20]), pick([20, 10]), pick([10, 5])];
@@ -296,6 +305,7 @@ const year2 = {
 const year7 = {
   operations() {
     const kind = rand(0, 8);
+    noteType(['y7-add-negative', 'y7-subtract-below-zero', 'y7-multiply-negative', 'y7-square-then-multiply', 'y7-square-root', 'y7-solve-equation', 'y7-substitute', 'y7-powers', 'y7-hcf'][kind]);
     if (kind === 0) { const a = -rand(3, 15); const b = rand(5, 20); return num(`${a} + ${b} = ?`, a + b, [-(a + b), a - b]); }
     if (kind === 1) { const a = rand(3, 10); const b = rand(11, 20); return num(`${a} − ${b} = ?`, a - b, [b - a, a + b]); }
     if (kind === 2) {
@@ -316,6 +326,7 @@ const year7 = {
 
   fractions() {
     const kind = rand(0, 4);
+    noteType(['y7-add-subtract-unlike', 'y7-add-subtract-unlike', 'y7-multiply', 'y7-improper-to-mixed', 'y7-fraction-to-percent'][kind]);
     if (kind <= 1) {
       let b = rand(2, 8); let d = rand(2, 8);
       while (d === b) d = rand(2, 8);
@@ -342,6 +353,7 @@ const year7 = {
 
   angles() {
     const kind = rand(0, 5);
+    noteType(['y7-exterior-angle', 'y7-co-interior', 'y7-alternate', 'y7-polygon-angle-sum', 'y7-regular-polygon-angle', 'y7-isosceles-base'][kind]);
     if (kind === 0) { const a = rand(35, 70); const b = rand(30, 75); return num(`Two angles of a triangle are ${a}° and ${b}°. What is the exterior angle at the third corner, in degrees?`, a + b, [180 - a - b, 360 - a - b]); }
     if (kind === 1) { const a = rand(50, 130); return num(`Two parallel lines are cut by a transversal. One co-interior angle is ${a}°. What is the other, in degrees?`, 180 - a, [a, 360 - a]); }
     if (kind === 2) { const a = rand(35, 140); return num(`Two parallel lines are cut by a transversal. One angle is ${a}°. What is its alternate angle, in degrees?`, a, [180 - a, 90 + (a % 30)]); }
@@ -356,6 +368,7 @@ const year7 = {
 
   time() {
     const kind = rand(0, 4);
+    noteType(['y7-time-zone', 'y7-distance', 'y7-travel-time', 'y7-overnight-duration', 'y7-decimal-hours'][kind]);
     if (kind === 0) {
       const hour = rand(2, 11);
       const back = hour - 2;
@@ -375,6 +388,7 @@ const year7 = {
 
   length() {
     const kind = rand(0, 4);
+    noteType(['y7-triangle-area', 'y7-parallelogram-area', 'y7-composite-area', 'y7-convert-metric', 'y7-map-scale'][kind]);
     if (kind === 0) { const b = rand(3, 12) * 2; const h = rand(3, 12); return num(`A triangle has a base of ${b} cm and a height of ${h} cm. What is its area in cm²?`, (b * h) / 2, [b * h, b + h]); }
     if (kind === 1) { const b = rand(4, 15); const h = rand(3, 10); return num(`A parallelogram has a base of ${b} m and a height of ${h} m. What is its area in m²?`, b * h, [(b * h) / 2, 2 * (b + h)]); }
     if (kind === 2) {
@@ -394,6 +408,7 @@ const year7 = {
 
   mass() {
     const kind = rand(0, 4);
+    noteType(['y7-tank-litres', 'y7-price-per-kg', 'y7-better-value', 'y7-convert-units', 'y7-cans-to-litres'][kind]);
     if (kind === 0) {
       const [l, w, h] = pick([[50, 40, 30], [20, 20, 25], [40, 25, 20], [30, 30, 20], [60, 20, 25]]);
       return num(`A tank is ${l} cm × ${w} cm × ${h} cm. How many litres does it hold? (1000 cm³ = 1 L)`, (l * w * h) / 1000, [l * w * h / 100, l + w + h]);
@@ -418,6 +433,7 @@ const year7 = {
 
   decimals() {
     const kind = rand(0, 6);
+    noteType(['y7-percent-of', 'y7-percent-increase', 'y7-sale-price', 'y7-share-ratio', 'y7-simplify-ratio', 'y7-multiply-decimals', 'y7-fraction-to-decimal'][kind]);
     if (kind === 0) { const p = pick([15, 35, 45, 60, 85]); const n = rand(2, 9) * 20; return num(`What is ${p}% of ${n}?`, (p * n) / 100, [p + n / 10, (p * n) / 10]); }
     if (kind === 1) { const price = rand(4, 16) * 20; const up = pick([10, 15, 20, 25]); return num(`A $${price} game goes up by ${up}%. What is the new price, in dollars?`, price * (1 + up / 100), [price + up, price * (1 - up / 100)]); }
     if (kind === 2) { const price = rand(3, 12) * 20; const off = pick([20, 25, 30, 40]); return num(`A $${price} jacket is ${off}% off. What is the sale price, in dollars?`, price * (1 - off / 100), [price - off, price * off / 100]); }

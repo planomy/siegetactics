@@ -1,6 +1,7 @@
 import { initDrillSession } from './drill-session.js?v=20261114m1';
 import { legacyLevel } from './difficulty.js?v=20261114k1';
-import { extraLevelQuestion } from './extra-levels.js?v=20261114k1';
+import { extraLevelQuestion } from './extra-levels.js?v=20261114v1';
+import { noteType, labelQuestion } from './maths-skills.js';
 
 /** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */
 
@@ -17,20 +18,20 @@ export function sessionSize(level) {
 
 /** Levels 1 and 6 come from the extra Year 2 / Year 7 bank; 2–5 use the original four levels. @param {DifficultyLevel} level */
 export function makeAnglesQuestion(level) {
-  if (level <= 1 || level >= 6) return extraLevelQuestion('angles', level <= 1 ? 1 : 6);
-  return anglesQuestionCore(legacyLevel(level));
+  const question = level <= 1 || level >= 6 ? extraLevelQuestion('angles', level <= 1 ? 1 : 6) : anglesQuestionCore(legacyLevel(level));
+  return labelQuestion(question, 'angles');
 }
 
 /** @param {DifficultyLevel} level */
 function anglesQuestionCore(level) {
   if (level === 1) {
-    const kind = pick([
+    const kind = noteType(pick([
       'shape-sides',
       'right-angle',
       'square-properties',
       'triangle-type',
       'rectangle-vs-square',
-    ]);
+    ]));
     if (kind === 'shape-sides') {
       const shapes = [
         { name: 'triangle', sides: 3 },
@@ -85,13 +86,13 @@ function anglesQuestionCore(level) {
   }
 
   if (level === 2) {
-    const kind = pick([
+    const kind = noteType(pick([
       'acute-or-obtuse',
       'quarter-turn',
       'compare-right-angle',
       'line-type',
       'protractor-read',
-    ]);
+    ]));
     if (kind === 'acute-or-obtuse') {
       const angle = pick([35, 45, 60, 120, 130, 150]);
       const type = angle < 90 ? 'acute' : 'obtuse';
@@ -149,13 +150,13 @@ function anglesQuestionCore(level) {
   }
 
   if (level === 4) {
-    const kind = pick([
+    const kind = noteType(pick([
       'angle-sum-triangle',
       'angles-around-point',
       'vertically-opposite',
       'corresponding-angles',
       'missing-quadrilateral',
-    ]);
+    ]));
     if (kind === 'angle-sum-triangle') {
       const a = pick([35, 40, 45, 50, 60, 70]);
       const b = pick([40, 50, 55, 60, 65]);
@@ -205,13 +206,13 @@ function anglesQuestionCore(level) {
     };
   }
 
-  const kind = pick([
+  const kind = noteType(pick([
     'straight-line',
     'full-turn',
     'missing-quadrilateral',
     'reflex',
     'symmetry',
-  ]);
+  ]));
   if (kind === 'straight-line') {
     const a = pick([35, 42, 55, 68, 72]);
     const b = 180 - a;

@@ -1,4 +1,5 @@
 import { ECONOMY } from './economy.js';
+import { labelQuestion } from './maths-skills.js';
 import { GATE, tableKey } from './training-gate.js?v=20261114n1';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
@@ -47,14 +48,14 @@ export function timesConfigForLevel(level) {
 /**
  * @param {number} table 2–12, or 0 for mixed
  * @param {DifficultyLevel} level
- * @returns {{ a: number, b: number, answer: number }}
+ * @returns {{ a: number, b: number, answer: number, type: string, skill: string }}
  */
 export function makeTimesQuestion(table, level = 3) {
   const cfg = timesConfigForLevel(level);
   const pick = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
   const a = table > 0 ? table : pick(cfg.tables[0], cfg.tables[cfg.tables.length - 1]);
   const b = pick(cfg.multMin, cfg.multMax);
-  return { a, b, answer: a * b };
+  return labelQuestion({ a, b, answer: a * b }, 'times-tables', `table-${a}`);
 }
 
 /** @param {number} correct */

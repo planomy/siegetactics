@@ -1,3 +1,5 @@
+import { withSkill } from './maths-skills.js';
+
 /**
  * Maths Quest — problem-solving set bank.
  *
@@ -14,6 +16,8 @@
  *   options?: { label: string, value: number|string }[],
  *   answer: number|string,
  *   hint?: string,
+ *   skill?: string,
+ *   type?: string,
  * }} QuestProblem
  *
  * @typedef {{
@@ -35,6 +39,7 @@ export const QUEST_SETS = [
     problems: [
       {
         prompt: 'Granny sees 4 aliens on the left fence and 3 on the right. How many aliens in total?',
+        skill: 'operations.addition',
         kind: 'choice',
         options: [
           { label: '6', value: 6 },
@@ -46,12 +51,14 @@ export const QUEST_SETS = [
       },
       {
         prompt: 'What number comes next? 5, 10, 15, 20, __',
+        skill: 'number.counting',
         kind: 'numeric',
         answer: 25,
         hint: 'Add the same amount each time.',
       },
       {
         prompt: 'A turret costs 10 coins. You buy 2. How many coins do you spend?',
+        skill: 'money.calculate',
         kind: 'choice',
         options: [
           { label: '12', value: 12 },
@@ -63,6 +70,7 @@ export const QUEST_SETS = [
       },
       {
         prompt: 'Which shape has 4 equal sides?',
+        skill: 'shape.properties',
         kind: 'choice',
         options: [
           { label: 'Triangle', value: 'triangle' },
@@ -74,11 +82,13 @@ export const QUEST_SETS = [
       },
       {
         prompt: 'Half of 18 is __',
+        skill: 'fractions.of-amount',
         kind: 'numeric',
         answer: 9,
       },
       {
         prompt: 'Aliens march in pairs. 6 pairs pass the gate. How many aliens?',
+        skill: 'operations.multiplication',
         kind: 'choice',
         options: [
           { label: '8', value: 8 },
@@ -90,11 +100,13 @@ export const QUEST_SETS = [
       },
       {
         prompt: '3 × 4 = ?',
+        skill: 'operations.times-tables',
         kind: 'numeric',
         answer: 12,
       },
       {
         prompt: 'You have 15 bolts. Granny gives you 6 more. How many now?',
+        skill: 'operations.addition',
         kind: 'choice',
         options: [
           { label: '19', value: 19 },
@@ -106,6 +118,7 @@ export const QUEST_SETS = [
       },
       {
         prompt: 'Odd one out: 2, 4, 6, 9',
+        skill: 'number.properties',
         kind: 'choice',
         options: [
           { label: '2', value: 2 },
@@ -118,6 +131,7 @@ export const QUEST_SETS = [
       },
       {
         prompt: 'A fence section is 5 m long. How long are 3 sections end to end?',
+        skill: 'length.calculate',
         kind: 'numeric',
         answer: 15,
         hint: 'Multiply length by number of sections.',
@@ -132,11 +146,13 @@ export const QUEST_SETS = [
     problems: [
       {
         prompt: 'Radar shows 24 aliens split equally into 3 squads. How many per squad?',
+        skill: 'operations.division',
         kind: 'numeric',
         answer: 8,
       },
       {
         prompt: 'Pattern: 3, 6, 12, 24, __. What comes next?',
+        skill: 'number.counting',
         kind: 'choice',
         options: [
           { label: '30', value: 30 },
@@ -149,11 +165,13 @@ export const QUEST_SETS = [
       },
       {
         prompt: 'A box holds 8 cupcakes. Granny loads 5 boxes for the nuke cache. Total cupcakes?',
+        skill: 'operations.multiplication',
         kind: 'numeric',
         answer: 40,
       },
       {
         prompt: 'Which fraction is the same as 1/2?',
+        skill: 'fractions.equivalence',
         kind: 'choice',
         options: [
           { label: '2/5', value: '2/5' },
@@ -165,12 +183,14 @@ export const QUEST_SETS = [
       },
       {
         prompt: 'Turret A fires every 4 s. Turret B every 6 s. They fire together now — in how many seconds next?',
+        skill: 'number.properties',
         kind: 'numeric',
         answer: 12,
         hint: 'Find a number both 4 and 6 divide into.',
       },
       {
         prompt: 'Perimeter of a square with side 7 cm?',
+        skill: 'length.perimeter',
         kind: 'choice',
         options: [
           { label: '14 cm', value: 14 },
@@ -182,16 +202,19 @@ export const QUEST_SETS = [
       },
       {
         prompt: '847 − 259 = ?',
+        skill: 'operations.subtraction',
         kind: 'numeric',
         answer: 588,
       },
       {
         prompt: 'Three friends share 45 coins equally. Each gets __ coins.',
+        skill: 'operations.division',
         kind: 'numeric',
         answer: 15,
       },
       {
         prompt: 'Logic: All scouts wear helmets. Zara is a scout. What must be true?',
+        skill: 'algebra.logic',
         kind: 'choice',
         options: [
           { label: 'Zara wears a helmet', value: 'helmet' },
@@ -203,6 +226,7 @@ export const QUEST_SETS = [
       },
       {
         prompt: 'A recipe needs 250 mL milk. You make 4 batches. Total milk (mL)?',
+        skill: 'mass.calculate',
         kind: 'numeric',
         answer: 1000,
       },
@@ -216,17 +240,20 @@ export const QUEST_SETS = [
     problems: [
       {
         prompt: 'Alien A arrives every 8 s, Alien B every 12 s. Both spawn at 0 s. Next time together (after 0)?',
+        skill: 'number.properties',
         kind: 'numeric',
         answer: 24,
       },
       {
         prompt: 'A number is doubled, then 7 is added. The result is 31. What was the number?',
+        skill: 'algebra.equations',
         kind: 'numeric',
         answer: 12,
         hint: 'Work backwards: subtract 7, then halve.',
       },
       {
         prompt: 'Three turrets in a row: left range 90, middle 110, right 90. An alien walks the centre lane. Which turrets can hit it at the midpoint?',
+        skill: 'algebra.logic',
         kind: 'choice',
         options: [
           { label: 'Left only', value: 'left' },
@@ -239,16 +266,19 @@ export const QUEST_SETS = [
       },
       {
         prompt: '25% of 240 = ?',
+        skill: 'percent.of-amount',
         kind: 'numeric',
         answer: 60,
       },
       {
         prompt: 'Sequence: 1, 1, 2, 3, 5, 8, __ (each term is the sum of the two before it)',
+        skill: 'number.counting',
         kind: 'numeric',
         answer: 13,
       },
       {
         prompt: 'Four boxes: red, blue, green, yellow. Red is left of blue. Green is right of yellow. Yellow is left of red. Order left → right?',
+        skill: 'algebra.logic',
         kind: 'choice',
         options: [
           { label: 'Yellow, Red, Blue, Green', value: 'yrbg' },
@@ -260,16 +290,19 @@ export const QUEST_SETS = [
       },
       {
         prompt: '3.45 + 2.7 = ? (give your answer as a decimal)',
+        skill: 'decimals.operations',
         kind: 'numeric',
         answer: 6.15,
       },
       {
         prompt: 'A map scale is 1 cm : 5 m. Two trees are 4 cm apart on the map. Real distance (m)?',
+        skill: 'length.scale',
         kind: 'numeric',
         answer: 20,
       },
       {
         prompt: 'Logic: If it rains, practice moves indoors. Practice is outdoors. What can you conclude?',
+        skill: 'algebra.logic',
         kind: 'choice',
         options: [
           { label: 'It is raining', value: 'rain' },
@@ -282,6 +315,7 @@ export const QUEST_SETS = [
       },
       {
         prompt: 'Place value: 4 thousands, 0 hundreds, 6 tens, 3 ones. The number is __',
+        skill: 'number.place-value',
         kind: 'numeric',
         answer: 4063,
       },
@@ -348,18 +382,18 @@ function makeLevel1Pool() {
   const ones = rand(1, 9);
   const metres = rand(1, 8);
   return [
-    numeric(`Granny has ${a} bolts and finds ${b} more. How many bolts altogether?`, a + b),
-    numeric(`There are ${large} aliens. ${small} retreat. How many remain?`, large - small),
-    numericChoice(`${table} squads have ${factor} aliens each. How many aliens?`, table * factor, [table + factor, table * factor + table, table * factor - table]),
-    numeric(`${divisor * quotient} cupcakes are shared equally between ${divisor} defenders. How many each?`, quotient),
-    numeric(`What is half of ${half * 2}?`, half),
-    numericChoice(`What is one quarter of ${quarter * 4}?`, quarter, [quarter * 2, quarter + 4, quarter * 4]),
-    numeric(`A square shield has sides of ${side} cm. What is its perimeter in cm?`, side * 4, 'A square has four equal sides.'),
-    numeric(`A repair kit costs $${dollars}. Granny buys 3. What is the total cost in dollars?`, dollars * 3),
-    numericChoice(`Training starts at ${hour}:00 and lasts 2 hours. What hour does it finish?`, hour + 2, [hour + 1, hour + 3, hour + 4]),
-    numeric(`Continue the pattern: ${start}, ${start + step}, ${start + step * 2}, ${start + step * 3}, __`, start + step * 4, `Add ${step} each time.`),
-    numeric(`What number has ${hundreds} hundreds, ${tens} tens and ${ones} ones?`, hundreds * 100 + tens * 10 + ones),
-    numeric(`${metres} metres equals how many centimetres?`, metres * 100),
+    withSkill('lvl2-add-story', 'operations.addition', numeric(`Granny has ${a} bolts and finds ${b} more. How many bolts altogether?`, a + b)),
+    withSkill('lvl2-take-away-story', 'operations.subtraction', numeric(`There are ${large} aliens. ${small} retreat. How many remain?`, large - small)),
+    withSkill('lvl2-equal-groups', 'operations.multiplication', numericChoice(`${table} squads have ${factor} aliens each. How many aliens?`, table * factor, [table + factor, table * factor + table, table * factor - table])),
+    withSkill('lvl2-share-equally', 'operations.division', numeric(`${divisor * quotient} cupcakes are shared equally between ${divisor} defenders. How many each?`, quotient)),
+    withSkill('lvl2-half-of', 'fractions.of-amount', numeric(`What is half of ${half * 2}?`, half)),
+    withSkill('lvl2-quarter-of', 'fractions.of-amount', numericChoice(`What is one quarter of ${quarter * 4}?`, quarter, [quarter * 2, quarter + 4, quarter * 4])),
+    withSkill('lvl2-square-perimeter', 'length.perimeter', numeric(`A square shield has sides of ${side} cm. What is its perimeter in cm?`, side * 4, 'A square has four equal sides.')),
+    withSkill('lvl2-total-cost', 'money.calculate', numeric(`A repair kit costs $${dollars}. Granny buys 3. What is the total cost in dollars?`, dollars * 3)),
+    withSkill('lvl2-finish-hour', 'time.duration', numericChoice(`Training starts at ${hour}:00 and lasts 2 hours. What hour does it finish?`, hour + 2, [hour + 1, hour + 3, hour + 4])),
+    withSkill('lvl2-continue-pattern', 'number.counting', numeric(`Continue the pattern: ${start}, ${start + step}, ${start + step * 2}, ${start + step * 3}, __`, start + step * 4, `Add ${step} each time.`)),
+    withSkill('lvl2-hundreds-tens-ones', 'number.place-value', numeric(`What number has ${hundreds} hundreds, ${tens} tens and ${ones} ones?`, hundreds * 100 + tens * 10 + ones)),
+    withSkill('lvl2-metres-to-cm', 'length.convert', numeric(`${metres} metres equals how many centimetres?`, metres * 100)),
   ];
 }
 
@@ -384,18 +418,18 @@ function makeLevel2Pool() {
   const patternStart = rand(2, 12);
   const patternStep = rand(4, 12);
   return [
-    numeric(`${a} defenders join ${b} defenders. How many are there altogether?`, a + b),
-    numeric(`${large} aliens were detected. ${small} were stopped. How many remain?`, large - small),
-    numericChoice(`${table} rows hold ${factor} traps each. How many traps?`, table * factor, [table + factor, table * factor + table, table * factor - table]),
-    numeric(`${divisor * quotient} coins are shared equally among ${divisor} teams. How many per team?`, quotient),
-    numeric(`What is 1/${fractionDenom} of ${fractionDenom * fractionPart}?`, fractionPart),
-    numericChoice(`Which numerator makes ?/8 equivalent to 1/2?`, 4, [2, 3, 6]),
-    numeric(`A rectangle is ${width} m by ${height} m. What is its perimeter in metres?`, 2 * (width + height)),
-    numeric(`A supply mat is ${width} m long and ${height} m wide. What is its area in square metres?`, width * height),
-    numericChoice(`Patrol begins at ${startHour}:15 and lasts 2 hours 30 minutes. What hour appears in the finish time?`, startHour + 2, [startHour + 1, startHour + 3, startHour + 4], 'The minutes finish at :45.'),
-    numeric(`${metres} m ${extraCm} cm equals how many centimetres?`, metres * 100 + extraCm),
-    numeric(`Continue the pattern: ${patternStart}, ${patternStart + patternStep}, ${patternStart + patternStep * 2}, __`, patternStart + patternStep * 3),
-    numeric(`Round ${roundBase} to the nearest hundred.`, Math.round(roundBase / 100) * 100),
+    withSkill('lvl3-add-story', 'operations.addition', numeric(`${a} defenders join ${b} defenders. How many are there altogether?`, a + b)),
+    withSkill('lvl3-take-away-story', 'operations.subtraction', numeric(`${large} aliens were detected. ${small} were stopped. How many remain?`, large - small)),
+    withSkill('lvl3-rows-of', 'operations.multiplication', numericChoice(`${table} rows hold ${factor} traps each. How many traps?`, table * factor, [table + factor, table * factor + table, table * factor - table])),
+    withSkill('lvl3-share-coins', 'operations.division', numeric(`${divisor * quotient} coins are shared equally among ${divisor} teams. How many per team?`, quotient)),
+    withSkill('lvl3-unit-fraction-of', 'fractions.of-amount', numeric(`What is 1/${fractionDenom} of ${fractionDenom * fractionPart}?`, fractionPart)),
+    withSkill('lvl3-equivalent-eighths', 'fractions.equivalence', numericChoice(`Which numerator makes ?/8 equivalent to 1/2?`, 4, [2, 3, 6])),
+    withSkill('lvl3-rectangle-perimeter', 'length.perimeter', numeric(`A rectangle is ${width} m by ${height} m. What is its perimeter in metres?`, 2 * (width + height))),
+    withSkill('lvl3-rectangle-area', 'area.calculate', numeric(`A supply mat is ${width} m long and ${height} m wide. What is its area in square metres?`, width * height)),
+    withSkill('lvl3-finish-hour', 'time.duration', numericChoice(`Patrol begins at ${startHour}:15 and lasts 2 hours 30 minutes. What hour appears in the finish time?`, startHour + 2, [startHour + 1, startHour + 3, startHour + 4], 'The minutes finish at :45.')),
+    withSkill('lvl3-m-and-cm-to-cm', 'length.convert', numeric(`${metres} m ${extraCm} cm equals how many centimetres?`, metres * 100 + extraCm)),
+    withSkill('lvl3-continue-pattern', 'number.counting', numeric(`Continue the pattern: ${patternStart}, ${patternStart + patternStep}, ${patternStart + patternStep * 2}, __`, patternStart + patternStep * 3)),
+    withSkill('lvl3-round-hundred', 'number.place-value', numeric(`Round ${roundBase} to the nearest hundred.`, Math.round(roundBase / 100) * 100)),
   ];
 }
 
@@ -429,18 +463,18 @@ function makeLevel3Pool() {
   const add = rand(3, 15);
   const itemPrice = rand(8, 20);
   return [
-    numeric(`${whole1}.${tenths1} + ${whole2}.${tenths2} = ?`, Number((whole1 + tenths1 / 10 + whole2 + tenths2 / 10).toFixed(1))),
-    numeric(`What is 25% of ${percentBase}?`, percentBase / 4),
-    numeric(`What is ${fractionNumer}/${fractionDenom} of ${fractionDenom * fractionUnit}?`, fractionNumer * fractionUnit),
-    numeric(`Calculate ${a} + ${b} × ${c}.`, a + b * c, 'Multiply before adding.'),
-    numeric(`A rectangle is ${length} m by ${width} m. What is its area in square metres?`, length * width),
-    numeric(`A crate is ${length} cm long, ${width} cm wide and ${height} cm high. What is its volume in cubic centimetres?`, length * width * height),
-    numeric(`Three repair kits cost $${itemPrice} each. How much change is left from $100?`, 100 - itemPrice * 3),
-    numeric(`A map uses 1 cm : ${scale} m. Two points are ${mapCm} cm apart. What is the real distance in metres?`, scale * mapCm),
-    numeric(`The scores are ${mean - offsets[0]}, ${mean - offsets[1]}, ${mean + offsets[0]} and ${mean + offsets[1]}. What is the mean?`, mean),
-    numeric(`A drill starts at 9:${String(startMinutes).padStart(2, '0')} and finishes at ${finishTime}. How many minutes does it last?`, elapsed),
-    numericChoice(`In 34.${decimalDigit}2, what is the value of the digit ${decimalDigit}?`, decimalDigit / 10, [decimalDigit, decimalDigit / 100, decimalDigit * 10]),
-    numeric(`A number is multiplied by ${multiplier}, then ${add} is added. The result is ${unknown * multiplier + add}. What was the number?`, unknown, `Subtract ${add}, then divide by ${multiplier}.`),
+    withSkill('lvl4-add-decimals', 'decimals.operations', numeric(`${whole1}.${tenths1} + ${whole2}.${tenths2} = ?`, Number((whole1 + tenths1 / 10 + whole2 + tenths2 / 10).toFixed(1)))),
+    withSkill('lvl4-percent-25', 'percent.of-amount', numeric(`What is 25% of ${percentBase}?`, percentBase / 4)),
+    withSkill('lvl4-fraction-of', 'fractions.of-amount', numeric(`What is ${fractionNumer}/${fractionDenom} of ${fractionDenom * fractionUnit}?`, fractionNumer * fractionUnit)),
+    withSkill('lvl4-multiply-first', 'operations.order', numeric(`Calculate ${a} + ${b} × ${c}.`, a + b * c, 'Multiply before adding.')),
+    withSkill('lvl4-rectangle-area', 'area.calculate', numeric(`A rectangle is ${length} m by ${width} m. What is its area in square metres?`, length * width)),
+    withSkill('lvl4-crate-volume', 'volume.calculate', numeric(`A crate is ${length} cm long, ${width} cm wide and ${height} cm high. What is its volume in cubic centimetres?`, length * width * height)),
+    withSkill('lvl4-change-from-100', 'money.calculate', numeric(`Three repair kits cost $${itemPrice} each. How much change is left from $100?`, 100 - itemPrice * 3)),
+    withSkill('lvl4-map-scale', 'length.scale', numeric(`A map uses 1 cm : ${scale} m. Two points are ${mapCm} cm apart. What is the real distance in metres?`, scale * mapCm)),
+    withSkill('lvl4-mean', 'statistics.averages', numeric(`The scores are ${mean - offsets[0]}, ${mean - offsets[1]}, ${mean + offsets[0]} and ${mean + offsets[1]}. What is the mean?`, mean)),
+    withSkill('lvl4-elapsed-minutes', 'time.duration', numeric(`A drill starts at 9:${String(startMinutes).padStart(2, '0')} and finishes at ${finishTime}. How many minutes does it last?`, elapsed)),
+    withSkill('lvl4-tenths-value', 'decimals.place-value', numericChoice(`In 34.${decimalDigit}2, what is the value of the digit ${decimalDigit}?`, decimalDigit / 10, [decimalDigit, decimalDigit / 100, decimalDigit * 10])),
+    withSkill('lvl4-work-backwards', 'algebra.equations', numeric(`A number is multiplied by ${multiplier}, then ${add} is added. The result is ${unknown * multiplier + add}. What was the number?`, unknown, `Subtract ${add}, then divide by ${multiplier}.`)),
   ];
 }
 
@@ -472,18 +506,18 @@ function makeLevel4Pool() {
   const add = rand(5, 20);
   const decimalDigit = rand(1, 9);
   return [
-    numeric(`The temperature is ${startTemp}°C and rises by ${rise}°. What is the new temperature?`, startTemp + rise),
-    numeric(`${decimalA} × ${decimalB} = ?`, Number((decimalA * decimalB).toFixed(1))),
-    numeric(`What is 20% of ${percentBase}?`, percentBase / 5),
-    numericChoice('1/2 + 1/4 is how many quarters?', 3, [2, 4, 6]),
-    numeric(`Calculate ${a} × (${b} + ${c}) − ${d}.`, a * (b + c) - d, 'Work inside the brackets first.'),
-    numericChoice('Which number is prime?', 29, [27, 33, 39]),
-    numeric(`A rectangular defence zone is ${length} m by ${width} m. What is its area in square metres?`, length * width),
-    numeric(`${(ratioA + ratioB) * ratioUnit} supplies are shared in the ratio ${ratioA}:${ratioB}. How many go to the first group?`, ratioA * ratioUnit),
-    numeric(`The scores are ${mean - spread}, ${mean}, ${mean + spread} and ${mean + spread * 2}. What is the range?`, spread * 3),
-    numeric(`A mission starts at ${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')} and finishes at ${finishTime}. How many minutes does it last?`, elapsed),
-    numeric(`A number is multiplied by ${multiplier}, then ${add} is added. The result is ${unknown * multiplier + add}. What was the number?`, unknown, `Subtract ${add}, then divide by ${multiplier}.`),
-    numericChoice(`In 52.4${decimalDigit}, what is the value of the digit ${decimalDigit}?`, decimalDigit / 100, [decimalDigit, decimalDigit / 10, decimalDigit * 10]),
+    withSkill('lvl5-temperature-rise', 'number.integers', numeric(`The temperature is ${startTemp}°C and rises by ${rise}°. What is the new temperature?`, startTemp + rise)),
+    withSkill('lvl5-multiply-decimal', 'decimals.operations', numeric(`${decimalA} × ${decimalB} = ?`, Number((decimalA * decimalB).toFixed(1)))),
+    withSkill('lvl5-percent-20', 'percent.of-amount', numeric(`What is 20% of ${percentBase}?`, percentBase / 5)),
+    withSkill('lvl5-add-quarters', 'fractions.add-subtract', numericChoice('1/2 + 1/4 is how many quarters?', 3, [2, 4, 6])),
+    withSkill('lvl5-brackets', 'operations.order', numeric(`Calculate ${a} × (${b} + ${c}) − ${d}.`, a * (b + c) - d, 'Work inside the brackets first.')),
+    withSkill('lvl5-prime', 'number.properties', numericChoice('Which number is prime?', 29, [27, 33, 39])),
+    withSkill('lvl5-zone-area', 'area.calculate', numeric(`A rectangular defence zone is ${length} m by ${width} m. What is its area in square metres?`, length * width)),
+    withSkill('lvl5-share-ratio', 'ratio.share', numeric(`${(ratioA + ratioB) * ratioUnit} supplies are shared in the ratio ${ratioA}:${ratioB}. How many go to the first group?`, ratioA * ratioUnit)),
+    withSkill('lvl5-range', 'statistics.averages', numeric(`The scores are ${mean - spread}, ${mean}, ${mean + spread} and ${mean + spread * 2}. What is the range?`, spread * 3)),
+    withSkill('lvl5-elapsed-24h', 'time.duration', numeric(`A mission starts at ${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')} and finishes at ${finishTime}. How many minutes does it last?`, elapsed)),
+    withSkill('lvl5-work-backwards', 'algebra.equations', numeric(`A number is multiplied by ${multiplier}, then ${add} is added. The result is ${unknown * multiplier + add}. What was the number?`, unknown, `Subtract ${add}, then divide by ${multiplier}.`)),
+    withSkill('lvl5-hundredths-value', 'decimals.place-value', numericChoice(`In 52.4${decimalDigit}, what is the value of the digit ${decimalDigit}?`, decimalDigit / 100, [decimalDigit, decimalDigit / 10, decimalDigit * 10])),
   ];
 }
 
@@ -503,18 +537,18 @@ function makeYear2Pool() {
   const step = [2, 5, 10][rand(0, 2)];
   const start = step * rand(1, 4);
   return [
-    numeric(`Granny sees ${a} aliens on the fence and ${b} on the shed. How many aliens altogether?`, a + b),
-    numeric(`There are ${big} cupcakes. The aliens steal ${take}. How many are left?`, big - take),
-    numericChoice(`${groups} spaceships each carry ${each} aliens. How many aliens is that?`, groups * each, [groups + each, groups * each + each, groups * each - 1]),
-    numeric(`Granny shares ${half * 2} cookies equally between 2 robots. How many does each robot get?`, half),
-    numeric(`What number has ${tens} tens and ${ones} ones?`, tens * 10 + ones),
-    numeric(`Granny has ${coins} ten-cent coins. How many cents is that?`, coins * 10),
-    numericChoice(`Patrol starts at ${hour} o'clock and lasts 2 hours. What o'clock does it finish?`, hour + 2, [hour + 1, hour + 3, hour]),
-    numeric(`What comes next? ${start}, ${start + step}, ${start + step * 2}, __`, start + step * 3, `Count on by ${step}s.`),
-    numericChoice('Which number is even?', 14, [7, 13, 21], 'Even numbers end in 0, 2, 4, 6 or 8.'),
-    numeric(`Double ${a} is ?`, a * 2),
-    numeric(`${a} + ? = 10`, 10 - a, 'Think of your number bonds to 10.'),
-    numericChoice('How many sides does a triangle have?', 3, [4, 5, 6]),
+    withSkill('lvl1-add-story', 'operations.addition', numeric(`Granny sees ${a} aliens on the fence and ${b} on the shed. How many aliens altogether?`, a + b)),
+    withSkill('lvl1-take-away-story', 'operations.subtraction', numeric(`There are ${big} cupcakes. The aliens steal ${take}. How many are left?`, big - take)),
+    withSkill('lvl1-equal-groups', 'operations.multiplication', numericChoice(`${groups} spaceships each carry ${each} aliens. How many aliens is that?`, groups * each, [groups + each, groups * each + each, groups * each - 1])),
+    withSkill('lvl1-share-between-2', 'operations.division', numeric(`Granny shares ${half * 2} cookies equally between 2 robots. How many does each robot get?`, half)),
+    withSkill('lvl1-tens-and-ones', 'number.place-value', numeric(`What number has ${tens} tens and ${ones} ones?`, tens * 10 + ones)),
+    withSkill('lvl1-ten-cent-coins', 'money.calculate', numeric(`Granny has ${coins} ten-cent coins. How many cents is that?`, coins * 10)),
+    withSkill('lvl1-finish-hour', 'time.duration', numericChoice(`Patrol starts at ${hour} o'clock and lasts 2 hours. What o'clock does it finish?`, hour + 2, [hour + 1, hour + 3, hour])),
+    withSkill('lvl1-count-on', 'number.counting', numeric(`What comes next? ${start}, ${start + step}, ${start + step * 2}, __`, start + step * 3, `Count on by ${step}s.`)),
+    withSkill('lvl1-even-number', 'number.properties', numericChoice('Which number is even?', 14, [7, 13, 21], 'Even numbers end in 0, 2, 4, 6 or 8.')),
+    withSkill('lvl1-double', 'operations.multiplication', numeric(`Double ${a} is ?`, a * 2)),
+    withSkill('lvl1-make-ten', 'operations.number-bonds', numeric(`${a} + ? = 10`, 10 - a, 'Think of your number bonds to 10.')),
+    withSkill('lvl1-triangle-sides', 'shape.properties', numericChoice('How many sides does a triangle have?', 3, [4, 5, 6])),
   ];
 }
 
@@ -539,18 +573,18 @@ function makeYear7Pool() {
   const hrs = [1.5, 2.5, 3][rand(0, 2)];
   const vals = [rand(2, 6), rand(7, 9), rand(10, 14), rand(15, 19), rand(20, 30)];
   return [
-    numeric(`The temperature is ${cold}°C and drops another ${drop}°. What is it now?`, cold - drop),
-    numeric(`${m}n + ${k} = ${m * n + k}. What is n?`, n, `Subtract ${k}, then divide by ${m}.`),
-    numeric(`If x = ${x}, what is 3x² ?`, 3 * x * x, 'Square x first, then multiply by 3.'),
-    numeric(`A triangular flag has a base of ${base} cm and a height of ${height} cm. What is its area in cm²?`, (base * height) / 2, 'Area = ½ × base × height.'),
-    numeric(`What is ${pct}% of ${pctOf}?`, (pct * pctOf) / 100),
-    numeric(`A $${price} drone is 25% off. What is the sale price in dollars?`, price * 0.75),
-    numeric(`${(ra + rb) * ru} cupcakes are shared in the ratio ${ra}:${rb}. How many are in the larger share?`, rb * ru),
-    numeric(`What is √${sq * sq}?`, sq),
-    numeric(`A rover drives at ${speed} km/h for ${hrs} hours. How many km does it travel?`, speed * hrs),
-    numeric(`The scores are ${vals.join(', ')}. What is the median?`, vals[2], 'Put them in order and find the middle one.'),
-    numericChoice('A fair dice is rolled. What is the chance of rolling an even number?', '1/2', ['1/6', '1/3', '2/3']),
-    numericChoice(`What is ${m * 4} − (−${k})?`, m * 4 + k, [m * 4 - k, -(m * 4 + k), k - m * 4], 'Subtracting a negative is the same as adding.'),
+    withSkill('lvl6-temperature-drop', 'number.integers', numeric(`The temperature is ${cold}°C and drops another ${drop}°. What is it now?`, cold - drop)),
+    withSkill('lvl6-solve-equation', 'algebra.equations', numeric(`${m}n + ${k} = ${m * n + k}. What is n?`, n, `Subtract ${k}, then divide by ${m}.`)),
+    withSkill('lvl6-substitute-square', 'algebra.substitution', numeric(`If x = ${x}, what is 3x² ?`, 3 * x * x, 'Square x first, then multiply by 3.')),
+    withSkill('lvl6-triangle-area', 'area.calculate', numeric(`A triangular flag has a base of ${base} cm and a height of ${height} cm. What is its area in cm²?`, (base * height) / 2, 'Area = ½ × base × height.')),
+    withSkill('lvl6-percent-of', 'percent.of-amount', numeric(`What is ${pct}% of ${pctOf}?`, (pct * pctOf) / 100)),
+    withSkill('lvl6-sale-price', 'percent.change', numeric(`A $${price} drone is 25% off. What is the sale price in dollars?`, price * 0.75)),
+    withSkill('lvl6-share-ratio', 'ratio.share', numeric(`${(ra + rb) * ru} cupcakes are shared in the ratio ${ra}:${rb}. How many are in the larger share?`, rb * ru)),
+    withSkill('lvl6-square-root', 'number.indices', numeric(`What is √${sq * sq}?`, sq)),
+    withSkill('lvl6-speed-distance', 'rates.speed', numeric(`A rover drives at ${speed} km/h for ${hrs} hours. How many km does it travel?`, speed * hrs)),
+    withSkill('lvl6-median', 'statistics.averages', numeric(`The scores are ${vals.join(', ')}. What is the median?`, vals[2], 'Put them in order and find the middle one.')),
+    withSkill('lvl6-dice-chance', 'probability.chance', numericChoice('A fair dice is rolled. What is the chance of rolling an even number?', '1/2', ['1/6', '1/3', '2/3'])),
+    withSkill('lvl6-subtract-negative', 'number.integers', numericChoice(`What is ${m * 4} − (−${k})?`, m * 4 + k, [m * 4 - k, -(m * 4 + k), k - m * 4], 'Subtracting a negative is the same as adding.')),
   ];
 }
 
@@ -596,6 +630,9 @@ export function createQuestSet(level) {
 export function getQuestSetsForLevel(level) {
   return QUEST_SETS.filter((set) => set.level === level - 1);
 }
+
+// Hand-written problems are identified by their set and position.
+for (const set of QUEST_SETS) set.problems.forEach((problem, i) => { problem.type = `maths-quest:${set.id}-${i + 1}`; });
 
 /** @param {string} id */
 export function getQuestSet(id) {

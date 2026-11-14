@@ -1,6 +1,7 @@
 import { ECONOMY } from './economy.js';
 import { legacyLevel } from './difficulty.js?v=20261114k1';
-import { extraLevelQuestion } from './extra-levels.js?v=20261114k1';
+import { extraLevelQuestion } from './extra-levels.js?v=20261114v1';
+import { noteType, labelQuestion } from './maths-skills.js';
 import { GATE } from './training-gate.js?v=20261114n1';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
@@ -24,8 +25,8 @@ function sessionSize(level) {
 
 /** Levels 1 and 6 come from the extra Year 2 / Year 7 bank; 2–5 use the original four levels. @param {DifficultyLevel} level */
 export function makeLengthQuestion(level) {
-  if (level <= 1 || level >= 6) return extraLevelQuestion('measurement-length', level <= 1 ? 1 : 6);
-  return lengthQuestionCore(legacyLevel(level));
+  const question = level <= 1 || level >= 6 ? extraLevelQuestion('measurement-length', level <= 1 ? 1 : 6) : lengthQuestionCore(legacyLevel(level));
+  return labelQuestion(question, 'measurement-length');
 }
 
 /**
@@ -34,7 +35,7 @@ export function makeLengthQuestion(level) {
  */
 function lengthQuestionCore(level) {
   if (level === 1) {
-    const kind = pick(['compare-cm-small', 'compare-m-whole', 'longer-or-shorter', 'join-lengths', 'metre-to-cm']);
+    const kind = noteType(pick(['compare-cm-small', 'compare-m-whole', 'longer-or-shorter', 'join-lengths', 'metre-to-cm']));
     if (kind === 'compare-m-whole') {
       const a = pick([1, 2, 3]);
       const b = a + pick([1, 2]);
@@ -110,7 +111,7 @@ function lengthQuestionCore(level) {
   }
 
   if (level === 2) {
-    const kind = pick(['compare-cm', 'compare-m', 'convert-simple', 'mm-to-cm']);
+    const kind = noteType(pick(['compare-cm', 'compare-m', 'convert-simple', 'mm-to-cm']));
     if (kind === 'compare-cm') {
       const a = pick([25, 34, 45, 56, 67]);
       const b = a + pick([8, 11, 14]);
@@ -173,7 +174,7 @@ function lengthQuestionCore(level) {
   }
 
   if (level === 3) {
-    const kind = pick(['convert-mixed', 'convert-hard', 'perimeter-rect', 'add-lengths', 'mm-to-cm']);
+    const kind = noteType(pick(['convert-mixed', 'convert-hard', 'perimeter-rect', 'add-lengths', 'mm-to-cm']));
     if (kind === 'convert-mixed') {
       const metres = pick([1, 2, 3, 4, 5]);
       const extraCm = pick([15, 25, 40, 50, 75]);
@@ -246,7 +247,7 @@ function lengthQuestionCore(level) {
     };
   }
 
-  const kind = pick(['kilometres', 'decimal-metres', 'area-rect', 'fence-gap', 'mixed-compare']);
+  const kind = noteType(pick(['kilometres', 'decimal-metres', 'area-rect', 'fence-gap', 'mixed-compare']));
   if (kind === 'kilometres') {
     const km = pick([2, 3, 4, 6, 8, 12]);
     return {

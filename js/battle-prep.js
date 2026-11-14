@@ -1,11 +1,12 @@
-import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20261114m1';
-import { makePlaceValueVariant } from './missions-data.js?v=20261114k1';
-import { makeLengthQuestion } from './measurement-length.js?v=20261114m1';
-import { makeFractionQuestion } from './fractions.js?v=20261114m1';
-import { makeAnglesQuestion } from './angles-shapes.js?v=20261114m1';
-import { makeExpandedQuestion } from './expanded-maths.js?v=20261114m1';
+import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20261114v1';
+import { makePlaceValueVariant } from './missions-data.js?v=20261114v1';
+import { makeLengthQuestion } from './measurement-length.js?v=20261114v1';
+import { makeFractionQuestion } from './fractions.js?v=20261114v1';
+import { makeAnglesQuestion } from './angles-shapes.js?v=20261114v1';
+import { makeExpandedQuestion } from './expanded-maths.js?v=20261114v1';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
+import { labelQuestion } from './maths-skills.js';
 
 export const PREP_MODULES = [
   { id: 'times-tables', title: 'Target Times Table', symbol: '×' },
@@ -56,33 +57,32 @@ function timesQuestion(level, cycle) {
   if (level >= 6 && Math.random() < 0.25) {
     const n = 2 + Math.floor(Math.random() * 14);
     return Math.random() < 0.5
-      ? { prompt: `${n}² = ?`, answer: n * n, options: numberOptions(n * n), skill: 'square numbers' }
-      : { prompt: `√${n * n} = ?`, answer: n, options: numberOptions(n), skill: 'square roots' };
+      ? labelQuestion({ prompt: `${n}² = ?`, answer: n * n, options: numberOptions(n * n) }, 'times-tables', 'square-number')
+      : labelQuestion({ prompt: `√${n * n} = ?`, answer: n, options: numberOptions(n) }, 'times-tables', 'square-root');
   }
   if (level >= 5) {
     const kind = Math.floor(Math.random() * 3);
     if (kind === 1) {
-      return {
+      return labelQuestion({
         prompt: `${fact.answer} ÷ ${fact.a} = ?`,
         answer: fact.b,
         options: numberOptions(fact.b),
-        skill: 'division fact',
-      };
+      }, 'times-tables', 'division-fact');
     }
     if (kind === 2) {
-      return {
+      return labelQuestion({
         prompt: `${fact.a} × ? = ${fact.answer}`,
         answer: fact.b,
         options: numberOptions(fact.b),
-        skill: 'missing factor',
-      };
+      }, 'times-tables', 'missing-factor');
     }
   }
   return {
     prompt: `${fact.a} × ${fact.b} = ?`,
     answer: fact.answer,
     options: numberOptions(fact.answer),
-    skill: targetTable > 0 ? `×${targetTable}` : 'mixed × facts',
+    type: fact.type,
+    skill: fact.skill,
   };
 }
 
@@ -91,11 +91,11 @@ function placeValueQuestion(level) {
   const mission = makePlaceValueVariant(level);
   const slot = mission.slots[Math.floor(Math.random() * mission.slots.length)];
   const answer = Number(slot.options[slot.correctIndex]);
-  return {
+  return labelQuestion({
     prompt: `In ${mission.lockIn.value.toLocaleString()}, what is the value of the ${slot.role.toLowerCase()} digit?`,
     answer,
     options: shuffle(slot.options.map((value) => ({ label: Number(value).toLocaleString(), value: Number(value) }))),
-  };
+  }, 'place-value-siege', 'digit-value');
 }
 
 /** @param {string} moduleId @param {number} level @param {number} cycle */

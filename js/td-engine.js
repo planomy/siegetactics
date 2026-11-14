@@ -149,7 +149,7 @@ const RARE_DRAW = { rare: 2.6, legendary: 5.5 };
 /**
  * @param {HTMLCanvasElement} canvas
  * @param {{
- *   mission: import('./missions-data.js?v=20261114k1').Mission,
+ *   mission: import('./missions-data.js?v=20261114v1').Mission,
  *   getBudget: () => number,
  *   trySpend: (type: string) => boolean,
  *   onMissionEnd: (stats: { kills: number, leaks: number, won: boolean, maxLeaks: number, wavesCleared: number, bonusKills?: number, bonusPlayed?: boolean }) => void,

@@ -1,6 +1,7 @@
 import { initDrillSession } from './drill-session.js?v=20261114m1';
 import { legacyLevel } from './difficulty.js?v=20261114k1';
-import { extraLevelQuestion } from './extra-levels.js?v=20261114k1';
+import { extraLevelQuestion } from './extra-levels.js?v=20261114v1';
+import { noteType, labelQuestion } from './maths-skills.js';
 
 /** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */
 
@@ -35,20 +36,20 @@ function compareFracs(a, b) {
 
 /** Levels 1 and 6 come from the extra Year 2 / Year 7 bank; 2–5 use the original four levels. @param {DifficultyLevel} level */
 export function makeFractionQuestion(level) {
-  if (level <= 1 || level >= 6) return extraLevelQuestion('fractions', level <= 1 ? 1 : 6);
-  return fractionQuestionCore(legacyLevel(level));
+  const question = level <= 1 || level >= 6 ? extraLevelQuestion('fractions', level <= 1 ? 1 : 6) : fractionQuestionCore(legacyLevel(level));
+  return labelQuestion(question, 'fractions');
 }
 
 /** @param {DifficultyLevel} level */
 function fractionQuestionCore(level) {
   if (level === 1) {
-    const kind = pick([
+    const kind = noteType(pick([
       'half-vs-quarter',
       'unit-compare-same-denom',
       'half-of-number',
       'quarter-of-number',
       'shaded-parts',
-    ]);
+    ]));
     if (kind === 'half-vs-quarter') {
       const bigger = compareFracs({ n: 1, d: 2 }, { n: 1, d: 4 });
       return {
@@ -114,13 +115,13 @@ function fractionQuestionCore(level) {
   }
 
   if (level === 2) {
-    const kind = pick([
+    const kind = noteType(pick([
       'equivalent',
       'same-denom-add',
       'compare-same-denom',
       'third-of-number',
       'missing-numerator',
-    ]);
+    ]));
     if (kind === 'equivalent') {
       const pairs = [
         { num: 1, den: 2, eq: 2, eqDen: 4 },
@@ -183,13 +184,13 @@ function fractionQuestionCore(level) {
   }
 
   if (level === 4) {
-    const kind = pick([
+    const kind = noteType(pick([
       'add-related-denom',
       'subtract-related-denom',
       'fraction-of-quantity',
       'order-fractions',
       'mixed-number',
-    ]);
+    ]));
     if (kind === 'add-related-denom') {
       const problem = pick([
         { prompt: '1/2 + 1/4 = ?', answer: '3/4', wrongs: ['2/6', '2/4', '1/8'] },
@@ -231,13 +232,13 @@ function fractionQuestionCore(level) {
     return fractionChoice('1 1/2 + 3/4 = ?', '2 1/4', ['1 4/6', '1 3/4', '2 3/4']);
   }
 
-  const kind = pick([
+  const kind = noteType(pick([
     'compare-diff-denom',
     'add-same-denom',
     'fraction-of-quantity',
     'order-on-numberline',
     'subtract-same-denom',
-  ]);
+  ]));
   if (kind === 'compare-diff-denom') {
     const pairs = [
       [{ n: 1, d: 2 }, { n: 3, d: 8 }],

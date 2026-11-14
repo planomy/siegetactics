@@ -1,10 +1,10 @@
-import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261114k1';
-import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261114n1';
+import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261114v1';
+import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261114v1';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261113n1';
 import { renderArmory } from './armory.js?v=20261113a6';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel } from './turret-upgrades.js?v=20261112a2';
-import { createTDEngine } from './td-engine.js?v=20261114t3';
+import { createTDEngine } from './td-engine.js?v=20261114v1';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
 import { createAudio } from './audio.js?v=20261114s1';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
@@ -33,13 +33,13 @@ import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './en
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261114n1';
 import { initHowToPlay } from './how-to-play.js?v=20261114n1';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
-import { initTimesTables } from './times-tables.js?v=20261114m1';
-import { initMeasurementLength } from './measurement-length.js?v=20261114m1';
-import { initFractions } from './fractions.js?v=20261114m1';
-import { initAnglesShapes } from './angles-shapes.js?v=20261114m1';
-import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261114m1';
-import { initExpandedMath } from './expanded-maths.js?v=20261114m1';
-import { initBattlePrep } from './battle-prep.js?v=20261114n1';
+import { initTimesTables } from './times-tables.js?v=20261114v1';
+import { initMeasurementLength } from './measurement-length.js?v=20261114v1';
+import { initFractions } from './fractions.js?v=20261114v1';
+import { initAnglesShapes } from './angles-shapes.js?v=20261114v1';
+import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261114v1';
+import { initExpandedMath } from './expanded-maths.js?v=20261114v1';
+import { initBattlePrep } from './battle-prep.js?v=20261114v1';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js?v=20261114k1';
 import {
   normalizeLevelMastery,

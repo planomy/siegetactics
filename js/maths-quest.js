@@ -1,6 +1,6 @@
 import { ECONOMY } from './economy.js';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
-import { createQuestSet, getQuestSetsForLevel } from './maths-quest-data.js?v=20261114k1';
+import { createQuestSet, getQuestSetsForLevel } from './maths-quest-data.js?v=20261114v1';
 import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
 import { renderDoneActions, bindDoneActions } from './done-actions.js';
 
@@ -30,7 +30,7 @@ export const MATHS_QUEST = {
 export function initMathsQuest(host, callbacks) {
   /** @type {QuestPhase} */
   let phase = 'pick';
-  /** @type {import('./maths-quest-data.js?v=20261114k1').QuestSet|null} */
+  /** @type {import('./maths-quest-data.js?v=20261114v1').QuestSet|null} */
   let activeSet = null;
   let index = 0;
   let correct = 0;
@@ -48,7 +48,7 @@ export function initMathsQuest(host, callbacks) {
   const classicSets = getQuestSetsForLevel(callbacks.difficultyLevel);
   let generatedSet = createQuestSet(callbacks.difficultyLevel);
 
-  /** @param {import('./maths-quest-data.js?v=20261114k1').QuestSet} set */
+  /** @param {import('./maths-quest-data.js?v=20261114v1').QuestSet} set */
   function startSet(set) {
     activeSet = { ...set, problems: set.problems.map((problem) => sanitizeQuestionOptions(problem)) };
     clearAnswerTimer();
@@ -197,7 +197,7 @@ export function initMathsQuest(host, callbacks) {
   }
 
   /**
-   * @param {import('./maths-quest-data.js?v=20261114k1').QuestProblem} problem
+   * @param {import('./maths-quest-data.js?v=20261114v1').QuestProblem} problem
    * @param {string} picked
    * @param {boolean} right
    */
@@ -214,7 +214,7 @@ export function initMathsQuest(host, callbacks) {
 
   /**
    * @param {boolean} right
-   * @param {import('./maths-quest-data.js?v=20261114k1').QuestProblem} problem
+   * @param {import('./maths-quest-data.js?v=20261114v1').QuestProblem} problem
    */
   function afterAnswer(right, problem) {
     if (right) {

@@ -207,6 +207,8 @@ export function makePlaceValueVariant(level) {
       role,
       options: values.map(String),
       correctIndex: values.indexOf(digit * multiplier),
+      type: 'place-value-siege:digit-value',
+      skill: 'number.place-value',
     };
   });
   const value = roles.reduce((total, role, index) => total + digits[index] * role.multiplier, 0);
@@ -215,7 +217,7 @@ export function makePlaceValueVariant(level) {
     ...base,
     opener: `Alien squads are carrying the digits ${digits.join(', ')}. Forge each digit's place value, then enter the total headcount.`,
     slots,
-    lockIn: { type: 'exact', value },
+    lockIn: { type: 'exact', value, questionType: 'place-value-siege:total', skill: 'number.place-value' },
     grannyHints: {
       slotWrong: roles.map((role) => placeHint(role.multiplier)),
       lockInWrong: 'Add the three place values you forged. Check every zero before you lock it in.',

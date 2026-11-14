@@ -1,7 +1,7 @@
 /**
  * @param {HTMLElement} container
  * @param {{
- *   mission: import('./missions-data.js?v=20261114k1').Mission,
+ *   mission: import('./missions-data.js?v=20261114v1').Mission,
  *   onSuccess: (rewards: { forgeXp: number, placementBudget: number }) => void,
  *   showToast: (msg: string) => void,
  *   trainingMode?: boolean,
