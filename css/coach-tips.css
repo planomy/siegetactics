@@ -58,8 +58,13 @@
 .coach-arrow-body .coach-head { fill: #e8221d; stroke: #e8221d; }
 
 .coach-arrow-shine .coach-shaft {
-  stroke: #ff6a3d;
-  opacity: 0.85;
+  stroke: #ff7a40;
+  opacity: 0.9;
+}
+
+.coach-arrow-shine .coach-head {
+  fill: #ff7a40;
+  opacity: 0.9;
 }
 
 .coach-card {

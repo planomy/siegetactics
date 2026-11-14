@@ -32,6 +32,7 @@ export const HOW_TO_QUESTIONS = [
       'Aliens walk around everything you build. Use cheap HEDGES to make a long, twisty maze, and put turrets beside it. The longer their walk, the more you blast!',
       'The dotted line shows where they will walk. While you hold a turret, a blue line shows the new route.',
       'You can never block them in completely. They always need a way to the porch.',
+      'Changed your mind? Tap a hedge or turret on the lawn, then REMOVE. You get half its cost back (all of it if it was still being built).',
       'Watch out: new gates open as the battle goes on, Raiders FLY over hedges, and Bruisers smash them!',
     ],
   },

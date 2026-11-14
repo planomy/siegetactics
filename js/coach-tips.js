@@ -303,6 +303,7 @@ export function showCoachTips(ids, handlers = {}) {
 
     const shafts = [];
     const heads = [];
+    const headShines = [];
     const cardSide = out.x < 0 ? 'right' : 'left';
     rects.forEach((r, i) => {
       const hole = { left: r.left - PAD, top: r.top - PAD, right: r.right + PAD, bottom: r.bottom + PAD };
@@ -363,6 +364,12 @@ export function showCoachTips(ids, handlers = {}) {
       const nx = -dir.y;
       const ny = dir.x;
       heads.push(`M${point.x},${point.y} L${base.x + nx * half},${base.y + ny * half} L${base.x - nx * half},${base.y - ny * half} Z`);
+      // A smaller copy of the head, nudged towards the light, for its shine.
+      const corners = [point, { x: base.x + nx * half, y: base.y + ny * half }, { x: base.x - nx * half, y: base.y - ny * half }];
+      const cx = (corners[0].x + corners[1].x + corners[2].x) / 3 - 3;
+      const cy = (corners[0].y + corners[1].y + corners[2].y) / 3 - 3;
+      const inner = corners.map((c) => `${cx + (c.x - cx) * 0.6},${cy + (c.y - cy) * 0.6}`);
+      headShines.push(`M${inner[0]} L${inner[1]} L${inner[2]} Z`);
     });
 
     const vwh = `x="0" y="0" width="${vw}" height="${vh}"`;
@@ -373,12 +380,12 @@ export function showCoachTips(ids, handlers = {}) {
     maskShapes.innerHTML = `<rect ${vwh} fill="#000" />${shaftPaths('coach-shaft', `stroke="#fff" stroke-width="${W}"`)}${headPaths('coach-head', 'fill="#fff" stroke="#fff" stroke-width="2"')}`;
     // Light from the top-left: shadowed lower-right edges, a soft shine along the upper-left.
     const band = W * 0.2;
-    const shine = W * 0.17;
+    const shine = W * 0.12;
     arrows.innerHTML = `
       <g class="coach-arrow-outline">${shaftPaths('coach-shaft', `stroke-width="${W + 7}"`)}${headPaths('coach-head', 'stroke-width="7"')}</g>
       <g class="coach-arrow-dark">${shaftPaths('coach-shaft', `stroke-width="${W}"`)}${headPaths('coach-head', 'stroke-width="2"')}</g>
       <g mask="url(#coach-arrow-mask)"><g class="coach-arrow-body" filter="url(#coach-arrow-soft)" transform="translate(${-band} ${-band})">${shaftPaths('coach-shaft', `stroke-width="${W}"`)}${headPaths('coach-head', 'stroke-width="2"')}</g></g>
-      <g mask="url(#coach-arrow-mask)"><g class="coach-arrow-shine" filter="url(#coach-arrow-soft)" transform="translate(${-shine} ${-shine})">${shaftPaths('coach-shaft', `stroke-width="${W * 0.3}"`)}</g></g>`;
+      <g mask="url(#coach-arrow-mask)"><g class="coach-arrow-shine" filter="url(#coach-arrow-soft)" transform="translate(${-shine} ${-shine})">${shaftPaths('coach-shaft', `stroke-width="${W * 0.52}"`)}${headShines.map((d) => `<path class="coach-head" d="${d}" />`).join('')}</g></g>`;
   }
 
   const schedule = () => {

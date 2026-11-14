@@ -152,3 +152,67 @@
   font-weight:900;
   line-height:1.35;
 }
+
+/* Removing a placed hedge or turret: a ring on it and a button above it. */
+.siege-remove {
+  position: fixed;
+  z-index: 60;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.siege-remove-ring {
+  position: absolute;
+  left: calc(var(--ring, 60px) / -2);
+  top: calc(var(--ring, 60px) / -2);
+  width: var(--ring, 60px);
+  height: var(--ring, 60px);
+  border: 3px dashed #ffc21a;
+  border-radius: 50%;
+  box-shadow: 0 0 14px rgba(255, 194, 26, .7);
+  animation: siege-remove-ring 1.1s ease-in-out infinite;
+}
+
+@keyframes siege-remove-ring {
+  50% { scale: 1.08; }
+}
+
+.siege-remove-btn {
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--ring, 60px) / 2 + 6px);
+  translate: -50% 0;
+  padding: 6px 12px 5px;
+  border: 3px solid #fff;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ff5a3c, #c8161f);
+  box-shadow: 0 4px 0 #6e0810, 0 6px 14px rgba(0, 0, 0, .55);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: .05em;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  animation: siege-remove-pop .22s cubic-bezier(.2, 1.4, .4, 1);
+}
+
+.siege-remove-btn b {
+  color: #ffd84a;
+  font-weight: 400;
+}
+
+.siege-remove-btn:active {
+  translate: -50% 3px;
+  box-shadow: 0 1px 0 #6e0810;
+}
+
+@keyframes siege-remove-pop {
+  from { scale: .6; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .siege-remove-ring,
+  .siege-remove-btn { animation: none; }
+}

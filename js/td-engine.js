@@ -332,6 +332,7 @@ export function createTDEngine(canvas, opts) {
       towers = towers.filter((t) => !crumbled.includes(t));
       if (maze) rebuildMaze();
     }
+    if (removalTarget && (removalTarget.wrecked || !towers.includes(removalTarget))) clearRemoval();
   }
 
   /** Hedges live outside TURRETS so they never reach the Armory or upgrades. */
@@ -394,8 +395,88 @@ export function createTDEngine(canvas, opts) {
     return { ...base, valid: true, routes: routesFor(check.dist, check.trial) };
   }
 
+  /* ---------- Removing a placed hedge or turret ---------- */
+
+  /** @type {any} */
+  let removalTarget = null;
+  /** @type {HTMLElement|null} */
+  let removalUi = null;
+
+  /** What the tapped square holds; a turret's top can poke into the square above it. */
+  function towerAt(px, py) {
+    if (width <= 0 || height <= 0) return null;
+    if (maze) {
+      const hit = cellAtPoint(px / width, py / height);
+      if (!hit) return null;
+      return towers.find((t) => t.row === hit.row && t.col === hit.col)
+        ?? towers.find((t) => t.type !== 'hedge' && t.row === hit.row + 1 && t.col === hit.col)
+        ?? null;
+    }
+    const pick = pickPlacementCell(padPositions, px, py, width, height, () => false);
+    return pick.cell ? towers.find((t) => t.row === pick.cell.row && t.col === pick.cell.col) ?? null : null;
+  }
+
+  /** Full refund while it is still being built (a misplaced tap); half once it is working. */
+  function refundFor(tower) {
+    const cost = defOf(tower.type)?.placementCost ?? 0;
+    return tower.buildRemaining > 0 ? cost : Math.floor(cost / 2);
+  }
+
+  function clearRemoval() {
+    removalTarget = null;
+    removalUi?.remove();
+    removalUi = null;
+  }
+
+  function positionRemovalUi() {
+    if (!removalUi || !removalTarget) return;
+    const rect = canvas.getBoundingClientRect();
+    const size = maze ? Math.max(mazeCellW, mazeCellH) * 1.25 : cellRadius() * 2.6;
+    const cy = maze ? removalTarget.y - mazeCellH * 0.36 : removalTarget.y;
+    removalUi.style.left = `${rect.left + removalTarget.x}px`;
+    removalUi.style.top = `${rect.top + cy}px`;
+    removalUi.style.setProperty('--ring', `${Math.round(size)}px`);
+  }
+
+  function selectForRemoval(tower) {
+    clearRemoval();
+    removalTarget = tower;
+    const refund = refundFor(tower);
+    removalUi = document.createElement('div');
+    removalUi.className = 'siege-remove';
+    removalUi.innerHTML = `<span class="siege-remove-ring" aria-hidden="true"></span>
+      <button type="button" class="siege-remove-btn">REMOVE${refund > 0 ? ` <b>+${refund}</b>` : ''}</button>`;
+    removalUi.querySelector('button')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeTower(tower);
+    });
+    document.body.append(removalUi);
+    positionRemovalUi();
+  }
+
+  function removeTower(tower) {
+    if (!towers.includes(tower)) {
+      clearRemoval();
+      return;
+    }
+    const refund = refundFor(tower);
+    towers = towers.filter((t) => t !== tower);
+    if (maze) rebuildMaze();
+    const sz = Math.max(36, cellRadius() * 2.6);
+    spawnNukeKillBurst(tower.x, tower.y - sz * 0.4, false, 0.7);
+    clearRemoval();
+    opts.onTowerRemoved?.({ type: tower.type, refund });
+    render();
+  }
+
+  window.addEventListener('keydown', onRemovalKey);
+  function onRemovalKey(e) {
+    if (e.key === 'Escape' && removalTarget) clearRemoval();
+  }
+
   function setPhase(next) {
     phase = next;
+    if (!canPlaceTurrets()) clearRemoval();
     updateCanvasCursor();
     opts.onPhaseChange?.(next);
   }
@@ -2186,14 +2267,25 @@ export function createTDEngine(canvas, opts) {
   function handleTap(clientX, clientY) {
     ensureAudioUnlocked();
     if (!canPlaceTurrets()) return;
-    if (!selectedType) {
-      opts.showToast('Pick a turret below first.');
-      return;
-    }
     if (width <= 0 || height <= 0) {
       relayout();
     }
     const { x, y } = canvasCoords(clientX, clientY);
+    const placed = towerAt(x, y);
+    if (placed) {
+      if (placed.wrecked) opts.showToast('That wreck will crumble away in a moment.');
+      else if (placed === removalTarget) clearRemoval();
+      else selectForRemoval(placed);
+      return;
+    }
+    if (removalTarget) {
+      clearRemoval();
+      return;
+    }
+    if (!selectedType) {
+      opts.showToast('Pick a turret below first — or tap one on the lawn to remove it.');
+      return;
+    }
     updatePlacementPreview(x, y);
     const pick = maze
       ? pickMazeCell(x, y)
@@ -2247,6 +2339,7 @@ export function createTDEngine(canvas, opts) {
 
   function relayout() {
     layout();
+    positionRemovalUi();
     render();
   }
 
@@ -2311,6 +2404,7 @@ export function createTDEngine(canvas, opts) {
   return {
     setSelectedType(type) {
       selectedType = type;
+      clearRemoval();
       updateCanvasCursor();
       render();
     },
@@ -2346,6 +2440,8 @@ export function createTDEngine(canvas, opts) {
     },
     relayout,
     destroy() {
+      clearRemoval();
+      window.removeEventListener('keydown', onRemovalKey);
       opts.audio?.stopScuttling();
       opts.audio?.stopMothership?.();
       cancelAnimationFrame(rafId);
