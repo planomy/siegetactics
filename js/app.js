@@ -14,10 +14,10 @@ import { normalizeStreak, recordStreakAnswer, streakStatus, localDayKey } from '
 import { GEAR, normalizeGear, gearStatus, gearEffects } from './gear.js?v=20261113a3';
 import { SIEGE_DURATION_SEC, openingHorde } from './waves-data.js?v=20261114n1';
 import { normalizeDaily, recordChallengeEvent, rollLuckyDrop, DAILY_CHEST_XP } from './daily-challenges.js?v=20261113a1';
-import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20261113a2';
+import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20261114h1';
 import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261113a1';
 import { STORY_BEATS } from './story.js?v=20261113a1';
-import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261113h1';
+import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261114h1';
 import { DEV } from './dev.js?v=20261114t1';
 import { HEDGE } from './maze-field.js?v=20261113m7';
 import { showCoachTips, isCoachOpen, TOUR_TIPS } from './coach-tips.js?v=20261114q1';
@@ -28,7 +28,7 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114t1';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114h1';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261114n1';
 import { initHowToPlay } from './how-to-play.js?v=20261114n1';
@@ -70,12 +70,13 @@ import {
 } from './training-gate.js?v=20261114n1';
 import { setGateRemainingProvider } from './gate-status.js?v=20261112a1';
 import { normalizeRareSave, rollRareShip, rareShipById, recordRareSighted, recordRareCaught, rareCrystalReward } from './rare-ships.js?v=20261114t1';
+import { REGIONS as HOMELAND_REGIONS, loadProgress as loadHomelandProgress, regionCrystals } from './homeland/regions.js?v=30';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 /** Dev mode plays on a fresh copy of the real save each load, so testing never changes real progress. */
 const DEV_SAVE_KEY = `${SAVE_KEY}.dev`;
 
-/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js?v=20261114n1').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, rares: import('./rare-ships.js').RareSave, levelScale?: number, pausedSets?: Record<string, any>, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js?v=20261114n1').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, rares: import('./rare-ships.js').RareSave, homelandClaimed: string[], levelScale?: number, pausedSets?: Record<string, any>, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -113,6 +114,7 @@ const defaultSave = {
   gear: [],
   stretchCoins: 0,
   rares: normalizeRareSave(null),
+  homelandClaimed: [],
   settings: { sound: true, music: true, difficultyLevel: 2 },
 };
 
@@ -291,6 +293,7 @@ function loadSave() {
     data.gear = normalizeGear(data.gear);
     data.stretchCoins = Math.max(0, Math.floor(Number(data.stretchCoins) || 0));
     data.rares = normalizeRareSave(data.rares);
+    data.homelandClaimed = Array.isArray(data.homelandClaimed) ? data.homelandClaimed.filter((k) => typeof k === 'string') : [];
     // Preserve old players' real mastered levels and map passes as a one-time rank baseline.
     data.topicProgress = normalizeTopicProgress(data.topicProgress, data.levelMastery, data.mapProgress);
     if (DEV.enabled && DEV.unlockAll) {
@@ -663,7 +666,26 @@ function trophyContext() {
     mapComplete: allMapPiecesEarned(save.mapProgress),
     topicRank: (id) => topicRankProgress(getTopicRecord(save.topicProgress, id).xp).rank,
     granddaddyDefeated: enemyDefeatCount(save.enemyDefeated, 'granddaddy') > 0,
+    planetFreed: save.homelandClaimed.includes(HOMELAND_REGIONS[HOMELAND_REGIONS.length - 1].key),
   };
+}
+
+/**
+ * Regions beaten on Doompickle pay their crystals into the vault once each, the next time Maths HQ
+ * opens. Alien Homeland keeps its own save, so the main save is only ever written from here.
+ */
+function claimHomelandRewards() {
+  if (!allMapPiecesEarned(save.mapProgress)) return;
+  const cleared = loadHomelandProgress().cleared;
+  const fresh = HOMELAND_REGIONS
+    .map((region, index) => ({ region, index }))
+    .filter(({ region }) => cleared.includes(region.key) && !save.homelandClaimed.includes(region.key));
+  if (!fresh.length) return;
+  save.homelandClaimed.push(...fresh.map(({ region }) => region.key));
+  const amount = fresh.reduce((sum, { index }) => sum + regionCrystals(index), 0);
+  const what = fresh.length === 1 ? `${fresh[0].region.title.toUpperCase()} FREED` : `${fresh.length} DOOMPICKLE REGIONS FREED`;
+  awardUpgradeCore(`${what} · +${amount} CRYSTALS`, null, amount);
+  checkNewTrophies();
 }
 
 /** @param {{ quiet?: boolean }} [opts] Quiet on load, so old feats are recorded without a burst of pop-ups. */
@@ -2412,6 +2434,11 @@ if (DEV.skipToSiege) {
 } else if (save.playerName) {
   preloadDeployAssets({ unlocked: getUnlockedSet(), grannyUnlocked: save.grannyUnlocked });
   showHome();
+  window.setTimeout(claimHomelandRewards, 900);
 } else {
   startWelcome();
 }
+// Coming back from Doompickle with the browser's Back button can restore this page without reloading it.
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted && save.playerName) claimHomelandRewards();
+});

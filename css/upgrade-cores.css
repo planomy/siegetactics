@@ -550,13 +550,20 @@
 }
 
 /* The long-term goal along the bottom of Maths HQ: ten checkpoints, one per map piece, ending at the
-   Alien Homeland. A ship patrols the route. */
-.homeland-track {
+   Alien Homeland. A ship patrols the route. Once the map is complete, a launch button sits beside it. */
+.homeland-row {
   grid-area: map;
   display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.homeland-track {
+  display: flex;
+  flex: 1 1 auto;
   align-items: center;
   gap: 18px;
-  width: 100%;
+  min-width: 0;
   min-height: 52px;
   padding: 8px 26px 8px 16px;
   border: 1px solid rgba(170, 120, 255, .45);
@@ -685,6 +692,14 @@
 }
 
 @media (max-width: 540px) {
+  .homeland-row {
+    flex-wrap: wrap;
+  }
+
+  .homeland-launch {
+    flex: 1 1 100%;
+  }
+
   .homeland-track {
     gap: 12px;
     padding: 8px 22px 8px 12px;
@@ -711,6 +726,41 @@
   width: min(100%, 820px);
 }
 
+.homeland-launch {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 22px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #b6ff4a, #4fc81e 55%, #2a8a10);
+  box-shadow: 0 0 0 2px #1a3a06, 0 4px 0 #14300a, 0 0 22px rgba(160, 255, 80, .55);
+  color: #10260a;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: .06em;
+  text-decoration: none;
+  white-space: nowrap;
+  animation: homeland-launch-glow 1.6s ease-in-out infinite;
+  transition: transform .12s ease;
+}
+
+.homeland-launch:hover {
+  transform: translateY(-2px) scale(1.03);
+}
+
+.homeland-sheet .homeland-launch {
+  width: fit-content;
+  margin: 14px auto 0;
+  font-size: 1.4rem;
+}
+
+@keyframes homeland-launch-glow {
+  50% { box-shadow: 0 0 0 2px #1a3a06, 0 4px 0 #14300a, 0 0 34px rgba(180, 255, 90, .9); }
+}
+
 @keyframes homeland-bob {
   0%, 100% { transform: translateY(2px) rotate(4deg); }
   50% { transform: translateY(-7px) rotate(-5deg); }
@@ -729,7 +779,8 @@
 @media (prefers-reduced-motion: reduce) {
   .homeland-track-ship,
   .homeland-track-ship > span,
-  .homeland-track-ship::after { animation: none; }
+  .homeland-track-ship::after,
+  .homeland-launch { animation: none; }
 }
 
 /* All-time crystals: a red seven-segment display bolted over the vault's front lights.

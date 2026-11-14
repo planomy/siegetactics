@@ -10,7 +10,7 @@
  * Everything a trophy test needs, gathered by the app so this file stays pure.
  * @typedef {{ records: RecordsSave, rankLevel: number, streakBest: number, crystals: number,
  *   maxTurretLevel: number, ownsAllTurrets: boolean, mapComplete: boolean,
- *   topicRank: (id: string) => number, granddaddyDefeated: boolean }} TrophyContext
+ *   topicRank: (id: string) => number, granddaddyDefeated: boolean, planetFreed: boolean }} TrophyContext
  */
 
 /** @typedef {{ id: string, icon: string, name: string, title: string, how: string, test: (c: TrophyContext) => boolean }} Trophy */
@@ -34,6 +34,7 @@ export const TROPHIES = [
   { id: 'puzzle-master', icon: '🧩', name: 'Puzzle Master', title: 'Puzzle Master', how: 'Reach rank 5 in Maths Quest', test: (c) => c.topicRank('maths-quest') >= 5 },
   { id: 'brainiac', icon: '🧠', name: 'Brainiac', title: 'Brainiac', how: 'Get 500 maths answers right', test: (c) => c.records.rightAnswers >= 500 },
   { id: 'navigator', icon: '🗺️', name: 'Star Navigator', title: 'Star Navigator', how: 'Reveal the whole Alien Homeland map', test: (c) => c.mapComplete },
+  { id: 'liberator', icon: '🪐', name: 'Doompickle Liberator', title: 'Liberator of Doompickle', how: 'Defeat the Supreme Leader and free planet Doompickle', test: (c) => c.planetFreed },
   { id: 'rival', icon: '🤝', name: 'Rival Crusher', title: 'Rival Crusher', how: 'Win 3 friend challenges', test: (c) => c.records.challengesWon >= 3 },
   { id: 'marshal', icon: '🎖️', name: 'Marshal of the Garden', title: 'Marshal of the Garden', how: 'Reach the rank of Marshal', test: (c) => c.rankLevel >= 5 },
 ];

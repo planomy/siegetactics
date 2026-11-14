@@ -416,18 +416,29 @@ export function createTDEngine(canvas, opts) {
   /** @type {HTMLElement|null} */
   let removalUi = null;
 
-  /** What the tapped square holds; a turret's top can poke into the square above it. */
+  /** What the tapped square holds. */
   function towerAt(px, py) {
     if (width <= 0 || height <= 0) return null;
     if (maze) {
       const hit = cellAtPoint(px / width, py / height);
-      if (!hit) return null;
-      return towers.find((t) => t.row === hit.row && t.col === hit.col)
-        ?? towers.find((t) => t.type !== 'hedge' && t.row === hit.row + 1 && t.col === hit.col)
-        ?? null;
+      return hit ? towers.find((t) => t.row === hit.row && t.col === hit.col) ?? null : null;
     }
     const pick = pickPlacementCell(padPositions, px, py, width, height, () => false);
     return pick.cell ? towers.find((t) => t.row === pick.cell.row && t.col === pick.cell.col) ?? null : null;
+  }
+
+  /** A turret's top pokes into the empty square above it, so a tap there may mean that turret. */
+  function towerPokingInto(px, py) {
+    if (!maze || width <= 0 || height <= 0) return null;
+    const hit = cellAtPoint(px / width, py / height);
+    return hit ? towers.find((t) => t.type !== 'hedge' && t.row === hit.row + 1 && t.col === hit.col) ?? null : null;
+  }
+
+  /** @param {any} tower */
+  function tapTower(tower) {
+    if (tower.wrecked) opts.showToast('That wreck will crumble away in a moment.');
+    else if (tower === removalTarget) clearRemoval();
+    else selectForRemoval(tower);
   }
 
   /** Full refund while it is still being built (a misplaced tap); half once it is working. */
@@ -2337,23 +2348,27 @@ export function createTDEngine(canvas, opts) {
     const { x, y } = canvasCoords(clientX, clientY);
     const placed = towerAt(x, y);
     if (placed) {
-      if (placed.wrecked) opts.showToast('That wreck will crumble away in a moment.');
-      else if (placed === removalTarget) clearRemoval();
-      else selectForRemoval(placed);
+      tapTower(placed);
       return;
     }
     if (removalTarget) {
       clearRemoval();
       return;
     }
+    const poking = towerPokingInto(x, y);
     if (!selectedType) {
-      opts.showToast('Pick a turret below first — or tap one on the lawn to remove it.');
+      if (poking) tapTower(poking);
+      else opts.showToast('Pick a turret below first — or tap one on the lawn to remove it.');
       return;
     }
     updatePlacementPreview(x, y);
     const pick = maze
       ? pickMazeCell(x, y)
       : pickPlacementCell(padPositions, x, y, width, height, isCellOccupied);
+    if (poking && !pick.valid) {
+      tapTower(poking);
+      return;
+    }
     if (!pick.cell) {
       opts.showToast(maze ? 'Build on the open lawn.' : 'Stay on the grass lanes — not the dirt tracks.');
       return;

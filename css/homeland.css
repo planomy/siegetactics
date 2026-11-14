@@ -647,109 +647,212 @@ body {
 
 /* ---------- Planet map and story cards ---------- */
 
-.hl-map-card {
-  max-width: min(760px, 94vw);
-  max-height: 94vh;
-  overflow-y: auto;
-}
-
-.hl-map {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin: 14px 0 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: region;
-}
-
-/* The middle row runs right to left, so the path snakes like a board game. */
-.hl-map li:nth-child(4) { grid-area: 2 / 3; }
-.hl-map li:nth-child(5) { grid-area: 2 / 2; }
-.hl-map li:nth-child(6) { grid-area: 2 / 1; }
-
-.hl-region {
+/* The painted planet map. Each region's patch gets a soft oval button that fades into the painting,
+   a nameplate along its bottom and a status badge. --map is the map's size on screen. */
+.hl-planet {
+  --map: min(90vw, 88vh);
+  --edge: calc(var(--map) * 0.014);
   position: relative;
-  display: grid;
-  justify-items: center;
-  align-content: end;
-  gap: 2px;
+  width: var(--map);
+  aspect-ratio: 1;
+  animation: hl-rise 0.5s ease-out both;
+}
+
+/* The white border is drawn outside the painting so the spots stay lined up with it. */
+.hl-planet-art {
+  display: block;
   width: 100%;
-  aspect-ratio: 4 / 3.4;
-  padding: 8px 6px 10px;
-  overflow: hidden;
-  border: 3px solid var(--rim);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, transparent 58%, var(--ground) 58%),
-    var(--sky);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--rim) 55%, transparent);
+  height: 100%;
+  border-radius: 3%;
+  box-shadow:
+    0 0 0 var(--edge) #fff,
+    0 0 0 calc(var(--edge) + 3px) #22073a,
+    0 calc(var(--edge) + 6px) 0 calc(var(--edge) + 3px) rgba(10, 2, 20, 0.55),
+    0 30px 60px rgba(0, 0, 0, 0.75),
+    0 0 110px rgba(200, 90, 255, 0.5);
+}
+
+.hl-planet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 3%;
+  box-shadow: inset 0 0 calc(var(--map) * 0.04) rgba(10, 2, 24, 0.75), inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.hl-spot {
+  position: absolute;
+}
+
+.hl-spot-panel {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  clip-path: ellipse(50% 50%);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.hl-spot-panel:not(:disabled):hover,
+.hl-spot-panel:focus-visible {
+  outline: none;
+  background: radial-gradient(ellipse closest-side, rgba(255, 244, 210, 0.22) 35%, transparent 90%);
+}
+
+.hl-spot.is-new .hl-spot-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse closest-side, transparent 35%, color-mix(in srgb, var(--rim) 70%, transparent) 75%, transparent 100%);
+  animation: hl-panel-glow 1.6s ease-in-out infinite;
+}
+
+.hl-spot.is-new .hl-spot-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+  -webkit-mask-image: radial-gradient(ellipse closest-side, #000 40%, transparent 85%);
+  mask-image: radial-gradient(ellipse closest-side, #000 40%, transparent 85%);
+  transform: translateX(-120%);
+  animation: hl-panel-shine 3.2s ease-in-out infinite;
+}
+
+.hl-spot.is-locked .hl-spot-panel {
+  background: radial-gradient(ellipse closest-side, rgba(8, 2, 18, 0.92) 50%, rgba(8, 2, 18, 0.7) 78%, transparent 100%);
+  cursor: default;
+}
+
+.hl-spot-plate {
+  position: absolute;
+  left: 50%;
+  bottom: 7%;
+  padding: 0.3em 0.8em 0.25em;
+  border: 2px solid #f3e9ff;
+  border-radius: 0.55em;
+  background: linear-gradient(180deg, #7a36bc, #3a1066 55%, #24083f);
+  box-shadow: 0 0 0 2px #1e0636, 0 0 14px color-mix(in srgb, var(--rim) 75%, transparent), 0 4px 0 rgba(0, 0, 0, 0.45);
   color: #fff;
   font-family: 'Bangers', cursive;
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-
-.hl-region:not(:disabled):hover {
-  transform: translateY(-4px) scale(1.04);
-  box-shadow: 0 0 30px var(--rim);
-}
-
-.hl-region-num {
-  position: absolute;
-  top: 6px;
-  left: 10px;
-  font-size: 1.5rem;
-  color: #fff3c4;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.7);
-}
-
-.hl-region-boss {
-  width: 72%;
-  margin-bottom: auto;
-  margin-top: 10%;
-  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.5));
-  animation: hl-hover 2.4s ease-in-out infinite;
-}
-
-.hl-region-name {
-  font-size: clamp(1rem, 2.2vw, 1.35rem);
-  font-weight: normal;
-  letter-spacing: 0.04em;
+  font-size: calc(var(--map) * 0.019);
   line-height: 1;
-  text-shadow: 0 0 4px #000, 0 2px 0 #000;
+  letter-spacing: 0.05em;
+  text-align: center;
+  text-shadow: 0 2px 0 #1a0624;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
-.hl-region-best {
-  font-size: 0.9rem;
+.hl-spot-plate b {
+  display: block;
+  font-weight: normal;
+}
+
+.hl-spot-plate small {
+  display: block;
+  margin-top: 0.15em;
   color: #ffe27a;
-  text-shadow: 0 0 3px #000, 0 1px 0 #000;
+  font-size: 0.85em;
 }
 
-.hl-region.is-cleared::after {
-  content: '✔';
+.hl-spot.is-locked .hl-spot-plate {
+  border-color: #9c90b4;
+  background: linear-gradient(180deg, #4a4260, #221c32);
+  box-shadow: 0 0 0 2px #120c1e, 0 4px 0 rgba(0, 0, 0, 0.45);
+  color: #c4bad6;
+}
+
+.hl-spot.is-cleared .hl-spot-plate {
+  border-color: #ffe27a;
+}
+
+.hl-spot-lock {
   position: absolute;
-  top: 6px;
-  right: 10px;
+  left: 50%;
+  top: 48%;
+  width: 17%;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 10px rgba(255, 200, 60, 0.45));
+  transform: translate(-50%, -50%);
+  transform-origin: 50% 0;
+  pointer-events: none;
+  animation: hl-lock-sway 3s ease-in-out infinite;
+}
+
+.hl-spot-new {
+  position: absolute;
+  right: -2%;
+  top: -4%;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 22%;
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+
+.hl-spot-new::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, #fff6b0 0%, #ffd23a 45%, #ff7a1a 100%);
+  clip-path: polygon(50.0% 0.0%, 58.7% 12.0%, 71.7% 5.0%, 74.3% 19.5%, 89.1% 18.8%, 85.1% 33.1%, 98.7% 38.9%, 89.0% 50.0%, 98.7% 61.1%, 85.1% 66.9%, 89.1% 81.2%, 74.3% 80.5%, 71.7% 95.0%, 58.7% 88.0%, 50.0% 100.0%, 41.3% 88.0%, 28.3% 95.0%, 25.7% 80.5%, 10.9% 81.2%, 14.9% 66.9%, 1.3% 61.1%, 11.0% 50.0%, 1.3% 38.9%, 14.9% 33.1%, 10.9% 18.8%, 25.7% 19.5%, 28.3% 5.0%, 41.3% 12.0%);
+  filter: drop-shadow(0 0 8px rgba(255, 170, 40, 0.9));
+  animation: hl-burst-spin 9s linear infinite;
+}
+
+.hl-spot-new b {
+  position: relative;
+  color: #d4140a;
+  font-family: 'Bangers', cursive;
+  font-size: calc(var(--map) * 0.024);
+  font-weight: normal;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 2px #fff, 0 1px 0 #fff;
+  transform: rotate(-12deg);
+  animation: hl-new-pop 1s ease-in-out infinite;
+}
+
+.hl-spot-star {
+  position: absolute;
+  right: 2%;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 15%;
+  aspect-ratio: 1;
+  border: 3px solid #fff3c4;
   border-radius: 50%;
-  background: #5adf2a;
-  color: #fff;
-  font-size: 1rem;
-  box-shadow: 0 0 10px #5adf2a;
+  background: radial-gradient(circle at 35% 30%, #fff6c0, #ffc430 50%, #c46a08);
+  box-shadow: 0 0 0 2px #5a2a04, 0 0 14px rgba(255, 200, 60, 0.85);
+  color: #7a3a00;
+  font-size: calc(var(--map) * 0.026);
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  transform: rotate(-10deg);
+  pointer-events: none;
 }
 
-.hl-region.is-locked {
-  cursor: default;
-  filter: grayscale(0.85) brightness(0.55);
+@keyframes hl-panel-glow {
+  50% { opacity: 0.35; }
 }
 
-.hl-region.is-locked .hl-region-boss {
-  filter: brightness(0) drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
-  animation: none;
+@keyframes hl-panel-shine {
+  60%, 100% { transform: translateX(120%); }
+}
+
+@keyframes hl-lock-sway {
+  50% { transform: translate(-50%, -50%) rotate(5deg); }
+}
+
+@keyframes hl-burst-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes hl-new-pop {
+  50% { transform: rotate(-12deg) scale(1.15); }
 }
 
 .hl-story {
@@ -840,6 +943,94 @@ body {
 
 .hl-back:hover {
   color: #fff;
+}
+
+.hl-go-granny {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3em;
+}
+
+.hl-go-granny img {
+  width: auto;
+  height: 1.9em;
+  margin: -0.65em 0 -0.25em;
+  filter: drop-shadow(0 3px 2px rgba(58, 20, 0, 0.45));
+  transition: transform 0.15s ease;
+}
+
+.hl-go-granny:hover img {
+  transform: rotate(-6deg) scale(1.08);
+}
+
+.hl-house {
+  width: auto;
+  height: 1.8em;
+  margin: -0.4em 0.4em -0.4em 0;
+  vertical-align: middle;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45));
+}
+
+.hl-map-btn {
+  padding: 0;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.hl-map-btn img {
+  display: block;
+  width: clamp(170px, 22vw, 240px);
+  height: auto;
+  filter: drop-shadow(0 4px 6px rgba(10, 2, 20, 0.6));
+}
+
+.hl-map-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  filter: brightness(1.1);
+}
+
+.hl-map-btn:active {
+  transform: translateY(2px) scale(0.98);
+}
+
+a.hl-back,
+a.hl-go {
+  text-decoration: none;
+}
+
+a.hl-go {
+  display: inline-block;
+}
+
+/* Back to Maths HQ from the planet map. */
+.hl-home {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: 12px;
+  z-index: 1;
+  padding: 8px 16px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #7a36bc, #3a1066);
+  box-shadow: 0 0 0 2px #22073a, 0 4px 0 rgba(10, 2, 20, 0.6);
+  color: #fff;
+  font-family: 'Bangers', cursive;
+  font-size: clamp(1rem, 1.6vw, 1.3rem);
+  letter-spacing: 0.05em;
+  text-decoration: none;
+}
+
+.hl-home:hover {
+  transform: translateY(-2px);
+}
+
+.hl-reward {
+  margin: 0 0 14px;
+  color: #8ae8ff;
+  font-family: 'Bangers', cursive;
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 12px rgba(90, 224, 255, 0.7), 0 2px 0 #12062a;
 }
 
 @keyframes hl-hover {
@@ -1114,15 +1305,5 @@ body {
   .hl-slide .hl-go {
     padding: 8px 22px;
     font-size: 1.4rem;
-  }
-}
-
-@media (max-width: 640px) {
-  .hl-map {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .hl-map li:nth-child(n) {
-    grid-area: auto;
   }
 }

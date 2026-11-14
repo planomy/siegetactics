@@ -5,7 +5,7 @@
  */
 import { STREAK_DAILY_GOAL, STREAK_MILESTONES } from './streak.js?v=20261113a1';
 import { challengesFor, DAILY_CHEST_XP } from './daily-challenges.js?v=20261113a1';
-import { TROPHIES } from './trophies.js?v=20261113a2';
+import { TROPHIES } from './trophies.js?v=20261114h1';
 import { SIEGE_RANKS, rankProgressText } from './siege-ranks.js?v=20261112a2';
 import { badgeSrc } from './stars.js';
 

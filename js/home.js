@@ -14,6 +14,9 @@ import { renderArmoryPromo } from './armory-promo.js?v=20261113m8';
 import { animateTally } from './tally.js';
 import { ENEMY_SPRITE_SRC, GRUNT_STATS, BOSS_STATS } from './enemies-data.js';
 
+/** The Alien Homeland, a page of its own. */
+const HOMELAND_URL = 'homeland.html';
+
 /**
  * Ten clean campaign cards. Mastery is a small permanent mark, while each
  * topic's rank and next-rank progress can grow without ever being "Done".
@@ -557,7 +560,7 @@ export function renderMissionControl(host, state) {
       <div class="mission-control-blueprint">
         ${renderThreatDossier(attack.open, attack)}
       </div>
-      <button type="button" class="mission-control-home" id="mission-back-to-hq">⌂ &nbsp; Maths HQ</button>
+      <button type="button" class="mission-control-home" id="mission-back-to-hq"><img class="btn-house" src="assets/ui/granny-house.webp" alt="" width="192" height="182" />Maths HQ</button>
     </div>
   `;
   threatDossierCleanup = initThreatDossier(host.querySelector('.threat-dossier'), {
@@ -625,7 +628,7 @@ export function showMapPieceFound(moduleId, earned) {
     <span class="core-reward-rays" aria-hidden="true"></span>
     <span class="map-up-art" aria-hidden="true">${done ? '🛸' : '🗺️'}</span>
     <strong class="rank-up-title">${done ? 'ROUTE UNLOCKED!' : 'MAP PIECE FOUND!'}</strong>
-    <span class="rank-up-name">${done ? 'THE ALIEN HOMELAND AWAITS' : `${(sector?.label ?? 'SECTOR').toUpperCase()} · ${earned} / ${total}`}</span>`;
+    <span class="rank-up-name">${done ? 'FLY TO DOOMPICKLE FROM MATHS HQ!' : `${(sector?.label ?? 'SECTOR').toUpperCase()} · ${earned} / ${total}`}</span>`;
   document.body.append(el);
   window.setTimeout(() => el.classList.add('is-leaving'), 3200);
   window.setTimeout(() => el.remove(), 3800);
@@ -790,6 +793,7 @@ function renderHomelandTrack(mapProgress) {
     return `<span class="homeland-track-node${home ? ' homeland-track-home' : ''}${n <= earned ? ' is-reached' : ''}" style="left:${(n / total) * 100}%">${home ? '🪐' : n}</span>`;
   }).join('');
   return `
+    <div class="homeland-row">
     <button type="button" class="homeland-track" aria-label="Alien Homeland: ${earned} of ${total} map pieces. Show the map.">
       <span class="homeland-track-title">
         <strong>ALIEN HOMELAND</strong>
@@ -800,7 +804,14 @@ function renderHomelandTrack(mapProgress) {
         ${nodes}
         <span class="homeland-track-ship"><span>🛸</span></span>
       </span>
-    </button>`;
+    </button>
+    ${earned >= total ? renderHomelandLaunch() : ''}
+    </div>`;
+}
+
+/** Once every map piece is in, Granny can fly to Doompickle as often as she likes. */
+function renderHomelandLaunch() {
+  return `<a class="homeland-launch" href="${HOMELAND_URL}"><span aria-hidden="true">🚀</span> FLY TO DOOMPICKLE</a>`;
 }
 
 /**
@@ -820,6 +831,7 @@ function showHomelandMap(mapProgress) {
         ? 'Every sector charted! The route to the Alien Homeland is open.'
         : `Chart all ${TRAINING_MODULE_IDS.length} sectors to find where the aliens come from, then fly there and take the fight to them!`}</p>
       ${renderInterstellarMap(mapProgress)}
+      ${earned >= TRAINING_MODULE_IDS.length ? renderHomelandLaunch() : ''}
       <button type="button" class="gb-sheet-x" aria-label="Close">×</button>
     </div>`;
   const close = () => backdrop.remove();

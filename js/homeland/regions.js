@@ -237,6 +237,34 @@ export const REGIONS = [
   },
 ];
 
+/**
+ * The painted planet map. Each region's patch on the painting, as [left, top, width, height] in
+ * percent of the (square) image. Names, padlocks and badges are laid over the patches live.
+ */
+export const PLANET_MAP = {
+  src: 'assets/homeland/planet-map.webp',
+  /** @type {Record<string, [number, number, number, number]>} */
+  spots: {
+    landing: [9.6, 25.5, 29.5, 18.3],
+    glowshroom: [39.1, 22.7, 28.7, 18.3],
+    swamp: [67.4, 28.7, 25.1, 16.7],
+    abyss: [69.4, 45.9, 24.7, 14.8],
+    scrapyard: [37.1, 45.1, 31.9, 15.6],
+    hive: [7.2, 43.9, 29.9, 16.7],
+    vents: [6, 62.6, 26.7, 17.5],
+    ruins: [35.9, 64.2, 31.5, 17.1],
+    palace: [67.4, 63.4, 25.5, 17.5],
+  },
+};
+
+/**
+ * Alien Crystals a region pays into Granny's vault back home, the first time it is beaten. Maths HQ
+ * claims them when the player returns. @param {number} index
+ */
+export function regionCrystals(index) {
+  return index === REGIONS.length - 1 ? 5 : 2;
+}
+
 /** Alien shots that fly nose-first; the rest tumble. */
 export const DIRECTIONAL_SHOTS = new Set(['alien-slime', 'alien-skull']);
 
