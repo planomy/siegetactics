@@ -244,16 +244,16 @@
   height: 84%;
   margin: auto;
   object-fit: contain;
+  /* Tint by brightness rather than flattening to a silhouette, so eyes,
+     armour and outlines stay visible on every alien. */
   filter:
-    brightness(0)
-    saturate(0)
-    invert(72%)
-    sepia(48%)
-    saturate(640%)
+    grayscale(1)
+    brightness(1.7)
+    contrast(1.25)
+    sepia(1)
+    saturate(4.5)
     hue-rotate(82deg)
-    brightness(1.05)
-    contrast(1.15)
-    drop-shadow(0 0 3px rgba(93, 255, 138, 0.8));
+    drop-shadow(0 0 3px rgba(93, 255, 138, 0.7));
   opacity: 0.92;
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
