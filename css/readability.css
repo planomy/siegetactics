@@ -1,0 +1,15 @@
+/* Minimum readable sizes on Maths HQ, loaded last. These are floors, so !important beats the
+   more specific layout rules that set the original tiny sizes. */
+body.mission-mode .radar-zone i { font-size: .62rem !important; }
+body.mission-mode .inbound-radar-unit { font-size: .72rem !important; }
+body.mission-mode .mission-level-reward { font-size: .7rem !important; }
+body.mission-mode .armory-promo-art-badge { font-size: .7rem !important; }
+body.mission-mode .armory-promo-progress-label,
+body.mission-mode .armory-promo-progress-label * { font-size: .74rem !important; }
+body.mission-mode .crystal-vault-tier { font-size: .8rem !important; }
+body.mission-mode .crystal-vault-next { font-size: .78rem !important; }
+body.mission-mode .crystal-vault-spend { font-size: .78rem !important; }
+body.mission-mode .rank-badge-title { font-size: .76rem !important; }
+body.mission-mode .homeland-track-title small { font-size: .78rem !important; }
+body.mission-mode .homeland-track-node { font-size: .72rem !important; }
+body.mission-mode .mission-xp-label { font-size: .76rem !important; }

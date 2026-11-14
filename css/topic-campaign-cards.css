@@ -218,7 +218,7 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-rank strong {
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-mastery {
   color: #ffe092;
-  font-size: .61rem;
+  font-size: .7rem;
   font-weight: 800;
 }
 
@@ -304,7 +304,7 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   border-radius: 999px;
   background: linear-gradient(180deg, #ffb340, #ff5a1f);
   color: #2a0d00;
-  font-size: clamp(.55rem, .62vw, .72rem);
+  font-size: clamp(.68rem, .76vw, .82rem);
   font-weight: 900;
   letter-spacing: .04em;
   white-space: nowrap;
@@ -380,4 +380,15 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-story-art::after {
     animation: none;
   }
+}
+
+/* During the onboarding tour the cards stay still, so the arrows and tips are the only things moving. */
+body.coach-active.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover,
+body.coach-active.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:nth-child(even):not(:disabled):hover {
+  transform: none;
+}
+
+body.coach-active.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-story-art-img,
+body.coach-active.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-story-art::after {
+  animation: none;
 }

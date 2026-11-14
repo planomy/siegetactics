@@ -223,6 +223,7 @@ export function showCoachTips(ids, handlers = {}) {
     </div>`;
   root.append(svg, card);
   document.body.append(root);
+  document.body.classList.add('coach-active');
 
   const titleEl = /** @type {HTMLElement} */ (card.querySelector('.coach-title'));
   const textEl = /** @type {HTMLElement} */ (card.querySelector('.coach-text'));
@@ -431,6 +432,7 @@ export function showCoachTips(ids, handlers = {}) {
     document.removeEventListener('keydown', onKey);
     cancelAnimationFrame(raf);
     root.remove();
+    document.body.classList.remove('coach-active');
     closeActive = null;
     handlers.onDone?.();
   }
