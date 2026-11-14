@@ -90,23 +90,19 @@
 
 .coach-granny {
   position: absolute;
-  top: -34px;
-  left: -26px;
-  width: 72px;
-  height: 72px;
-  border: 4px solid #fff;
+  top: -50px;
+  left: -38px;
+  width: 104px;
+  height: 104px;
+  border: 5px solid #fff;
   border-radius: 50%;
-  background: #ffe6b8 url('../assets/granny-porch.png') no-repeat;
-  background-size: 200px auto;
-  background-position: -88px -44px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
-  /* Mirrored so she looks into the card. */
-  scale: -1 1;
+  background: #3a1650 url('../assets/ui/granny-coach.jpg?v=1') center / cover no-repeat;
+  box-shadow: 0 5px 0 #6e0810, 0 8px 16px rgba(0, 0, 0, 0.5);
   animation: coach-granny-bob 2.4s ease-in-out infinite;
 }
 
 @keyframes coach-granny-bob {
-  50% { transform: translateY(-3px) rotate(4deg); }
+  50% { transform: translateY(-3px) rotate(-3deg); }
 }
 
 .coach-step {
@@ -129,9 +125,9 @@
 }
 
 .coach-title {
-  margin: 0 30px 6px 40px;
+  margin: 0 24px 8px 60px;
   font-family: var(--font-display);
-  font-size: 1.55rem;
+  font-size: 1.38rem;
   font-weight: 400;
   letter-spacing: 0.04em;
   line-height: 1.05;
