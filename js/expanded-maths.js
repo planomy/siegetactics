@@ -1,4 +1,6 @@
-import { initDrillSession } from './drill-session.js?v=20261113h1';
+import { initDrillSession } from './drill-session.js?v=20261114k1';
+import { legacyLevel } from './difficulty.js?v=20261114k1';
+import { extraLevelQuestion } from './extra-levels.js?v=20261114k1';
 
 const MODULES = {
   operations: { title: 'Operations HQ', tag: 'Number · Operations', quiz: 'Calculate & reason' },
@@ -345,10 +347,12 @@ function supplyQuestion(level) {
 
 /** @param {string} topicId @param {number} level */
 export function makeExpandedQuestion(topicId, level) {
-  if (topicId === 'operations') return operationsQuestion(level);
-  if (topicId === 'decimals-percent') return decimalQuestion(level);
-  if (topicId === 'time') return timeQuestion(level);
-  return supplyQuestion(level);
+  if (level <= 1 || level >= 6) return extraLevelQuestion(topicId, level <= 1 ? 1 : 6);
+  const legacy = legacyLevel(level);
+  if (topicId === 'operations') return operationsQuestion(legacy);
+  if (topicId === 'decimals-percent') return decimalQuestion(legacy);
+  if (topicId === 'time') return timeQuestion(legacy);
+  return supplyQuestion(legacy);
 }
 
 export function initExpandedMath(host, callbacks) {

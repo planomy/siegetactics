@@ -1,4 +1,4 @@
-import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261113h1';
+import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261114k1';
 import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261112g';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261113n1';
@@ -20,7 +20,7 @@ import { STORY_BEATS } from './story.js?v=20261113a1';
 import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261113h1';
 import { DEV } from './dev.js?v=20261113n1';
 import { HEDGE } from './maze-field.js?v=20261113m7';
-import { showCoachTips, isCoachOpen, TOUR_TIPS } from './coach-tips.js?v=20261114h1';
+import { showCoachTips, isCoachOpen, TOUR_TIPS } from './coach-tips.js?v=20261114k1';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
 import { ECONOMY, bankBonusForgeXp } from './economy.js';
@@ -28,29 +28,29 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261113n1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114i1';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114k2';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261113a2';
-import { initHowToPlay } from './how-to-play.js?v=20261114h1';
+import { initHowToPlay } from './how-to-play.js?v=20261114k1';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
-import { initTimesTables } from './times-tables.js?v=20261113h1';
-import { initMeasurementLength } from './measurement-length.js?v=20261113h1';
-import { initFractions } from './fractions.js?v=20261113h1';
-import { initAnglesShapes } from './angles-shapes.js?v=20261113h1';
-import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261113h1';
-import { initExpandedMath } from './expanded-maths.js?v=20261113h1';
-import { initBattlePrep } from './battle-prep.js?v=20261113a4';
-import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js';
+import { initTimesTables } from './times-tables.js?v=20261114k1';
+import { initMeasurementLength } from './measurement-length.js?v=20261114k1';
+import { initFractions } from './fractions.js?v=20261114k1';
+import { initAnglesShapes } from './angles-shapes.js?v=20261114k1';
+import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261114k1';
+import { initExpandedMath } from './expanded-maths.js?v=20261114k1';
+import { initBattlePrep } from './battle-prep.js?v=20261114k1';
+import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js?v=20261114k1';
 import {
   normalizeLevelMastery,
   defaultLevelMastery,
   recordTrainingProgress,
   recommendModuleLevel,
   recommendGlobalLevel,
-} from './level-mastery.js';
+} from './level-mastery.js?v=20261114k1';
 import { defaultMapProgress, normalizeMapProgress, allMapPiecesEarned, mapPiecesEarned } from './map-progress.js';
 import { getTopic } from './topics-data.js?v=20261113h1';
-import { normalizeTopicProgress, recordTopicAnswer, recordTopicSession, getTopicRecord, topicRankProgress } from './topic-progression.js?v=20261112p';
+import { normalizeTopicProgress, recordTopicAnswer, recordTopicSession, getTopicRecord, topicRankProgress } from './topic-progression.js?v=20261114k1';
 import {
   defaultTrainingGate,
   normalizeTrainingGate,
@@ -71,7 +71,7 @@ const SAVE_KEY = 'grannyboom.siege.v1';
 /** Dev mode plays on a fresh copy of the real save each load, so testing never changes real progress. */
 const DEV_SAVE_KEY = `${SAVE_KEY}.dev`;
 
-/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js').TopicProgressSave, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, levelScale?: number, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -108,7 +108,7 @@ const defaultSave = {
   lastChallengeCode: null,
   gear: [],
   stretchCoins: 0,
-  settings: { sound: true, music: true, difficultyLevel: 1 },
+  settings: { sound: true, music: true, difficultyLevel: 2 },
 };
 
 /** @type {SaveData} */
@@ -220,8 +220,21 @@ let pendingArmoryUnlock = null;
 function loadSave() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return { ...defaultSave, unlockedTurrets: [...STARTER_TURRETS] };
-    const data = { ...defaultSave, ...JSON.parse(raw) };
+    if (!raw) return { ...defaultSave, unlockedTurrets: [...STARTER_TURRETS], levelScale: 6 };
+    const parsed = JSON.parse(raw);
+    const data = { ...defaultSave, ...parsed };
+    // Saves from the four-level days: old Levels 1–4 (Years 3–6) are now Levels 2–5.
+    if (parsed.levelScale !== 6) {
+      const oldLevel = Number(parsed.settings?.difficultyLevel);
+      if ([1, 2, 3, 4].includes(oldLevel)) data.settings = { ...data.settings, difficultyLevel: oldLevel + 1 };
+      if (parsed.levelMastery && typeof parsed.levelMastery === 'object') {
+        data.levelMastery = Object.fromEntries(Object.entries(parsed.levelMastery).map(([id, levels]) => [
+          id,
+          Array.isArray(levels) ? levels.map((l) => Number(l) + 1) : levels,
+        ]));
+      }
+      data.levelScale = 6;
+    }
     if (!data.unlockedTurrets?.length) {
       data.unlockedTurrets = [...STARTER_TURRETS];
     } else {
@@ -275,7 +288,7 @@ function loadSave() {
     normalizeMetaSave(data);
     return data;
   } catch {
-    return { ...defaultSave, unlockedTurrets: [...STARTER_TURRETS] };
+    return { ...defaultSave, unlockedTurrets: [...STARTER_TURRETS], levelScale: 6 };
   }
 }
 
@@ -929,7 +942,7 @@ function awardForgeXp(amount, reason) {
   }
 }
 
-/** @param {number} baseAmount @param {import('./difficulty.js').DifficultyLevel} level */
+/** @param {number} baseAmount @param {import('./difficulty.js?v=20261114k1').DifficultyLevel} level */
 function awardScaledTrainingXp(baseAmount, level) {
   const amount = scaleTrainingXp(baseAmount, level);
   if (amount <= 0) return 0;
@@ -1007,7 +1020,7 @@ function creditTrainingAnswer(right) {
 
 /**
  * @param {string} moduleId
- * @param {import('./difficulty.js').DifficultyLevel} level
+ * @param {import('./difficulty.js?v=20261114k1').DifficultyLevel} level
  * @param {number} accuracy 0–1
  */
 function completeTrainingSession(moduleId, level, accuracy) {
@@ -1340,8 +1353,8 @@ function replayTips() {
   if (screens.home?.classList.contains('active')) scheduleTips('home');
 }
 
-/** Level 3 and 4 players are offered more questions after their ten, for bonus time and coins. */
-const STRETCH_MIN_LEVEL = 3;
+/** Level 4+ players are offered more questions after their ten, for bonus time and coins. */
+const STRETCH_MIN_LEVEL = 4;
 const STRETCH_COINS_PER_ANSWER = 5;
 
 /** @param {number} level @returns {{ more: number, seconds: number, coins: number }|null} */

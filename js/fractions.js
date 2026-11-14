@@ -1,6 +1,8 @@
-import { initDrillSession } from './drill-session.js?v=20261113h1';
+import { initDrillSession } from './drill-session.js?v=20261114k1';
+import { legacyLevel } from './difficulty.js?v=20261114k1';
+import { extraLevelQuestion } from './extra-levels.js?v=20261114k1';
 
-/** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
+/** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */
 
 export const FRACTIONS_LAB = {
   unitId: 'fractions-fence',
@@ -31,8 +33,14 @@ function compareFracs(a, b) {
   return fracVal(a.n, a.d) >= fracVal(b.n, b.d) ? a : b;
 }
 
-/** @param {DifficultyLevel} level */
+/** Levels 1 and 6 come from the extra Year 2 / Year 7 bank; 2–5 use the original four levels. @param {DifficultyLevel} level */
 export function makeFractionQuestion(level) {
+  if (level <= 1 || level >= 6) return extraLevelQuestion('fractions', level <= 1 ? 1 : 6);
+  return fractionQuestionCore(legacyLevel(level));
+}
+
+/** @param {DifficultyLevel} level */
+function fractionQuestionCore(level) {
   if (level === 1) {
     const kind = pick([
       'half-vs-quarter',
@@ -56,7 +64,7 @@ export function makeFractionQuestion(level) {
       const d = pick([4, 6, 8]);
       const a = pick([1, 2]);
       const b = a + pick([1, 2]);
-      if (b >= d) return makeFractionQuestion(level);
+      if (b >= d) return fractionQuestionCore(level);
       const bigger = compareFracs({ n: a, d }, { n: b, d });
       return {
         prompt: `Which is larger: ${frac(a, d)} or ${frac(b, d)}?`,
@@ -131,7 +139,7 @@ export function makeFractionQuestion(level) {
       const d = pick([4, 5, 6, 8]);
       const a = pick([1, 2]);
       const b = pick([1, 2]);
-      if (a + b >= d) return makeFractionQuestion(level);
+      if (a + b >= d) return fractionQuestionCore(level);
       return {
         prompt: `${frac(a, d)} + ${frac(b, d)} = ?/${d}`,
         answer: a + b,
@@ -142,7 +150,7 @@ export function makeFractionQuestion(level) {
       const d = pick([5, 6, 8, 10]);
       const a = pick([1, 2, 3]);
       const b = a + pick([1, 2]);
-      if (b >= d) return makeFractionQuestion(level);
+      if (b >= d) return fractionQuestionCore(level);
       const bigger = compareFracs({ n: a, d }, { n: b, d });
       return {
         prompt: `Which is larger: ${frac(a, d)} or ${frac(b, d)}?`,
@@ -252,7 +260,7 @@ export function makeFractionQuestion(level) {
     const d = pick([6, 8, 10, 12]);
     const a = pick([1, 2, 3]);
     const b = pick([1, 2, 3]);
-    if (a + b >= d) return makeFractionQuestion(level);
+    if (a + b >= d) return fractionQuestionCore(level);
     return {
       prompt: `${frac(a, d)} + ${frac(b, d)} = ?/${d}`,
       answer: a + b,
@@ -290,7 +298,7 @@ export function makeFractionQuestion(level) {
   const d = pick([6, 8, 12]);
   const a = pick([3, 4, 5]);
   const b = pick([1, 2]);
-  if (a <= b) return makeFractionQuestion(level);
+  if (a <= b) return fractionQuestionCore(level);
   return {
     prompt: `${frac(a, d)} − ${frac(b, d)} = ?/${d}`,
     answer: a - b,

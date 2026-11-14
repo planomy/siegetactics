@@ -2,7 +2,7 @@
  * One place for the first-siege generosity and later battle economy.
  * Returns fresh mission data; the shared level definitions are not mutated.
  *
- * @param {import('./missions-data.js').Mission} mission
+ * @param {import('./missions-data.js?v=20261114k1').Mission} mission
  * @param {number} siegesCompleted
  */
 export function balanceMission(mission, siegesCompleted) {
@@ -21,7 +21,7 @@ export function balanceMission(mission, siegesCompleted) {
  * The first siege includes enough coins to build a proper defence.
  * Accuracy coins are additive, even when the new-player minimum applies.
  *
- * @param {import('./missions-data.js').Mission} mission
+ * @param {import('./missions-data.js?v=20261114k1').Mission} mission
  * @param {number} siegesCompleted
  * @param {number} mathsBonusCoins
  */

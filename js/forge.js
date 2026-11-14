@@ -1,11 +1,11 @@
 /**
  * @param {HTMLElement} container
  * @param {{
- *   mission: import('./missions-data.js').Mission,
+ *   mission: import('./missions-data.js?v=20261114k1').Mission,
  *   onSuccess: (rewards: { forgeXp: number, placementBudget: number }) => void,
  *   showToast: (msg: string) => void,
  *   trainingMode?: boolean,
- *   difficultyLevel?: import('./difficulty.js').DifficultyLevel,
+ *   difficultyLevel?: import('./difficulty.js?v=20261114k1').DifficultyLevel,
  *   onBack?: () => void,
  * }} callbacks
  */

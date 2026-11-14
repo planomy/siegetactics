@@ -200,14 +200,15 @@ body.mission-mode .mission-control-metrics {
   /* Difficulty sits under the mission button it applies to, labelled LEVEL, with no box around it. */
   body.mission-mode #screen-home .mission-mixed-card .mission-level-control {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 18px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    margin-top: 14px;
   }
 
   body.mission-mode #screen-home .mission-mixed-card .mission-level-intro {
     display: block;
+    text-align: center;
   }
 
   body.mission-mode #screen-home .mission-mixed-card .mission-level-title {
@@ -219,7 +220,7 @@ body.mission-mode .mission-control-metrics {
 
   body.mission-mode #screen-home .mission-mixed-card .mission-level-buttons {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     padding: 0;
     border: none;
     background: none;
@@ -227,8 +228,14 @@ body.mission-mode .mission-control-metrics {
   }
 
   body.mission-mode #screen-home .mission-mixed-card .mission-level-option {
-    width: clamp(48px, 3.6vw, 64px);
-    min-height: 46px;
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  body.mission-mode #screen-home .mission-mixed-card .mission-level-reward {
+    white-space: nowrap;
   }
 
   body.mission-mode #screen-home .mission-topic-heading {
@@ -553,11 +560,12 @@ body.mission-mode #screen-home #mission-start-mixed.mission-start-art.is-special
 
 body.mission-mode #screen-home .mission-special-badge {
   position: absolute;
-  top: -24px;
-  right: 6px;
+  top: -18%;
+  right: 1%;
   z-index: 2;
-  width: 70px;
-  height: 70px;
+  width: clamp(44px, 19%, 70px);
+  aspect-ratio: 1;
+  font-size: clamp(.62rem, 1.05vw, 1rem);
   rotate: 10deg;
   animation: mission-special-badge-pulse 1.6s ease-in-out infinite;
   pointer-events: none;
@@ -579,14 +587,14 @@ body.mission-mode #screen-home .mission-special-disc {
 }
 
 body.mission-mode #screen-home .mission-special-badge b {
-  font-size: 2rem;
+  font-size: 2em;
   font-weight: 400;
   text-shadow: 2px 2px 0 #6e0810;
 }
 
 body.mission-mode #screen-home .mission-special-badge small {
   color: #ffc21a;
-  font-size: 1rem;
+  font-size: 1em;
   letter-spacing: .08em;
   text-shadow: 1px 1px 0 #6e0810;
 }

@@ -5,10 +5,10 @@ import { SIEGE_RANKS, siegeRankLevel, rankProgressText } from './siege-ranks.js?
 import { hotTopicId } from './hot-topic.js?v=20261112a1';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261113n1';
 import { renderInterstellarMap, mapPiecesEarned, hasMapPiece, getMapPasses, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS, MAP_SECTORS } from './map-progress.js';
-import { topicRankProgress, getTopicRecord } from './topic-progression.js?v=20261112p';
-import { getQualifiedLevels } from './level-mastery.js';
+import { topicRankProgress, getTopicRecord } from './topic-progression.js?v=20261114k1';
+import { getQualifiedLevels } from './level-mastery.js?v=20261114k1';
 import { ECONOMY } from './economy.js';
-import { xpMultiplierLabel, xpMultiplierFor } from './difficulty.js';
+import { xpMultiplierLabel, xpMultiplierFor, DIFFICULTY, isDifficultyLevel } from './difficulty.js?v=20261114k1';
 import { renderArmoryPromo } from './armory-promo.js?v=20261113m8';
 import { animateTally } from './tally.js';
 import { ENEMY_SPRITE_SRC, GRUNT_STATS, BOSS_STATS } from './enemies-data.js';
@@ -18,10 +18,10 @@ import { ENEMY_SPRITE_SRC, GRUNT_STATS, BOSS_STATS } from './enemies-data.js';
  * topic's rank and next-rank progress can grow without ever being "Done".
  * @param {import('./training-gate.js').TrainingGate} gate
  * @param {ReturnType<typeof attackStatus>} attack
- * @param {import('./level-mastery.js').LevelMasterySave} levelMastery
+ * @param {import('./level-mastery.js?v=20261114k1').LevelMasterySave} levelMastery
  * @param {import('./map-progress.js').MapProgressSave} mapProgress
  * @param {string[]} selectedTopics
- * @param {import('./topic-progression.js').TopicProgressSave} topicProgress
+ * @param {import('./topic-progression.js?v=20261114k1').TopicProgressSave} topicProgress
  */
 function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id), topicProgress = {}) {
   // Respect the five-by-two screen order, never re-sort by "completion".
@@ -177,12 +177,12 @@ function playMissionXp(host, targetXp) {
     .then(() => badge?.classList.remove('is-gaining'));
 }
 
-/** @param {import('./level-mastery.js').LevelMasterySave} mastery */
+/** @param {import('./level-mastery.js?v=20261114k1').LevelMasterySave} mastery */
 export function countShieldsEarned(mastery) {
   return TRAINING_MODULE_IDS.reduce((n, id) => n + getQualifiedLevels(mastery, id).length, 0);
 }
 
-/** @param {{ xp: number, siegesCompleted: number, bestKills: number, bestBankedCoins: number, difficultyLevel: import('./difficulty.js').DifficultyLevel, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave }} stats @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
+/** @param {{ xp: number, siegesCompleted: number, bestKills: number, bestBankedCoins: number, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave }} stats @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
 function renderCommandSidebar(stats, gate, attack) {
   const readinessPct = attack.open ? 100 : Math.round(attack.pct * 100);
   const readinessLabel = attack.open ? 'CLEARED TO ENGAGE' : 'TRAINING IN PROGRESS';
@@ -435,12 +435,12 @@ export function stopMissionDossier() {
  *   bestStars: Record<string, number>,
  *   primaryMissionId: string,
  *   gate: import('./training-gate.js').TrainingGate,
- *   levelMastery: import('./level-mastery.js').LevelMasterySave,
+ *   levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave,
  *   mapProgress: import('./map-progress.js').MapProgressSave,
- *   topicProgress: import('./topic-progression.js').TopicProgressSave,
- *   difficultyLevel: import('./difficulty.js').DifficultyLevel,
- *   recommendedLevel: import('./difficulty.js').DifficultyLevel,
- *   onDifficultyChange: (level: import('./difficulty.js').DifficultyLevel) => void,
+ *   topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave,
+ *   difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel,
+ *   recommendedLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel,
+ *   onDifficultyChange: (level: import('./difficulty.js?v=20261114k1').DifficultyLevel) => void,
  *   onTopic: (topicId: string) => void,
  *   unlockedTurrets: Set<string>,
  *   onArmory: () => void,
@@ -650,9 +650,17 @@ export function isSpecialMission() {
   return missionArt === 'special';
 }
 
-/** @param {1|2|3|4} level @param {boolean} special */
+/** @param {import('./difficulty.js?v=20261114k1').DifficultyLevel} level @param {boolean} special */
 function levelRewardLabel(level, special) {
-  return special ? `${xpMultiplierFor(level) * SPECIAL_MISSION_XP_MULTIPLIER}× XP` : xpMultiplierLabel(level);
+  if (!special) return xpMultiplierLabel(level);
+  const bonus = Math.round((xpMultiplierFor(level) - 1) * 100);
+  return bonus ? `${SPECIAL_MISSION_XP_MULTIPLIER}× XP +${bonus}%` : `${SPECIAL_MISSION_XP_MULTIPLIER}× XP`;
+}
+
+/** Short reward text that fits under each of the six level numbers. */
+function levelRewardShort(level, special) {
+  if (special) return `${SPECIAL_MISSION_XP_MULTIPLIER}×`;
+  return `+${Math.round((xpMultiplierFor(level) - 1) * 100)}%`;
 }
 
 /** Crystals shown so far, so a newly collected one can drop into the pile. @type {number|null} */
@@ -829,12 +837,12 @@ export function renderHome(host, state) {
             <span class="mission-level-title">LEVEL</span>
           </div>
           <div class="mission-level-buttons${special ? ' is-boosted' : ''}" role="group" aria-label="Choose maths difficulty and XP reward">
-            ${[1, 2, 3, 4].map((n) => `
+            ${DIFFICULTY.levels.map((n) => `
               <button type="button" class="mission-level-option${state.difficultyLevel === n ? ' is-selected' : ''}"
                 data-level="${n}" aria-pressed="${state.difficultyLevel === n}"
-                aria-label="Level ${n}, ${levelRewardLabel(/** @type {1|2|3|4} */ (n), special)}">
+                aria-label="Level ${n}, ${levelRewardLabel(n, special)}">
                 <span class="mission-level-number">${n}</span>
-                <span class="mission-level-reward">${levelRewardLabel(/** @type {1|2|3|4} */ (n), special)}</span>
+                <span class="mission-level-reward">${levelRewardShort(n, special)}</span>
               </button>
             `).join('')}
           </div>
@@ -863,8 +871,8 @@ export function renderHome(host, state) {
   host.querySelectorAll('[data-level]').forEach((button) => {
     button.addEventListener('click', () => {
       const level = Number(button.getAttribute('data-level'));
-      if (![1, 2, 3, 4].includes(level) || level === state.difficultyLevel) return;
-      state.onDifficultyChange(/** @type {1|2|3|4} */ (level));
+      if (!isDifficultyLevel(level) || level === state.difficultyLevel) return;
+      state.onDifficultyChange(level);
     });
   });
 }

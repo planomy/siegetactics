@@ -7,7 +7,7 @@ import { MATH_TOPICS } from './topics-data.js?v=20261113h1';
  * Rank rises only from actually answered questions and successful missions,
  * not from just opening a module or repeatedly clicking its card.
  */
-export const TOPIC_XP_PER_CORRECT = Object.freeze({ 1: 6, 2: 9, 3: 12, 4: 15 });
+export const TOPIC_XP_PER_CORRECT = Object.freeze({ 1: 8, 2: 8, 3: 9, 4: 9, 5: 10, 6: 10 });
 export const TOPIC_MISSION_BONUS = 12;
 export const TOPIC_RANK_MILESTONE_INTERVAL = 5;
 export const TOPIC_RANK_MILESTONE_FORGE_XP = 35;
@@ -75,7 +75,7 @@ export function normalizeTopicProgress(raw, mastery = {}, mapProgress = {}) {
       };
       out[id].correct = Math.min(out[id].correct, out[id].answered);
     } else {
-      const levels = Array.isArray(mastery?.[id]) ? new Set(mastery[id].filter((n) => [1,2,3,4].includes(n))) : new Set();
+      const levels = Array.isArray(mastery?.[id]) ? new Set(mastery[id].filter((n) => [1, 2, 3, 4, 5, 6].includes(n))) : new Set();
       const knownMapPasses = Math.min(10, safeCount(mapProgress?.[id]));
       out[id] = {
         xp: levels.size * 60 + knownMapPasses * 8,
@@ -102,7 +102,7 @@ function milestoneRewards(oldRank, newRank) {
 /**
  * @param {TopicProgressSave} progress
  * @param {string} id
- * @param {1|2|3|4} level
+ * @param {1|2|3|4|5|6} level
  * @param {boolean} right
  * @param {number} [multiplier] Topic XP multiplier, e.g. 2 for the daily hot topic.
  */

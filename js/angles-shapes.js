@@ -1,6 +1,8 @@
-import { initDrillSession } from './drill-session.js?v=20261113h1';
+import { initDrillSession } from './drill-session.js?v=20261114k1';
+import { legacyLevel } from './difficulty.js?v=20261114k1';
+import { extraLevelQuestion } from './extra-levels.js?v=20261114k1';
 
-/** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
+/** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */
 
 export const ANGLES_LAB = {
   unitId: 'angles-shapes-lab',
@@ -13,8 +15,14 @@ export function sessionSize(level) {
   return 10;
 }
 
-/** @param {DifficultyLevel} level */
+/** Levels 1 and 6 come from the extra Year 2 / Year 7 bank; 2–5 use the original four levels. @param {DifficultyLevel} level */
 export function makeAnglesQuestion(level) {
+  if (level <= 1 || level >= 6) return extraLevelQuestion('angles', level <= 1 ? 1 : 6);
+  return anglesQuestionCore(legacyLevel(level));
+}
+
+/** @param {DifficultyLevel} level */
+function anglesQuestionCore(level) {
   if (level === 1) {
     const kind = pick([
       'shape-sides',
@@ -152,7 +160,7 @@ export function makeAnglesQuestion(level) {
       const a = pick([35, 40, 45, 50, 60, 70]);
       const b = pick([40, 50, 55, 60, 65]);
       const c = 180 - a - b;
-      if (c <= 0) return makeAnglesQuestion(level);
+      if (c <= 0) return anglesQuestionCore(level);
       return {
         prompt: `Two angles in a triangle are ${a}° and ${b}°. What is the third angle?`,
         answer: c,
@@ -189,7 +197,7 @@ export function makeAnglesQuestion(level) {
     const b = pick([65, 80, 90]);
     const c = pick([70, 85, 100]);
     const d = 360 - a - b - c;
-    if (d <= 0 || d >= 180) return makeAnglesQuestion(level);
+    if (d <= 0 || d >= 180) return anglesQuestionCore(level);
     return {
       prompt: `Three angles in a quadrilateral are ${a}°, ${b}° and ${c}°. What is the fourth?`,
       answer: d,
@@ -225,7 +233,7 @@ export function makeAnglesQuestion(level) {
     const b = pick([70, 85, 95]);
     const c = pick([60, 75, 90]);
     const d = 360 - a - b - c;
-    if (d <= 0 || d >= 180) return makeAnglesQuestion(level);
+    if (d <= 0 || d >= 180) return anglesQuestionCore(level);
     return {
       prompt: `Three angles in a quadrilateral are ${a}°, ${b}° and ${c}°. What is the fourth?`,
       answer: d,

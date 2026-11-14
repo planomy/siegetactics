@@ -2,7 +2,8 @@
  * Maths Quest — problem-solving set bank.
  *
  * Add new sets to QUEST_SETS. Each set has exactly 10 problems.
- * Filter by `level` (1 = Year 3, 2 = Year 4, 3 = Year 5, 4 = Year 6).
+ * Set `level` uses the original scale (1 = Year 3 … 4 = Year 6); the game's
+ * Levels 2–5 map onto it, while Levels 1 (Year 2) and 6 (Year 7) use their own pools.
  *
  * @typedef {1|2|3|4} QuestLevel
  * @typedef {'choice'|'numeric'} QuestKind
@@ -486,7 +487,76 @@ function makeLevel4Pool() {
   ];
 }
 
+/** Year 2 (game Level 1). @returns {QuestProblem[]} */
+function makeYear2Pool() {
+  const a = rand(3, 9);
+  const b = rand(2, 9);
+  const big = rand(12, 20);
+  const take = rand(2, 9);
+  const groups = rand(2, 5);
+  const each = [2, 5, 10][rand(0, 2)];
+  const half = rand(2, 10);
+  const tens = rand(2, 9);
+  const ones = rand(1, 9);
+  const coins = rand(2, 5);
+  const hour = rand(1, 10);
+  const step = [2, 5, 10][rand(0, 2)];
+  const start = step * rand(1, 4);
+  return [
+    numeric(`Granny sees ${a} aliens on the fence and ${b} on the shed. How many aliens altogether?`, a + b),
+    numeric(`There are ${big} cupcakes. The aliens steal ${take}. How many are left?`, big - take),
+    numericChoice(`${groups} spaceships each carry ${each} aliens. How many aliens is that?`, groups * each, [groups + each, groups * each + each, groups * each - 1]),
+    numeric(`Granny shares ${half * 2} cookies equally between 2 robots. How many does each robot get?`, half),
+    numeric(`What number has ${tens} tens and ${ones} ones?`, tens * 10 + ones),
+    numeric(`Granny has ${coins} ten-cent coins. How many cents is that?`, coins * 10),
+    numericChoice(`Patrol starts at ${hour} o'clock and lasts 2 hours. What o'clock does it finish?`, hour + 2, [hour + 1, hour + 3, hour]),
+    numeric(`What comes next? ${start}, ${start + step}, ${start + step * 2}, __`, start + step * 3, `Count on by ${step}s.`),
+    numericChoice('Which number is even?', 14, [7, 13, 21], 'Even numbers end in 0, 2, 4, 6 or 8.'),
+    numeric(`Double ${a} is ?`, a * 2),
+    numeric(`${a} + ? = 10`, 10 - a, 'Think of your number bonds to 10.'),
+    numericChoice('How many sides does a triangle have?', 3, [4, 5, 6]),
+  ];
+}
+
+/** Year 7 (game Level 6). @returns {QuestProblem[]} */
+function makeYear7Pool() {
+  const cold = -rand(3, 12);
+  const drop = rand(4, 10);
+  const n = rand(3, 12);
+  const m = rand(2, 9);
+  const k = rand(1, 20);
+  const x = rand(2, 9);
+  const base = rand(4, 14) * 2;
+  const height = rand(3, 12);
+  const pct = [15, 35, 45, 65][rand(0, 3)];
+  const pctOf = rand(2, 9) * 20;
+  const price = rand(4, 12) * 20;
+  const ra = rand(2, 4);
+  const rb = rand(ra + 1, 7);
+  const ru = rand(3, 9);
+  const sq = rand(6, 15);
+  const speed = [40, 60, 80][rand(0, 2)];
+  const hrs = [1.5, 2.5, 3][rand(0, 2)];
+  const vals = [rand(2, 6), rand(7, 9), rand(10, 14), rand(15, 19), rand(20, 30)];
+  return [
+    numeric(`The temperature is ${cold}°C and drops another ${drop}°. What is it now?`, cold - drop),
+    numeric(`${m}n + ${k} = ${m * n + k}. What is n?`, n, `Subtract ${k}, then divide by ${m}.`),
+    numeric(`If x = ${x}, what is 3x² ?`, 3 * x * x, 'Square x first, then multiply by 3.'),
+    numeric(`A triangular flag has a base of ${base} cm and a height of ${height} cm. What is its area in cm²?`, (base * height) / 2, 'Area = ½ × base × height.'),
+    numeric(`What is ${pct}% of ${pctOf}?`, (pct * pctOf) / 100),
+    numeric(`A $${price} drone is 25% off. What is the sale price in dollars?`, price * 0.75),
+    numeric(`${(ra + rb) * ru} cupcakes are shared in the ratio ${ra}:${rb}. How many are in the larger share?`, rb * ru),
+    numeric(`What is √${sq * sq}?`, sq),
+    numeric(`A rover drives at ${speed} km/h for ${hrs} hours. How many km does it travel?`, speed * hrs),
+    numeric(`The scores are ${vals.join(', ')}. What is the median?`, vals[2], 'Put them in order and find the middle one.'),
+    numericChoice('A fair dice is rolled. What is the chance of rolling an even number?', '1/2', ['1/6', '1/3', '2/3']),
+    numericChoice(`What is ${m * 4} − (−${k})?`, m * 4 + k, [m * 4 - k, -(m * 4 + k), k - m * 4], 'Subtracting a negative is the same as adding.'),
+  ];
+}
+
 const QUEST_TITLES = {
+  0: ['Garden Gate', 'Cookie Count', 'Robot Rescue', 'Fence Friends'],
+  5: ['Hyperspace Raid', 'Mothership Siege', 'Galaxy Command', 'Black Hole Run'],
   1: ['Fence Sweep', 'Cupcake Convoy', 'Backyard Patrol', 'Bolt Hunt'],
   2: ['Signal Scramble', 'Turret Workshop', 'Alien Intercept', 'Supply Run'],
   3: ['Porch Counterattack', 'Command Bunker', 'Final Defence', 'Night Siege'],
@@ -500,14 +570,19 @@ const QUEST_TITLES = {
  * @returns {QuestSet}
  */
 export function createQuestSet(level) {
-  const pool = level === 1
-    ? makeLevel1Pool()
-    : level === 2
-      ? makeLevel2Pool()
-      : level === 3
-        ? makeLevel3Pool()
-        : makeLevel4Pool();
-  const titleChoices = QUEST_TITLES[level];
+  const legacy = level - 1;
+  const pool = level <= 1
+    ? makeYear2Pool()
+    : level >= 6
+      ? makeYear7Pool()
+      : legacy === 1
+        ? makeLevel1Pool()
+        : legacy === 2
+          ? makeLevel2Pool()
+          : legacy === 3
+            ? makeLevel3Pool()
+            : makeLevel4Pool();
+  const titleChoices = QUEST_TITLES[Math.min(5, Math.max(0, legacy))];
   return {
     id: `quest-generated-${level}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     level,
@@ -517,9 +592,9 @@ export function createQuestSet(level) {
   };
 }
 
-/** @param {QuestLevel} level */
+/** Hand-written sets use the original scale, one level below the game's. @param {number} level */
 export function getQuestSetsForLevel(level) {
-  return QUEST_SETS.filter((set) => set.level === level);
+  return QUEST_SETS.filter((set) => set.level === level - 1);
 }
 
 /** @param {string} id */

@@ -1,11 +1,13 @@
 import { ECONOMY } from './economy.js';
+import { legacyLevel } from './difficulty.js?v=20261114k1';
+import { extraLevelQuestion } from './extra-levels.js?v=20261114k1';
 import { GATE } from './training-gate.js';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
-import { difficultyTrainingTag } from './difficulty.js';
+import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
 import { renderDoneActions, bindDoneActions } from './done-actions.js';
 
-/** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
+/** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */
 
 export const LENGTH_LAB = {
   questionsPerSession: 10,
@@ -19,11 +21,17 @@ function sessionSize(level) {
   return 10;
 }
 
+/** Levels 1 and 6 come from the extra Year 2 / Year 7 bank; 2–5 use the original four levels. @param {DifficultyLevel} level */
+export function makeLengthQuestion(level) {
+  if (level <= 1 || level >= 6) return extraLevelQuestion('measurement-length', level <= 1 ? 1 : 6);
+  return lengthQuestionCore(legacyLevel(level));
+}
+
 /**
  * @param {DifficultyLevel} level
  * @returns {{ prompt: string, answer: number, options: { label: string, value: number }[] }}
  */
-export function makeLengthQuestion(level) {
+function lengthQuestionCore(level) {
   if (level === 1) {
     const kind = pick(['compare-cm-small', 'compare-m-whole', 'longer-or-shorter', 'join-lengths', 'metre-to-cm']);
     if (kind === 'compare-m-whole') {

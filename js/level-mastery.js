@@ -7,11 +7,15 @@ export const SHIELD_ACCURACY = 1;
 
 /** One-time bonus when first earning a shield at each level. */
 export const FIRST_CLEAR_BONUS = {
-  1: 15,
-  2: 25,
-  3: 40,
-  4: 55,
+  1: 25,
+  2: 30,
+  3: 35,
+  4: 40,
+  5: 45,
+  6: 50,
 };
+
+const ALL_LEVELS = [1, 2, 3, 4, 5, 6];
 
 /** @typedef {Record<string, DifficultyLevel[]>} LevelMasterySave */
 
@@ -28,7 +32,7 @@ export function normalizeLevelMastery(raw) {
     if (!Array.isArray(levels)) continue;
     const parsed = levels
       .map((l) => Number(l))
-      .filter((l) => l === 1 || l === 2 || l === 3 || l === 4);
+      .filter((l) => ALL_LEVELS.includes(l));
     if (parsed.length) out[moduleId] = [...new Set(parsed)].sort((a, b) => a - b);
   }
   return out;
@@ -51,11 +55,8 @@ export function isQualifiedAt(mastery, moduleId, level) {
  */
 export function recommendModuleLevel(mastery, moduleId) {
   const q = getQualifiedLevels(mastery, moduleId);
-  if (q.includes(3) && !q.includes(4)) return 4;
-  if (q.includes(2) && !q.includes(3)) return 3;
-  if (q.includes(1) && !q.includes(2)) return 2;
-  if (q.includes(4)) return 4;
-  return 1;
+  if (!q.length) return 1;
+  return /** @type {DifficultyLevel} */ (Math.min(6, Math.max(...q) + 1));
 }
 
 /**
@@ -70,7 +71,7 @@ export function recommendGlobalLevel(mastery) {
     count += 1;
   }
   if (!count) return 1;
-  return /** @type {DifficultyLevel} */ (Math.min(4, Math.max(1, Math.round(total / count))));
+  return /** @type {DifficultyLevel} */ (Math.min(6, Math.max(1, Math.round(total / count))));
 }
 
 /**
@@ -127,9 +128,9 @@ export function recordTrainingProgress(mastery, mapProgress, moduleId, level, ac
  */
 function buildShieldNudge(level, accuracy, shieldEarned) {
   if (shieldEarned) {
-    if (level >= 4) return 'Perfect run — Level 4 shield earned!';
+    if (level >= 6) return 'Perfect run — Level 6 shield earned!';
     const nextLevel = /** @type {DifficultyLevel} */ (level + 1);
-    return `Perfect! Level ${level} shield earned. Try Level ${nextLevel} for bigger XP.`;
+    return `Perfect! Level ${level} shield earned. Ready for Level ${nextLevel}?`;
   }
   if (accuracy >= MAP_PASS_ACCURACY && accuracy < SHIELD_ACCURACY) {
     return 'Solid pass — a perfect run earns the level shield.';
@@ -146,7 +147,7 @@ export const LEVEL_SHIELD_SRC = 'assets/badges/level-shield.png';
 /** @param {LevelMasterySave} mastery @param {string} moduleId */
 export function renderModuleLevelPips(mastery, moduleId) {
   const qualified = new Set(getQualifiedLevels(mastery, moduleId));
-  return [1, 2, 3, 4]
+  return ALL_LEVELS
     .map(
       (n) => `
         <span

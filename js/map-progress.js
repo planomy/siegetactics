@@ -1,4 +1,4 @@
-/** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
+/** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */
 
 /** @typedef {'times-tables'|'place-value-siege'|'measurement-length'|'fractions'|'angles'|'maths-quest'|'operations'|'decimals-percent'|'time'|'mass-capacity'} TrainingModuleId */
 

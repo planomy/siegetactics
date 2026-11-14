@@ -4,9 +4,9 @@
  */
 
 import { SIEGE_DURATION_SEC } from './waves-data.js?v=20261113h1';
-import { normalizeDifficultyLevel } from './difficulty.js';
+import { normalizeDifficultyLevel } from './difficulty.js?v=20261114k1';
 
-/** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
+/** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */
 
 /** @type {Mission[]} */
 export const MISSIONS = [
@@ -68,7 +68,7 @@ export function getMission(id) {
 }
 
 /**
- * Place Value Patrol forge content scaled by difficulty (Years 3–6).
+ * Place Value Patrol rewards by the original three tiers; the digits come from PLACE_VALUE_ROLES (Years 2–7).
  * @type {Record<DifficultyLevel, Pick<Mission, 'opener'|'slots'|'lockIn'|'grannyHints'|'rewards'>>}
  */
 export const PLACE_VALUE_BY_DIFFICULTY = {
@@ -133,24 +133,34 @@ export const PLACE_VALUE_BY_DIFFICULTY = {
 
 const PLACE_VALUE_ROLES = {
   1: [
+    { role: 'Hundreds', multiplier: 100 },
+    { role: 'Tens', multiplier: 10 },
+    { role: 'Ones', multiplier: 1 },
+  ],
+  2: [
     { role: 'Thousands', multiplier: 1000 },
     { role: 'Hundreds', multiplier: 100 },
     { role: 'Tens', multiplier: 10 },
   ],
-  2: [
+  3: [
     { role: 'Ten-thousands', multiplier: 10000 },
     { role: 'Thousands', multiplier: 1000 },
-    { role: 'Hundreds', multiplier: 100 },
-  ],
-  3: [
-    { role: 'Hundred-thousands', multiplier: 100000 },
-    { role: 'Ten-thousands', multiplier: 10000 },
     { role: 'Hundreds', multiplier: 100 },
   ],
   4: [
+    { role: 'Hundred-thousands', multiplier: 100000 },
+    { role: 'Ten-thousands', multiplier: 10000 },
+    { role: 'Hundreds', multiplier: 100 },
+  ],
+  5: [
     { role: 'Millions', multiplier: 1000000 },
     { role: 'Hundred-thousands', multiplier: 100000 },
     { role: 'Thousands', multiplier: 1000 },
+  ],
+  6: [
+    { role: 'Ten-millions', multiplier: 10000000 },
+    { role: 'Millions', multiplier: 1000000 },
+    { role: 'Hundred-thousands', multiplier: 100000 },
   ],
 };
 
@@ -166,6 +176,7 @@ function shuffle(values) {
 
 /** @param {number} multiplier */
 function placeHint(multiplier) {
+  if (multiplier === 10000000) return 'Ten-millions are seven places left of ones — multiply the digit by 10,000,000.';
   if (multiplier === 1000000) return 'Millions are six places left of ones — multiply the digit by 1,000,000.';
   if (multiplier === 100000) return 'Hundred-thousands are five places left of ones — multiply the digit by 100,000.';
   if (multiplier === 10000) return 'Ten-thousands are four places left of ones — multiply the digit by 10,000.';
@@ -181,13 +192,13 @@ function placeHint(multiplier) {
  * @param {DifficultyLevel} level
  */
 export function makePlaceValueVariant(level) {
-  const roles = PLACE_VALUE_ROLES[level];
+  const roles = PLACE_VALUE_ROLES[level] ?? PLACE_VALUE_ROLES[2];
   const digits = roles.map(() => 1 + Math.floor(Math.random() * 9));
   const slots = roles.map(({ role, multiplier }, index) => {
     const digit = digits[index];
     const correct = digit * multiplier;
     const distractors = shuffle(
-      [1, 10, 100, 1000, 10000, 100000, 1000000]
+      [1, 10, 100, 1000, 10000, 100000, 1000000, 10000000]
         .map((place) => digit * place)
         .filter((value) => value !== correct)
     );
@@ -199,7 +210,7 @@ export function makePlaceValueVariant(level) {
     };
   });
   const value = roles.reduce((total, role, index) => total + digits[index] * role.multiplier, 0);
-  const base = PLACE_VALUE_BY_DIFFICULTY[level] ?? PLACE_VALUE_BY_DIFFICULTY[3];
+  const base = PLACE_VALUE_BY_DIFFICULTY[Math.min(3, Math.max(1, level - 1))] ?? PLACE_VALUE_BY_DIFFICULTY[3];
   return {
     ...base,
     opener: `Alien squads are carrying the digits ${digits.join(', ')}. Forge each digit's place value, then enter the total headcount.`,

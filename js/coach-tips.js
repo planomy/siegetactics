@@ -31,8 +31,8 @@ export const COACH_TIPS = {
   },
   level: {
     step: 2,
-    title: 'TOUGHER MATHS = MORE XP',
-    text: 'Choose a harder level and every right answer earns more XP — up to 2.5×!',
+    title: 'PICK YOUR LEVEL',
+    text: 'Levels 1 to 6 go from easier to tougher. Choose the one that suits you — harder levels earn bonus XP!',
     targets: ['.mission-level-buttons'],
   },
   armory: {

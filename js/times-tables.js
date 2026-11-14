@@ -1,10 +1,10 @@
 import { ECONOMY } from './economy.js';
 import { GATE, tableKey } from './training-gate.js';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
-import { difficultyTrainingTag } from './difficulty.js';
+import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { renderDoneActions, bindDoneActions } from './done-actions.js';
 
-/** @typedef {import('./difficulty.js').DifficultyLevel} DifficultyLevel */
+/** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */
 
 /** @typedef {'pick'|'quiz'|'done'} TimesPhase */
 
@@ -24,13 +24,23 @@ export const TIMES_TABLES = {
  * @returns {{ tables: number[], multMin: number, multMax: number, showMixed: boolean }}
  */
 export function timesConfigForLevel(level) {
-  if (level === 1) {
-    return { tables: [2, 3, 4, 5, 10], multMin: 1, multMax: 10, showMixed: false };
+  if (level <= 1) {
+    return { tables: [2, 5, 10], multMin: 1, multMax: 10, showMixed: false };
   }
   if (level === 2) {
+    return { tables: [2, 3, 4, 5, 10], multMin: 1, multMax: 10, showMixed: false };
+  }
+  if (level === 3) {
     return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10], multMin: 1, multMax: 10, showMixed: true };
   }
-  return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], multMin: 1, multMax: 12, showMixed: true };
+  if (level === 4) {
+    return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], multMin: 1, multMax: 12, showMixed: true };
+  }
+  if (level === 5) {
+    // The tricky facts: no ×1 or ×10 freebies.
+    return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], multMin: 2, multMax: 12, showMixed: true };
+  }
+  return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], multMin: 2, multMax: 15, showMixed: true };
 }
 
 /**

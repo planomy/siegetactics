@@ -144,7 +144,7 @@ const WRECK_FADE_SECONDS = 0.7;
 /**
  * @param {HTMLCanvasElement} canvas
  * @param {{
- *   mission: import('./missions-data.js').Mission,
+ *   mission: import('./missions-data.js?v=20261114k1').Mission,
  *   getBudget: () => number,
  *   trySpend: (type: string) => boolean,
  *   onMissionEnd: (stats: { kills: number, leaks: number, won: boolean, maxLeaks: number, wavesCleared: number, bonusKills?: number, bonusPlayed?: boolean }) => void,

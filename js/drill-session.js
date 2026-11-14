@@ -1,7 +1,7 @@
 import { ECONOMY } from './economy.js';
 import { GATE } from './training-gate.js';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
-import { difficultyTrainingTag } from './difficulty.js';
+import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
 import { renderDoneActions, bindDoneActions } from './done-actions.js';
 
@@ -12,10 +12,10 @@ import { renderDoneActions, bindDoneActions } from './done-actions.js';
  *   title: string,
  *   missionTag: string,
  *   quizTag: string,
- *   difficultyLevel: import('./difficulty.js').DifficultyLevel,
+ *   difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel,
  *   sessionSize: number,
  *   xpPerCorrect: number,
- *   makeQuestion: (level: import('./difficulty.js').DifficultyLevel) => { prompt: string, answer: number|string, options: { label: string, value: number|string }[] },
+ *   makeQuestion: (level: import('./difficulty.js?v=20261114k1').DifficultyLevel) => { prompt: string, answer: number|string, options: { label: string, value: number|string }[] },
  *   onAwardXp: (amount: number) => void,
  *   onAnswer?: (right: boolean) => void,
  *   onSessionComplete?: (result: { accuracy: number, passed: boolean }) => void,
@@ -67,8 +67,9 @@ export function initDrillSession(host, config) {
     let guard = 0;
     while (deck.length < config.sessionSize && guard++ < config.sessionSize * 40) {
       const question = sanitizeQuestionOptions(config.makeQuestion(config.difficultyLevel));
-      if (usedPrompts.has(question.prompt)) continue;
-      usedPrompts.add(question.prompt);
+      const repeatKey = question.key ?? question.prompt;
+      if (usedPrompts.has(repeatKey)) continue;
+      usedPrompts.add(repeatKey);
       deck.push(question);
     }
     index = 0;
@@ -103,6 +104,7 @@ export function initDrillSession(host, config) {
           <span class="times-quiz-progress">${index + 1} / ${deck.length}</span>
         </div>
         <div class="times-question-wrap">
+          ${q.visual ? `<div class="question-visual">${q.visual}</div>` : ''}
           <p class="times-question length-question">${q.prompt}</p>
         </div>
         <div class="times-answers">${opts}</div>

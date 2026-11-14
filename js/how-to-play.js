@@ -60,7 +60,7 @@ export const HOW_TO_QUESTIONS = [
     q: 'What does XP get me?',
     a: [
       'Forge XP unlocks new turrets in the Armory, and you keep them forever.',
-      'Correct answers earn XP. Higher levels earn more: Level 2 gives 1.5×, Level 3 gives 2× and Level 4 gives 2.5×.',
+      'Correct answers earn XP. Pick the level that suits you: harder levels add a small bonus, up to +25% at Level 6.',
       'Maths Quest word problems pay the most XP of all.',
       'Coins you do not spend in a battle turn into bonus XP at the end.',
     ],
