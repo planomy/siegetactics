@@ -60,13 +60,33 @@ export const COACH_TIPS = {
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PAD = 8;
-const GAP = 46;
+const GAP = 130;
 /** Extra room when one card forks arrows to several targets. */
-const GAP_FORK = 96;
+const GAP_FORK = 110;
 /** Arrow body width; heads scale to the room they have. */
 const SHAFT = 30;
 /** Arrows start this far under the card so they look like they come out of it. */
 const TUCK = 22;
+/** Corner radius where an arrow turns 90°. */
+const BEND = 30;
+/** Shortest leg that still fits a corner plus a full arrowhead. */
+const MIN_LEG = BEND + 40;
+
+/**
+ * Two straight legs joined by one rounded 90° corner.
+ * @param {{x:number,y:number}} a @param {{x:number,y:number}} b @param {'x'|'y'} first - axis of the first leg
+ */
+function elbowPath(a, b, first) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  if (Math.abs(dx) < 1 || Math.abs(dy) < 1) return `M${a.x},${a.y} L${b.x},${b.y}`;
+  const r = Math.min(BEND, Math.abs(dx) - 1, Math.abs(dy) - 1);
+  const sx = Math.sign(dx);
+  const sy = Math.sign(dy);
+  return first === 'x'
+    ? `M${a.x},${a.y} L${b.x - sx * r},${a.y} Q${b.x},${a.y} ${b.x},${a.y + sy * r} L${b.x},${b.y}`
+    : `M${a.x},${a.y} L${a.x},${b.y - sy * r} Q${a.x},${b.y} ${a.x + sx * r},${b.y} L${b.x},${b.y}`;
+}
 const EDGE = 12;
 
 /** @type {(() => void)|null} */
@@ -179,7 +199,8 @@ export function showCoachTips(ids, handlers = {}) {
   const arrows = document.createElementNS(SVG_NS, 'g');
   arrows.classList.add('coach-arrows');
   const defs = document.createElementNS(SVG_NS, 'defs');
-  defs.innerHTML = '<mask id="coach-arrow-mask" maskUnits="userSpaceOnUse"><g class="coach-mask-shapes"></g></mask>';
+  defs.innerHTML = '<mask id="coach-arrow-mask" maskUnits="userSpaceOnUse"><g class="coach-mask-shapes"></g></mask>'
+    + '<filter id="coach-arrow-soft" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="3" /></filter>';
   svg.append(defs, shade, rings, arrows);
   const arrowMask = /** @type {SVGMaskElement} */ (defs.querySelector('mask'));
   const maskShapes = /** @type {SVGGElement} */ (defs.querySelector('.coach-mask-shapes'));
@@ -252,8 +273,12 @@ export function showCoachTips(ids, handlers = {}) {
     // Trunk just above the lower target, leaving the most room for the upward arrowhead.
     const between = Boolean(tip.between && rects.length === 2 && rects[1].top > rects[0].bottom);
     const centerY = between ? Math.min(rects[0].bottom + PAD + 80, rects[1].top + 40) : undefined;
+    // Prefer room for a long arrow, but tuck in closer rather than lose the arrows altogether.
     let pos = placeCard(u, cw, ch, rects.length > 1 ? GAP_FORK : GAP, centerY);
-    if (pos.side === 'none' && rects.length > 1) pos = placeCard(u, cw, ch, GAP, centerY);
+    for (const gap of [80, 56, 36]) {
+      if (pos.side !== 'none') break;
+      pos = placeCard(u, cw, ch, gap, centerY);
+    }
     const anchorY = centerY !== undefined ? clamp(centerY, pos.y + 30, pos.y + ch - 30) : pos.y + ch / 2;
     card.style.left = `${Math.round(pos.x)}px`;
     card.style.top = `${Math.round(pos.y)}px`;
@@ -278,44 +303,63 @@ export function showCoachTips(ids, handlers = {}) {
 
     const shafts = [];
     const heads = [];
+    const cardSide = out.x < 0 ? 'right' : 'left';
     rects.forEach((r, i) => {
       const hole = { left: r.left - PAD, top: r.top - PAD, right: r.right + PAD, bottom: r.bottom + PAD };
-      let end = horizontal
-        ? aimPoint(hole, edgeFrom)
-        : nearestOnRect({ ...hole, width: hole.right - hole.left, height: hole.bottom - hole.top }, edgeFrom.x, edgeFrom.y);
-      // Direction the head travels as it lands.
+      const w = hole.right - hole.left;
+      const h = hole.bottom - hole.top;
+      /** @type {{x:number,y:number}} */
+      let end;
+      /** @type {{x:number,y:number}} */
       let dir;
-      if (between && horizontal) {
-        // Stacked pair: up into the first, down into the second.
-        const x = aimPoint(hole, edgeFrom).x;
-        end = i === 0
-          ? { x, y: hole.bottom }
-          : { x, y: clamp(anchor.y + 120, hole.top + 36, hole.bottom - 12) };
-        dir = i === 0 ? { x: 0, y: -1 } : { x: 0, y: 1 };
-      } else if (horizontal) {
-        dir = end.y < hole.bottom && end.y > hole.top && end.y !== hole.top
-          ? (end.y > anchor.y ? { x: 0, y: 1 } : end.x < anchor.x ? { x: -1, y: 0 } : { x: 1, y: 0 })
-          : end.y <= anchor.y ? { x: 0, y: -1 } : { x: 0, y: 1 };
-        if (Math.abs(end.y - anchor.y) < 4) dir = { x: out.x, y: 0 };
+      if (horizontal) {
+        // Land on the side of the target nearer the card, but never under the card itself.
+        const lean = cardSide === 'right' ? 0.62 : 0.38;
+        let x = hole.left + w * lean;
+        x = cardSide === 'right' ? Math.min(x, edgeFrom.x - BEND - SHAFT) : Math.max(x, edgeFrom.x + BEND + SHAFT);
+        const up = between ? i === 0 : hole.bottom <= anchor.y - MIN_LEG;
+        const down = between ? i === 1 : hole.top >= anchor.y + MIN_LEG;
+        if (up) {
+          end = { x, y: hole.bottom };
+          dir = { x: 0, y: -1 };
+        } else if (down) {
+          end = { x, y: hole.top };
+          dir = { x: 0, y: 1 };
+        } else if (anchor.y >= hole.top + 14 && anchor.y <= hole.bottom - 14) {
+          // Level with the card: straight in from the side.
+          end = { x: cardSide === 'right' ? hole.right : hole.left, y: anchor.y };
+          dir = { x: out.x, y: 0 };
+        } else if (anchor.y < hole.top) {
+          // Just above a big target: dive into it far enough for a proper downward arrow.
+          end = { x, y: Math.min(hole.bottom - 12, anchor.y + MIN_LEG + 10) };
+          dir = { x: 0, y: 1 };
+        } else {
+          end = { x, y: Math.max(hole.top + 12, anchor.y - MIN_LEG - 10) };
+          dir = { x: 0, y: -1 };
+        }
+        // A downward arrow into a tall area may need to start inside it to have room.
+        if (dir.y > 0 && end.y - anchor.y < MIN_LEG && h > 120) end.y = Math.min(hole.bottom - 12, anchor.y + MIN_LEG + 10);
+        if (dir.y < 0 && anchor.y - end.y < MIN_LEG && h > 120) end.y = Math.max(hole.top + 12, anchor.y - MIN_LEG - 10);
       } else {
-        dir = { x: 0, y: out.y };
+        const inLine = anchor.x >= hole.left + 14 && anchor.x <= hole.right - 14;
+        if (inLine) {
+          end = { x: anchor.x, y: out.y < 0 ? hole.bottom : hole.top };
+          dir = { x: 0, y: out.y };
+        } else {
+          const toRight = hole.left > anchor.x;
+          end = { x: toRight ? hole.left : hole.right, y: clamp(anchor.y + out.y * MIN_LEG, hole.top + 14, hole.bottom - 14) };
+          dir = { x: toRight ? 1 : -1, y: 0 };
+        }
       }
-      const run = dir.y ? Math.abs(end.y - anchor.y) : Math.abs(end.x - anchor.x);
-      const len = clamp(Math.min(run * 0.55, run - 18), 22, 56);
-      const half = Math.max(SHAFT * 1.15, len * 0.82);
+      const finalLeg = dir.y ? Math.abs(end.y - anchor.y) : Math.abs(end.x - anchor.x);
+      const turns = horizontal ? dir.y !== 0 : dir.x !== 0;
+      const len = clamp((turns ? finalLeg - BEND : finalLeg * 0.38) - 4, 26, 54);
+      const half = Math.max(SHAFT * 1.15, len * 0.85);
       const point = { x: end.x - dir.x * 2, y: end.y - dir.y * 2 };
       const base = { x: point.x - dir.x * len, y: point.y - dir.y * len };
-      // Handles never swing past the head, so short climbs stay a clean hook instead of a loop.
-      const along = horizontal ? Math.abs(base.x - anchor.x) : Math.abs(base.y - anchor.y);
-      const across = horizontal ? Math.abs(base.y - anchor.y) : Math.abs(base.x - anchor.x);
-      const turning = horizontal ? dir.y !== 0 : dir.x !== 0;
-      const k1 = along * 0.6;
-      const k2 = turning ? Math.max(6, across * 0.85) : Math.max(12, along * 0.4);
-      const c1 = { x: anchor.x + out.x * k1, y: anchor.y + out.y * k1 };
-      const c2 = { x: base.x - dir.x * k2, y: base.y - dir.y * k2 };
       // Run the shaft a little into the head so the join is hidden.
       const tuck = { x: base.x + dir.x * 6, y: base.y + dir.y * 6 };
-      shafts.push(`M${anchor.x},${anchor.y} C${c1.x},${c1.y} ${c2.x},${c2.y} ${tuck.x},${tuck.y}`);
+      shafts.push(elbowPath(anchor, tuck, horizontal ? 'x' : 'y'));
       const nx = -dir.y;
       const ny = dir.x;
       heads.push(`M${point.x},${point.y} L${base.x + nx * half},${base.y + ny * half} L${base.x - nx * half},${base.y - ny * half} Z`);
@@ -327,12 +371,14 @@ export function showCoachTips(ids, handlers = {}) {
     const headPaths = (cls, extra = '') => heads.map((d) => `<path class="${cls}" d="${d}" ${extra}/>`).join('');
     const W = SHAFT;
     maskShapes.innerHTML = `<rect ${vwh} fill="#000" />${shaftPaths('coach-shaft', `stroke="#fff" stroke-width="${W}"`)}${headPaths('coach-head', 'fill="#fff" stroke="#fff" stroke-width="2"')}`;
-    const band = W * 0.24;
+    // Light from the top-left: shadowed lower-right edges, a soft shine along the upper-left.
+    const band = W * 0.2;
+    const shine = W * 0.17;
     arrows.innerHTML = `
       <g class="coach-arrow-outline">${shaftPaths('coach-shaft', `stroke-width="${W + 7}"`)}${headPaths('coach-head', 'stroke-width="7"')}</g>
       <g class="coach-arrow-dark">${shaftPaths('coach-shaft', `stroke-width="${W}"`)}${headPaths('coach-head', 'stroke-width="2"')}</g>
-      <g class="coach-arrow-body" mask="url(#coach-arrow-mask)"><g transform="translate(0 ${-band})">${shaftPaths('coach-shaft', `stroke-width="${W}"`)}${headPaths('coach-head', 'stroke-width="2"')}</g></g>
-      <g class="coach-arrow-shine" mask="url(#coach-arrow-mask)"><g transform="translate(0 ${-W * 0.22})">${shaftPaths('coach-shaft', `stroke-width="${W * 0.34}"`)}</g></g>`;
+      <g mask="url(#coach-arrow-mask)"><g class="coach-arrow-body" filter="url(#coach-arrow-soft)" transform="translate(${-band} ${-band})">${shaftPaths('coach-shaft', `stroke-width="${W}"`)}${headPaths('coach-head', 'stroke-width="2"')}</g></g>
+      <g mask="url(#coach-arrow-mask)"><g class="coach-arrow-shine" filter="url(#coach-arrow-soft)" transform="translate(${-shine} ${-shine})">${shaftPaths('coach-shaft', `stroke-width="${W * 0.3}"`)}</g></g>`;
   }
 
   const schedule = () => {
