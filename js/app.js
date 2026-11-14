@@ -20,6 +20,7 @@ import { STORY_BEATS } from './story.js?v=20261113a1';
 import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261113h1';
 import { DEV } from './dev.js?v=20261113n1';
 import { HEDGE } from './maze-field.js?v=20261113m7';
+import { showCoachTips, isCoachOpen, TOUR_TIPS } from './coach-tips.js?v=20261114c2';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
 import { ECONOMY, bankBonusForgeXp } from './economy.js';
@@ -30,7 +31,7 @@ import { animateResultsStats, animateProgressFill, animateTallyPair } from './ta
 import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261113n1';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261113a2';
-import { initHowToPlay } from './how-to-play.js?v=20261113n1';
+import { initHowToPlay } from './how-to-play.js?v=20261114c1';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261113h1';
 import { initMeasurementLength } from './measurement-length.js?v=20261113h1';
@@ -93,6 +94,7 @@ const defaultSave = {
   turretLevels: {},
   upgradeCores: 0,
   crystalsCollected: 0,
+  tips: { off: false, seen: [] },
   siegeRecord: normalizeSiegeRecord(null),
   streak: normalizeStreak(null),
   daily: null,
@@ -240,6 +242,10 @@ function loadSave() {
     // All-time crystals: what the player holds plus what they have already spent on upgrades.
     const spent = Object.values(data.turretLevels).reduce((sum, level) => sum + (level >= 3 ? 3 : level >= 2 ? 1 : 0), 0);
     data.crystalsCollected = Math.max(normalizeCores(data.crystalsCollected), data.upgradeCores + spent);
+    data.tips = {
+      off: Boolean(data.tips?.off),
+      seen: Array.isArray(data.tips?.seen) ? data.tips.seen.filter((id) => typeof id === 'string') : [],
+    };
     data.siegeRecord = normalizeSiegeRecord(data.siegeRecord, data.siegesCompleted);
     data.streak = normalizeStreak(data.streak);
     data.records = normalizeRecords(data.records);
@@ -448,7 +454,7 @@ function closeArmory() {
 function renderHowToScreen() {
   const host = document.getElementById('howto-host');
   if (!host) return;
-  initHowToPlay(host, { onBack: closeHowTo });
+  initHowToPlay(host, { onBack: closeHowTo, onReplayTips: replayTips });
 }
 
 function openHowTo() {
@@ -1279,6 +1285,56 @@ function showHome(opts) {
   showScreen('home');
   showPendingStory();
   showPendingWeaponAnnouncement();
+  scheduleTips('home');
+}
+
+/** Tips this screen could show now, in order: the opening tour first, then one-off moments. */
+function tipsFor(where) {
+  const seen = new Set(save.tips.seen);
+  if (where === 'siege') return seen.has('siege') ? [] : ['siege'];
+  const tour = TOUR_TIPS.filter((id) => !seen.has(id));
+  if (tour.length) return tour;
+  if (!seen.has('contact') && document.getElementById('btn-hold-line')) return ['contact'];
+  if (!seen.has('crystal') && save.upgradeCores > 0) return ['crystal'];
+  return [];
+}
+
+let tipsTimer = 0;
+
+/** Show any due tips once the screen has settled and nothing else is on top. */
+function scheduleTips(where, attempt = 0) {
+  clearTimeout(tipsTimer);
+  if (save.tips.off || attempt > 8) return;
+  tipsTimer = window.setTimeout(() => {
+    if (isCoachOpen() || save.tips.off) return;
+    const onScreen = screens[where]?.classList.contains('active');
+    const blocked = document.body.classList.contains('modal-open') || document.querySelector('.gb-sheet-backdrop');
+    if (!onScreen) return;
+    if (blocked) {
+      scheduleTips(where, attempt + 1);
+      return;
+    }
+    const ids = tipsFor(where);
+    if (!ids.length) return;
+    showCoachTips(ids, {
+      onSeen(id) {
+        if (!save.tips.seen.includes(id)) save.tips.seen.push(id);
+        persistSave();
+      },
+      onTurnOff() {
+        save.tips.off = true;
+        persistSave();
+      },
+    });
+  }, attempt === 0 ? 700 : 1500);
+}
+
+/** How to Play's "Show tips again". */
+function replayTips() {
+  save.tips = { off: false, seen: [] };
+  persistSave();
+  closeHowTo();
+  if (screens.home?.classList.contains('active')) scheduleTips('home');
 }
 
 /** Level 3 and 4 players are offered more questions after their ten, for bonus time and coins. */
@@ -1625,6 +1681,7 @@ function initSiegeScreen() {
   };
 
   renderShopBar(shopBarEl, shopState);
+  if (!DEV.lanes) scheduleTips('siege');
   deploymentTurretsPlaced = 0;
   bonusBankProtected = 0;
   document.querySelector('.siege-layout')?.classList.remove('is-bonus-offer', 'is-battle-done');

@@ -166,7 +166,7 @@ export const HOW_TO_QUESTIONS = [
 
 /**
  * @param {HTMLElement} host
- * @param {{ onBack: () => void }} opts
+ * @param {{ onBack: () => void, onReplayTips?: () => void }} opts
  */
 export function initHowToPlay(host, opts) {
   const items = HOW_TO_QUESTIONS.map((item, i) => `
@@ -179,7 +179,10 @@ export function initHowToPlay(host, opts) {
     <div class="howto-panel">
       <h1 class="howto-title" id="howto-modal-title">How to play</h1>
       <div class="howto-list">${items}</div>
-      <button type="button" class="btn btn-primary howto-done" id="howto-done">GOT IT</button>
+      <div class="howto-buttons">
+        ${opts.onReplayTips ? '<button type="button" class="btn howto-tips" id="howto-tips">SHOW TIPS AGAIN</button>' : ''}
+        <button type="button" class="btn btn-primary howto-done" id="howto-done">GOT IT</button>
+      </div>
     </div>
   `;
 
@@ -193,4 +196,5 @@ export function initHowToPlay(host, opts) {
     });
   });
   host.querySelector('#howto-done')?.addEventListener('click', opts.onBack);
+  if (opts.onReplayTips) host.querySelector('#howto-tips')?.addEventListener('click', opts.onReplayTips);
 }

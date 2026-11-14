@@ -95,10 +95,22 @@
   to { opacity: 1; transform: none; }
 }
 
+.howto-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
 .howto-done {
-  display: block;
   min-width: 160px;
-  margin: 16px auto 0;
+}
+
+.howto-tips {
+  border: 2px solid rgba(255, 211, 107, 0.7);
+  background: transparent;
+  color: #ffd36b;
 }
 
 @media (prefers-reduced-motion: reduce) {
