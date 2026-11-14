@@ -42,6 +42,9 @@ export function initMathsQuest(host, callbacks) {
   let lastDone = { accuracy: 0, bonus: 0 };
   let disposed = false;
 
+  /** A set the player left part-way through, to carry on from. */
+  let paused = callbacks.resume ?? null;
+
   const classicSets = getQuestSetsForLevel(callbacks.difficultyLevel);
   let generatedSet = createQuestSet(callbacks.difficultyLevel);
 
@@ -230,6 +233,10 @@ export function initMathsQuest(host, callbacks) {
     }
 
     callbacks.onAnswer?.(right);
+    paused = activeSet && index + 1 < activeSet.problems.length
+      ? { set: activeSet, index: index + 1, correct, sessionXp }
+      : null;
+    callbacks.onProgress?.(paused);
     clearAnswerTimer();
     answerTimer = setTimeout(() => {
       answerTimer = null;
@@ -288,6 +295,15 @@ export function initMathsQuest(host, callbacks) {
     });
   }
 
+  const canResume = paused?.set && Array.isArray(paused.set.problems) && paused.index > 0 && paused.index < paused.set.problems.length;
+  if (canResume) {
+    activeSet = paused.set;
+    index = paused.index;
+    correct = paused.correct || 0;
+    sessionXp = paused.sessionXp || 0;
+    phase = 'quiz';
+    callbacks.showToast(`Welcome back — carry on from problem ${index + 1}!`, { variant: 'success' });
+  }
   render();
 
   return () => {

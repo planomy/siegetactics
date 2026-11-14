@@ -33,12 +33,12 @@ import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './en
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261113a2';
 import { initHowToPlay } from './how-to-play.js?v=20261114k1';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
-import { initTimesTables } from './times-tables.js?v=20261114k1';
-import { initMeasurementLength } from './measurement-length.js?v=20261114k1';
-import { initFractions } from './fractions.js?v=20261114k1';
-import { initAnglesShapes } from './angles-shapes.js?v=20261114k1';
-import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261114k1';
-import { initExpandedMath } from './expanded-maths.js?v=20261114k1';
+import { initTimesTables } from './times-tables.js?v=20261114m1';
+import { initMeasurementLength } from './measurement-length.js?v=20261114m1';
+import { initFractions } from './fractions.js?v=20261114m1';
+import { initAnglesShapes } from './angles-shapes.js?v=20261114m1';
+import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261114m1';
+import { initExpandedMath } from './expanded-maths.js?v=20261114m1';
 import { initBattlePrep } from './battle-prep.js?v=20261114k1';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js?v=20261114k1';
 import {
@@ -71,7 +71,7 @@ const SAVE_KEY = 'grannyboom.siege.v1';
 /** Dev mode plays on a fresh copy of the real save each load, so testing never changes real progress. */
 const DEV_SAVE_KEY = `${SAVE_KEY}.dev`;
 
-/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, levelScale?: number, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, levelScale?: number, pausedSets?: Record<string, any>, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -258,6 +258,7 @@ function loadSave() {
     // All-time crystals: what the player holds plus what they have already spent on upgrades.
     const spent = Object.values(data.turretLevels).reduce((sum, level) => sum + (level >= 3 ? 3 : level >= 2 ? 1 : 0), 0);
     data.crystalsCollected = Math.max(normalizeCores(data.crystalsCollected), data.upgradeCores + spent);
+    data.pausedSets = data.pausedSets && typeof data.pausedSets === 'object' && !Array.isArray(data.pausedSets) ? data.pausedSets : {};
     data.tips = {
       off: Boolean(data.tips?.off),
       seen: Array.isArray(data.tips?.seen) ? data.tips.seen.filter((id) => typeof id === 'string') : [],
@@ -321,6 +322,7 @@ function toggleSound() {
 }
 
 function showScreen(id) {
+  document.querySelector('.charged-banner')?.remove();
   const inLearning = LEARNING_SCREENS.has(id);
   // A hot streak carries from one question screen to the next and into the battle it earns.
   if (id === 'siege') {
@@ -1003,7 +1005,10 @@ function creditTrainingAnswer(right) {
   if (previouslyReady) save.stretchCoins += STRETCH_COINS_PER_ANSWER;
   persistSave();
   refreshMissionControl();
-  if (!previouslyReady && isGateOpen(save.trainingGate)) awardUpgradeCore('MISSION COMPLETE');
+  if (!previouslyReady && isGateOpen(save.trainingGate)) {
+    awardUpgradeCore('MISSION COMPLETE');
+    showChargedBanner();
+  }
   const extraTime = bonusSiegeSeconds(save.trainingGate);
   if (extraTime > previousBonus) {
     showToast(`BONUS ASSAULT EARNED! +${extraTime} seconds after your normal siege.`, {
@@ -1090,7 +1095,50 @@ function createTrainingHandlers(moduleId) {
     siegeReady: () => DEV.skipForge || isGateOpen(save.trainingGate),
     onAction: goToTheAction,
     showToast,
+    resume: pausedSetFor(moduleId, level),
+    onProgress(state) {
+      rememberPausedSet(moduleId, level, state);
+    },
   };
+}
+
+/** A set left part-way through, if it was at the level now chosen. @param {string} moduleId @param {number} level */
+function pausedSetFor(moduleId, level) {
+  const p = save.pausedSets?.[moduleId];
+  return p && p.level === level ? p : null;
+}
+
+/** @param {string} moduleId @param {number} level @param {object|null} state */
+function rememberPausedSet(moduleId, level, state) {
+  const sets = { ...(save.pausedSets ?? {}) };
+  if (state) sets[moduleId] = { ...state, level };
+  else delete sets[moduleId];
+  save.pausedSets = sets;
+  persistSave();
+}
+
+const TOPIC_SCREENS = new Set(['timesTables', 'measurement', 'fractions', 'angles', 'mathsQuest', 'expanded']);
+
+/** The might builder just filled during a topic set: offer the battle, or let them finish the set. */
+function showChargedBanner() {
+  const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'))?.[0];
+  if (!active || !TOPIC_SCREENS.has(active)) return;
+  document.querySelector('.charged-banner')?.remove();
+  const banner = document.createElement('div');
+  banner.className = 'charged-banner';
+  banner.setAttribute('role', 'status');
+  banner.innerHTML = `
+    <div class="charged-banner-text"><b>DEFENCES CHARGED!</b><span>Granny's ready for battle.</span></div>
+    <button type="button" class="charged-banner-go">DEFEND GRANNY ▸</button>
+    <button type="button" class="charged-banner-stay">Finish this set</button>`;
+  banner.querySelector('.charged-banner-go')?.addEventListener('click', () => {
+    banner.remove();
+    audio.warmUp();
+    audio.playLockAndLoad();
+    goToTheAction();
+  });
+  banner.querySelector('.charged-banner-stay')?.addEventListener('click', () => banner.remove());
+  document.body.append(banner);
 }
 
 /** Straight from a finished maths session into the siege, without passing Maths HQ, so the music plays on. */
@@ -1486,6 +1534,8 @@ function showTimesTables() {
     siegeReady: training.siegeReady,
     onAction: training.onAction,
     showToast: training.showToast,
+    resume: training.resume,
+    onProgress: training.onProgress,
   });
   showScreen('timesTables');
 }
@@ -1519,6 +1569,8 @@ function showMeasurementLength() {
     siegeReady: training.siegeReady,
     onAction: training.onAction,
     showToast: training.showToast,
+    resume: training.resume,
+    onProgress: training.onProgress,
   });
   showScreen('measurement');
 }
@@ -1541,6 +1593,8 @@ function showFractions() {
     siegeReady: training.siegeReady,
     onAction: training.onAction,
     showToast: training.showToast,
+    resume: training.resume,
+    onProgress: training.onProgress,
   });
   showScreen('fractions');
 }
@@ -1563,6 +1617,8 @@ function showAnglesShapes() {
     siegeReady: training.siegeReady,
     onAction: training.onAction,
     showToast: training.showToast,
+    resume: training.resume,
+    onProgress: training.onProgress,
   });
   showScreen('angles');
 }
@@ -1589,6 +1645,8 @@ function showMathsQuest() {
     siegeReady: training.siegeReady,
     onAction: training.onAction,
     showToast: training.showToast,
+    resume: training.resume,
+    onProgress: training.onProgress,
   });
   showScreen('mathsQuest');
 }
@@ -1612,6 +1670,8 @@ function showExpandedMath(topicId) {
     siegeReady: training.siegeReady,
     onAction: training.onAction,
     showToast: training.showToast,
+    resume: training.resume,
+    onProgress: training.onProgress,
   });
   showScreen('expanded');
 }

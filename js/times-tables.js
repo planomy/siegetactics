@@ -3,6 +3,7 @@ import { GATE, tableKey } from './training-gate.js';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { renderDoneActions, bindDoneActions } from './done-actions.js';
+import { isResumable } from './drill-session.js?v=20261114m1';
 
 /** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */
 
@@ -109,6 +110,8 @@ export function initTimesTables(host, callbacks) {
   let streak = 0;
   let sessionXp = 0;
   let answered = false;
+  /** A set the player left part-way through, to carry on from. */
+  let paused = callbacks.resume ?? null;
 
   function render() {
     if (phase === 'pick') renderPick();
@@ -151,12 +154,23 @@ export function initTimesTables(host, callbacks) {
     host.querySelectorAll('[data-table]').forEach((btn) => {
       btn.addEventListener('click', () => {
         chosenTable = Number(btn.getAttribute('data-table'));
-        startSession();
+        startSession(paused?.table === chosenTable);
       });
     });
   }
 
-  function startSession() {
+  function startSession(allowResume = false) {
+    streak = 0;
+    phase = 'quiz';
+    answered = false;
+    if (allowResume && isResumable(paused)) {
+      ({ deck, index } = paused);
+      correct = paused.correct || 0;
+      sessionXp = paused.sessionXp || 0;
+      callbacks.showToast(`Welcome back — carry on from question ${index + 1}!`, { variant: 'success' });
+      render();
+      return;
+    }
     deck = [];
     const used = new Set();
     let guard = 0;
@@ -250,6 +264,8 @@ export function initTimesTables(host, callbacks) {
         }
 
         callbacks.onAnswer?.(right);
+        paused = index + 1 < deck.length ? { table: chosenTable, deck, index: index + 1, correct, sessionXp } : null;
+        callbacks.onProgress?.(paused);
         setTimeout(() => {
           index += 1;
           if (index >= deck.length) finishSession();
@@ -313,8 +329,13 @@ export function initTimesTables(host, callbacks) {
         ${renderDoneActions({ againLabel: 'Drill again', siegeReady: callbacks.siegeReady, onAction: callbacks.onAction })}
       </div>
     `;
-    bindDoneActions(host, { onAgain: startSession, onHome: callbacks.onHome, onAction: callbacks.onAction });
+    bindDoneActions(host, { onAgain: () => startSession(false), onHome: callbacks.onHome, onAction: callbacks.onAction });
   }
 
-  render();
+  if (isResumable(paused) && typeof paused.table === 'number') {
+    chosenTable = paused.table;
+    startSession(true);
+  } else {
+    render();
+  }
 }

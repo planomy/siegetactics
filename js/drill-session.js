@@ -26,6 +26,8 @@ import { renderDoneActions, bindDoneActions } from './done-actions.js';
  *   unitDone?: boolean,
  *   gatePassMessage?: string,
  *   optionClass?: string,
+ *   resume?: { deck: any[], index: number, correct: number, sessionXp: number }|null,
+ *   onProgress?: (state: { deck: any[], index: number, correct: number, sessionXp: number }|null) => void,
  * }} config
  * @returns {() => void} Dispose — clears pending timers (call before re-init or leaving).
  */
@@ -44,6 +46,8 @@ export function initDrillSession(host, config) {
   let lastDone = { accuracy: 0, passed: false };
   let disposed = false;
   const optClass = config.optionClass ?? 'drill-opt';
+  /** A set the player left part-way through, to carry on from. */
+  let paused = config.resume ?? null;
 
   function clearAnswerTimer() {
     if (answerTimer != null) {
@@ -59,9 +63,19 @@ export function initDrillSession(host, config) {
     config.onHome();
   }
 
-  function startSession() {
+  function startSession(allowResume = false) {
     clearAnswerTimer();
     sessionReported = false;
+    phase = 'quiz';
+    answered = false;
+    if (allowResume && isResumable(paused)) {
+      ({ deck, index } = paused);
+      correct = paused.correct || 0;
+      sessionXp = paused.sessionXp || 0;
+      config.showToast(`Welcome back — carry on from question ${index + 1}!`, { variant: 'success' });
+      render();
+      return;
+    }
     deck = [];
     const usedPrompts = new Set();
     let guard = 0;
@@ -138,6 +152,8 @@ export function initDrillSession(host, config) {
         }
 
         config.onAnswer?.(right);
+        paused = index + 1 < deck.length ? { deck, index: index + 1, correct, sessionXp } : null;
+        config.onProgress?.(paused);
         clearAnswerTimer();
         answerTimer = setTimeout(() => {
           answerTimer = null;
@@ -184,7 +200,7 @@ export function initDrillSession(host, config) {
         ${renderDoneActions({ againLabel: 'Try again', siegeReady: config.siegeReady, onAction: config.onAction })}
       </div>
     `;
-    bindDoneActions(host, { onAgain: startSession, onHome: goHome, onAction: goToAction });
+    bindDoneActions(host, { onAgain: () => startSession(false), onHome: goHome, onAction: goToAction });
   }
 
   function goToAction() {
@@ -194,12 +210,17 @@ export function initDrillSession(host, config) {
     config.onAction?.();
   }
 
-  startSession();
+  startSession(true);
 
   return () => {
     disposed = true;
     clearAnswerTimer();
   };
+}
+
+/** @param {any} p */
+export function isResumable(p) {
+  return Boolean(p && Array.isArray(p.deck) && p.deck.length > 0 && p.index > 0 && p.index < p.deck.length);
 }
 
 /** @param {string} s */

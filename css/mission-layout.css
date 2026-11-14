@@ -597,3 +597,73 @@ body.mission-mode #app {
   height: auto;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
 }
+
+/* "Defences charged!" — the might builder filled during a topic set. */
+.charged-banner {
+  position: fixed;
+  top: 84px;
+  left: 50%;
+  z-index: 8000;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100vw - 24px);
+  padding: 10px 14px 10px 18px;
+  border: 3px solid #fff;
+  border-radius: 20px;
+  background: linear-gradient(160deg, #ef3b2d, #b3121b);
+  box-shadow: 0 6px 0 #6e0810, 0 12px 26px rgba(0, 0, 0, .55);
+  color: #fff;
+  translate: -50% 0;
+  animation: charged-banner-in .4s cubic-bezier(.2, 1.4, .4, 1);
+}
+
+.charged-banner-text {
+  display: grid;
+  line-height: 1.1;
+}
+
+.charged-banner-text b {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 400;
+  letter-spacing: .05em;
+  text-shadow: 2px 2px 0 #6e0810;
+}
+
+.charged-banner-text span {
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+.charged-banner-go {
+  padding: 8px 14px;
+  border: 3px solid #fff;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffd84a, #ff9500);
+  box-shadow: 0 4px 0 #a85a00;
+  color: #7a0c12;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: .05em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.charged-banner-stay {
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, .85);
+  font-weight: 700;
+  text-decoration: underline;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+@keyframes charged-banner-in {
+  from { translate: -50% -30px; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .charged-banner { animation: none; }
+}

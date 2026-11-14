@@ -1,4 +1,4 @@
-import { initDrillSession } from './drill-session.js?v=20261114k1';
+import { initDrillSession } from './drill-session.js?v=20261114m1';
 import { legacyLevel } from './difficulty.js?v=20261114k1';
 import { extraLevelQuestion } from './extra-levels.js?v=20261114k1';
 
@@ -314,6 +314,8 @@ export function initAnglesShapes(host, callbacks) {
     siegeReady: callbacks.siegeReady,
     onAction: callbacks.onAction,
     showToast: callbacks.showToast,
+    resume: callbacks.resume,
+    onProgress: callbacks.onProgress,
     optionClass: 'angles-opt',
   });
 }

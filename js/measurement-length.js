@@ -6,6 +6,7 @@ import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
 import { renderDoneActions, bindDoneActions } from './done-actions.js';
+import { isResumable } from './drill-session.js?v=20261114m1';
 
 /** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */
 
@@ -360,6 +361,8 @@ export function initMeasurementLength(host, callbacks) {
   let answerTimer = null;
   let lastDone = { accuracy: 0, passed: false };
   let disposed = false;
+  /** A set the player left part-way through, to carry on from. */
+  let paused = callbacks.resume ?? null;
 
   function clearAnswerTimer() {
     if (answerTimer != null) {
@@ -375,9 +378,19 @@ export function initMeasurementLength(host, callbacks) {
     callbacks.onHome();
   }
 
-  function startSession() {
+  function startSession(allowResume = false) {
     clearAnswerTimer();
     sessionReported = false;
+    phase = 'quiz';
+    answered = false;
+    if (allowResume && isResumable(paused)) {
+      ({ deck, index } = paused);
+      correct = paused.correct || 0;
+      sessionXp = paused.sessionXp || 0;
+      callbacks.showToast(`Welcome back — carry on from question ${index + 1}!`, { variant: 'success' });
+      render();
+      return;
+    }
     deck = [];
     const count = sessionSize(callbacks.difficultyLevel);
     const usedPrompts = new Set();
@@ -454,6 +467,8 @@ export function initMeasurementLength(host, callbacks) {
         }
 
         callbacks.onAnswer?.(right);
+        paused = index + 1 < deck.length ? { deck, index: index + 1, correct, sessionXp } : null;
+        callbacks.onProgress?.(paused);
         clearAnswerTimer();
         answerTimer = setTimeout(() => {
           answerTimer = null;
@@ -497,10 +512,10 @@ export function initMeasurementLength(host, callbacks) {
         ${renderDoneActions({ againLabel: 'Try again', siegeReady: callbacks.siegeReady, onAction: callbacks.onAction })}
       </div>
     `;
-    bindDoneActions(host, { onAgain: startSession, onHome: goHome, onAction: callbacks.onAction });
+    bindDoneActions(host, { onAgain: () => startSession(false), onHome: goHome, onAction: callbacks.onAction });
   }
 
-  startSession();
+  startSession(true);
 
   return () => {
     disposed = true;
