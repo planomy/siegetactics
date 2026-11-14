@@ -256,6 +256,30 @@
     drop-shadow(0 0 3px rgba(93, 255, 138, 0.7));
   opacity: 0.92;
   transition: opacity 0.35s ease, transform 0.35s ease;
+  /* Separate rotate/scale properties so the hologram turn stacks with the swap transform. */
+  animation:
+    threat-hologram-turn 9s ease-in-out infinite alternate,
+    threat-hologram-breathe 3.4s ease-in-out infinite alternate;
+}
+
+.threat-dossier-wire {
+  perspective: 420px;
+}
+
+@keyframes threat-hologram-turn {
+  from { rotate: y -16deg; }
+  to { rotate: y 16deg; }
+}
+
+@keyframes threat-hologram-breathe {
+  from { scale: 0.97; }
+  to { scale: 1.03; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .threat-dossier-img {
+    animation: none;
+  }
 }
 
 .threat-dossier-img-swap {
