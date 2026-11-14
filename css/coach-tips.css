@@ -35,28 +35,31 @@
 }
 
 .coach-arrows {
-  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(4px 10px 7px rgba(0, 0, 0, 0.7));
 }
 
-.coach-arrow-edge {
+.coach-shaft {
   fill: none;
-  stroke: #b3121b;
-  stroke-width: 20;
   stroke-linecap: round;
-}
-
-.coach-arrow {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 11;
-  stroke-linecap: round;
-}
-
-.coach-arrow-head {
-  fill: #fff;
-  stroke: #b3121b;
-  stroke-width: 4.5;
   stroke-linejoin: round;
+}
+
+.coach-head {
+  stroke-linejoin: round;
+}
+
+.coach-arrow-outline .coach-shaft { stroke: #fff; }
+.coach-arrow-outline .coach-head { fill: #fff; stroke: #fff; }
+
+.coach-arrow-dark .coach-shaft { stroke: #9c0a10; }
+.coach-arrow-dark .coach-head { fill: #9c0a10; stroke: #9c0a10; }
+
+.coach-arrow-body .coach-shaft { stroke: #e8221d; }
+.coach-arrow-body .coach-head { fill: #e8221d; stroke: #e8221d; }
+
+.coach-arrow-shine .coach-shaft {
+  stroke: #ff6a3d;
+  opacity: 0.85;
 }
 
 .coach-card {

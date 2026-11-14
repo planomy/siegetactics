@@ -63,7 +63,10 @@ const PAD = 8;
 const GAP = 46;
 /** Extra room when one card forks arrows to several targets. */
 const GAP_FORK = 96;
-const STEM = 34;
+/** Arrow body width; heads scale to the room they have. */
+const SHAFT = 30;
+/** Arrows start this far under the card so they look like they come out of it. */
+const TUCK = 22;
 const EDGE = 12;
 
 /** @type {(() => void)|null} */
@@ -136,7 +139,8 @@ function aimPoint(hole, from) {
     : from.x < hole.left ? hole.left + w * 0.28
     : clamp(from.x, hole.left, hole.right);
   if (hole.bottom < from.y) return { x, y: hole.bottom };
-  if (hole.top > from.y) return { x, y: hole.top + (h > 150 ? 36 : 0) };
+  // Big areas take the arrow inside, deep enough for a proper downward swoop.
+  if (hole.top > from.y) return { x, y: h > 150 ? Math.min(hole.bottom - 12, Math.max(hole.top + 36, from.y + 120)) : hole.top };
   return nearestOnRect({ ...hole, width: w, height: h }, from.x, from.y);
 }
 
@@ -174,7 +178,11 @@ export function showCoachTips(ids, handlers = {}) {
   rings.classList.add('coach-rings');
   const arrows = document.createElementNS(SVG_NS, 'g');
   arrows.classList.add('coach-arrows');
-  svg.append(shade, rings, arrows);
+  const defs = document.createElementNS(SVG_NS, 'defs');
+  defs.innerHTML = '<mask id="coach-arrow-mask" maskUnits="userSpaceOnUse"><g class="coach-mask-shapes"></g></mask>';
+  svg.append(defs, shade, rings, arrows);
+  const arrowMask = /** @type {SVGMaskElement} */ (defs.querySelector('mask'));
+  const maskShapes = /** @type {SVGGElement} */ (defs.querySelector('.coach-mask-shapes'));
 
   const card = document.createElement('div');
   card.className = 'coach-card';
@@ -241,57 +249,90 @@ export function showCoachTips(ids, handlers = {}) {
     const ch = card.offsetHeight;
     const u = unionRect(rects);
     const tip = COACH_TIPS[queue[index]];
-    // Leave room above the fork for the upward arrowhead.
-    const centerY = tip.between && rects.length === 2 && rects[1].top > rects[0].bottom
-      ? Math.min(rects[0].bottom + PAD + 48, rects[1].top)
-      : undefined;
+    // Trunk just above the lower target, leaving the most room for the upward arrowhead.
+    const between = Boolean(tip.between && rects.length === 2 && rects[1].top > rects[0].bottom);
+    const centerY = between ? Math.min(rects[0].bottom + PAD + 80, rects[1].top + 40) : undefined;
     let pos = placeCard(u, cw, ch, rects.length > 1 ? GAP_FORK : GAP, centerY);
     if (pos.side === 'none' && rects.length > 1) pos = placeCard(u, cw, ch, GAP, centerY);
     const anchorY = centerY !== undefined ? clamp(centerY, pos.y + 30, pos.y + ch - 30) : pos.y + ch / 2;
     card.style.left = `${Math.round(pos.x)}px`;
     card.style.top = `${Math.round(pos.y)}px`;
 
-    // One anchor on the card edge facing the targets, so several arrows fork from the same point.
+    // Every arrow starts at one point tucked under the card, so branches peel off a shared trunk.
     const anchor =
-      pos.side === 'left' ? { x: pos.x, y: anchorY }
-      : pos.side === 'right' ? { x: pos.x + cw, y: anchorY }
-      : pos.side === 'top' ? { x: pos.x + cw / 2, y: pos.y }
-      : pos.side === 'bottom' ? { x: pos.x + cw / 2, y: pos.y + ch }
+      pos.side === 'left' ? { x: pos.x + TUCK, y: anchorY }
+      : pos.side === 'right' ? { x: pos.x + cw - TUCK, y: anchorY }
+      : pos.side === 'top' ? { x: pos.x + cw / 2, y: pos.y + TUCK }
+      : pos.side === 'bottom' ? { x: pos.x + cw / 2, y: pos.y + ch - TUCK }
       : null;
     arrows.innerHTML = '';
+    maskShapes.innerHTML = '';
     if (!anchor) return;
-    // Several targets share one stem that forks, so the arrow reads as a single "this or that".
+    const horizontal = pos.side === 'left' || pos.side === 'right';
     const out =
       pos.side === 'left' ? { x: -1, y: 0 }
       : pos.side === 'right' ? { x: 1, y: 0 }
       : pos.side === 'top' ? { x: 0, y: -1 }
       : { x: 0, y: 1 };
-    const fork = rects.length > 1 ? { x: anchor.x + out.x * STEM, y: anchor.y + out.y * STEM } : anchor;
-    if (fork !== anchor) {
-      const stem = `M${anchor.x},${anchor.y} L${fork.x},${fork.y}`;
-      arrows.insertAdjacentHTML('beforeend', `<path class="coach-arrow-edge" d="${stem}" /><path class="coach-arrow" d="${stem}" />`);
-    }
-    rects.forEach((r) => {
+    const edgeFrom = { x: anchor.x + out.x * TUCK, y: anchor.y + out.y * TUCK };
+
+    const shafts = [];
+    const heads = [];
+    rects.forEach((r, i) => {
       const hole = { left: r.left - PAD, top: r.top - PAD, right: r.right + PAD, bottom: r.bottom + PAD };
-      const horizontal = pos.side === 'left' || pos.side === 'right';
-      const end = horizontal
-        ? aimPoint(hole, fork)
-        : nearestOnRect({ ...hole, width: hole.right - hole.left, height: hole.bottom - hole.top }, fork.x, fork.y);
-      const ctrl = horizontal ? { x: end.x, y: fork.y } : { x: fork.x, y: end.y };
-      const dx = end.x - ctrl.x;
-      const dy = end.y - ctrl.y;
-      const len = Math.hypot(dx, dy) || 1;
-      const ux = dx / len;
-      const uy = dy / len;
-      const point = { x: end.x - ux * 3, y: end.y - uy * 3 };
-      const base = { x: point.x - ux * 30, y: point.y - uy * 30 };
-      const head = `M${point.x},${point.y} L${base.x - uy * 22},${base.y + ux * 22} L${base.x + uy * 22},${base.y - ux * 22} Z`;
-      const d = `M${fork.x},${fork.y} Q${ctrl.x},${ctrl.y} ${base.x + ux * 4},${base.y + uy * 4}`;
-      arrows.insertAdjacentHTML(
-        'beforeend',
-        `<path class="coach-arrow-edge" d="${d}" /><path class="coach-arrow" d="${d}" /><path class="coach-arrow-head" d="${head}" />`
-      );
+      let end = horizontal
+        ? aimPoint(hole, edgeFrom)
+        : nearestOnRect({ ...hole, width: hole.right - hole.left, height: hole.bottom - hole.top }, edgeFrom.x, edgeFrom.y);
+      // Direction the head travels as it lands.
+      let dir;
+      if (between && horizontal) {
+        // Stacked pair: up into the first, down into the second.
+        const x = aimPoint(hole, edgeFrom).x;
+        end = i === 0
+          ? { x, y: hole.bottom }
+          : { x, y: clamp(anchor.y + 120, hole.top + 36, hole.bottom - 12) };
+        dir = i === 0 ? { x: 0, y: -1 } : { x: 0, y: 1 };
+      } else if (horizontal) {
+        dir = end.y < hole.bottom && end.y > hole.top && end.y !== hole.top
+          ? (end.y > anchor.y ? { x: 0, y: 1 } : end.x < anchor.x ? { x: -1, y: 0 } : { x: 1, y: 0 })
+          : end.y <= anchor.y ? { x: 0, y: -1 } : { x: 0, y: 1 };
+        if (Math.abs(end.y - anchor.y) < 4) dir = { x: out.x, y: 0 };
+      } else {
+        dir = { x: 0, y: out.y };
+      }
+      const run = dir.y ? Math.abs(end.y - anchor.y) : Math.abs(end.x - anchor.x);
+      const len = clamp(Math.min(run * 0.55, run - 18), 22, 56);
+      const half = Math.max(SHAFT * 1.15, len * 0.82);
+      const point = { x: end.x - dir.x * 2, y: end.y - dir.y * 2 };
+      const base = { x: point.x - dir.x * len, y: point.y - dir.y * len };
+      // Handles never swing past the head, so short climbs stay a clean hook instead of a loop.
+      const along = horizontal ? Math.abs(base.x - anchor.x) : Math.abs(base.y - anchor.y);
+      const across = horizontal ? Math.abs(base.y - anchor.y) : Math.abs(base.x - anchor.x);
+      const turning = horizontal ? dir.y !== 0 : dir.x !== 0;
+      const k1 = along * 0.6;
+      const k2 = turning ? Math.max(6, across * 0.85) : Math.max(12, along * 0.4);
+      const c1 = { x: anchor.x + out.x * k1, y: anchor.y + out.y * k1 };
+      const c2 = { x: base.x - dir.x * k2, y: base.y - dir.y * k2 };
+      // Run the shaft a little into the head so the join is hidden.
+      const tuck = { x: base.x + dir.x * 6, y: base.y + dir.y * 6 };
+      shafts.push(`M${anchor.x},${anchor.y} C${c1.x},${c1.y} ${c2.x},${c2.y} ${tuck.x},${tuck.y}`);
+      const nx = -dir.y;
+      const ny = dir.x;
+      heads.push(`M${point.x},${point.y} L${base.x + nx * half},${base.y + ny * half} L${base.x - nx * half},${base.y - ny * half} Z`);
     });
+
+    const vwh = `x="0" y="0" width="${vw}" height="${vh}"`;
+    Object.entries({ x: 0, y: 0, width: vw, height: vh }).forEach(([k, v]) => arrowMask.setAttribute(k, String(v)));
+    const shaftPaths = (cls, extra = '') => shafts.map((d) => `<path class="${cls}" d="${d}" ${extra}/>`).join('');
+    const headPaths = (cls, extra = '') => heads.map((d) => `<path class="${cls}" d="${d}" ${extra}/>`).join('');
+    const W = SHAFT;
+    maskShapes.innerHTML = `<rect ${vwh} fill="#000" />${shaftPaths('coach-shaft', `stroke="#fff" stroke-width="${W}"`)}${headPaths('coach-head', 'fill="#fff" stroke="#fff" stroke-width="2"')}`;
+    const band = W * 0.24;
+    arrows.innerHTML = `
+      <g class="coach-arrow-outline">${shaftPaths('coach-shaft', `stroke-width="${W + 7}"`)}${headPaths('coach-head', 'stroke-width="7"')}</g>
+      <g class="coach-arrow-dark">${shaftPaths('coach-shaft', `stroke-width="${W}"`)}${headPaths('coach-head', 'stroke-width="2"')}</g>
+      <g class="coach-arrow-body" mask="url(#coach-arrow-mask)"><g transform="translate(0 ${-band})">${shaftPaths('coach-shaft', `stroke-width="${W}"`)}${headPaths('coach-head', 'stroke-width="2"')}</g></g>
+      <g class="coach-arrow-shine" mask="url(#coach-arrow-mask)"><g transform="translate(0 ${-W * 0.22})">${shaftPaths('coach-shaft', `stroke-width="${W * 0.34}"`)}</g></g>`;
   }
 
   const schedule = () => {
