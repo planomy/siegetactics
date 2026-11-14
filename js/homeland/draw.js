@@ -1,7 +1,30 @@
 /**
- * Placeholder art for the Homeland prototype, drawn with shapes so the feel can be tested
- * before any real art is made.
+ * Drawn scenery for the Homeland run. Granny herself is her rig's scooter sprite.
  */
+
+/** @typedef {import('./rigs.js').Rig} Rig */
+
+/** How much of the scooter width the tyres span. */
+const TYRES = 0.963;
+
+/** @type {Map<string, HTMLImageElement>} */
+const sprites = new Map();
+
+/** @param {string} src */
+export function rigSprite(src) {
+  let img = sprites.get(src);
+  if (!img) {
+    img = new Image();
+    img.src = src;
+    sprites.set(src, img);
+  }
+  return img;
+}
+
+/** Screen pixels per sprite pixel, and the middle of the tyres in sprite pixels. @param {Rig} rig @param {number} w */
+function fit(rig, w) {
+  return { s: (w * TYRES) / (rig.tyres[1] - rig.tyres[0]), mid: (rig.tyres[0] + rig.tyres[1]) / 2 };
+}
 
 /**
  * Granny on her rocket-powered mobility scooter, seen from behind.
@@ -9,83 +32,93 @@
  * @param {number} x Centre of the scooter on screen.
  * @param {number} y Bottom of the wheels on screen.
  * @param {number} w Scooter width in pixels.
- * @param {{ t: number, flame: number, lean: number }} o flame 1 is a normal boost, 2+ is the jetpack.
+ * @param {{ t: number, flame: number, lean: number, rig: Rig }} o flame 1 is idling, up to 1.6 at full speed, 2+ is the dash.
  */
 export function drawGranny(ctx, x, y, w, o) {
-  const u = w / 100;
+  const img = rigSprite(o.rig.sprite);
+  if (!img.complete || !img.naturalWidth) return;
+  const { s, mid } = fit(o.rig, w);
   ctx.save();
   ctx.translate(x, y);
-  ctx.rotate(o.lean * 0.18);
+  ctx.rotate(o.lean * 0.1);
+  ctx.drawImage(img, -mid * s, -o.rig.wheelY * s, img.naturalWidth * s, img.naturalHeight * s);
+  drawExhaust(ctx, w, o);
+  ctx.restore();
+}
 
-  const flick = 0.75 + 0.25 * Math.sin(o.t * 40) + 0.1 * Math.sin(o.t * 73);
-  const flameLen = (18 + 14 * o.flame) * flick * u;
-  const flame = ctx.createLinearGradient(0, -20 * u, 0, -20 * u + flameLen + 16 * u);
-  flame.addColorStop(0, '#fff6b0');
-  flame.addColorStop(0.35, '#ffb02e');
-  flame.addColorStop(1, 'rgba(255, 60, 20, 0)');
-  ctx.fillStyle = flame;
-  for (const side of o.flame >= 2 ? [-22, 22] : [0]) {
+/**
+ * Screen positions of the two rocket nozzles, for sparks to fly from.
+ * @param {number} x @param {number} y @param {number} w @param {number} lean @param {Rig} rig
+ */
+export function exhaustPoints(x, y, w, lean, rig) {
+  const { s, mid } = fit(rig, w);
+  const cos = Math.cos(lean * 0.1);
+  const sin = Math.sin(lean * 0.1);
+  const py = (rig.pipeY - rig.wheelY) * s;
+  return rig.pipes.map((p) => {
+    const px = (p - mid) * s;
+    return { x: x + px * cos - py * sin, y: y + px * sin + py * cos };
+  });
+}
+
+/** @param {CanvasRenderingContext2D} ctx @param {number} w @param {{ t: number, flame: number, rig: Rig }} o */
+function drawExhaust(ctx, w, o) {
+  const boost = o.flame >= 2;
+  const throttle = boost ? 1.9 : o.flame;
+  const { s, mid } = fit(o.rig, w);
+  const cy = (o.rig.pipeY - o.rig.wheelY) * s;
+  const r = o.rig.pipeR * s;
+  ctx.globalCompositeOperation = 'lighter';
+  o.rig.pipes.forEach((p, i) => {
+    const cx = (p - mid) * s;
+    const glowR = r * (2.1 + 0.35 * Math.sin(o.t * 33 + i * 2));
+    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+    glow.addColorStop(0, boost ? 'rgba(170, 220, 255, 0.6)' : 'rgba(255, 170, 60, 0.5)');
+    glow.addColorStop(1, 'rgba(255, 90, 20, 0)');
+    ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.moveTo((side - 9) * u, -20 * u);
-    ctx.quadraticCurveTo(side * u, -20 * u + flameLen * 1.4, (side + 9) * u, -20 * u);
+    ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
     ctx.fill();
+
+    const flicker = 0.82 + 0.12 * Math.sin(o.t * 47 + i * 2.1) + 0.08 * Math.sin(o.t * 113 + i * 4.3) + 0.06 * (Math.random() - 0.5);
+    const len = w * 0.22 * throttle * flicker;
+    flameTongue(ctx, cx, cy, r * 1.0, len, o.t * 1.0, i, OUTER_FLAME);
+    flameTongue(ctx, cx, cy, r * 0.85, len * 0.8, o.t * 1.4, i + 3, OUTER_FLAME);
+    flameTongue(ctx, cx, cy, r * 0.55, len * 0.55, o.t * 1.7, i + 7, boost ? BOOST_CORE : CORE_FLAME);
+  });
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+const OUTER_FLAME = [[0, 'rgba(255, 236, 170, 0.9)'], [0.22, 'rgba(255, 170, 40, 0.75)'], [0.6, 'rgba(255, 80, 20, 0.45)'], [1, 'rgba(180, 30, 10, 0)']];
+const CORE_FLAME = [[0, 'rgba(255, 255, 255, 1)'], [0.35, 'rgba(255, 244, 170, 0.9)'], [1, 'rgba(255, 190, 60, 0)']];
+const BOOST_CORE = [[0, 'rgba(255, 255, 255, 1)'], [0.35, 'rgba(170, 225, 255, 0.95)'], [1, 'rgba(80, 140, 255, 0)']];
+
+/**
+ * One wavering tongue of flame pointing down the screen from a nozzle.
+ * @param {CanvasRenderingContext2D} ctx @param {number} cx @param {number} cy @param {number} r half-width at the nozzle
+ * @param {number} len @param {number} t @param {number} seed @param {(string|number)[][]} stops
+ */
+function flameTongue(ctx, cx, cy, r, len, t, seed, stops) {
+  const steps = 8;
+  const left = [];
+  const right = [];
+  for (let k = 0; k <= steps; k++) {
+    const f = k / steps;
+    const sway = Math.sin(t * 19 + seed * 1.7 + f * 5) * r * 0.35 * f;
+    const half = r * Math.pow(1 - f, 0.7) * (1 + 0.22 * Math.sin(t * 37 + seed * 3.1 + f * 9));
+    const y = cy + len * f;
+    left.push([cx + sway - half, y]);
+    right.push([cx + sway + half, y]);
   }
-
-  ctx.fillStyle = '#1b1b22';
-  for (const side of [-1, 1]) {
-    ctx.beginPath();
-    ctx.ellipse(side * 38 * u, -9 * u, 11 * u, 10 * u, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  ctx.fillStyle = '#c4232c';
-  roundRect(ctx, -46 * u, -44 * u, 92 * u, 32 * u, 10 * u);
-  ctx.fill();
-  ctx.fillStyle = '#e8434b';
-  roundRect(ctx, -40 * u, -42 * u, 80 * u, 10 * u, 5 * u);
-  ctx.fill();
-  ctx.fillStyle = '#8d8d99';
-  roundRect(ctx, -12 * u, -36 * u, 24 * u, 22 * u, 6 * u);
-  ctx.fill();
-  ctx.fillStyle = '#ffcf3a';
-  ctx.fillRect(-28 * u, -30 * u, 8 * u, 6 * u);
-  ctx.fillRect(20 * u, -30 * u, 8 * u, 6 * u);
-
-  ctx.strokeStyle = '#5b3a6e';
-  ctx.lineWidth = 7 * u;
-  ctx.lineCap = 'round';
+  const fill = ctx.createLinearGradient(0, cy, 0, cy + len);
+  for (const [at, colour] of stops) fill.addColorStop(/** @type {number} */ (at), /** @type {string} */ (colour));
+  ctx.fillStyle = fill;
   ctx.beginPath();
-  ctx.moveTo(-20 * u, -72 * u);
-  ctx.lineTo(-38 * u, -62 * u);
-  ctx.moveTo(20 * u, -72 * u);
-  ctx.lineTo(38 * u, -62 * u);
-  ctx.stroke();
-
-  ctx.fillStyle = '#7a4a9e';
-  ctx.beginPath();
-  ctx.moveTo(-24 * u, -44 * u);
-  ctx.lineTo(-18 * u, -84 * u);
-  ctx.quadraticCurveTo(0, -92 * u, 18 * u, -84 * u);
-  ctx.lineTo(24 * u, -44 * u);
+  ctx.moveTo(left[0][0], left[0][1]);
+  for (const [px, py] of left) ctx.lineTo(px, py);
+  for (let k = right.length - 1; k >= 0; k--) ctx.lineTo(right[k][0], right[k][1]);
   ctx.closePath();
   ctx.fill();
-
-  ctx.fillStyle = '#d9d6e3';
-  ctx.beginPath();
-  ctx.arc(0, -98 * u, 15 * u, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(0, -115 * u, 8 * u, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#b8b3c8';
-  ctx.beginPath();
-  ctx.arc(-4 * u, -101 * u, 6 * u, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = '#22d3ee';
-  ctx.fillRect(-46 * u, -66 * u, 12 * u, 8 * u);
-  ctx.fillRect(34 * u, -66 * u, 12 * u, 8 * u);
-  ctx.restore();
 }
 
 /** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y @param {number} w @param {number} h @param {number} r */
@@ -118,70 +151,5 @@ export function drawRock(ctx, x, y, w, h, seed) {
   ctx.fill();
   ctx.strokeStyle = 'rgba(30, 10, 50, 0.6)';
   ctx.lineWidth = Math.max(1, w * 0.03);
-  ctx.stroke();
-}
-
-/** A glowing crystal spire at the side of the track. @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y bottom @param {number} w @param {number} h @param {string} hue */
-export function drawSpire(ctx, x, y, w, h, hue) {
-  ctx.fillStyle = hue;
-  ctx.beginPath();
-  ctx.moveTo(x - w / 2, y);
-  ctx.lineTo(x - w * 0.1, y - h);
-  ctx.lineTo(x + w * 0.15, y - h * 0.82);
-  ctx.lineTo(x + w / 2, y);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-  ctx.beginPath();
-  ctx.moveTo(x - w * 0.25, y);
-  ctx.lineTo(x - w * 0.1, y - h);
-  ctx.lineTo(x, y);
-  ctx.closePath();
-  ctx.fill();
-}
-
-const PICKUP_LOOK = {
-  jetpack: { colour: '#ff8a2a', glyph: '🚀' },
-  shield: { colour: '#38d8ff', glyph: '🛡️' },
-  spread: { colour: '#ff4fd8', glyph: '✦' },
-  cannon: { colour: '#ffd23a', glyph: '💥' },
-};
-
-/** A floating power-up bubble. @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y centre @param {number} r @param {keyof typeof PICKUP_LOOK} kind @param {number} t */
-export function drawPickup(ctx, x, y, r, kind, t) {
-  const look = PICKUP_LOOK[kind];
-  const pulse = 1 + 0.08 * Math.sin(t * 8);
-  const g = ctx.createRadialGradient(x, y, 0, x, y, r * 1.6 * pulse);
-  g.addColorStop(0, look.colour);
-  g.addColorStop(0.55, `${look.colour}aa`);
-  g.addColorStop(1, `${look.colour}00`);
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(x, y, r * 1.6 * pulse, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-  ctx.beginPath();
-  ctx.arc(x, y, r * 0.95, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.font = `${Math.round(r * 1.2)}px sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = look.colour;
-  ctx.fillText(look.glyph, x, y + r * 0.05);
-}
-
-/** An alien crystal to collect. @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y centre @param {number} r @param {number} t */
-export function drawCrystal(ctx, x, y, r, t) {
-  const spin = Math.abs(Math.cos(t * 4));
-  ctx.fillStyle = '#5dff8a';
-  ctx.beginPath();
-  ctx.moveTo(x, y - r);
-  ctx.lineTo(x + r * 0.7 * spin + 1, y);
-  ctx.lineTo(x, y + r);
-  ctx.lineTo(x - r * 0.7 * spin - 1, y);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = '#e6ffe9';
-  ctx.lineWidth = Math.max(1, r * 0.12);
   ctx.stroke();
 }

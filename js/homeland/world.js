@@ -10,7 +10,22 @@
 export const view = { w: 0, h: 0, cx: 0, h0: 0, a: 0, k: 0, unit: 0 };
 
 /** How much the planet curves away to the left and right, compared with straight ahead. Lower is a flatter horizon. */
-const SIDE_CURVE = 0.22;
+let SIDE_CURVE = 0.22;
+/**
+ * Indoors the horizon sits lower so more of the far wall shows. Fraction of screen height. 0.315 puts
+ * the floor line about 58% down the screen (outdoors it's about 36%) for every indoor backdrop.
+ */
+let drop = 0;
+
+/**
+ * Indoors the far wall meets the floor in a straight line, a little further down the screen.
+ * @param {boolean} indoor
+ */
+export function setIndoor(indoor) {
+  SIDE_CURVE = indoor ? 0 : 0.22;
+  drop = indoor ? 0.315 : 0;
+  resizeView(view.w, view.h);
+}
 
 /** @param {number} w @param {number} h */
 export function resizeView(w, h) {
@@ -19,10 +34,11 @@ export function resizeView(w, h) {
   view.cx = w / 2;
   view.unit = Math.min(w * 0.32, h * 0.62);
   // Tuned so the horizon sits about 36% down the middle of the screen, and ground about
-  // 8 units away is the furthest you can see before it curves out of sight.
-  view.k = h * 0.01403;
-  view.h0 = h * 0.1356;
-  view.a = h * 0.898;
+  // 8 units away is the furthest you can see before it curves out of sight (a / k = 64). `drop`
+  // lowers the horizon while keeping the ground under Granny (about 1.2 units ahead) where it was.
+  view.h0 = h * (0.1356 + drop);
+  view.a = h * (0.898 - drop / 0.852);
+  view.k = view.a / 64;
 }
 
 /** @param {number} x @param {number} y @param {number} z */

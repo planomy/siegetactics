@@ -4,13 +4,20 @@
  * Granny rides her rocket scooter around the near side of a small curved planet, firing
  * straight ahead. Aliens crest the horizon from right across the screen and make a beeline
  * for her; crystals from kills level her up, and each level-up offers one of three upgrades.
- * Survive the hordes, then shoot down the mothership.
+ * Crystal deposits, power-ups and ammo crates turn up along the way, and a combo multiplier
+ * rewards non-stop blasting. Survive the hordes, then shoot down the mothership.
  */
 import { loadSounds, sfx } from './sfx.js';
-import { drawGranny, drawSpire, drawCrystal } from './draw.js';
-import { view, resizeView, project, horizonY, isBehindHorizon, screenToGround, spawnBehindHorizon, maxXAt } from './world.js?v=2';
-import { ENEMY_TYPES, BOSS_TIME, BOSS_HP, HORDE_TIMES, MAX_ALIENS, spawnInterval, pickEnemyType, hordeSize } from './enemies.js';
+import { drawGranny, exhaustPoints, rigSprite } from './draw.js?v=8';
+import { rigFor } from './rigs.js?v=1';
+import { AMMO, CRATE_AMMO, RACK_SLOTS, ammoImage } from './ammo.js?v=3';
+import { GEMS, DEPOSITS, POWERS, gemsFor, rollPower, pickupImage } from './pickups.js?v=2';
+import { view, resizeView, project, horizonY, isBehindHorizon, screenToGround, spawnBehindHorizon, maxXAt, setIndoor } from './world.js?v=6';
+import { ENEMY_TYPES, BOSS_TIME, HORDE_TIMES, MAX_ALIENS, spawnInterval, pickEnemyType, hordeSize } from './enemies.js?v=2';
+import { REGIONS, DIRECTIONAL_SHOTS, loadProgress, saveProgress } from './regions.js?v=26';
 import { UPGRADES, noUpgrades, rollChoices, crystalsForLevel } from './upgrades.js';
+import { sceneryFor, propImage } from './props.js?v=10';
+import { createSky, updateSky, drawSkyLayers, drawCloudBand, mountainSlide } from './sky.js?v=5';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('homeland'));
 const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
@@ -18,27 +25,79 @@ const overlay = /** @type {HTMLElement} */ (document.getElementById('hl-overlay'
 const levelUpBox = /** @type {HTMLElement} */ (document.getElementById('hl-levelup'));
 const nukeButton = /** @type {HTMLButtonElement} */ (document.getElementById('hl-nuke'));
 const dashButton = /** @type {HTMLButtonElement} */ (document.getElementById('hl-dash'));
-const controls = /** @type {HTMLElement} */ (document.getElementById('hl-buttons'));
+/** @param {string} id */
+const el = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
+const barEls = {
+  bar: el('hl-bar'), xp: el('hl-xp-fill'), level: el('hl-level'), hpFill: el('hl-hp-fill'), hpLag: el('hl-hp-lag'), hpText: el('hl-hp-text'),
+  health: el('hl-health'), score: el('hl-score'), kills: el('hl-kills'), combo: el('hl-combo'), comboX: el('hl-combo-x'), comboN: el('hl-combo-n'),
+  comboTime: el('hl-combo-time'), best: el('hl-best'), powers: el('hl-powers'),
+};
 
 const Z_MIN = 1.15;
 const Z_MAX = 2.5;
-const BULLET_SPEED = 12;
-const BASE_FIRE_GAP = 0.2;
+/** Granny's starting distance. Her speed is tuned here and scaled so she crosses the screen at the same pace nearer or further. */
+const HOME_Z = 1.5;
+const MAX_SPEED = 3;
 const DASH_TIME = 0.22;
-const DASH_SPEED = 8;
+const DASH_SPEED = 6;
 const DASH_COOLDOWN = 1.8;
 const KILLS_PER_NUKE = 45;
 const MAGNET_RANGE = 1.1;
 const GROUND_DRIFT = 0.35;
+const PICKUP_LIFE = 14;
+const COMBO_TIME = 2.5;
+/** Rear tyres, left and right of Granny's centre, in world units. */
+const WHEEL_X = 0.163;
+const MARK_LIFE = 3.5;
 const BOSS_Z = 6.2;
+/** The mothership's belly, where shots fired up at it strike. World height. */
+const BOSS_HIT_Y = 1.45;
 
 const params = new URLSearchParams(location.search);
 const START_AT = params.has('boss') ? BOSS_TIME - 4 : Math.max(0, Number(params.get('start')) || 0);
 
 const sprites = Object.fromEntries(
-  ['monster1', 'monster2', 'monster3', 'monster4', 'monster5', 'granddaddy', 'mothership'].map((name) => [name, image(`assets/enemies/${name}.png`)])
+  ['monster1', 'monster2', 'monster3', 'monster4', 'monster5', 'granddaddy'].map((name) => [name, image(`assets/enemies/${name}.png`)])
 );
 const cupcake = image('assets/cupcake-missile.png');
+let progress = loadProgress();
+if (params.has('all')) progress.unlocked = REGIONS.length;
+let region = REGIONS.find((r) => r.key === params.get('region')) ?? REGIONS[0];
+/** Granny's scooter and its weapon for this region. */
+let rig = rigFor(REGIONS.indexOf(region));
+let scenery = sceneryFor(region.scenery);
+/** An indoor region's far wall, which replaces the sky. @type {HTMLImageElement | null} */
+let backdrop = null;
+/** An outdoor region's painted horizon, which replaces the mountains. @type {HTMLImageElement | null} */
+let skyline = null;
+/** A painted arch laid over the battlefield along the top and sides of the screen. @type {HTMLImageElement | null} */
+let arch = null;
+/** Where the HUD at the top of the screen starts, so it sits under the frame's centrepiece. */
+let frameHudTop = 0;
+/** The region's own alien sprites, by type. The tank is always Granddaddy. @type {Partial<Record<string, HTMLImageElement>>} */
+let monsters = {};
+function useBackdrop() {
+  backdrop = region.backdrop ? image(region.backdrop) : null;
+  skyline = region.skyline ? image(region.skyline) : null;
+  arch = region.frame ? image(region.frame) : null;
+  frameHudTop = 0;
+  setIndoor(!!backdrop);
+  const folder = region.monsters;
+  monsters = folder ? Object.fromEntries(['swarmer', 'grunt', 'leaper', 'spitter', 'splitter'].map((type) => [type, image(`${folder}/${type}.webp`)])) : {};
+}
+useBackdrop();
+/** @type {Map<string, HTMLImageElement>} */
+const bossImages = new Map();
+/** @param {string} src */
+function bossImage(src) {
+  let img = bossImages.get(src);
+  if (!img) {
+    img = image(src);
+    bossImages.set(src, img);
+  }
+  return img;
+}
+const sky = createSky();
 
 /** @param {string} src */
 function image(src) {
@@ -50,7 +109,14 @@ function image(src) {
 /**
  * @typedef {{ type: keyof typeof ENEMY_TYPES, x: number, y: number, z: number, hp: number, maxHp: number, speed: number,
  *   size: number, damage: number, gems: number, t: number, hitFlash: number, phase: 'walk'|'crouch'|'leap',
- *   phaseTime: number, dirX: number, dirZ: number, holdTime: number, fireIn: number, orbitCd: number, waveHit: number, seed: number }} Alien
+ *   phaseTime: number, dirX: number, dirZ: number, holdTime: number, fireIn: number, orbitCd: number, waveHit: number, seed: number,
+ *   slow: number }} Alien
+ * @typedef {import('./ammo.js').AmmoId} AmmoId
+ * @typedef {import('./pickups.js').PowerId} PowerId
+ * @typedef {{ x: number, z: number, z0: number, vx: number, vz: number, dmg: number, life: number, ammo: AmmoId, pierce: number,
+ *   spin: number, hits: Map<object, number>, rise: boolean }} Bullet
+ *   `rise` shots were fired lined up under the mothership and climb into it.
+ * @typedef {{ kind: 'power', id: PowerId } | { kind: 'ammo', id: AmmoId }} Prize
  */
 
 let state = 'title';
@@ -59,6 +125,7 @@ let clock = 0;
 let spawnIn = 1;
 let fireIn = 0;
 let rocketIn = 2;
+let bazookaIn = 2;
 let waveIn = 4;
 let waveId = 0;
 let hordeIndex = 0;
@@ -68,34 +135,79 @@ let hordeIn = 0;
 let shake = 0;
 let flash = 0;
 let warpTime = 0;
+let countdownTick = 0;
 let banner = { text: '', sub: '', time: 0 };
 /** @type {import('./upgrades.js').UpgradeId[]} */
 let choices = [];
 
-const player = { x: 0, z: 1.5, vx: 0, vz: 0, hp: 100, maxHp: 100, speed: 2.3, invuln: 0, dash: 0, dashCd: 0, dashVx: 0, dashVz: 0, level: 1, crystals: 0, nuke: 0, kills: 0 };
+/** `chill` is how long frost shots keep Granny slowed down. */
+const player = { x: 0, z: 1.5, vx: 0, vz: 0, hp: 100, maxHp: 100, speed: 2.3, invuln: 0, dash: 0, dashCd: 0, dashVx: 0, dashVz: 0, level: 1, crystals: 0, nuke: 0, kills: 0, chill: 0 };
 let levels = noUpgrades();
 /** @type {Alien[]} */
 let aliens = [];
-/** @type {{ x: number, z: number, vx: number, vz: number, dmg: number, life: number }[]} */
+/** @type {Bullet[]} */
 let bullets = [];
 /** @type {{ x: number, z: number, vx: number, vz: number, life: number, target: Alien|null }[]} */
 let rockets = [];
-/** @type {{ x: number, z: number, fromX: number, fromZ: number, toX: number, toZ: number, t: number, flight: number }[]} */
+/**
+ * @typedef {{ x: number, z: number, fromX: number, fromZ: number, toX: number, toZ: number, t: number, flight: number,
+ *   kind: import('./regions.js').ShotKind, y0: number, arc: number, chill: boolean }} Slime
+ */
+/** @type {Slime[]} */
 let slimes = [];
-/** @type {{ x: number, z: number, value: number, t: number }[]} */
+/** @type {{ x: number, z: number, vx: number, vz: number, def: typeof GEMS[number], t: number }[]} */
 let gems = [];
 /** @type {{ r: number, max: number, t: number, id: number }[]} */
 let rings = [];
-/** @type {{ x: number, z: number, r: number }[]} */
-let craters = [];
-/** @type {{ x: number, z: number, h: number, w: number, hue: string }[]} */
-let spires = [];
 /** @type {{ x: number, y: number, vx: number, vy: number, life: number, max: number, colour: string, size: number }[]} */
 let particles = [];
-/** @type {null | { x: number, z: number, hp: number, t: number, fireIn: number, dropIn: number, dying: number }} */
+/** @typedef {{ def: import('./props.js').PropDef, x: number, z: number, flip: boolean }} Prop */
+/** @type {Prop[]} */
+let props = [];
+/** @type {Prop[]} */
+let decals = [];
+/**
+ * `solid` drops towards 0 while a phasing boss fades out; it can only be hurt when mostly solid.
+ * @type {null | { x: number, z: number, hp: number, t: number, fireIn: number, dropIn: number, rainIn: number, dying: number, hitFlash: number, solid: number }}
+ */
 let boss = null;
+/** Exhaust sparks, in screen pixels. @type {{ x: number, y: number, vx: number, vy: number, life: number, max: number, w: number }[]} */
+let sparks = [];
+/** Tyre smoke puffs on the ground. @type {{ x: number, y: number, z: number, vx: number, r: number, life: number, max: number }[]} */
+let smoke = [];
+/** Skid marks: one short segment per wheel per frame. @type {{ x1: number, z1: number, x2: number, z2: number, life: number }[]} */
+let marks = [];
+/** Where each tyre was last frame while skidding. @type {{ z: number, x: number } | null} */
+let markFrom = null;
+/** How hard Granny is sliding sideways, 0 to 1. */
+let skid = 0;
+let sparkIn = 0;
+/** The blaster first, then up to RACK_SLOTS kinds of special ammo. @type {{ id: AmmoId, rounds: number }[]} */
+let rack = [];
+let weapon = 0;
+/** Seconds left on each timed power-up. */
+let powers = noPowers();
+/** @type {(Prize & { x: number, z: number, t: number })[]} */
+let pickups = [];
+/** @type {{ def: import('./pickups.js').DepositType, x: number, z: number, hp: number, hitFlash: number }[]} */
+let deposits = [];
+let depositIn = 0;
+let depositsSeen = 0;
+/** Lightning arcs between aliens. @type {{ a: { x: number, y: number, z: number }, b: { x: number, y: number, z: number }, life: number }[]} */
+let zaps = [];
+/** Points and pickup names floating up the screen, in pixels. @type {{ text: string, x: number, y: number, life: number, max: number, colour: string, size: number }[]} */
+let floaters = [];
+let score = 0;
+let shownScore = 0;
+let combo = 0;
+let comboTime = 0;
+let best = progress.best[region.key] || 0;
+/** Counts down while the newly equipped ammo pops up over Granny. */
+let ammoPop = 0;
 const stars = Array.from({ length: 260 }, () => ({ x: (Math.random() - 0.5) * 2, y: (Math.random() - 0.5) * 2, z: Math.random() }));
 const skyStars = Array.from({ length: 90 }, () => ({ x: Math.random(), y: Math.random() * 0.8, r: Math.random() * 1.4 + 0.3 }));
+/** Faint glints scattered over an indoor floor, drifting past with the ground. `x` is across the floor, -1 to 1. */
+const specks = Array.from({ length: 110 }, () => ({ x: Math.random() * 2 - 1, z: 0.9 + Math.random() * 7.5, r: 0.02 + Math.random() * 0.05, a: 0.25 + Math.random() * 0.5 }));
 
 const keys = new Set();
 /** @type {{ x: number, z: number } | null} */
@@ -105,23 +217,27 @@ let target = null;
 
 function resize() {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
-  canvas.width = Math.round(window.innerWidth * dpr);
-  canvas.height = Math.round(window.innerHeight * dpr);
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  resizeView(window.innerWidth, window.innerHeight);
+  resizeView(w, h);
 }
 
 function resetRun() {
   time = 0;
   clock = START_AT;
+  countdownTick = 0;
   spawnIn = 1.2;
   fireIn = 0;
   rocketIn = 2;
+  bazookaIn = 2;
   waveIn = 4;
   hordeIndex = HORDE_TIMES.filter((t) => t < START_AT).length;
   hordeQueue = { left: 0, gap: 0 };
   shake = 0;
-  Object.assign(player, { x: 0, z: 1.5, vx: 0, vz: 0, hp: 100, maxHp: 100, speed: 2.3, invuln: 0, dash: 0, dashCd: 0, level: 1, crystals: 0, nuke: 0, kills: 0 });
+  Object.assign(player, { x: 0, z: 1.5, vx: 0, vz: 0, hp: 100, maxHp: 100, speed: 2.3, invuln: 0, dash: 0, dashCd: 0, level: 1, crystals: 0, nuke: 0, kills: 0, chill: 0 });
   levels = noUpgrades();
   aliens = [];
   bullets = [];
@@ -130,24 +246,43 @@ function resetRun() {
   gems = [];
   rings = [];
   particles = [];
+  sparks = [];
+  smoke = [];
+  marks = [];
+  markFrom = null;
+  skid = 0;
   boss = null;
   target = null;
-  craters = Array.from({ length: 26 }, () => newCrater(1.2 + Math.random() * 9));
-  spires = Array.from({ length: 14 }, () => newSpire(2 + Math.random() * 9));
+  rack = [{ id: 'blaster', rounds: Infinity }];
+  weapon = 0;
+  powers = noPowers();
+  pickups = [];
+  deposits = [];
+  depositIn = 7;
+  depositsSeen = 0;
+  zaps = [];
+  floaters = [];
+  score = 0;
+  shownScore = 0;
+  combo = 0;
+  comboTime = 0;
+  ammoPop = 0;
+  props = Array.from({ length: 18 }, () => newProp(1.3 + Math.random() * 9.5));
+  decals = Array.from({ length: 16 }, () => newDecal(1.3 + Math.random() * 9.5));
 }
 
-/** @param {number} z */
-function newCrater(z) {
-  return { x: (Math.random() - 0.5) * 2 * maxXAt(z) * 1.3, z, r: 0.12 + Math.random() * 0.35 };
-}
-
-/** @param {number} z */
-function newSpire(z) {
+/** A tall prop standing off to one side of the battlefield. @param {number} z */
+function newProp(z) {
   const side = Math.random() < 0.5 ? -1 : 1;
-  const hues = ['#2de2c8', '#ff4fd8', '#8a7bff', '#2dd4ff'];
-  return { x: side * (maxXAt(z) * (0.75 + Math.random() * 0.5)), z, h: 0.3 + Math.random() * 0.9, w: 0.15 + Math.random() * 0.2, hue: hues[Math.floor(Math.random() * hues.length)] };
+  const def = scenery.tall[Math.floor(Math.random() * scenery.tall.length)];
+  return { def, x: side * (maxXAt(z) * (0.6 + Math.random() * 0.6) + def.w * 0.3), z, flip: Math.random() < 0.5 };
 }
 
+/** A crater or slime pool lying on the ground anywhere. @param {number} z */
+function newDecal(z) {
+  const def = scenery.flat[Math.floor(Math.random() * scenery.flat.length)];
+  return { def, x: (Math.random() - 0.5) * 2.4 * maxXAt(z), z, flip: Math.random() < 0.5 };
+}
 /* ---------- Input ---------- */
 
 window.addEventListener('keydown', (e) => {
@@ -156,11 +291,11 @@ window.addEventListener('keydown', (e) => {
     pickUpgrade(Number(k) - 1);
     return;
   }
-  if ([' ', 'shift'].includes(k)) {
-    dash();
+  if (k === 'shift') dash();
+  else if ([' ', 'n', 'enter'].includes(k)) {
+    fireNuke();
     e.preventDefault();
-  } else if (['n', 'e', 'enter'].includes(k)) fireNuke();
-  else keys.add(k);
+  } else keys.add(k);
   if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'a', 'd', 'w', 's'].includes(k)) target = null;
 });
 window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
@@ -168,7 +303,8 @@ window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
 /** @param {PointerEvent} e */
 function steerTo(e) {
   const fingerLift = e.pointerType === 'mouse' ? 0 : view.h * 0.09;
-  target = screenToGround(e.clientX, e.clientY - fingerLift);
+  const z = clamp(screenToGround(e.clientX, e.clientY - fingerLift).z, Z_MIN, Z_MAX);
+  target = { x: ((e.clientX - view.cx) * z) / view.unit, z };
 }
 canvas.addEventListener('pointermove', (e) => {
   if (e.pointerType === 'mouse' || e.buttons) steerTo(e);
@@ -190,11 +326,16 @@ function dash() {
   player.dashVz = (dz / len) * DASH_SPEED * 0.6;
   player.dash = DASH_TIME;
   player.dashCd = DASH_COOLDOWN;
+  skid = 1;
   sfx('missile', 0.4);
 }
 
 function fireNuke() {
-  if (state !== 'play' || player.nuke < 1) return;
+  if (state !== 'play') return;
+  if (player.nuke < 1) {
+    floatAt(player.x, 0.8, player.z, `NUKE ${Math.floor(player.nuke * 100)}%`, '#9dff3a', 0.8);
+    return;
+  }
   player.nuke = 0;
   flash = 1;
   shake = 30;
@@ -220,11 +361,12 @@ function addAlien(type, at, heading) {
   const aimX = heading ? at.x + heading.x : player.x + miss;
   const aimZ = heading ? at.z + heading.z : player.z;
   const aimLen = Math.hypot(aimX - at.x, aimZ - at.z) || 1;
-  const late = 1 + Math.max(0, clock - 60) / 240;
+  const late = (1 + Math.max(0, clock - 60) / 240) * region.tough;
   const alien = /** @type {Alien} */ ({
     type, x: at.x, y: 0, z: at.z, hp: Math.ceil(spec.hp * late), maxHp: Math.ceil(spec.hp * late), speed: spec.speed * (0.9 + Math.random() * 0.2),
     size: spec.size, damage: spec.damage, gems: spec.gems, t: Math.random() * 5, hitFlash: 0, phase: 'walk', phaseTime: 0,
     dirX: (aimX - at.x) / aimLen, dirZ: (aimZ - at.z) / aimLen, holdTime: 5, fireIn: 1 + Math.random(), orbitCd: 0, waveHit: -1, seed: Math.random(),
+    slow: 0,
   });
   aliens.push(alien);
   return alien;
@@ -234,8 +376,8 @@ function spawnDirector(dt) {
   const bossTime = clock >= BOSS_TIME;
   spawnIn -= dt;
   if (spawnIn <= 0) {
-    addAlien(pickEnemyType(clock), spawnBehindHorizon(Math.random()));
-    spawnIn = spawnInterval(clock) * (bossTime ? 2.5 : 1) * (0.7 + Math.random() * 0.6);
+    addAlien(pickEnemyType(clock, region.mix), spawnBehindHorizon(Math.random()));
+    spawnIn = spawnInterval(clock) * region.pace * (bossTime ? 2.5 : 1) * (0.7 + Math.random() * 0.6);
   }
   if (hordeIndex < HORDE_TIMES.length && clock >= HORDE_TIMES[hordeIndex]) {
     hordeQueue = { left: hordeSize(hordeIndex), gap: 2.6 / hordeSize(hordeIndex) };
@@ -247,15 +389,15 @@ function spawnDirector(dt) {
   if (hordeQueue.left > 0) {
     hordeIn -= dt;
     while (hordeIn <= 0 && hordeQueue.left > 0) {
-      const type = Math.random() < 0.55 ? 'swarmer' : pickEnemyType(clock);
+      const type = Math.random() < region.hordeSwarm ? 'swarmer' : pickEnemyType(clock, region.mix);
       addAlien(type, spawnBehindHorizon(Math.random(), 1.1 + Math.random() * 0.25));
       hordeQueue.left -= 1;
       hordeIn += hordeQueue.gap;
     }
   }
   if (bossTime && !boss) {
-    boss = { x: 0, z: 13, hp: BOSS_HP, t: 0, fireIn: 4, dropIn: 6, dying: 0 };
-    showBanner('⚠ MOTHERSHIP ⚠', 'Line up under it and blast!');
+    boss = { x: 0, z: 13, hp: region.boss.hp, t: 0, fireIn: 4, dropIn: 6, rainIn: 3, dying: 0, hitFlash: 0, solid: 1 };
+    showBanner(`⚠ ${region.boss.name.toUpperCase()} ⚠`, region.boss.hint);
     sfx('siren-alert', 0.6);
     sfx('mothership', 0.5);
   }
@@ -271,12 +413,98 @@ function startWarp() {
   sfx('nuke-fire', 0.6);
 }
 
+/** @param {number} index */
+function selectRegion(index) {
+  region = REGIONS[index];
+  rig = rigFor(index);
+  rigSprite(rig.sprite);
+  scenery = sceneryFor(region.scenery);
+  bossImage(region.boss.sprite);
+  useBackdrop();
+  best = progress.best[region.key] || 0;
+  resetRun();
+}
+
+/** The planet map: every region in story order, locked until the one before it is beaten. */
+function showMap() {
+  state = 'title';
+  overlay.innerHTML = `
+    <div class="hl-card hl-map-card">
+      <p class="hl-kicker">PLANET DOOMPICKLE</p>
+      <h1 class="hl-title">PLANET MAP</h1>
+      <ol class="hl-map">
+        ${REGIONS.map((r, i) => {
+          const locked = i >= progress.unlocked;
+          const cleared = progress.cleared.includes(r.key);
+          const [high, mid, low] = r.palette.sky;
+          return `<li>
+            <button type="button" class="hl-region ${locked ? 'is-locked' : ''} ${cleared ? 'is-cleared' : ''}" data-region="${i}" ${locked ? 'disabled' : ''}
+              style="--sky: linear-gradient(180deg, ${high}, ${mid} 55%, ${low}); --ground: ${r.palette.ground[0]}; --rim: ${r.palette.rim}">
+              <span class="hl-region-num">${i + 1}</span>
+              <img class="hl-region-boss" src="${r.boss.sprite}" alt="" />
+              <strong class="hl-region-name">${r.title}</strong>
+              <span class="hl-region-best">${locked ? '🔒 LOCKED' : cleared ? `★ ${(progress.best[r.key] || 0).toLocaleString()}` : 'NEW!'}</span>
+            </button>
+          </li>`;
+        }).join('')}
+      </ol>
+    </div>`;
+  overlay.hidden = false;
+  for (const r of REGIONS) if (r.logo) image(r.logo);
+  overlay.querySelectorAll('[data-region]').forEach((btn) => btn.addEventListener('click', () => showStory(Number(btn.getAttribute('data-region')))));
+}
+
+/** The story card before a region. @param {number} index */
+function showStory(index) {
+  selectRegion(index);
+  const kicker = `REGION ${index + 1} OF ${REGIONS.length}`;
+  const foe = region.portraits
+    ? `<div class="hl-story-portraits">${region.portraits.map((p) => `<figure><img src="${p.src}" alt="" /><figcaption>${p.caption}</figcaption></figure>`).join('')}</div>`
+    : `<div class="hl-story-boss"><img src="${region.boss.sprite}" alt="" /><span><em>BOSS</em><strong>${region.boss.name}</strong></span></div>`;
+  const buttons = `
+    <button type="button" class="hl-go" id="hl-go">🚀 GO GRANNY!</button>
+    <button type="button" class="hl-back" id="hl-back">🗺 Planet map</button>`;
+  const upgraded = index > 0 && rig !== rigFor(index - 1);
+  const upgrade = upgraded ? `<div class="hl-rig"><img src="${rig.sprite}" alt="" /><span><em>UPGRADE!</em><strong>${rig.name}</strong></span></div>` : '';
+  const perk = upgraded ? `<p class="hl-perk">🔧 ${rig.perk}</p>` : '';
+  overlay.innerHTML = region.logo
+    ? `
+    <div class="hl-slide" style="--rim: ${region.palette.rim}">
+      <img class="hl-slide-fill" src="${region.logo}" alt="" />
+      <p class="hl-slide-kicker">${kicker}</p>
+      <div class="hl-slide-stage"><img class="hl-slide-logo" src="${region.logo}" alt="${region.title}" /></div>
+      <div class="hl-slide-panel">
+        ${foe}
+        <div>
+          <p class="hl-slide-line">${region.intro}</p>
+          ${perk}
+        </div>
+        <div class="hl-slide-actions">${upgrade}${buttons}</div>
+      </div>
+    </div>`
+    : `
+    <div class="hl-card hl-story" style="--rim: ${region.palette.rim}">
+      <p class="hl-kicker">${kicker}</p>
+      <h1 class="hl-title">${region.title.toUpperCase()}</h1>
+      <p class="hl-line">${region.intro}</p>
+      ${perk}
+      ${foe}
+      ${buttons}
+    </div>`;
+  overlay.hidden = false;
+  document.getElementById('hl-go')?.addEventListener('click', startWarp);
+  document.getElementById('hl-back')?.addEventListener('click', showMap);
+}
+
 function startPlay() {
   state = 'play';
   flash = 1;
-  controls.hidden = false;
-  showBanner('ALIEN HOMELAND', 'Survive the horde!');
+  showBanner(region.title.toUpperCase(), `Region ${REGIONS.indexOf(region) + 1} · Survive the horde!`);
   sfx('battle-cry-titans', 0.55);
+  const testAmmo = /** @type {AmmoId} */ (params.get('ammo'));
+  if (testAmmo in AMMO && testAmmo !== 'blaster') addAmmo(testAmmo);
+  const testPower = /** @type {PowerId} */ (params.get('power'));
+  if (testPower in POWERS) applyPower(testPower);
 }
 
 /** @param {string} text @param {string} [sub] */
@@ -287,18 +515,38 @@ function showBanner(text, sub = '') {
 /** @param {boolean} won */
 function endRun(won) {
   state = won ? 'won' : 'lost';
-  controls.hidden = true;
-  const title = won ? 'MOTHERSHIP DOWN!' : 'SCOOTER TOAST!';
-  const line = won ? 'Region cleared. The Supreme Leader is next…' : 'The horde got Granny this time. One more go?';
+  const index = REGIONS.indexOf(region);
+  const next = REGIONS[index + 1];
+  const newBest = score > best;
+  if (newBest) {
+    best = score;
+    progress.best[region.key] = score;
+  }
+  if (won) {
+    if (!progress.cleared.includes(region.key)) progress.cleared.push(region.key);
+    progress.unlocked = Math.min(REGIONS.length, Math.max(progress.unlocked, index + 2));
+  }
+  saveProgress(progress);
+  const title = won ? `${region.boss.name.toUpperCase()} DOWN!` : 'SCOOTER TOAST!';
+  const line = won ? region.outro : 'The horde got Granny this time. One more go?';
+  const go = won ? (next ? `▶ ON TO ${next.title.toUpperCase()}` : '🏆 THE PLANET IS FREE!') : '🛵 TRY AGAIN';
   overlay.innerHTML = `
-    <div class="hl-card">
+    <div class="hl-card hl-story" style="--rim: ${region.palette.rim}">
+      <p class="hl-kicker">REGION ${index + 1} · ${region.title.toUpperCase()}</p>
       <h1 class="hl-title ${won ? '' : 'is-lost'}">${title}</h1>
       <p class="hl-line">${line}</p>
+      <p class="hl-final ${newBest ? 'is-best' : ''}">${newBest ? '★ NEW BEST ★' : `BEST ${best.toLocaleString()}`}<strong>${score.toLocaleString()}</strong></p>
       <p class="hl-stats"><span>ALIENS <strong>${player.kills.toLocaleString()}</strong></span><span>LEVEL <strong>${player.level}</strong></span><span>TIME <strong>${formatClock(clock)}</strong></span></p>
-      <button type="button" class="hl-go" id="hl-go">${won ? '🚀 FLY AGAIN' : '🛵 TRY AGAIN'}</button>
+      <button type="button" class="hl-go" id="hl-go">${go}</button>
+      <button type="button" class="hl-back" id="hl-back">🗺 Planet map</button>
     </div>`;
   overlay.hidden = false;
-  document.getElementById('hl-go')?.addEventListener('click', startWarp);
+  document.getElementById('hl-go')?.addEventListener('click', () => {
+    if (!won) startWarp();
+    else if (next) showStory(index + 1);
+    else showMap();
+  });
+  document.getElementById('hl-back')?.addEventListener('click', showMap);
 }
 
 function levelUp() {
@@ -333,7 +581,7 @@ function pickUpgrade(index) {
   if (!id || state !== 'levelup') return;
   levels[id] += 1;
   if (id === 'tuneup') {
-    player.speed *= 1.1;
+    player.speed = Math.min(MAX_SPEED, player.speed * 1.1);
     player.maxHp += 15;
     player.hp = Math.min(player.maxHp, player.hp + 35);
   }
@@ -348,16 +596,27 @@ function pickUpgrade(index) {
 /** @param {number} dt */
 function update(dt) {
   time += dt;
+  updateSky(sky, dt, player.x);
   if (state === 'warp') {
     warpTime += dt;
     if (warpTime > 3) startPlay();
     return;
   }
   if (state !== 'play') {
-    if (state !== 'levelup') updateParticles(dt);
+    if (state !== 'levelup') {
+      updateParticles(dt);
+      updateFloaters(dt);
+      updateExhaust(dt, false);
+    }
     return;
   }
+  updateFloaters(dt);
   clock += dt;
+  const secsLeft = Math.ceil(BOSS_TIME - clock);
+  if (secsLeft >= 1 && secsLeft <= 5 && secsLeft !== countdownTick) {
+    countdownTick = secsLeft;
+    sfx('button-press', 0.6);
+  }
 
   updatePlayer(dt);
   spawnDirector(dt);
@@ -368,12 +627,13 @@ function update(dt) {
   updateRockets(dt);
   updateSlimes(dt);
   updateGems(dt);
+  updateDeposits(dt);
+  updatePickups(dt);
+  updatePowers(dt);
   if (boss) updateBoss(dt);
   updateParticles(dt);
+  updateExhaust(dt, true);
 
-  nukeButton.disabled = player.nuke < 1;
-  nukeButton.style.setProperty('--charge', `${Math.round(Math.min(1, player.nuke) * 100)}%`);
-  dashButton.disabled = player.dashCd > 0;
   if (banner.time > 0) banner.time -= dt;
   shake = Math.max(0, shake - dt * 30);
   flash = Math.max(0, flash - dt * 2.5);
@@ -385,35 +645,40 @@ function updatePlayer(dt) {
   let iz = (keys.has('arrowup') || keys.has('w') ? 1 : 0) - (keys.has('arrowdown') || keys.has('s') ? 1 : 0);
   let wantX = 0;
   let wantZ = 0;
+  const depth = player.z / HOME_Z;
+  const top = player.speed * depth * (powers.boost > 0 ? 1.45 : 1) * (player.chill > 0 ? 0.55 : 1);
   if (ix || iz) {
     const len = Math.hypot(ix, iz);
-    wantX = (ix / len) * player.speed;
-    wantZ = (iz / len) * player.speed * 0.55;
+    wantX = (ix / len) * top;
+    wantZ = (iz / len) * top * 0.55;
   } else if (target) {
     const dx = target.x - player.x;
     const dz = clamp(target.z, Z_MIN, Z_MAX) - player.z;
     const dist = Math.hypot(dx, dz);
     if (dist > 0.02) {
-      const v = Math.min(player.speed, dist * 7);
+      const v = Math.min(top, (dist / depth) * 5);
       wantX = (dx / dist) * v;
       wantZ = (dz / dist) * v;
     }
   }
-  player.vx += (wantX - player.vx) * Math.min(1, dt * 12);
-  player.vz += (wantZ - player.vz) * Math.min(1, dt * 12);
+  const lastVx = player.vx;
+  player.vx += (wantX - player.vx) * Math.min(1, dt * 9);
+  player.vz += (wantZ - player.vz) * Math.min(1, dt * 9);
+  const swerve = Math.abs(player.vx - lastVx) / dt / (9 * top);
+  skid = Math.max(clamp((swerve - 0.35) / 0.65, 0, 1), skid - dt * 2.5);
   let mx = player.vx;
   let mz = player.vz;
   if (player.dash > 0) {
     player.dash -= dt;
-    mx = player.dashVx;
-    mz = player.dashVz;
+    mx = player.dashVx * depth;
+    mz = player.dashVz * depth;
     if (Math.random() < 0.8) {
       const at = project(player.x, 0.2, player.z);
       particles.push({ x: at.x + (Math.random() - 0.5) * 30, y: at.y, vx: 0, vy: 30, life: 0, max: 0.3, colour: '#ffb02e', size: 8 });
     }
   }
   player.z = clamp(player.z + mz * dt, Z_MIN, Z_MAX);
-  const limit = maxXAt(player.z);
+  const limit = maxXAt(player.z) * (arch ? 0.9 : 1);
   player.x = clamp(player.x + mx * dt, -limit, limit);
   player.invuln = Math.max(0, player.invuln - dt);
   player.dashCd = Math.max(0, player.dashCd - dt);
@@ -421,10 +686,16 @@ function updatePlayer(dt) {
 
 /** @param {number} dt */
 function driftGround(dt) {
-  for (const c of craters) c.z -= GROUND_DRIFT * dt;
-  for (const s of spires) s.z -= GROUND_DRIFT * dt;
-  craters = craters.map((c) => (c.z < 1 ? newCrater(9 + Math.random() * 2) : c));
-  spires = spires.map((s) => (s.z < 1 ? newSpire(9 + Math.random() * 2) : s));
+  for (const m of marks) {
+    m.z1 -= GROUND_DRIFT * dt;
+    m.z2 -= GROUND_DRIFT * dt;
+  }
+  if (markFrom) markFrom.z -= GROUND_DRIFT * dt;
+  for (const p of props) p.z -= GROUND_DRIFT * dt;
+  for (const d of decals) d.z -= GROUND_DRIFT * dt;
+  for (const s of specks) if ((s.z -= GROUND_DRIFT * dt) < 0.9) s.z += 7.5;
+  props = props.map((p) => (p.z < 0.75 ? newProp(9.5 + Math.random() * 2) : p));
+  decals = decals.map((d) => (d.z < 0.8 ? newDecal(9.5 + Math.random() * 2) : d));
 }
 
 /** @param {number} dt */
@@ -433,10 +704,12 @@ function updateAliens(dt) {
     a.t += dt;
     a.hitFlash = Math.max(0, a.hitFlash - dt * 6);
     a.orbitCd = Math.max(0, a.orbitCd - dt);
+    a.slow = Math.max(0, a.slow - dt);
     const dx = player.x - a.x;
     const dz = player.z - a.z;
     const dist = Math.hypot(dx, dz) || 1;
-    let speed = a.speed;
+    const sluggish = (a.slow > 0 ? 0.45 : 1) * (powers.radar > 0 ? 0.35 : 1);
+    let speed = a.speed * sluggish;
 
     if (a.type === 'leaper') {
       a.phaseTime -= dt;
@@ -452,8 +725,8 @@ function updateAliens(dt) {
       }
       if (a.phase === 'crouch') speed = 0;
       if (a.phase === 'leap') {
-        a.x += a.dirX * 5.5 * dt;
-        a.z += a.dirZ * 5.5 * dt;
+        a.x += a.dirX * 5.5 * sluggish * dt;
+        a.z += a.dirZ * 5.5 * sluggish * dt;
         a.y = Math.sin((1 - a.phaseTime / 0.5) * Math.PI) * 0.55;
         speed = 0;
       }
@@ -465,7 +738,7 @@ function updateAliens(dt) {
       if (a.fireIn <= 0) {
         a.fireIn = 2.1;
         const flight = 0.4 + dist / 4.5;
-        slimes.push({ x: a.x, z: a.z, fromX: a.x, fromZ: a.z, toX: player.x, toZ: player.z, t: 0, flight });
+        lob('alien-slime', a.x, a.z, player.x, player.z, { flight });
         sfx('slime', 0.3, 0.1);
       }
     }
@@ -475,6 +748,10 @@ function updateAliens(dt) {
     if (dist < a.size * 0.45 + 0.18 && a.y < 0.35 && a.hp > 0) {
       if (player.dash > 0) {
         hitAlien(a, 4);
+      } else if (powers.shield > 0) {
+        hitAlien(a, 4);
+        a.z += 0.35;
+        sfx('electro', 0.2, 0.08);
       } else {
         hurtPlayer(a.damage);
         explodeAt(a.x, a.size * 0.4, a.z, '#7bff6a');
@@ -500,7 +777,21 @@ function killAlien(a, quiet = false) {
   player.kills += 1;
   player.nuke = Math.min(1, player.nuke + 1 / KILLS_PER_NUKE);
   explodeAt(a.x, a.y + a.size * 0.4, a.z, a.type === 'tank' ? '#ffb02e' : '#7bff6a', a.size / 0.42);
-  for (let i = 0; i < a.gems; i++) gems.push({ x: a.x + (Math.random() - 0.5) * 0.3 * Math.min(1, i), z: a.z + (Math.random() - 0.5) * 0.3 * Math.min(1, i), value: 1, t: 0 });
+  dropGems(a.x, a.z, gemsFor(a.gems), a.gems > 2 ? 1.4 : 0.3);
+  const before = comboMultiplier();
+  combo += 1;
+  comboTime = COMBO_TIME;
+  addScore(50 * (a.gems + 1), a.x, a.y + a.size, a.z, quiet ? '' : undefined);
+  if (comboMultiplier() > before) {
+    floatAt(player.x, 0.9, player.z, `COMBO x${comboMultiplier()}!`, '#ff7ae8', 1.5);
+    sfx('turret-upgrade', 0.35);
+  }
+  if (pickups.length < 3) {
+    const rich = a.type === 'tank';
+    const roll = Math.random();
+    if (roll < (rich ? 0.25 : 0.03)) dropPrize(a.x, a.z, { kind: 'power', id: rollPower({ hurt: player.hp < player.maxHp * 0.5 }) });
+    else if (roll < (rich ? 0.55 : 0.065)) dropPrize(a.x, a.z, { kind: 'ammo', id: randomAmmo() });
+  }
   if (!quiet) sfx('death', 0.35, 0.035);
   if (a.type === 'splitter') {
     for (let i = 0; i < 3; i++) {
@@ -516,7 +807,7 @@ function killAlien(a, quiet = false) {
 
 /** @param {number} amount */
 function hurtPlayer(amount) {
-  if (player.invuln > 0 || state !== 'play') return;
+  if (player.invuln > 0 || powers.shield > 0 || state !== 'play') return;
   player.hp -= amount;
   player.invuln = 0.5;
   shake = Math.max(shake, 10 + amount * 0.4);
@@ -524,7 +815,6 @@ function hurtPlayer(amount) {
   if (player.hp <= 0) {
     player.hp = 0;
     state = 'dying';
-    controls.hidden = true;
     explodeAt(player.x, 0.3, player.z, '#ff8a2a', 2.5);
     sfx('nuke-explosion', 0.6);
     window.setTimeout(() => endRun(false), 1100);
@@ -535,11 +825,20 @@ function hurtPlayer(amount) {
 function updateWeapons(dt) {
   fireIn -= dt;
   if (fireIn <= 0) {
-    fireIn = BASE_FIRE_GAP / (1 + 0.25 * levels.rapid);
-    const dmg = 1 + levels.power;
-    const fan = [0];
-    for (let i = 1; i <= levels.spread; i++) fan.push(i * 0.13, -i * 0.13);
-    for (const angle of fan) bullets.push({ x: player.x, z: player.z + 0.15, vx: Math.sin(angle) * BULLET_SPEED, vz: Math.cos(angle) * BULLET_SPEED, dmg, life: 0 });
+    const slot = rack[weapon] ?? rack[0];
+    const spec = AMMO[slot.id];
+    fireIn = spec.gap / (1 + 0.25 * levels.rapid) / (powers.rapid > 0 ? 2 : 1) / (rig.rapid ?? 1);
+    const dmg = (spec.dmg + levels.power) * (powers.energy > 0 ? 2 : 1);
+    const shots = (spec.fan ?? 1) + levels.spread * 2;
+    // Shots follow the line of sight through Granny, so on screen they fly straight up from her
+    // instead of converging on the vanishing point in the middle.
+    const lane = player.x / player.z;
+    const z0 = player.z + 0.15;
+    for (let i = 0; i < shots; i++) {
+      const angle = (i - (shots - 1) / 2) * 0.13;
+      const vz = Math.cos(angle) * spec.speed;
+      bullets.push(newBullet(slot.id, lane * z0, z0, vz * lane + Math.sin(angle) * spec.speed, vz, dmg));
+    }
     if (levels.side > 0) {
       const near = aliens
         .filter((a) => !isBehindHorizon(a.x, a.z) && Math.abs(a.z - player.z) < 1.4 && Math.abs(a.x - player.x) > 0.3)
@@ -549,19 +848,40 @@ function updateWeapons(dt) {
         const dx = a.x - player.x;
         const dz = a.z - player.z;
         const len = Math.hypot(dx, dz);
-        bullets.push({ x: player.x, z: player.z, vx: (dx / len) * BULLET_SPEED, vz: (dz / len) * BULLET_SPEED, dmg, life: 0 });
+        bullets.push(newBullet(slot.id, player.x, player.z, (dx / len) * spec.speed, (dz / len) * spec.speed, dmg));
       }
     }
-    sfx('lazer1', 0.08, 0.11);
+    sfx(spec.sound, spec.gap > 0.3 ? 0.22 : 0.08, 0.11);
+    if (slot.rounds !== Infinity) {
+      slot.rounds -= 1;
+      if (slot.rounds <= 0) {
+        rack.splice(weapon, 1);
+        weapon = rack.length - 1;
+        ammoPop = 0.9;
+        floatAt(player.x, 0.8, player.z, `${spec.name.toUpperCase()} EMPTY`, '#ffb3b3', 0.9);
+      }
+    }
   }
 
-  if (levels.rockets > 0) {
+  if (rig.bazooka) {
+    bazookaIn -= dt;
+    if (bazookaIn <= 0) {
+      bazookaIn = rig.bazooka;
+      const lane = player.x / player.z;
+      const z0 = player.z + 0.15;
+      bullets.push(newBullet('shark', lane * z0, z0, AMMO.shark.speed * lane, AMMO.shark.speed, 8 + levels.power));
+      sfx('missile', 0.35);
+    }
+  }
+
+  const pods = rocketPods();
+  if (pods > 0) {
     rocketIn -= dt;
     if (rocketIn <= 0) {
       rocketIn = 2;
       const visible = aliens.filter((a) => !isBehindHorizon(a.x, a.z)).sort((p, q) => p.z - q.z);
-      for (let i = 0; i < levels.rockets; i++) {
-        rockets.push({ x: player.x, z: player.z, vx: (i - (levels.rockets - 1) / 2) * 2, vz: 3, life: 0, target: visible[i] ?? visible[0] ?? null });
+      for (let i = 0; i < pods; i++) {
+        rockets.push({ x: player.x, z: player.z, vx: (i - (pods - 1) / 2) * 2, vz: 3, life: 0, target: visible[i] ?? visible[0] ?? null });
       }
       sfx('missile', 0.3);
     }
@@ -583,12 +903,13 @@ function updateWeapons(dt) {
     }
   }
 
-  if (levels.shockwave > 0) {
+  const pulse = pulseLevel();
+  if (pulse > 0) {
     waveIn -= dt;
     if (waveIn <= 0) {
-      waveIn = Math.max(2, 4.5 - levels.shockwave * 0.5);
+      waveIn = Math.max(2, 4.5 - pulse * 0.5);
       waveId += 1;
-      rings.push({ r: 0, max: 1 + levels.shockwave * 0.35, t: 0, id: waveId });
+      rings.push({ r: 0, max: 1 + pulse * 0.35, t: 0, id: waveId });
       sfx('electro', 0.35);
     }
   }
@@ -599,26 +920,69 @@ function updateWeapons(dt) {
       if (a.waveHit === ring.id) continue;
       if (Math.hypot(a.x - player.x, (a.z - player.z) * 1.4) < ring.r) {
         a.waveHit = ring.id;
-        hitAlien(a, 3 + levels.shockwave);
+        hitAlien(a, 3 + pulse);
       }
     }
   }
   rings = rings.filter((ring) => ring.t < 0.55);
 }
 
+/** Homing rockets per salvo, from level-ups and the rig's rocket pods. */
+function rocketPods() {
+  return levels.rockets + (rig.rockets ?? 0);
+}
+
+/** Shockwave strength, from level-ups and the rig's tesla coils. */
+function pulseLevel() {
+  return levels.shockwave + (rig.tesla ?? 0);
+}
+
 /** @param {number} dt */
 function updateBullets(dt) {
   for (const b of bullets) {
+    const spec = AMMO[b.ammo];
     b.life += dt;
     b.x += b.vx * dt;
     b.z += b.vz * dt;
+    b.spin += (spec.spin ?? 0) * dt;
+    const wide = spec.size * 0.35;
+    const height = bulletY(b, b.z) - (spec.whirl ? spec.size * 0.5 : 0.3);
     for (const a of aliens) {
       if (a.hp <= 0) continue;
-      const reach = 0.13 + a.size * 0.42;
+      if (spec.pull) {
+        const dx = b.x - a.x;
+        const dz = b.z - a.z;
+        const d = Math.hypot(dx, dz);
+        if (d < spec.pull && d > 0.05 && a.type !== 'tank') {
+          a.x += (dx / d) * 2.4 * dt;
+          a.z += (dz / d) * 2.4 * dt;
+        }
+      }
+      if (height > a.y + a.size * 1.1) continue;
+      const last = b.hits.get(a);
+      if (last !== undefined && !(spec.rehit && b.life - last > spec.rehit)) continue;
+      const reach = 0.08 + wide + a.size * 0.42;
       if (Math.abs(a.z - b.z) < reach && Math.abs(a.x - b.x) < reach) {
-        hitAlien(a, b.dmg);
-        b.life = 99;
-        break;
+        b.hits.set(a, b.life);
+        strike(b, spec, a);
+        if (b.pierce > 0) b.pierce -= 1;
+        else {
+          b.life = 99;
+          break;
+        }
+      }
+    }
+    if (b.life < 99 && !b.rise) {
+      for (const d of deposits) {
+        if (d.hp <= 0 || b.hits.has(d)) continue;
+        if (Math.abs(d.z - b.z) < 0.25 && Math.abs(d.x - b.x) < d.def.w * 0.45 + wide) {
+          b.hits.set(d, b.life);
+          if (spec.splash) blast(b.x, b.z, spec.splash, b.dmg, spec.colour);
+          damageDeposit(d, b.dmg);
+          if (b.pierce > 0) b.pierce -= 1;
+          else b.life = 99;
+          break;
+        }
       }
     }
     if (b.life < 99) {
@@ -629,12 +993,89 @@ function updateBullets(dt) {
         }
       }
     }
-    if (b.life < 99 && boss && !boss.dying && Math.abs(b.x - boss.x) < 1.5 && Math.abs(b.z - boss.z) < 0.5) {
-      damageBoss(b.dmg);
-      b.life = 99;
+    if (b.life < 99 && b.rise && boss && !boss.dying && boss.solid >= 0.5 && Math.abs(b.x - boss.x) < 1.5 && Math.abs(b.z - boss.z) < 0.5) {
+      const last = b.hits.get(boss);
+      if (spec.rehit) {
+        b.z = Math.min(b.z, boss.z);
+        if (last === undefined || b.life - last > spec.rehit) {
+          b.hits.set(boss, b.life);
+          damageBoss(b.dmg);
+          explodeAt(b.x, BOSS_HIT_Y, boss.z, spec.colour, 0.5);
+        }
+      } else {
+        damageBoss(b.dmg * (spec.splash ? 1.5 : 1));
+        explodeAt(b.x, BOSS_HIT_Y, boss.z, spec.colour, spec.splash ? 1.2 : 0.35);
+        b.life = 99;
+      }
     }
   }
-  bullets = bullets.filter((b) => b.life < 1.4 && !isBehindHorizon(b.x, b.z));
+  bullets = bullets.filter((b) => b.life < (AMMO[b.ammo].life ?? 1.4) && !isBehindHorizon(b.x, b.z));
+  for (const z of zaps) z.life += dt;
+  zaps = zaps.filter((z) => z.life < 0.18);
+}
+
+/** @param {AmmoId} ammo @param {number} x @param {number} z @param {number} vx @param {number} vz @param {number} dmg @returns {Bullet} */
+function newBullet(ammo, x, z, vx, vz, dmg) {
+  const overhead = boss && !boss.dying && boss.z <= BOSS_Z + 0.1;
+  const rise = !!overhead && vz > 0 && Math.abs(x + (vx / vz) * (BOSS_Z - z) - boss.x) < 1.7;
+  return { x, z, z0: z, vx, vz, dmg, life: 0, ammo, pierce: AMMO[ammo].pierce ?? 0, spin: Math.random() * 6, hits: new Map(), rise };
+}
+
+/** How high a shot flies at depth z: low over the ground, or climbing into the mothership. @param {Bullet} b @param {number} z */
+function bulletY(b, z) {
+  const spec = AMMO[b.ammo];
+  const base = spec.whirl ? spec.size * 0.5 : 0.3;
+  if (!b.rise) return base;
+  return base + clamp((z - b.z0) / (BOSS_Z - b.z0), 0, 1) * (BOSS_HIT_Y - base);
+}
+
+/** What each kind of ammo does to the alien it hits. @param {Bullet} b @param {import('./ammo.js').AmmoType} spec @param {Alien} a */
+function strike(b, spec, a) {
+  if (spec.splash) blast(a.x, a.z, spec.splash, b.dmg, spec.colour);
+  else hitAlien(a, b.dmg);
+  if (a.hp <= 0) return;
+  if (spec.slow) a.slow = spec.slow;
+  if (spec.push) {
+    a.z += spec.push * 0.6;
+    if (a.type === 'leaper') {
+      a.phase = 'walk';
+      a.y = 0;
+    }
+  }
+  if (spec.chain) chainFrom(a, spec.chain, b.dmg);
+}
+
+/** An explosion that hurts every alien nearby. @param {number} x @param {number} z @param {number} r @param {number} dmg @param {string} colour */
+function blast(x, z, r, dmg, colour) {
+  explodeAt(x, 0.2, z, colour, 0.6 + r);
+  if (r > 1) {
+    shake = Math.max(shake, 12);
+    sfx('nuke-explosion', 0.3, 0.1);
+  } else sfx('death', 0.25, 0.05);
+  for (const a of aliens) if (a.hp > 0 && Math.hypot(a.x - x, a.z - z) < r + a.size * 0.3) hitAlien(a, dmg);
+}
+
+/** Lightning jumps from alien to alien. @param {Alien} start @param {number} jumps @param {number} dmg */
+function chainFrom(start, jumps, dmg) {
+  const done = new Set([start]);
+  let from = start;
+  for (let i = 0; i < jumps; i++) {
+    let next = null;
+    let nearest = 1.8;
+    for (const o of aliens) {
+      if (o.hp <= 0 || done.has(o) || isBehindHorizon(o.x, o.z)) continue;
+      const d = Math.hypot(o.x - from.x, o.z - from.z);
+      if (d < nearest) {
+        nearest = d;
+        next = o;
+      }
+    }
+    if (!next) break;
+    zaps.push({ a: { x: from.x, y: from.y + from.size * 0.4, z: from.z }, b: { x: next.x, y: next.y + next.size * 0.4, z: next.z }, life: 0 });
+    done.add(next);
+    hitAlien(next, dmg);
+    from = next;
+  }
 }
 
 /** @param {number} dt */
@@ -653,10 +1094,14 @@ function updateRockets(dt) {
     r.z += r.vz * dt;
     if (len < 0.25) {
       r.life = 99;
-      explodeAt(r.x, 0.2, r.z, '#ff7ae8', 0.9);
       sfx('death', 0.3, 0.05);
-      for (const a of aliens) if (Math.hypot(a.x - r.x, a.z - r.z) < 0.55) hitAlien(a, 3 + levels.rockets + levels.power);
-      if (!r.target && boss && Math.abs(boss.x - r.x) < 1.5) damageBoss(4 + levels.rockets);
+      if (!r.target && boss && Math.abs(boss.x - r.x) < 1.5) {
+        damageBoss(4 + rocketPods());
+        explodeAt(r.x, BOSS_HIT_Y, r.z, '#ff7ae8', 0.9);
+      } else {
+        explodeAt(r.x, 0.2, r.z, '#ff7ae8', 0.9);
+        for (const a of aliens) if (Math.hypot(a.x - r.x, a.z - r.z) < 0.55) hitAlien(a, 3 + rocketPods() + levels.power);
+      }
     }
   }
   rockets = rockets.filter((r) => r.life < 3);
@@ -671,39 +1116,224 @@ function updateSlimes(dt) {
     s.z = s.fromZ + (s.toZ - s.fromZ) * p;
     if (p >= 1 && s.t < 99) {
       s.t = 99;
-      if (Math.hypot(s.x - player.x, s.z - player.z) < 0.35 && player.dash <= 0) hurtPlayer(8);
-      explodeAt(s.x, 0.05, s.z, '#9dff3a', 0.5);
+      if (Math.hypot(s.x - player.x, s.z - player.z) < 0.35 && player.dash <= 0) {
+        if (s.chill && powers.shield <= 0) player.chill = 2.5;
+        hurtPlayer(8);
+      }
+      explodeAt(s.x, 0.05, s.z, SPLAT[s.kind] ?? '#9dff3a', 0.5);
     }
   }
   slimes = slimes.filter((s) => s.t < 99);
+  player.chill = Math.max(0, player.chill - dt);
 }
+
+/** Splash colour when each alien shot lands. @type {Partial<Record<Slime['kind'], string>>} */
+const SPLAT = { 'alien-lava': '#ff7a1a', 'alien-urchin': '#8ae8ff', 'alien-skull': '#7bff6a', 'alien-tentacle': '#d05aff', 'alien-eye': '#ffd23a', 'alien-worm': '#d05aff' };
 
 /** @param {number} dt */
 function updateGems(dt) {
+  const magnet = powers.magnet > 0;
   for (const g of gems) {
     g.t += dt;
+    g.x += g.vx * dt;
+    g.z += g.vz * dt;
+    g.vx *= 1 - Math.min(1, dt * 4);
+    g.vz *= 1 - Math.min(1, dt * 4);
+    g.z -= rollIn(g.z) * dt;
     const dx = player.x - g.x;
     const dz = player.z - g.z;
-    const dist = Math.hypot(dx, dz);
-    if (dist < MAGNET_RANGE) {
+    const dist = Math.hypot(dx, dz) || 1;
+    if (magnet && !isBehindHorizon(g.x, g.z)) {
+      g.x += (dx / dist) * 7 * dt;
+      g.z += (dz / dist) * 7 * dt;
+    } else if (dist < MAGNET_RANGE) {
       const pull = 3 + (MAGNET_RANGE - dist) * 8;
       g.x += (dx / dist) * pull * dt;
       g.z += (dz / dist) * pull * dt;
     }
     if (dist < 0.22) {
       g.t = 999;
-      player.crystals += g.value;
+      player.crystals += g.def.value;
+      score += 10 * g.def.value;
       sfx('core-collect', 0.25, 0.04);
     }
   }
-  gems = gems.filter((g) => g.t < 25);
+  gems = gems.filter((g) => g.t < 25 && g.z > 0.9);
   if (player.crystals >= crystalsForLevel(player.level)) levelUp();
+}
+
+/** Ground things drift towards Granny, and anything out of her reach slides in faster. @param {number} z */
+function rollIn(z) {
+  return GROUND_DRIFT + Math.max(0, z - Z_MAX) * 0.4;
+}
+
+/** @param {number} x @param {number} z @param {typeof GEMS[number][]} defs @param {number} spread */
+function dropGems(x, z, defs, spread) {
+  for (const def of defs) {
+    const angle = Math.random() * Math.PI * 2;
+    const kick = spread * (0.4 + Math.random() * 0.6);
+    gems.push({ x, z, vx: Math.cos(angle) * kick, vz: Math.sin(angle) * kick * 0.6, def, t: Math.random() });
+  }
+}
+
+/** @returns {AmmoId} */
+function randomAmmo() {
+  const id = CRATE_AMMO[Math.floor(Math.random() * CRATE_AMMO.length)];
+  return id === 'nuke' && Math.random() < 0.5 ? randomAmmo() : id;
+}
+
+/** @param {number} x @param {number} z @param {Prize} prize */
+function dropPrize(x, z, prize) {
+  const reach = maxXAt(Math.max(1, z)) * 0.85;
+  pickups.push({ ...prize, x: clamp(x, -reach, reach), z, t: 0 });
+}
+
+/** @param {number} dt */
+function updatePickups(dt) {
+  for (const p of pickups) {
+    p.t += dt;
+    p.z -= rollIn(p.z) * dt;
+    if (Math.hypot(p.x - player.x, (p.z - player.z) * 1.3) < 0.36) {
+      p.t = 99;
+      if (p.kind === 'ammo') addAmmo(p.id);
+      else applyPower(p.id);
+    }
+  }
+  pickups = pickups.filter((p) => p.t < PICKUP_LIFE && p.z > 1);
+}
+
+/** @param {number} dt */
+function updateDeposits(dt) {
+  depositIn -= dt;
+  if (depositIn <= 0 && deposits.length < 2 && clock < BOSS_TIME) {
+    depositIn = 12 + Math.random() * 8;
+    const prizes = DEPOSITS.filter((d) => d.prize);
+    const plain = DEPOSITS.filter((d) => !d.prize);
+    const def = depositsSeen === 0 ? DEPOSITS[1] : Math.random() < 0.22 ? prizes[Math.floor(Math.random() * prizes.length)] : plain[Math.floor(Math.random() * plain.length)];
+    const z = 7 + Math.random() * 2;
+    deposits.push({ def, x: (Math.random() - 0.5) * 1.3 * maxXAt(z), z, hp: def.hp, hitFlash: 0 });
+    depositsSeen += 1;
+  }
+  for (const d of deposits) {
+    d.z -= rollIn(d.z) * 0.6 * dt;
+    d.hitFlash = Math.max(0, d.hitFlash - dt * 6);
+    if (player.dash > 0 && d.hp > 0 && Math.abs(d.x - player.x) < d.def.w * 0.5 && Math.abs(d.z - player.z) < 0.3) damageDeposit(d, 999);
+  }
+  deposits = deposits.filter((d) => d.hp > 0 && d.z > 0.9);
+}
+
+/** @param {typeof deposits[number]} d @param {number} dmg */
+function damageDeposit(d, dmg) {
+  if (d.hp <= 0) return;
+  d.hp -= dmg;
+  d.hitFlash = 1;
+  if (d.hp > 0) return;
+  explodeAt(d.x, 0.25, d.z, d.def.colour, 1.6);
+  explodeAt(d.x, 0.4, d.z, '#ffffff', 0.8);
+  dropGems(d.x, d.z, gemsFor(d.def.crystals), 1.6);
+  addScore(d.def.prize ? 1000 : 250, d.x, 0.6, d.z, d.def.colour);
+  sfx('core-earned', 0.45);
+  if (d.def.prize) {
+    dropPrize(d.x - 0.25, d.z, { kind: 'power', id: rollPower({ hurt: player.hp < player.maxHp * 0.5 }) });
+    dropPrize(d.x + 0.25, d.z, { kind: 'ammo', id: randomAmmo() });
+  } else dropPrize(d.x, d.z, { kind: 'ammo', id: randomAmmo() });
+}
+
+/** @param {AmmoId} id */
+function addAmmo(id) {
+  const spec = AMMO[id];
+  let slot = rack.findIndex((s) => s.id === id);
+  if (slot < 0) {
+    if (rack.length > RACK_SLOTS) {
+      let fewest = 1;
+      for (let i = 2; i < rack.length; i++) if (rack[i].rounds < rack[fewest].rounds) fewest = i;
+      rack.splice(fewest, 1);
+    }
+    rack.push({ id, rounds: 0 });
+    slot = rack.length - 1;
+  }
+  rack[slot].rounds = Math.min(spec.rounds * 2, rack[slot].rounds + spec.rounds);
+  weapon = slot;
+  ammoPop = 0.9;
+  fireIn = Math.min(fireIn, 0.1);
+  floatAt(player.x, 0.95, player.z, `${spec.name.toUpperCase()}!`, spec.colour, 1.25);
+  sfx('turret-upgrade', 0.45);
+}
+
+function noPowers() {
+  return { boost: 0, shield: 0, magnet: 0, energy: 0, rapid: 0, radar: 0 };
+}
+
+/** @param {PowerId} id */
+function applyPower(id) {
+  const spec = POWERS[id];
+  sfx('core-earned', 0.5);
+  if (id === 'mystery') {
+    floatAt(player.x, 1.25, player.z, 'MYSTERY BOX…', spec.colour, 0.9);
+    applyPower(rollPower({ mystery: true }));
+    return;
+  }
+  floatAt(player.x, 0.95, player.z, spec.name, spec.colour, 1.35);
+  if (id === 'nuke') player.nuke = 1;
+  else if (id === 'health') player.hp = Math.min(player.maxHp, player.hp + 40);
+  else if (id === 'crystal') player.crystals = Math.max(player.crystals, crystalsForLevel(player.level));
+  else if (id === 'coins') {
+    dropGems(player.x, player.z + 0.6, [...Array(14).fill(GEMS[2]), GEMS[1], GEMS[1], GEMS[0], GEMS[0]], 2.4);
+    addScore(500);
+  } else if (id === 'cupcakes') {
+    const visible = aliens.filter((a) => !isBehindHorizon(a.x, a.z)).sort((p, q) => p.z - q.z);
+    for (let i = 0; i < 10; i++) {
+      rockets.push({ x: player.x, z: player.z, vx: (i - 4.5) * 0.9, vz: 3, life: 0, target: visible[i % Math.max(1, visible.length)] ?? null });
+    }
+    sfx('missile', 0.5);
+  } else if (id in powers) powers[/** @type {keyof typeof powers} */ (id)] = spec.time ?? 0;
+}
+
+/** @param {number} dt */
+function updatePowers(dt) {
+  for (const id of /** @type {(keyof typeof powers)[]} */ (Object.keys(powers))) powers[id] = Math.max(0, powers[id] - dt);
+  comboTime -= dt;
+  if (comboTime <= 0) combo = 0;
+  ammoPop = Math.max(0, ammoPop - dt);
+}
+
+function comboMultiplier() {
+  return Math.min(8, 1 + Math.floor(combo / 10));
+}
+
+/**
+ * Points, multiplied by the combo. With a position, they float up from there too.
+ * @param {number} points @param {number} [x] @param {number} [y] @param {number} [z] @param {string} [colour] '' for no floating number.
+ */
+function addScore(points, x, y = 0, z = 0, colour) {
+  const total = points * comboMultiplier();
+  score += total;
+  if (x === undefined || colour === '') return;
+  const mult = comboMultiplier();
+  floatAt(x, y, z, `+${total.toLocaleString()}`, colour ?? ['#fff3c4', '#ffe27a', '#ffb02e', '#ff7ae8', '#c78bff', '#5ae0ff', '#7bff6a', '#ff5a5a'][mult - 1], Math.min(1.1, 0.55 + total / 2000));
+}
+
+/** @param {number} x @param {number} y @param {number} z @param {string} text @param {string} colour @param {number} size */
+function floatAt(x, y, z, text, colour, size) {
+  const at = project(x, y, z);
+  floaters.push({ text, x: at.x, y: at.y, life: 0, max: size > 1 ? 1.4 : 0.9, colour, size });
+  if (floaters.length > 40) floaters.shift();
+}
+
+/** @param {number} dt */
+function updateFloaters(dt) {
+  for (const f of floaters) {
+    f.life += dt;
+    f.y -= (f.size > 1 ? 40 : 70) * dt;
+  }
+  floaters = floaters.filter((f) => f.life < f.max);
 }
 
 /** @param {number} dt */
 function updateBoss(dt) {
   const b = /** @type {NonNullable<typeof boss>} */ (boss);
   b.t += dt;
+  b.hitFlash = Math.max(0, b.hitFlash - dt * 8);
   if (b.dying > 0) {
     b.dying += dt;
     if (Math.random() < 0.6) explodeAt(b.x + (Math.random() - 0.5) * 2.6, 1 + Math.random() * 1.2, b.z, Math.random() < 0.5 ? '#ffd23a' : '#ff5a3a', 1.2);
@@ -717,37 +1347,65 @@ function updateBoss(dt) {
     b.z = Math.max(BOSS_Z, b.z - 2.2 * dt);
     return;
   }
-  b.x = Math.sin(b.t * 0.45) * maxXAt(BOSS_Z) * 0.55;
-  const angry = b.hp < BOSS_HP / 2;
+  const def = region.boss;
+  b.x = Math.sin(b.t * def.sway) * maxXAt(BOSS_Z) * 0.55;
+  const angry = b.hp < def.hp / 2;
+  if (def.phase) {
+    const want = Math.sin(b.t * 1.1) > -0.25 ? 1 : 0;
+    b.solid += Math.sign(want - b.solid) * Math.min(Math.abs(want - b.solid), dt * 3);
+  }
   b.fireIn -= dt;
   if (b.fireIn <= 0) {
-    b.fireIn = angry ? 1.6 : 2.4;
-    const offsets = angry ? [-1, -0.5, 0, 0.5, 1] : [-0.6, 0, 0.6];
-    for (const o of offsets) {
-      slimes.push({ x: b.x, z: b.z, fromX: b.x, fromZ: b.z, toX: player.x + o, toZ: player.z, t: 0, flight: 1.5 });
+    b.fireIn = def.fire[angry ? 1 : 0];
+    const shots = def.volley[angry ? 1 : 0];
+    for (let i = 0; i < shots; i++) {
+      const o = (i - (shots - 1) / 2) * def.spread;
+      lob(angry ? def.angryShot : def.shot, b.x, b.z, player.x + o, player.z, { flight: 1.5, y0: BOSS_HIT_Y, chill: def.chill });
     }
     sfx('slime', 0.4);
   }
+  if (def.rain) {
+    b.rainIn -= dt;
+    if (b.rainIn <= 0) {
+      b.rainIn = angry ? 0.35 : 0.65;
+      const x = player.x + (Math.random() - 0.5) * 2.6;
+      const z = clamp(player.z + (Math.random() - 0.35) * 1.4, Z_MIN, Z_MAX + 0.5);
+      lob('alien-lava', x, z, x, z, { flight: 1.1, y0: 4, arc: 0 });
+    }
+  }
   b.dropIn -= dt;
   if (b.dropIn <= 0) {
-    b.dropIn = angry ? 4 : 6;
-    for (let i = 0; i < (angry ? 6 : 4); i++) addAlien('swarmer', { x: b.x + (Math.random() - 0.5) * 2, z: b.z - 0.5 });
+    b.dropIn = def.drop.gap * (angry ? 0.66 : 1);
+    const count = Math.ceil(def.drop.count * (angry ? 1.5 : 1));
+    for (let i = 0; i < count; i++) addAlien(def.drop.type, { x: b.x + (Math.random() - 0.5) * 2, z: b.z - 0.5 });
   }
+}
+
+/**
+ * An alien shot lobbed through the air.
+ * @param {Slime['kind']} kind @param {number} fromX @param {number} fromZ @param {number} toX @param {number} toZ
+ * @param {{ flight: number, y0?: number, arc?: number, chill?: boolean }} opts `y0` is the launch height, `arc` how high it loops.
+ */
+function lob(kind, fromX, fromZ, toX, toZ, { flight, y0 = 0, arc = 1.1, chill = false }) {
+  slimes.push({ x: fromX, z: fromZ, fromX, fromZ, toX, toZ, t: 0, flight, kind, y0, arc, chill });
 }
 
 /** @param {number} amount */
 function damageBoss(amount) {
-  if (!boss || boss.dying || boss.z > BOSS_Z + 0.1) return;
+  if (!boss || boss.dying || boss.z > BOSS_Z + 0.1 || boss.solid < 0.5) return;
   boss.hp -= amount;
+  boss.hitFlash = 1;
   if (boss.hp <= 0) {
     boss.hp = 0;
     boss.dying = 0.001;
+    boss.solid = 1;
+    addScore(5000, boss.x, 1.2, boss.z, '#ffe27a');
     slimes = [];
     for (const a of aliens) killAlien(a, true);
     flash = 1;
     shake = 30;
     sfx('nuke-explosion', 0.7);
-    showBanner('MOTHERSHIP DOWN!');
+    showBanner(`${region.boss.name.toUpperCase()} DOWN!`);
   }
 }
 
@@ -776,6 +1434,69 @@ function updateParticles(dt) {
   if (particles.length > 1500) particles.splice(0, particles.length - 1500);
 }
 
+/**
+ * Exhaust sparks, tyre smoke and skid marks. New ones only appear while Granny is driving.
+ * @param {number} dt @param {boolean} driving
+ */
+function updateExhaust(dt, driving) {
+  if (driving) {
+    const ground = project(player.x, 0, player.z);
+    const w = 0.42 * view.unit * ground.s;
+    const lean = clamp(player.vx / player.speed, -1, 1);
+    const pace = Math.min(1, Math.hypot(player.vx, player.vz) / player.speed);
+    const pipes = exhaustPoints(ground.x, ground.y, w, lean, rig);
+    sparkIn -= dt * (player.dash > 0 ? 220 : 26 + 40 * pace);
+    while (sparkIn <= 0) {
+      sparkIn += 1;
+      const pipe = pipes[Math.random() < 0.5 ? 0 : 1];
+      const hot = player.dash > 0 ? 1.6 : 1;
+      sparks.push({
+        x: pipe.x + (Math.random() - 0.5) * w * 0.08, y: pipe.y,
+        vx: (Math.random() - 0.5) * w * 2.4 - player.vx * w * 0.6, vy: (0.6 + Math.random() * 1.8) * w * 1.6 * hot,
+        life: 0, max: 0.2 + Math.random() * 0.4, w,
+      });
+    }
+
+    if (skid > 0.2) {
+      for (const side of [-1, 1]) {
+        if (Math.random() < dt * 34 * skid) {
+          smoke.push({ x: player.x + side * WHEEL_X, y: 0.02, z: player.z, vx: -player.vx * 0.15 + (Math.random() - 0.5) * 0.3, r: 0.05 + Math.random() * 0.04, life: 0, max: 0.9 + Math.random() * 0.6 });
+        }
+      }
+    }
+    if (skid > 0.25) {
+      if (markFrom) {
+        for (const side of [-1, 1]) {
+          marks.push({ x1: markFrom.x + side * WHEEL_X, z1: markFrom.z, x2: player.x + side * WHEEL_X, z2: player.z, life: 0 });
+        }
+      }
+      markFrom = { x: player.x, z: player.z };
+    } else markFrom = null;
+  }
+
+  for (const s of sparks) {
+    s.life += dt;
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+    s.vy += s.w * 5 * dt;
+    s.vx *= 1 - dt * 2;
+  }
+  sparks = sparks.filter((s) => s.life < s.max);
+  for (const p of smoke) {
+    p.life += dt;
+    p.x += p.vx * dt;
+    p.z -= GROUND_DRIFT * dt;
+    p.y += 0.12 * dt;
+    p.r += 0.22 * dt;
+    p.vx *= 1 - dt * 1.5;
+  }
+  smoke = smoke.filter((p) => p.life < p.max && p.z > 0.9);
+  if (smoke.length > 160) smoke.splice(0, smoke.length - 160);
+  for (const m of marks) m.life += dt;
+  marks = marks.filter((m) => m.life < MARK_LIFE && m.z2 > 1);
+  if (marks.length > 900) marks.splice(0, marks.length - 900);
+}
+
 /* ---------- Drawing ---------- */
 
 function draw() {
@@ -784,6 +1505,7 @@ function draw() {
   if (state === 'warp') drawWarp();
   else drawPlanet();
   ctx.restore();
+  if (arch && state !== 'warp') drawFrame(arch);
   if (state === 'play' || state === 'levelup' || state === 'dying') drawHud();
   if (flash > 0) {
     ctx.fillStyle = `rgba(255, 255, 255, ${flash})`;
@@ -811,7 +1533,7 @@ function drawWarp() {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = `rgba(255, 230, 120, ${Math.min(1, warpTime * 1.5) * (warpTime > 2.4 ? Math.max(0, 1 - (warpTime - 2.4) * 2) : 1)})`;
-  ctx.fillText('LIGHTYEAR JUMP!', view.cx, view.h * 0.5);
+  ctx.fillText(region === REGIONS[0] ? 'LIGHTYEAR JUMP!' : `TO ${region.title.toUpperCase()}!`, view.cx, view.h * 0.5);
   if (warpTime > 2.6) {
     ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, (warpTime - 2.6) * 2.5)})`;
     ctx.fillRect(0, 0, view.w, view.h);
@@ -824,28 +1546,107 @@ function drawPlanet() {
 
   /** @type {{ z: number, behind: boolean, draw: () => void }[]} */
   const list = [];
-  for (const s of spires) list.push({ z: s.z, behind: isBehindHorizon(s.x, s.z), draw: () => drawSpireAt(s) });
+  for (const p of props) list.push({ z: p.z, behind: isBehindHorizon(p.x, p.z), draw: () => drawProp(p) });
   for (const a of aliens) list.push({ z: a.z, behind: isBehindHorizon(a.x, a.z), draw: () => drawAlien(a) });
-  for (const g of gems) list.push({ z: g.z, behind: false, draw: () => drawGem(g) });
-  for (const b of bullets) list.push({ z: b.z, behind: false, draw: () => drawBolt(b.x, 0.3, b.z, '#ff7ae8', 0.8 + (b.dmg - 1) * 0.2) });
+  for (const d of deposits) list.push({ z: d.z, behind: isBehindHorizon(d.x, d.z), draw: () => drawDeposit(d) });
+  for (const p of pickups) list.push({ z: p.z, behind: isBehindHorizon(p.x, p.z), draw: () => drawPickup(p) });
+  for (const g of gems) list.push({ z: g.z, behind: isBehindHorizon(g.x, g.z), draw: () => drawGem(g) });
+  for (const b of bullets) list.push({ z: b.z, behind: false, draw: () => drawBullet(b) });
   for (const r of rockets) list.push({ z: r.z, behind: false, draw: () => drawRocket(r) });
   for (const s of slimes) list.push({ z: s.z, behind: false, draw: () => drawSlime(s) });
   if (boss) list.push({ z: boss.z, behind: isBehindHorizon(boss.x, boss.z), draw: drawBoss });
   if (state !== 'dying' && state !== 'lost') list.push({ z: player.z, behind: false, draw: drawPlayer });
+  for (const p of smoke) list.push({ z: p.z - 0.01, behind: false, draw: () => drawSmoke(p) });
   list.sort((p, q) => q.z - p.z);
 
   for (const item of list) if (item.behind) item.draw();
   drawGround();
   for (const item of list) if (!item.behind) item.draw();
+  drawZaps();
   drawParticles();
+  drawSparks();
+  drawFloaters();
+}
+
+function drawZaps() {
+  if (!zaps.length) return;
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineJoin = 'round';
+  for (const z of zaps) {
+    const a = project(z.a.x, z.a.y, z.a.z);
+    const b = project(z.b.x, z.b.y, z.b.z);
+    const fade = 1 - z.life / 0.18;
+    for (const [width, colour] of [[7, `rgba(90, 200, 255, ${0.5 * fade})`], [2.5, `rgba(240, 250, 255, ${fade})`]]) {
+      ctx.strokeStyle = /** @type {string} */ (colour);
+      ctx.lineWidth = /** @type {number} */ (width);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      for (let i = 1; i < 6; i++) {
+        const t = i / 6;
+        ctx.lineTo(a.x + (b.x - a.x) * t + (Math.random() - 0.5) * 18, a.y + (b.y - a.y) * t + (Math.random() - 0.5) * 18);
+      }
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawFloaters() {
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const f of floaters) {
+    const pop = f.life < 0.12 ? 0.6 + f.life / 0.12 * 0.6 : f.life < 0.22 ? 1.2 - (f.life - 0.12) * 2 : 1;
+    ctx.globalAlpha = Math.min(1, (f.max - f.life) / 0.3);
+    ctx.font = `${Math.round(Math.max(16, view.h * 0.034) * f.size * pop)}px Bangers, sans-serif`;
+    outlineText(f.text, f.x, f.y, f.colour);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/** @param {{ x: number, y: number, z: number, r: number, life: number, max: number }} p */
+function drawSmoke(p) {
+  const at = project(p.x, p.y, p.z);
+  const r = p.r * view.unit * at.s;
+  const a = 0.42 * (1 - p.life / p.max) * Math.min(1, p.life * 8);
+  const puff = ctx.createRadialGradient(at.x, at.y - r * 0.3, 0, at.x, at.y - r * 0.3, r);
+  puff.addColorStop(0, `rgba(236, 214, 200, ${a})`);
+  puff.addColorStop(0.6, `rgba(190, 150, 135, ${a * 0.6})`);
+  puff.addColorStop(1, 'rgba(160, 110, 100, 0)');
+  ctx.fillStyle = puff;
+  ctx.beginPath();
+  ctx.arc(at.x, at.y - r * 0.3, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawSparks() {
+  if (!sparks.length) return;
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  for (const s of sparks) {
+    const f = s.life / s.max;
+    ctx.strokeStyle = f < 0.3 ? 'rgba(255, 250, 220, 0.95)' : f < 0.65 ? 'rgba(255, 200, 70, 0.85)' : `rgba(255, 110, 30, ${0.8 * (1 - f) / 0.35})`;
+    ctx.lineWidth = Math.max(1, s.w * 0.014 * (1 - f * 0.5));
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(s.x - s.vx * 0.025, s.y - s.vy * 0.025);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+  ctx.globalCompositeOperation = 'source-over';
 }
 
 function drawSky() {
-  const sky = ctx.createLinearGradient(0, 0, 0, view.h * 0.6);
-  sky.addColorStop(0, '#0d0322');
-  sky.addColorStop(0.55, '#4a1258');
-  sky.addColorStop(1, '#ff7a3c');
-  ctx.fillStyle = sky;
+  if (backdrop) {
+    drawBackdrop(backdrop);
+    return;
+  }
+  const [high, mid, low] = region.palette.sky;
+  const dusk = ctx.createLinearGradient(0, 0, 0, view.h * 0.6);
+  dusk.addColorStop(0, high);
+  dusk.addColorStop(0.55, mid);
+  dusk.addColorStop(1, low);
+  ctx.fillStyle = dusk;
   ctx.fillRect(0, 0, view.w, view.h);
   ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
   for (const s of skyStars) {
@@ -853,54 +1654,178 @@ function drawSky() {
     ctx.fillRect(s.x * view.w, s.y * view.h * 0.3, s.r, s.r);
   }
   ctx.globalAlpha = 1;
-  const pr = view.h * 0.11;
-  const px = view.w * 0.8;
-  const py = view.h * 0.13;
-  const planet = ctx.createRadialGradient(px - pr * 0.4, py - pr * 0.4, pr * 0.1, px, py, pr);
-  planet.addColorStop(0, '#ffd1f2');
-  planet.addColorStop(0.5, '#c24bd0');
-  planet.addColorStop(1, '#3c0f56');
-  ctx.fillStyle = planet;
-  ctx.beginPath();
-  ctx.arc(px, py, pr, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255, 210, 160, 0.55)';
-  ctx.lineWidth = pr * 0.08;
-  ctx.beginPath();
-  ctx.ellipse(px, py, pr * 1.7, pr * 0.32, -0.25, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.fillStyle = '#f4e9ff';
-  ctx.beginPath();
-  ctx.arc(view.w * 0.16, view.h * 0.09, pr * 0.2, 0, Math.PI * 2);
-  ctx.fill();
+  drawSkyLayers(ctx, sky, time);
+}
+
+/**
+ * The far wall, fitted to the space above the floor and repeated in mirrored copies so the
+ * original sits in the middle. It slides gently as Granny drives.
+ * @param {HTMLImageElement} img
+ */
+function drawBackdrop(img) {
+  ctx.fillStyle = region.palette.sky[1];
+  ctx.fillRect(0, 0, view.w, view.h);
+  if (!img.complete || !img.naturalWidth) return;
+  const floor = horizonY(view.cx) + 6;
+  drawMirrored(img, floor, Math.max(floor / 0.86, view.w / 3.2 / (img.naturalWidth / img.naturalHeight)), 0.12);
+  const dim = region.dim ?? 0;
+  if (dim > 0) {
+    const shade = ctx.createLinearGradient(0, 0, 0, floor);
+    shade.addColorStop(0, `rgba(8, 4, 24, ${Math.min(0.85, dim * 1.3)})`);
+    shade.addColorStop(1, `rgba(8, 4, 24, ${dim * 0.8})`);
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, view.w, floor);
+  }
+}
+
+/**
+ * A distant painted landscape standing on the horizon in place of the mountains, with the sky
+ * showing through above it.
+ * @param {HTMLImageElement} img
+ */
+function drawSkyline(img) {
+  if (!img.complete || !img.naturalWidth) return;
+  drawMirrored(img, horizonY(0) + 4, view.h * 0.3, 0.2);
+}
+
+/**
+ * Paints `img` side by side across the screen, every other copy flipped so the joins match,
+ * with one unflipped copy centred.
+ * @param {HTMLImageElement} img @param {number} bottom @param {number} h
+ * @param {number} depth how much it slides as Granny drives
+ */
+function drawMirrored(img, bottom, h, depth) {
+  const w = h * (img.naturalWidth / img.naturalHeight);
+  const top = bottom - h;
+  const left = view.cx - w / 2 - mountainSlide(sky, depth) * view.w;
+  const first = Math.floor(-left / w) - 1;
+  for (let i = first; left + i * w < view.w; i++) {
+    const x = left + i * w;
+    if (i % 2 === 0) {
+      ctx.drawImage(img, x, top, w, h);
+    } else {
+      ctx.save();
+      ctx.translate(x + w, top);
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, 0, 0, w, h);
+      ctx.restore();
+    }
+  }
+}
+
+/** Source rows of a frame, as fractions of its height: above TOP is the arch, below BOTTOM the corner pieces. */
+const FRAME_TOP = 0.43;
+const FRAME_BOTTOM = 0.8;
+/** The frame's centrepiece: half its width and its height, as fractions of the frame. */
+const FRAME_KEY_W = 0.19;
+const FRAME_KEY_H = 0.3;
+/** @type {WeakMap<HTMLImageElement, HTMLCanvasElement>} */
+const frameKeys = new WeakMap();
+
+/**
+ * Lays the frame over the battlefield. Its left and right halves are pinned to the screen edges and
+ * overlap in the middle on narrower screens, with the centrepiece pasted back over the join. On tall
+ * screens the plain middle stretch of the side columns is pulled taller to reach the bottom.
+ * @param {HTMLImageElement} img
+ */
+function drawFrame(img) {
+  if (!img.complete || !img.naturalWidth) return;
+  const fw = img.naturalWidth;
+  const fh = img.naturalHeight;
+  const half = fw / 2;
+  const s = clamp(view.h / fh, view.w / fw, view.w / (fw * 0.635));
+  const sv = Math.min(s * 1.25, view.h / fh);
+  const top = fh * FRAME_TOP;
+  const bottom = fh * FRAME_BOTTOM;
+  const bands = [
+    [0, top, 0, top * sv],
+    [top, bottom, top * sv, view.h - (fh - bottom) * sv],
+    [bottom, fh, view.h - (fh - bottom) * sv, view.h],
+  ];
+  for (const side of [0, 1]) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(side ? view.cx : 0, 0, view.cx, view.h);
+    ctx.clip();
+    for (const [sy0, sy1, dy0, dy1] of bands) {
+      ctx.drawImage(img, side * half, sy0, half, sy1 - sy0, side ? view.w - half * s : 0, dy0, half * s, dy1 - dy0 + 0.5);
+    }
+    ctx.restore();
+  }
+  let keyH = fh * FRAME_KEY_H * sv;
+  if (half * s > view.cx + 1) {
+    const key = frameKey(img);
+    const shrink = Math.min(1, (view.w * 0.5) / (key.width * s));
+    keyH = key.height * sv * shrink;
+    const kw = key.width * s * shrink;
+    ctx.drawImage(key, view.cx - kw / 2, 0, kw, keyH);
+  }
+  frameHudTop = keyH * 0.85;
+}
+
+/**
+ * The frame's centrepiece on its own, faded out at the left and right so it blends over the join.
+ * @param {HTMLImageElement} img
+ */
+function frameKey(img) {
+  let key = frameKeys.get(img);
+  if (key) return key;
+  const w = Math.round(img.naturalWidth * FRAME_KEY_W * 2);
+  const h = Math.round(img.naturalHeight * FRAME_KEY_H);
+  key = document.createElement('canvas');
+  key.width = w;
+  key.height = h;
+  const k = /** @type {CanvasRenderingContext2D} */ (key.getContext('2d'));
+  k.drawImage(img, (img.naturalWidth - w) / 2, 0, w, h, 0, 0, w, h);
+  k.globalCompositeOperation = 'destination-in';
+  const fade = k.createLinearGradient(0, 0, w, 0);
+  fade.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  fade.addColorStop(0.12, '#000');
+  fade.addColorStop(0.88, '#000');
+  fade.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  k.fillStyle = fade;
+  k.fillRect(0, 0, w, h);
+  frameKeys.set(img, key);
+  return key;
 }
 
 function drawMountains() {
+  if (backdrop) return;
+  if (skyline) {
+    drawCloudBand(ctx, sky, 0, time);
+    drawCloudBand(ctx, sky, 1, time);
+    drawSkyline(skyline);
+    return;
+  }
+  const [far, near] = region.palette.mountains;
   const layers = [
-    { colour: '#7a2a6e', height: 0.11, freq: 1.4, drift: 0.004 },
-    { colour: '#541a4c', height: 0.07, freq: 2.3, drift: 0.008 },
+    { colour: far, height: 0.11, freq: 1.4, drift: 0.004, depth: 0.2 },
+    { colour: near, height: 0.07, freq: 2.3, drift: 0.008, depth: 0.4 },
   ];
-  for (const layer of layers) {
+  layers.forEach((layer, i) => {
+    drawCloudBand(ctx, sky, i, time);
+    const shift = mountainSlide(sky, layer.depth);
     ctx.fillStyle = layer.colour;
     ctx.beginPath();
     ctx.moveTo(0, horizonY(0) + 4);
     for (let x = 0; x <= view.w + 12; x += 12) {
-      const u = x / view.w + time * layer.drift;
+      const u = x / view.w + time * layer.drift - shift;
       const peak = 0.5 + 0.3 * Math.sin(u * 9 * layer.freq) + 0.2 * Math.sin(u * 23 * layer.freq + 1.3);
       ctx.lineTo(x, horizonY(x) - view.h * layer.height * peak);
     }
     ctx.lineTo(view.w, horizonY(view.w) + 4);
     ctx.closePath();
     ctx.fill();
-  }
+  });
 }
 
 function drawGround() {
   const top = horizonY(view.cx);
+  const [near, mid, far] = region.palette.ground;
   const ground = ctx.createLinearGradient(0, top, 0, view.h);
-  ground.addColorStop(0, '#d8642e');
-  ground.addColorStop(0.25, '#a8401f');
-  ground.addColorStop(1, '#4a160e');
+  ground.addColorStop(0, near);
+  ground.addColorStop(0.25, mid);
+  ground.addColorStop(1, far);
   ctx.fillStyle = ground;
   ctx.beginPath();
   ctx.moveTo(0, view.h);
@@ -909,31 +1834,46 @@ function drawGround() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.strokeStyle = 'rgba(255, 190, 120, 0.8)';
+  ctx.strokeStyle = `${region.palette.rim}cc`;
   ctx.lineWidth = 3;
-  ctx.shadowColor = '#ff9a4a';
+  ctx.shadowColor = region.palette.rim;
   ctx.shadowBlur = 18;
   ctx.beginPath();
   for (let x = 0; x <= view.w + 10; x += 10) ctx[x ? 'lineTo' : 'moveTo'](x, horizonY(x));
   ctx.stroke();
   ctx.shadowBlur = 0;
+  if (backdrop) drawFloorShine(top);
 
-  for (const c of craters) {
-    if (isBehindHorizon(c.x, c.z) || c.z < 1) continue;
-    const mid = project(c.x, 0, c.z);
-    const near = project(c.x, 0, c.z - c.r);
-    const far = project(c.x, 0, c.z + c.r);
-    const rx = c.r * view.unit * mid.s;
-    const ry = Math.max(1, (near.y - far.y) / 2);
-    ctx.fillStyle = 'rgba(70, 18, 10, 0.45)';
+  for (const d of [...decals].sort((p, q) => q.z - p.z)) {
+    if (d.z < 0.8 || isBehindHorizon(d.x, d.z)) continue;
+    drawProp(d, 0.55);
+  }
+
+  ctx.lineCap = 'round';
+  for (const m of marks) {
+    const a = project(m.x1, 0, m.z1);
+    const b = project(m.x2, 0, m.z2);
+    const fade = Math.min(1, (MARK_LIFE - m.life) / 1.5);
+    ctx.strokeStyle = `rgba(28, 8, 6, ${0.5 * fade})`;
+    ctx.lineWidth = Math.max(1.5, 0.06 * view.unit * b.s);
     ctx.beginPath();
-    ctx.ellipse(mid.x, mid.y, rx, ry, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 170, 110, 0.35)';
-    ctx.lineWidth = Math.max(1, rx * 0.08);
-    ctx.beginPath();
-    ctx.ellipse(mid.x, mid.y + ry * 0.15, rx, ry, 0, Math.PI * 1.05, Math.PI * 1.95);
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
     ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+
+  if (powers.radar > 0) {
+    const at = project(player.x, 0, player.z);
+    for (let i = 0; i < 3; i++) {
+      const f = (time * 0.9 + i / 3) % 1;
+      const rx = f * 3.2 * view.unit * at.s;
+      ctx.strokeStyle = `rgba(123, 255, 106, ${0.55 * (1 - f)})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(at.x, at.y, rx, rx * 0.3, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
 
   for (const ring of rings) {
@@ -947,15 +1887,79 @@ function drawGround() {
   }
 }
 
-/** @param {{ x: number, z: number, h: number, w: number, hue: string }} s */
-function drawSpireAt(s) {
-  const at = project(s.x, 0, s.z);
-  drawSpire(ctx, at.x, at.y, s.w * view.unit * at.s, s.h * view.unit * at.s, s.hue);
+/**
+ * Light from the far wall spilling across the top of an indoor floor, and glints drifting past.
+ * @param {number} top
+ */
+function drawFloorShine(top) {
+  const rim = region.palette.rim;
+  const spill = ctx.createLinearGradient(0, top, 0, top + (view.h - top) * 0.45);
+  spill.addColorStop(0, `${rim}55`);
+  spill.addColorStop(1, `${rim}00`);
+  ctx.fillStyle = spill;
+  ctx.fillRect(0, top, view.w, view.h - top);
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.fillStyle = rim;
+  for (const s of specks) {
+    const x = s.x * maxXAt(s.z) * 1.3;
+    if (isBehindHorizon(x, s.z)) continue;
+    const at = project(x, 0, s.z);
+    const rx = s.r * view.unit * at.s;
+    ctx.globalAlpha = 0.6 * s.a * Math.min(1, (8.2 - s.z) / 1.5) * (0.6 + 0.4 * Math.sin(time * 3 + s.x * 20));
+    ctx.beginPath();
+    ctx.ellipse(at.x, at.y, rx, rx * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/**
+ * A scenery sprite standing on the ground. Flat props are squashed so they lie down in the
+ * distance and open up as they come closer.
+ * @param {Prop} p @param {number} [flat] 0 for standing props, otherwise how far the sprite is squashed at the horizon.
+ */
+function drawProp(p, flat = 0) {
+  const img = propImage(p.def.name);
+  if (!img.complete || !img.naturalWidth) return;
+  const at = project(p.x, 0, p.z);
+  const w = p.def.w * view.unit * at.s;
+  const lie = flat ? 1 - flat * Math.min(1, (p.z - 1) / 7) : 1;
+  const h = w * (img.naturalHeight / img.naturalWidth) * lie;
+  const base = flat ? 0.5 : 0.9;
+  const tint = flat ? region.palette.decalTint : undefined;
+  ctx.save();
+  ctx.translate(at.x, at.y);
+  if (p.flip) ctx.scale(-1, 1);
+  ctx.drawImage(tint ? tinted(img, p.def.name, tint) : img, -w / 2, -h * base, w, h);
+  ctx.restore();
+}
+
+/** @type {Map<string, HTMLCanvasElement>} */
+const tints = new Map();
+
+/** A copy of a loaded image washed with a colour, made once and kept. @param {HTMLImageElement} img @param {string} name @param {string} tint */
+function tinted(img, name, tint) {
+  const key = `${name}|${tint}`;
+  let out = tints.get(key);
+  if (!out) {
+    out = document.createElement('canvas');
+    out.width = img.naturalWidth;
+    out.height = img.naturalHeight;
+    const c = /** @type {CanvasRenderingContext2D} */ (out.getContext('2d'));
+    c.drawImage(img, 0, 0);
+    c.globalCompositeOperation = 'source-atop';
+    c.fillStyle = tint;
+    c.fillRect(0, 0, out.width, out.height);
+    tints.set(key, out);
+  }
+  return out;
 }
 
 /** @param {Alien} a */
 function drawAlien(a) {
-  const img = a.type === 'tank' ? sprites.granddaddy : sprites[ENEMY_TYPES[a.type].sprite];
+  const own = monsters[a.type];
+  const img = own?.naturalWidth ? own : a.type === 'tank' ? sprites.granddaddy : sprites[ENEMY_TYPES[a.type].sprite];
   const ground = project(a.x, 0, a.z);
   const at = project(a.x, a.y, a.z);
   const size = a.size * view.unit * at.s * 1.25;
@@ -972,6 +1976,7 @@ function drawAlien(a) {
     ctx.arc(at.x, at.y - size * 0.45, size * 0.55, 0, Math.PI * 2);
     ctx.fill();
   }
+  if (a.slow > 0) glow(at.x, at.y - size * 0.45, size * 0.65, 'rgba(120, 220, 255, 0.6)');
   const squash = a.phase === 'crouch' ? 0.78 : 1;
   const bob = a.phase === 'walk' ? Math.abs(Math.sin(a.t * 9)) * size * 0.06 : 0;
   if (img?.complete && img.naturalWidth) {
@@ -987,10 +1992,150 @@ function drawAlien(a) {
   }
 }
 
-/** @param {{ x: number, z: number, t: number }} g */
+/** @param {typeof gems[number]} g */
 function drawGem(g) {
-  const at = project(g.x, 0.12 + Math.sin(g.t * 6) * 0.03, g.z);
-  drawCrystal(ctx, at.x, at.y, Math.max(3, 0.07 * view.unit * at.s), g.t);
+  const img = pickupImage(g.def.name);
+  if (!img.complete || !img.naturalWidth) return;
+  const ground = project(g.x, 0, g.z);
+  const at = project(g.x, 0.1 + Math.sin(g.t * 5) * 0.03, g.z);
+  const h = Math.max(8, g.def.h * view.unit * at.s);
+  const w = h * (img.naturalWidth / img.naturalHeight);
+  glow(ground.x, ground.y - h * 0.1, h * 0.7, 'rgba(150, 120, 255, 0.45)');
+  ctx.save();
+  ctx.translate(at.x, at.y - h / 2);
+  ctx.rotate(Math.sin(g.t * 3) * 0.25);
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  ctx.restore();
+}
+
+/** A soft additive glow. @param {number} x @param {number} y @param {number} r @param {string} colour */
+function glow(x, y, r, colour) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, colour);
+  g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.fillStyle = g;
+  ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/** Ammo sprites point up; turn them to face the way they fly on screen. @param {Bullet} b */
+function drawBullet(b) {
+  const spec = AMMO[b.ammo];
+  if (spec.whirl) {
+    drawWhirl(b, spec);
+    return;
+  }
+  const img = ammoImage(spec.sprite);
+  const at = project(b.x, bulletY(b, b.z), b.z);
+  const nextZ = b.z + b.vz * 0.02;
+  const ahead = project(b.x + b.vx * 0.02, bulletY(b, nextZ), nextZ);
+  const h = Math.max(10, spec.size * view.unit * at.s);
+  glow(at.x, at.y, h * (powers.energy > 0 ? 0.9 : 0.6), `${spec.colour}${powers.energy > 0 ? 'cc' : '88'}`);
+  if (!img.complete || !img.naturalWidth) return;
+  const w = h * (img.naturalWidth / img.naturalHeight);
+  ctx.save();
+  ctx.translate(at.x, at.y);
+  ctx.rotate(spec.spin ? b.spin : Math.atan2(ahead.x - at.x, at.y - ahead.y));
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  ctx.restore();
+}
+
+/**
+ * A tornado standing on the ground: it whips back and forth, flips fast enough to read as spinning,
+ * and drags a ring of dust round its base.
+ * @param {Bullet} b @param {import('./ammo.js').AmmoType} spec
+ */
+function drawWhirl(b, spec) {
+  const img = ammoImage(spec.sprite);
+  const lift = bulletY(b, b.z) - spec.size * 0.5;
+  const ground = project(b.x, lift, b.z);
+  const grow = Math.min(1, 0.35 + b.life * 3);
+  const fade = Math.min(1, ((spec.life ?? 1.4) - b.life) / 0.4);
+  const h = Math.max(16, spec.size * view.unit * ground.s * grow);
+  const ring = h * 0.42;
+  ctx.globalAlpha = fade;
+  for (let i = 0; i < 10; i++) {
+    const a = b.spin * 0.6 + (i / 10) * Math.PI * 2;
+    if (Math.sin(a) >= 0) continue;
+    ctx.fillStyle = i % 3 ? 'rgba(200, 150, 120, 0.7)' : 'rgba(240, 240, 255, 0.8)';
+    ctx.fillRect(ground.x + Math.cos(a) * ring - 2, ground.y - h * 0.08 + Math.sin(a) * ring * 0.25 - 2, 4, 4);
+  }
+  glow(ground.x, ground.y - h * 0.5, h * 0.7, `${spec.colour}66`);
+  if (img.complete && img.naturalWidth) {
+    const w = h * (img.naturalWidth / img.naturalHeight);
+    ctx.save();
+    ctx.translate(ground.x + Math.sin(b.spin * 0.35) * h * 0.08, ground.y);
+    ctx.rotate(Math.sin(b.spin * 0.5) * 0.12);
+    ctx.scale(Math.floor(b.spin / 1.4) % 2 ? -1 : 1, 1 + Math.sin(b.spin * 0.8) * 0.04);
+    ctx.drawImage(img, -w / 2, -h, w, h);
+    ctx.restore();
+  }
+  for (let i = 0; i < 10; i++) {
+    const a = b.spin * 0.6 + (i / 10) * Math.PI * 2;
+    if (Math.sin(a) < 0) continue;
+    ctx.fillStyle = i % 3 ? 'rgba(200, 150, 120, 0.8)' : 'rgba(255, 255, 255, 0.9)';
+    ctx.fillRect(ground.x + Math.cos(a) * ring - 2.5, ground.y - h * 0.08 + Math.sin(a) * ring * 0.25 - 2.5, 5, 5);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/** @param {typeof deposits[number]} d */
+function drawDeposit(d) {
+  const img = pickupImage(d.def.name);
+  if (!img.complete || !img.naturalWidth) return;
+  const at = project(d.x, 0, d.z);
+  const w = d.def.w * view.unit * at.s;
+  const h = w * (img.naturalHeight / img.naturalWidth);
+  glow(at.x, at.y - h * 0.4, w * 0.8, `${d.def.colour}55`);
+  if (d.hitFlash > 0) ctx.filter = `brightness(${1 + d.hitFlash * 1.5})`;
+  const wobble = d.hitFlash * Math.sin(time * 60) * w * 0.03;
+  ctx.drawImage(img, at.x - w / 2 + wobble, at.y - h * 0.9, w, h);
+  ctx.filter = 'none';
+  if (Math.sin(time * 2.3 + d.x * 7) > 0.97) glow(at.x + w * 0.15, at.y - h * 0.7, w * 0.25, 'rgba(255, 255, 255, 0.9)');
+  if (d.hp < d.def.hp) {
+    const bw = w * 0.7;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillRect(at.x - bw / 2, at.y - h - 10, bw, 6);
+    ctx.fillStyle = d.def.colour;
+    ctx.fillRect(at.x - bw / 2, at.y - h - 10, bw * (d.hp / d.def.hp), 6);
+  }
+}
+
+/** A power-up or ammo crate hovering over a glowing ring. @param {typeof pickups[number]} p */
+function drawPickup(p) {
+  const ground = project(p.x, 0, p.z);
+  const at = project(p.x, 0.3 + Math.sin(p.t * 4) * 0.05, p.z);
+  const size = Math.max(18, 0.38 * view.unit * at.s);
+  const colour = p.kind === 'ammo' ? AMMO[p.id].colour : POWERS[p.id].colour;
+  if (p.t > PICKUP_LIFE - 3 && Math.floor(p.t * 8) % 2 === 0) return;
+  const pulse = 1 + 0.12 * Math.sin(p.t * 6);
+  ctx.strokeStyle = colour;
+  ctx.lineWidth = Math.max(2, size * 0.06);
+  ctx.globalAlpha = 0.8;
+  ctx.beginPath();
+  ctx.ellipse(ground.x, ground.y, size * 0.55 * pulse, size * 0.16 * pulse, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  glow(at.x, at.y, size * 0.95, `${colour}aa`);
+  if (p.kind === 'ammo') {
+    ctx.fillStyle = 'rgba(30, 10, 50, 0.75)';
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = Math.max(2, size * 0.07);
+    ctx.beginPath();
+    ctx.arc(at.x, at.y, size * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  const img = p.kind === 'ammo' ? ammoImage(AMMO[p.id].sprite) : pickupImage(`power-${p.id}`);
+  if (!img.complete || !img.naturalWidth) return;
+  const h = p.kind === 'ammo' ? size * 0.78 : size;
+  const w = h * (img.naturalWidth / img.naturalHeight);
+  ctx.save();
+  ctx.translate(at.x, at.y);
+  if (p.kind === 'ammo') ctx.rotate(0.5);
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  ctx.restore();
 }
 
 /** @param {number} x @param {number} y @param {number} z @param {string} colour @param {number} [big] */
@@ -1009,7 +2154,8 @@ function drawBolt(x, y, z, colour, big = 1) {
 
 /** @param {{ x: number, z: number, vx: number, vz: number }} r */
 function drawRocket(r) {
-  const at = project(r.x, 0.35, r.z);
+  const climb = !r.target && boss && !boss.dying ? clamp((r.z - player.z) / (boss.z - player.z), 0, 1) * (BOSS_HIT_Y - 0.35) : 0;
+  const at = project(r.x, 0.35 + climb, r.z);
   const size = Math.max(10, 0.22 * view.unit * at.s);
   if (cupcake.complete && cupcake.naturalWidth) {
     ctx.save();
@@ -1020,42 +2166,50 @@ function drawRocket(r) {
   } else drawBolt(r.x, 0.35, r.z, '#ffb02e', 1.6);
 }
 
-/** @param {{ x: number, z: number, t: number, flight: number }} s */
+/** Alien shots arc through the air: the slime glob faces where it's going, spores just tumble. @param {Slime} s */
 function drawSlime(s) {
+  /** @param {number} t */
+  const height = (t) => {
+    const p = Math.min(1, t / s.flight);
+    return s.y0 * (1 - p) + Math.sin(p * Math.PI) * s.arc + 0.1;
+  };
   const p = Math.min(1, s.t / s.flight);
-  const height = Math.sin(p * Math.PI) * 1.1;
   const shadow = project(s.x, 0, s.z);
-  const at = project(s.x, height + 0.1, s.z);
-  const r = Math.max(3, 0.09 * view.unit * at.s);
+  const at = project(s.x, height(s.t), s.z);
+  const r = Math.max(5, 0.11 * view.unit * at.s);
   ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
   ctx.beginPath();
   ctx.ellipse(shadow.x, shadow.y, r, r * 0.3, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#9dff3a';
-  ctx.beginPath();
-  ctx.arc(at.x, at.y, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-  ctx.beginPath();
-  ctx.arc(at.x - r * 0.3, at.y - r * 0.3, r * 0.3, 0, Math.PI * 2);
-  ctx.fill();
+  const img = ammoImage(s.kind);
+  if (!img.complete || !img.naturalWidth) return;
+  const h = r * 2.2;
+  const w = h * (img.naturalWidth / img.naturalHeight);
+  ctx.save();
+  ctx.translate(at.x, at.y);
+  if (DIRECTIONAL_SHOTS.has(s.kind)) {
+    const q = Math.min(1, p + 0.02);
+    const next = project(s.fromX + (s.toX - s.fromX) * q, height(q * s.flight), s.fromZ + (s.toZ - s.fromZ) * q);
+    ctx.rotate(Math.atan2(next.x - at.x, at.y - next.y));
+  } else ctx.rotate(s.t * 5);
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  ctx.restore();
 }
 
 function drawBoss() {
   if (!boss) return;
-  const img = sprites.mothership;
+  const img = bossImage(region.boss.sprite);
   if (!img.complete || !img.naturalWidth) return;
   const at = project(boss.x, 1.25, boss.z);
-  const w = 3 * view.unit * at.s;
+  const w = region.boss.w * view.unit * at.s;
   const h = w * (img.naturalHeight / img.naturalWidth);
   const hover = Math.sin(boss.t * 2) * 6;
-  const glow = ctx.createRadialGradient(at.x, at.y - h / 2, 0, at.x, at.y - h / 2, w * 0.7);
-  glow.addColorStop(0, 'rgba(120, 255, 120, 0.35)');
-  glow.addColorStop(1, 'rgba(120, 255, 120, 0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(at.x - w, at.y - h * 1.6, w * 2, h * 2.2);
+  glow(at.x, at.y - h / 2, w * 0.7, `${region.palette.rim}55`);
+  ctx.globalAlpha = 0.12 + 0.88 * boss.solid;
   if (boss.dying) ctx.globalAlpha = Math.max(0, 1 - boss.dying / 2.6);
+  if (boss.hitFlash > 0) ctx.filter = `brightness(${1 + boss.hitFlash * 0.8})`;
   ctx.drawImage(img, at.x - w / 2, at.y - h + hover, w, h);
+  ctx.filter = 'none';
   ctx.globalAlpha = 1;
 }
 
@@ -1068,9 +2222,37 @@ function drawPlayer() {
   ctx.ellipse(ground.x, ground.y, w * 0.5, w * 0.1, 0, 0, Math.PI * 2);
   ctx.fill();
   if (!(player.invuln > 0 && Math.floor(time * 14) % 2 === 0)) {
-    drawGranny(ctx, ground.x, ground.y, w, { t: time, flame: player.dash > 0 ? 3 : 1 + Math.min(1, Math.hypot(player.vx, player.vz) / player.speed) * 0.6, lean: clamp(player.vx / player.speed, -1, 1) });
+    const pace = Math.min(1, Math.hypot(player.vx, player.vz) / player.speed);
+    drawGranny(ctx, ground.x, ground.y, w, { t: time, flame: player.dash > 0 ? 3 : powers.boost > 0 ? 2.2 + pace * 0.4 : 1 + pace * 0.6, lean: clamp(player.vx / player.speed, -1, 1), rig });
   }
   if (levels.orbit > 0) drawOrbit(false);
+  if (player.chill > 0) glow(ground.x, ground.y - w * 0.4, w * 0.8, `${region.palette.rim}${Math.round(128 * Math.min(1, player.chill)).toString(16).padStart(2, '0')}`);
+  if (powers.shield > 0 && !(powers.shield < 2 && Math.floor(time * 10) % 2 === 0)) {
+    const at = project(player.x, 0.22, player.z);
+    const r = w * 0.85;
+    const bubble = ctx.createRadialGradient(at.x, at.y, r * 0.5, at.x, at.y, r);
+    bubble.addColorStop(0, 'rgba(90, 184, 255, 0.05)');
+    bubble.addColorStop(0.85, 'rgba(90, 200, 255, 0.28)');
+    bubble.addColorStop(1, 'rgba(200, 240, 255, 0.7)');
+    ctx.fillStyle = bubble;
+    ctx.beginPath();
+    ctx.arc(at.x, at.y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(160, 230, 255, ${0.6 + 0.3 * Math.sin(time * 12)})`;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+  if (ammoPop > 0) {
+    const spec = AMMO[(rack[weapon] ?? rack[0]).id];
+    const img = ammoImage(spec.sprite);
+    const at = project(player.x, 0.62, player.z);
+    const grow = ammoPop > 0.75 ? (0.9 - ammoPop) / 0.15 : 1;
+    const h = w * 0.5 * grow;
+    ctx.globalAlpha = Math.min(1, ammoPop / 0.25);
+    glow(at.x, at.y - h * 0.6, h, `${spec.colour}aa`);
+    if (img.complete && img.naturalWidth) ctx.drawImage(img, at.x - (h * img.naturalWidth / img.naturalHeight) / 2, at.y - h * 1.1 - (0.9 - ammoPop) * 20, h * img.naturalWidth / img.naturalHeight, h);
+    ctx.globalAlpha = 1;
+  }
 }
 
 /** Cupcakes behind Granny are drawn before her, the ones in front after. @param {boolean} behind */
@@ -1099,24 +2281,12 @@ function drawHud() {
   const pad = Math.max(12, view.w * 0.014);
   const big = Math.round(Math.max(20, view.h * 0.04));
 
-  const hpW = Math.min(280, view.w * 0.3);
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-  ctx.fillRect(pad, pad, hpW, big * 0.6);
-  ctx.fillStyle = player.hp > player.maxHp * 0.3 ? '#ff4f6a' : '#ff2a2a';
-  ctx.fillRect(pad, pad, hpW * (player.hp / player.maxHp), big * 0.6);
-  ctx.strokeStyle = '#fff3c4';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(pad, pad, hpW, big * 0.6);
-  ctx.font = `${Math.round(big * 0.55)}px Bangers, sans-serif`;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  outlineText(`GRANNY ${Math.ceil(player.hp)}`, pad + 8, pad + big * 0.3, '#ffffff');
-
   const owned = /** @type {import('./upgrades.js').UpgradeId[]} */ (Object.keys(levels)).filter((id) => levels[id] > 0);
   ctx.font = `${Math.round(big * 0.75)}px Bangers, sans-serif`;
+  ctx.textBaseline = 'middle';
   owned.forEach((id, i) => {
     const x = pad + i * big * 1.5;
-    const y = pad + big * 1.25;
+    const y = pad + big * 0.55;
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.fillRect(x, y - big * 0.55, big * 1.3, big * 1.1);
     ctx.textAlign = 'center';
@@ -1127,35 +2297,24 @@ function drawHud() {
     ctx.font = `${Math.round(big * 0.75)}px Bangers, sans-serif`;
   });
 
-  ctx.textAlign = 'right';
   ctx.textBaseline = 'top';
-  ctx.font = `${big}px Bangers, sans-serif`;
-  outlineText(`👾 ${player.kills.toLocaleString()}`, view.w - pad, pad, '#fff3c4');
-
   ctx.textAlign = 'center';
+  const top = arch ? Math.max(pad, frameHudTop) : pad;
   if (boss && boss.z <= BOSS_Z + 0.1) {
     const barW = Math.min(view.w * 0.4, 440);
     const barH = Math.max(10, big * 0.4);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-    ctx.fillRect(view.cx - barW / 2, pad, barW, barH);
+    ctx.fillRect(view.cx - barW / 2, top, barW, barH);
     ctx.fillStyle = '#ff3a5a';
-    ctx.fillRect(view.cx - barW / 2, pad, barW * (boss.hp / BOSS_HP), barH);
+    ctx.fillRect(view.cx - barW / 2, top, barW * (boss.hp / region.boss.hp), barH);
     ctx.font = `${Math.round(big * 0.6)}px Bangers, sans-serif`;
-    outlineText('MOTHERSHIP', view.cx, pad + barH + 4, '#ffb3c0');
+    outlineText(region.boss.name.toUpperCase(), view.cx, top + barH + 4, '#ffb3c0');
+  } else if (clock < BOSS_TIME) {
+    drawCountdown(BOSS_TIME - clock, top, big);
   } else {
     ctx.font = `${big}px Bangers, sans-serif`;
-    outlineText(clock < BOSS_TIME ? `🛸 ${formatClock(BOSS_TIME - clock)}` : '🛸 INCOMING', view.cx, pad, '#ffe27a');
+    outlineText('🛸 INCOMING', view.cx, top, '#ffe27a');
   }
-
-  const xpH = Math.max(8, big * 0.32);
-  const xpY = view.h - xpH;
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-  ctx.fillRect(0, xpY, view.w, xpH);
-  ctx.fillStyle = '#5dff8a';
-  ctx.fillRect(0, xpY, view.w * Math.min(1, player.crystals / crystalsForLevel(player.level)), xpH);
-  ctx.font = `${Math.round(big * 0.7)}px Bangers, sans-serif`;
-  ctx.textBaseline = 'bottom';
-  outlineText(`LEVEL ${player.level}`, view.cx, xpY - 2, '#5dff8a');
 
   if (banner.time > 0) {
     ctx.globalAlpha = Math.max(0, Math.min(1, banner.time * 2, (2.6 - banner.time) * 4));
@@ -1168,6 +2327,112 @@ function drawHud() {
     }
     ctx.globalAlpha = 1;
   }
+}
+
+let powersKey = '';
+let lastHp = 100;
+
+/** Keeps the HTML bar along the bottom in step with the game. Only touches the DOM when something changed. @param {number} dt */
+function updateBar(dt) {
+  const b = barEls;
+  shownScore += (score - shownScore) * Math.min(1, dt * 10);
+  if (Math.abs(score - shownScore) < 1) shownScore = score;
+  setText(b.score, Math.round(shownScore).toLocaleString());
+  b.score.classList.toggle('is-rolling', shownScore !== score);
+  setText(b.kills, player.kills.toLocaleString());
+  setText(b.best, `BEST ${Math.max(best, score).toLocaleString()}`);
+  b.best.classList.toggle('is-beaten', score > best && best > 0);
+
+  const mult = comboMultiplier();
+  setText(b.comboX, String(combo));
+  setText(b.comboN, `COMBO x${mult}`);
+  b.combo.classList.toggle('is-on', combo >= 3);
+  b.combo.dataset.mult = String(mult);
+  b.comboTime.style.width = `${combo >= 3 ? Math.max(0, comboTime / COMBO_TIME) * 100 : 0}%`;
+
+  const hp = Math.max(0, player.hp / player.maxHp);
+  b.hpFill.style.width = `${hp * 100}%`;
+  b.hpLag.style.width = `${hp * 100}%`;
+  setText(b.hpText, `${Math.ceil(player.hp)} / ${player.maxHp}`);
+  b.health.classList.toggle('is-mid', hp <= 0.6 && hp > 0.3);
+  b.health.classList.toggle('is-low', hp <= 0.3);
+  if (player.hp < lastHp) {
+    b.health.classList.remove('is-hit');
+    void b.health.offsetWidth;
+    b.health.classList.add('is-hit');
+  }
+  lastHp = player.hp;
+
+  b.xp.style.width = `${Math.min(1, player.crystals / crystalsForLevel(player.level)) * 100}%`;
+  setText(b.level, `LEVEL ${player.level}`);
+
+  const active = /** @type {(keyof typeof powers)[]} */ (Object.keys(powers)).filter((id) => powers[id] > 0);
+  const pKey = active.join();
+  if (pKey !== powersKey) {
+    powersKey = pKey;
+    b.powers.innerHTML = active.map((id) => `<div class="hl-power" data-power="${id}" style="--c: ${POWERS[id].colour}" title="${POWERS[id].name}">
+      <img src="assets/homeland/pickups/power-${id}.webp" alt="" /></div>`).join('');
+  }
+  b.powers.querySelectorAll('[data-power]').forEach((node) => {
+    const id = /** @type {keyof typeof powers} */ (node.getAttribute('data-power'));
+    const left = powers[id] / (POWERS[id].time ?? 1);
+    /** @type {HTMLElement} */ (node).style.setProperty('--p', `${left * 100}%`);
+    node.classList.toggle('is-ending', powers[id] < 2);
+  });
+
+  nukeButton.disabled = player.nuke < 1;
+  nukeButton.style.setProperty('--charge', `${Math.round(Math.min(1, player.nuke) * 100)}%`);
+  dashButton.disabled = player.dashCd > 0;
+  dashButton.style.setProperty('--charge', `${Math.round((1 - player.dashCd / DASH_COOLDOWN) * 100)}%`);
+}
+
+/** @param {HTMLElement} node @param {string} text */
+function setText(node, text) {
+  if (node.textContent !== text) node.textContent = text;
+}
+
+/**
+ * The big arcade countdown to the end of the assault: red for the last 10 seconds, and it flashes
+ * and pulses on every second for the last 5.
+ * @param {number} left Seconds remaining. @param {number} top @param {number} big
+ */
+function drawCountdown(left, top, big) {
+  const secs = Math.ceil(left);
+  const sinceTick = secs - left;
+  const urgent = secs <= 10;
+  const final = secs <= 5;
+  const size = Math.round(Math.max(44, view.h * 0.1));
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.font = `${Math.round(big * 0.6)}px Bangers, sans-serif`;
+  outlineText('SURVIVE', view.cx, top, urgent ? '#ffb3b3' : '#fff3c4');
+
+  ctx.save();
+  if (final && sinceTick > 0.55) ctx.globalAlpha = 0.25;
+  const pulse = final ? 1 + 0.3 * Math.max(0, 1 - sinceTick * 4) : 1;
+  const y = top + big * 0.6;
+  ctx.translate(view.cx, y + size / 2);
+  ctx.scale(pulse, pulse);
+  ctx.font = `${size}px Bangers, sans-serif`;
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = Math.max(6, size * 0.12);
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = urgent ? '#3a0008' : 'rgba(20, 4, 30, 0.95)';
+  const text = formatClock(secs);
+  ctx.strokeText(text, 0, 0);
+  const fill = ctx.createLinearGradient(0, -size / 2, 0, size / 2);
+  if (urgent) {
+    fill.addColorStop(0, '#ff9a9a');
+    fill.addColorStop(0.5, '#ff2a2a');
+    fill.addColorStop(1, '#b30000');
+  } else {
+    fill.addColorStop(0, '#fff6b0');
+    fill.addColorStop(0.5, '#ffd23a');
+    fill.addColorStop(1, '#ff8a1a');
+  }
+  ctx.fillStyle = fill;
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
 }
 
 /** @param {string} text @param {number} x @param {number} y @param {string} colour */
@@ -1202,12 +2467,17 @@ function frame(now) {
   last = now;
   update(dt);
   draw();
+  updateBar(dt);
   requestAnimationFrame(frame);
 }
 
 window.addEventListener('resize', resize);
 resize();
 resetRun();
-loadSounds(['nuke-fire', 'battle-cry-titans', 'siren-alert', 'mothership', 'granddaddywarning', 'lazer1', 'death', 'slime', 'wrong', 'electro', 'missile', 'nuke-explosion', 'turret-upgrade', 'core-collect', 'core-earned']);
-document.getElementById('hl-start')?.addEventListener('click', startWarp);
+loadSounds(['nuke-fire', 'battle-cry-titans', 'siren-alert', 'mothership', 'granddaddywarning', 'lazer1', 'death', 'slime', 'wrong', 'electro', 'missile', 'nuke-explosion', 'turret-upgrade', 'core-collect', 'core-earned', 'button-press']);
+// ?region=, ?start= and ?boss jump straight into a run for testing; otherwise the title leads to the map.
+// ?story (with ?region=) opens that region's story card instead.
+const jumpIn = params.has('region') || params.has('start') || params.has('boss');
+document.getElementById('hl-start')?.addEventListener('click', jumpIn ? startWarp : showMap);
+if (params.has('story')) showStory(REGIONS.indexOf(region));
 requestAnimationFrame(frame);

@@ -13,9 +13,8 @@ export const ENEMY_TYPES = {
   tank: { hp: 18, speed: 0.75, size: 0.9, damage: 22, gems: 6, sprite: 'granddaddy' },
 };
 
-/** Run length, in seconds, before the mothership rises over the horizon. */
+/** Run length, in seconds, before the region's boss rises over the horizon. */
 export const BOSS_TIME = 165;
-export const BOSS_HP = 450;
 /** Seconds into the run when a horde pours over the horizon. */
 export const HORDE_TIMES = [40, 85, 130];
 export const MAX_ALIENS = 220;
@@ -25,8 +24,13 @@ export function spawnInterval(t) {
   return Math.max(0.2, 1.05 - t * 0.0055);
 }
 
-/** @param {number} t @param {() => number} rand @returns {keyof typeof ENEMY_TYPES} */
-export function pickEnemyType(t, rand = Math.random) {
+/**
+ * @param {number} t Seconds into the run.
+ * @param {Partial<Record<keyof typeof ENEMY_TYPES, number>>} [mix] How much more (or less) common each type is in this region.
+ * @param {() => number} [rand]
+ * @returns {keyof typeof ENEMY_TYPES}
+ */
+export function pickEnemyType(t, mix = {}, rand = Math.random) {
   const table = /** @type {[keyof typeof ENEMY_TYPES, number][]} */ ([
     ['swarmer', 30],
     ['grunt', 40],
@@ -34,7 +38,7 @@ export function pickEnemyType(t, rand = Math.random) {
     ['spitter', t > 55 ? 10 : 0],
     ['splitter', t > 70 ? 9 : 0],
     ['tank', t > 60 ? 5 : 0],
-  ]);
+  ]).map(([type, w]) => /** @type {[keyof typeof ENEMY_TYPES, number]} */ ([type, w * (mix[type] ?? 1)]));
   let roll = rand() * table.reduce((sum, [, w]) => sum + w, 0);
   for (const [type, weight] of table) {
     roll -= weight;

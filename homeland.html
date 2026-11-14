@@ -6,32 +6,57 @@
   <title>Granny Boom — Alien Homeland (prototype)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/homeland.css?v=20261114b1" />
+  <link rel="stylesheet" href="css/homeland.css?v=20261114h13" />
 </head>
 <body>
   <canvas id="homeland" aria-label="Alien Homeland"></canvas>
 
-  <div class="hl-buttons" id="hl-buttons" hidden>
-    <button type="button" class="hl-action hl-nuke" id="hl-nuke" disabled>☢ NUKE</button>
-    <button type="button" class="hl-action hl-dash" id="hl-dash">🚀 DASH</button>
+  <div class="hl-bar" id="hl-bar">
+    <div class="hl-xp">
+      <div class="hl-xp-fill" id="hl-xp-fill"></div>
+      <span class="hl-xp-level" id="hl-level">LEVEL 1</span>
+    </div>
+    <div class="hl-bar-row">
+      <button type="button" class="hl-action hl-dash" id="hl-dash" tabindex="-1"><span class="hl-action-icon">🚀</span>DASH</button>
+      <div class="hl-health" id="hl-health">
+        <span class="hl-heart">❤</span>
+        <div class="hl-hp-track">
+          <div class="hl-hp-lag" id="hl-hp-lag"></div>
+          <div class="hl-hp-fill" id="hl-hp-fill"></div>
+          <span class="hl-hp-text" id="hl-hp-text">100 / 100</span>
+        </div>
+      </div>
+      <div class="hl-score">
+        <div class="hl-score-line">
+          <div class="hl-score-num" id="hl-score">0</div>
+          <div class="hl-combo" id="hl-combo"><b id="hl-combo-x">x1</b><span id="hl-combo-n"></span></div>
+        </div>
+        <div class="hl-combo-track"><div class="hl-combo-time" id="hl-combo-time"></div></div>
+        <div class="hl-best" id="hl-best"></div>
+      </div>
+      <div class="hl-kills"><img src="assets/enemies/monster1.png" alt="" /><b id="hl-kills">0</b></div>
+      <div class="hl-powers" id="hl-powers"></div>
+      <button type="button" class="hl-action hl-nuke" id="hl-nuke" tabindex="-1" disabled><span class="hl-action-icon">☢</span>NUKE</button>
+    </div>
   </div>
 
   <div class="hl-levelup" id="hl-levelup" hidden></div>
 
   <div class="hl-overlay" id="hl-overlay">
     <div class="hl-card">
-      <p class="hl-kicker">PROTOTYPE · REGION 1</p>
+      <p class="hl-kicker">PROTOTYPE</p>
       <h1 class="hl-title">ALIEN HOMELAND</h1>
       <p class="hl-line">All 10 map pieces found. Granny fires up the rocket scooter…</p>
       <button type="button" class="hl-go" id="hl-start">🚀 LIGHTYEAR JUMP!</button>
       <ul class="hl-controls">
         <li><strong>Drive</strong> mouse, finger, arrows or WASD</li>
-        <li><strong>Dash</strong> click, Space or the DASH button</li>
-        <li><strong>Nuke</strong> N or the NUKE button when charged</li>
         <li><strong>Fire</strong> Granny shoots straight ahead by herself</li>
+        <li><strong>Nuke</strong> SPACE or the NUKE button when charged</li>
+        <li><strong>Dash</strong> click, Shift or the DASH button to ram aliens</li>
+        <li><strong>Ammo</strong> smash crystals, grab the crates</li>
       </ul>
     </div>
   </div>
-  <script type="module" src="js/homeland/game.js?v=20261114b3"></script>
+  <script type="module" src="js/homeland/game.js?v=20261114h39"></script>
 </body>
 </html>
