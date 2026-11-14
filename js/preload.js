@@ -3,7 +3,7 @@ let fieldCache = null;
 /** @type {Promise<HTMLImageElement>|null} */
 let fieldPromise = null;
 
-import { DEV } from './dev.js?v=20261113n1';
+import { DEV } from './dev.js?v=20261114t1';
 
 export const FIELD_SRC = DEV.lanes ? 'assets/field.png' : 'assets/field-lawn.jpg';
 

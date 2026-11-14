@@ -3,7 +3,8 @@ import { attackStatus, answersForCharge } from './training-gate.js?v=20261114n1'
 import { badgeSrc } from './stars.js';
 import { SIEGE_RANKS, siegeRankLevel, rankProgressText } from './siege-ranks.js?v=20261112a2';
 import { hotTopicId } from './hot-topic.js?v=20261112a1';
-import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261113n1';
+import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261114t1';
+import { rareDossiers } from './rare-ships.js?v=20261114t1';
 import { renderInterstellarMap, mapPiecesEarned, hasMapPiece, getMapPasses, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS, MAP_SECTORS } from './map-progress.js';
 import { topicRankProgress, getTopicRecord } from './topic-progression.js?v=20261114k1';
 import { getQualifiedLevels } from './level-mastery.js?v=20261114k1';
@@ -563,6 +564,7 @@ export function renderMissionControl(host, state) {
     contact: attack.open,
     urgency: attack.urgency,
     defeatedByType: state.enemyDefeated,
+    rareDossiers: state.rares ? rareDossiers(state.rares) : [],
   });
   host.querySelector('#btn-hold-line')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-back-to-hq')?.addEventListener('click', state.onHome);

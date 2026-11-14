@@ -278,6 +278,7 @@ export function renderThreatDossier(contact, attack) {
       <div class="threat-dossier-frame">
         <div class="threat-dossier-bar">
           <span class="threat-dossier-stamp">TOP SECRET // EYES ONLY</span>
+          <span class="threat-dossier-rares" hidden></span>
           <span class="threat-dossier-live">
             SIGINT-<span class="threat-dossier-clock">${liveTimestamp()}</span><span class="threat-cursor" aria-hidden="true">█</span>
           </span>
@@ -388,8 +389,24 @@ function buildHexRail(dossier) {
 }
 
 /**
+ * Every third blueprint is one of the rare motherships, so the rares come round often.
+ * @param {ThreatDossier[]} regular @param {ThreatDossier[]} rares
+ */
+function withRares(regular, rares) {
+  if (!rares.length) return regular;
+  const out = [];
+  let r = 0;
+  regular.forEach((d, i) => {
+    out.push(d);
+    if (i % 2 === 1) out.push(rares[r++ % rares.length]);
+  });
+  while (r < rares.length) out.push(rares[r++]);
+  return out;
+}
+
+/**
  * @param {HTMLElement|null} root
- * @param {{ contact?: boolean, urgency?: string, defeatedByType?: Record<string,number> }} [opts]
+ * @param {{ contact?: boolean, urgency?: string, defeatedByType?: Record<string,number>, rareDossiers?: (ThreatDossier & { rareState: string, caught: number })[] }} [opts]
  */
 export function initThreatDossier(root, opts = {}) {
   if (!root) return () => {};
@@ -409,19 +426,30 @@ export function initThreatDossier(root, opts = {}) {
 
   let index = 0;
   let alive = true;
+  const rares = opts.rareDossiers ?? [];
+  const dossiers = withRares(ALL_DOSSIERS, rares);
+  const raresEl = root.querySelector('.threat-dossier-rares');
+  if (raresEl && rares.length) {
+    raresEl.hidden = false;
+    raresEl.textContent = `RARES ${rares.filter((d) => d.caught > 0).length}/${rares.length}`;
+  }
 
   const cycleMs = opts.contact ? 4200 : opts.urgency === 'critical' ? 4800 : opts.urgency === 'warning' ? 5600 : 6800;
 
   /** @param {number} i */
   function showDossier(i) {
-    const dossier = ALL_DOSSIERS[i % ALL_DOSSIERS.length];
+    const dossier = dossiers[i % dossiers.length];
+    const rareState = /** @type {{ rareState?: string }} */ (dossier).rareState ?? '';
     root.classList.toggle('threat-dossier-friendly', dossier.threat === 'DEF');
+    root.classList.toggle('threat-dossier-rare', Boolean(rareState));
+    img.dataset.rare = rareState;
     img.classList.add('threat-dossier-img-swap');
     img.src = dossierImageSrc(dossier);
     if (codenameEl) codenameEl.textContent = dossier.codename;
     if (designationEl) designationEl.textContent = dossier.designation;
     if (fileEl) fileEl.textContent = `FILE ${dossier.file} · TL-${dossier.threat}`;
-    if (defeatEl) defeatEl.textContent = Math.max(0, Number(opts.defeatedByType?.[dossier.key ?? '']) || 0).toLocaleString();
+    const kills = rareState ? /** @type {{ caught?: number }} */ (dossier).caught : opts.defeatedByType?.[dossier.key ?? ''];
+    if (defeatEl) defeatEl.textContent = Math.max(0, Number(kills) || 0).toLocaleString();
     scrollInner.innerHTML = buildScrollHtml(dossier);
     metersEl.innerHTML = buildMetersHtml(dossier);
     tickerEl.textContent = buildTickerText(dossier);
@@ -436,7 +464,7 @@ export function initThreatDossier(root, opts = {}) {
 
   const cycleId = setInterval(() => {
     if (!alive) return;
-    index = (index + 1) % ALL_DOSSIERS.length;
+    index = (index + 1) % dossiers.length;
     showDossier(index);
   }, cycleMs);
 

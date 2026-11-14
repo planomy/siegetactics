@@ -1,0 +1,154 @@
+/* Rare motherships: the battle alert, the shoot-down celebration and their blueprints. */
+
+.rare-alert {
+  position: absolute;
+  top: 7%;
+  left: 50%;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  max-width: 94%;
+  padding: 10px 20px 12px;
+  border: 2px solid #ffc94a;
+  border-radius: 16px;
+  background: radial-gradient(ellipse at 50% 30%, rgba(90, 60, 0, .92), rgba(18, 10, 0, .94));
+  box-shadow: 0 0 34px rgba(255, 190, 60, .65), inset 0 0 18px rgba(255, 200, 80, .25);
+  text-align: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: rare-alert-in .5s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+.rare-alert-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 4.2vw, 1.5rem);
+  white-space: nowrap;
+  letter-spacing: .06em;
+  color: #ffe08a;
+  text-shadow: 0 0 12px rgba(255, 190, 40, .9), 0 3px 0 #3a2200;
+  animation: rare-alert-flash .5s steps(2) infinite;
+}
+
+.rare-alert-art {
+  width: 190px;
+  max-height: 110px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 14px rgba(255, 200, 70, .8));
+}
+
+.rare-alert-name {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  letter-spacing: .08em;
+  color: #fff;
+  text-shadow: 0 2px 0 #000;
+}
+
+.rare-alert-sub {
+  font-size: .85rem;
+  font-weight: 800;
+  color: #ffd56a;
+}
+
+.rare-alert.is-legendary {
+  border-color: #ff4a3a;
+  background: radial-gradient(ellipse at 50% 30%, rgba(110, 10, 0, .94), rgba(20, 0, 0, .95));
+  box-shadow: 0 0 44px rgba(255, 50, 30, .8), inset 0 0 20px rgba(255, 60, 40, .3);
+}
+
+.rare-alert.is-legendary .rare-alert-title {
+  color: #ffb3a6;
+  text-shadow: 0 0 14px rgba(255, 50, 30, .95), 0 3px 0 #300;
+}
+
+.rare-alert.is-legendary .rare-alert-art {
+  width: 280px;
+  filter: drop-shadow(0 0 16px rgba(255, 60, 40, .85));
+}
+
+.rare-alert.is-leaving {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-14px);
+  transition: opacity .5s ease, transform .5s ease;
+}
+
+@keyframes rare-alert-in {
+  0% { opacity: 0; transform: translateX(-50%) scale(.4); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+@keyframes rare-alert-flash {
+  50% { opacity: .55; }
+}
+
+/* Cousin Zorg arrives: the whole battlefield shudders. */
+.siege-canvas-wrap.is-quake {
+  animation: rare-quake .9s ease-out;
+}
+
+@keyframes rare-quake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-9px, 4px); }
+  20% { transform: translate(8px, -5px); }
+  30% { transform: translate(-7px, -3px); }
+  40% { transform: translate(6px, 4px); }
+  55% { transform: translate(-4px, 2px); }
+  70% { transform: translate(3px, -2px); }
+  85% { transform: translate(-1px, 1px); }
+}
+
+.rare-up-art {
+  position: relative;
+  width: 260px;
+  max-height: 150px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 22px rgba(255, 200, 60, .9));
+}
+
+.rare-up.is-legendary .rare-up-art {
+  width: 360px;
+  filter: drop-shadow(0 0 26px rgba(255, 60, 40, .9));
+}
+
+.rare-up .rank-up-name {
+  text-align: center;
+}
+
+.rare-up-new {
+  position: relative;
+  margin-top: 4px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffd34a, #ff9a1f);
+  color: #2a1400;
+  font-size: .85rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+  box-shadow: 0 0 16px rgba(255, 180, 40, .8);
+}
+
+/* Blueprint panel: unknown rares are pure silhouettes, sighted ones a faint hologram, and caught
+   ones in full colour. The panel is hue-shifted to red, so caught art turns the hue back. */
+.threat-dossier-rares {
+  font-weight: 900;
+  letter-spacing: .08em;
+  color: #ffd56a;
+  white-space: nowrap;
+}
+
+.threat-dossier .threat-dossier-img[data-rare="unknown"] {
+  filter: brightness(0) drop-shadow(0 0 5px rgba(140, 255, 170, .9));
+  opacity: .95;
+}
+
+.threat-dossier .threat-dossier-img[data-rare="sighted"] {
+  opacity: .55;
+}
+
+.threat-dossier .threat-dossier-img[data-rare="caught"] {
+  filter: drop-shadow(0 0 7px rgba(255, 205, 70, .9)) hue-rotate(125deg) saturate(.85);
+  opacity: 1;
+}

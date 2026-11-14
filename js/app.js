@@ -4,9 +4,9 @@ import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261113n1';
 import { renderArmory } from './armory.js?v=20261113a6';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel } from './turret-upgrades.js?v=20261112a2';
-import { createTDEngine } from './td-engine.js?v=20261114h1';
+import { createTDEngine } from './td-engine.js?v=20261114t3';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
-import { createAudio } from './audio.js?v=20261114p1';
+import { createAudio } from './audio.js?v=20261114s1';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
 import { topicXpMultiplier } from './hot-topic.js?v=20261112a1';
 import { normalizeSiegeRecord, recordSiege, siegeRankLevel, renderRankResult } from './siege-ranks.js?v=20261112a2';
@@ -18,7 +18,7 @@ import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20
 import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261113a1';
 import { STORY_BEATS } from './story.js?v=20261113a1';
 import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261113h1';
-import { DEV } from './dev.js?v=20261113n1';
+import { DEV } from './dev.js?v=20261114t1';
 import { HEDGE } from './maze-field.js?v=20261113m7';
 import { showCoachTips, isCoachOpen, TOUR_TIPS } from './coach-tips.js?v=20261114q1';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
@@ -26,9 +26,9 @@ import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
 import { ECONOMY, bankBonusForgeXp } from './economy.js';
 import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
-import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261113n1';
+import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114p1';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114t1';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261114n1';
 import { initHowToPlay } from './how-to-play.js?v=20261114n1';
@@ -69,12 +69,13 @@ import {
   recordMissionMix,
 } from './training-gate.js?v=20261114n1';
 import { setGateRemainingProvider } from './gate-status.js?v=20261112a1';
+import { normalizeRareSave, rollRareShip, rareShipById, recordRareSighted, recordRareCaught, rareCrystalReward } from './rare-ships.js?v=20261114t1';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 /** Dev mode plays on a fresh copy of the real save each load, so testing never changes real progress. */
 const DEV_SAVE_KEY = `${SAVE_KEY}.dev`;
 
-/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js?v=20261114n1').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, levelScale?: number, pausedSets?: Record<string, any>, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js?v=20261114n1').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, rares: import('./rare-ships.js').RareSave, levelScale?: number, pausedSets?: Record<string, any>, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -111,6 +112,7 @@ const defaultSave = {
   lastChallengeCode: null,
   gear: [],
   stretchCoins: 0,
+  rares: normalizeRareSave(null),
   settings: { sound: true, music: true, difficultyLevel: 2 },
 };
 
@@ -119,7 +121,7 @@ let save = loadSave();
 setGateRemainingProvider(() => answersForCharge(GATE.questionsRequired - gateProgress(save.trainingGate).done, getDifficultyLevel()));
 setTurretLevels(save.turretLevels);
 
-/** @type {{ waveBudget: number, runForgeXpEarned: number, startCoins: number, selectedTurret: string|null, cacheProgress: number, bossCrystalPaid: boolean }} */
+/** @type {{ waveBudget: number, runForgeXpEarned: number, startCoins: number, selectedTurret: string|null, cacheProgress: number, bossCrystalPaid: boolean, rare: { name: string, outcome: 'escaped'|'destroyed' }|null }} */
 let run = {
   waveBudget: 0,
   runForgeXpEarned: 0,
@@ -127,6 +129,7 @@ let run = {
   selectedTurret: null,
   cacheProgress: 0,
   bossCrystalPaid: false,
+  rare: null,
 };
 
 let battlePrepCoinBonus = 0;
@@ -151,6 +154,13 @@ document.addEventListener('pointerover', (e) => {
   if (e.relatedTarget instanceof Node && card.contains(e.relatedTarget)) return;
   audio.playCardHover();
 });
+/** Buttons that already make their own sound on press. */
+const OWN_SOUND_BUTTONS = '.times-answer-btn, .gb-topic-campaign-card, #btn-hold-line, #mission-start-mixed, .armory-upgrade-btn';
+document.addEventListener('click', (e) => {
+  const btn = e.target instanceof Element ? e.target.closest('button, [role="button"]') : null;
+  if (!btn || btn.matches(':disabled, [aria-disabled="true"]') || btn.matches(OWN_SOUND_BUTTONS)) return;
+  audio.playButtonPress();
+}, true);
 const music = createMusic({ getEnabled: () => save.settings.sound && save.settings.music });
 /** Right answers in a row; five or more brings in the hot-streak music. */
 let answerStreak = 0;
@@ -280,6 +290,7 @@ function loadSave() {
     data.lastChallengeCode = typeof data.lastChallengeCode === 'string' ? data.lastChallengeCode : null;
     data.gear = normalizeGear(data.gear);
     data.stretchCoins = Math.max(0, Math.floor(Number(data.stretchCoins) || 0));
+    data.rares = normalizeRareSave(data.rares);
     // Preserve old players' real mastered levels and map passes as a one-time rank baseline.
     data.topicProgress = normalizeTopicProgress(data.topicProgress, data.levelMastery, data.mapProgress);
     if (DEV.enabled && DEV.unlockAll) {
@@ -527,6 +538,57 @@ function awardUpgradeCore(reason, from, amount = 1) {
       audio.playTurretUpgrade();
     }, 3400);
   }
+}
+
+/** Decides, as a battle starts, whether a rare mothership leads the opening assault. */
+function rollRareShipForBattle() {
+  if (DEV.rare) return rareShipById(DEV.rare) ?? null;
+  const roll = rollRareShip(save.rares, { vaultTier: vaultTierFor(save.crystalsCollected).id });
+  save.rares = roll.save;
+  persistSave();
+  return roll.shipId ? rareShipById(roll.shipId) ?? null : null;
+}
+
+/** @param {import('./rare-ships.js').RareShip} ship */
+function showRareAlert(ship) {
+  const legendary = ship.tier === 'legendary';
+  const wrap = document.querySelector('.siege-canvas-wrap');
+  document.querySelector('.rare-alert')?.remove();
+  const el = document.createElement('div');
+  el.className = `rare-alert${legendary ? ' is-legendary' : ''}`;
+  el.setAttribute('role', 'alert');
+  el.innerHTML = `
+    <strong class="rare-alert-title">${legendary ? '⚠ ROYAL CRAFT INBOUND ⚠' : '⚠ RARE SIGNAL DETECTED ⚠'}</strong>
+    <img class="rare-alert-art" src="${ship.src}" alt="" />
+    <span class="rare-alert-name">${ship.name}</span>
+    <span class="rare-alert-sub">${legendary ? "The Supreme Leader's cousin! Shoot him down!" : 'Shoot it down before it escapes!'}</span>`;
+  (wrap ?? document.body).append(el);
+  audio.playGranddaddyWarning();
+  if (legendary && wrap) {
+    wrap.classList.remove('is-quake');
+    void wrap.offsetWidth;
+    wrap.classList.add('is-quake');
+  }
+  window.setTimeout(() => el.classList.add('is-leaving'), 3600);
+  window.setTimeout(() => el.remove(), 4200);
+}
+
+/** @param {import('./rare-ships.js').RareShip} ship @param {boolean} firstCatch */
+function showRareDestroyed(ship, firstCatch) {
+  document.querySelector('.rare-up')?.remove();
+  const el = document.createElement('div');
+  el.className = `rank-up rare-up${ship.tier === 'legendary' ? ' is-legendary' : ''}`;
+  el.setAttribute('role', 'status');
+  el.innerHTML = `
+    <span class="core-reward-rays" aria-hidden="true"></span>
+    <img class="rare-up-art" src="${ship.src}" alt="" />
+    <strong class="rank-up-title">${ship.tier === 'legendary' ? 'ZORG DEFEATED!' : 'RARE DESTROYED!'}</strong>
+    <span class="rank-up-name">${ship.name} · +${rareCrystalReward(ship)} CRYSTALS</span>
+    ${firstCatch ? '<span class="rare-up-new">NEW BLUEPRINT UNLOCKED</span>' : ''}`;
+  document.body.append(el);
+  audio.playTurretUpgrade();
+  window.setTimeout(() => el.classList.add('is-leaving'), 3800);
+  window.setTimeout(() => el.remove(), 4400);
 }
 
 /* ---------- Streaks, daily challenges, lucky drops, trophies, records, friend challenges, story ---------- */
@@ -1278,6 +1340,7 @@ function makeDashboardState() {
     onZap: showZapRun,
     unlockedTurrets: getUnlockedSet(),
     enemyDefeated: save.enemyDefeated,
+    rares: save.rares,
     onArmory: openArmory,
     siegesCompleted: save.siegesCompleted,
     crystalsCollected: save.crystalsCollected,
@@ -1836,6 +1899,7 @@ function beginMission() {
     selectedTurret: null,
     cacheProgress: 0,
     bossCrystalPaid: false,
+    rare: null,
   };
   nukeCacheWasReady = false;
 
@@ -1910,6 +1974,7 @@ function launchTestSiege() {
     selectedTurret: null,
     cacheProgress: 0,
     bossCrystalPaid: false,
+    rare: null,
   };
   nukeCacheWasReady = false;
 
@@ -1961,6 +2026,7 @@ function mountTDEngine(canvas, mission) {
 
   audio.warmUp();
   nukeCacheWasReady = false;
+  const rareShip = rollRareShipForBattle();
   const gearFx = gearEffects(save.gear);
   renderLeakMeter(0, (mission?.maxLeaks ?? 5) + gearFx.extraLeaks);
   tdEngine = createTDEngine(canvas, {
@@ -1978,6 +2044,24 @@ function mountTDEngine(canvas, mission) {
     onBonusOffer: showBonusAssaultOffer,
     spawnGranddaddy: shouldSpawnGranddaddy(save),
     grannyEnabled: () => save.grannyUnlocked,
+    rareShip,
+    rareFirst: Boolean(DEV.rare),
+    onRareShipSpawn(ship) {
+      save.rares = recordRareSighted(save.rares, ship.id);
+      persistSave();
+      showRareAlert(ship);
+    },
+    onRareShipEscaped(ship) {
+      run.rare = { name: ship.name, outcome: 'escaped' };
+      showToast(`${ship.name} got away! Shoot it down if it ever comes back.`, { variant: 'warn', duration: 4200 });
+    },
+    onRareShipDestroyed(ship, at) {
+      run.rare = { name: ship.name, outcome: 'destroyed' };
+      const firstCatch = !(save.rares.caught[ship.id] > 0);
+      save.rares = recordRareCaught(save.rares, ship.id);
+      awardUpgradeCore(`${ship.name} DESTROYED`, { x: at.screenX, y: at.screenY }, rareCrystalReward(ship));
+      showRareDestroyed(ship, firstCatch);
+    },
     onGranddaddySpawn() {
       onGranddaddySpawned(save);
       persistSave();
@@ -2010,13 +2094,14 @@ function mountTDEngine(canvas, mission) {
       refreshDeploymentPanel();
       return true;
     },
-    onKillReward({ xp, isBoss, screenX, screenY }) {
+    onKillReward({ xp, isBoss, rare, screenX, screenY }) {
       run.waveBudget += Math.round(xp * gearEffects(save.gear).coinMultiplier);
       refreshShop();
       addCacheProgress(isBoss ? GRANNY_CACHE.bossKillPoints : GRANNY_CACHE.killPoints);
       if (isBoss) {
         // Only the first boss of each siege pays a crystal, so sieges don't swamp the maths rewards.
-        if (!run.bossCrystalPaid) {
+        // Rare ships pay their own, bigger reward.
+        if (!rare && !run.bossCrystalPaid) {
           run.bossCrystalPaid = true;
           awardUpgradeCore('BOSS DEFEATED', { x: screenX, y: screenY });
         }
@@ -2144,7 +2229,8 @@ function finishRun(stats) {
     if (stats.bonusPlayed) {
       xpParts.push(`+${bonusAssaultXp} XP from ${stats.bonusKills || 0} bonus-assault kills`);
     }
-    sublineEl.textContent = `${brag.subline} ${stats.bonusPlayed ? 'BONUS ASSAULT COMPLETED! The original win was protected. ' : ''}${xpParts.join(' · ')}.`;
+    const rareLine = run.rare ? `${run.rare.name} ${run.rare.outcome === 'destroyed' ? 'SHOT DOWN!' : 'GOT AWAY!'} ` : '';
+    sublineEl.textContent = `${rareLine}${brag.subline} ${stats.bonusPlayed ? 'BONUS ASSAULT COMPLETED! The original win was protected. ' : ''}${xpParts.join(' · ')}.`;
   }
 
   const badgesEl = document.getElementById('results-badges');

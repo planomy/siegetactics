@@ -17,4 +17,6 @@ export const DEV = {
   fastWave: devFlag('fast'),
   extraBudget: params.has('dev') ? 200 : 0,
   unlockAll: params.has('dev'),
+  /** Force a rare mothership into the next battle (`?dev=siege&rare=cousin-zorg`). */
+  rare: params.has('dev') ? params.get('rare') : null,
 };

@@ -5,7 +5,7 @@ import { FIELD_LAYOUT, targetPathsForRow } from './field-layout.js?v=20261112a1'
 import { drawAlienPortalVfx } from './portal-vfx.js';
 import { buildPlacementCells, pickPlacementCell } from './placement-grid.js?v=20261112a1';
 import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed } from './enemies-data.js';
-import { getFieldImage, preloadField } from './preload.js?v=20261113n1';
+import { getFieldImage, preloadField } from './preload.js?v=20261114t1';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
 import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261114n1';
 import { ECONOMY } from './economy.js';
@@ -51,6 +51,11 @@ const MAZE_WAVE_ROLL_SEC = 5;
 /** Maze mode: aliens walk right past turrets for much longer, so their shots hit softer. */
 const MAZE_ALIEN_DAMAGE = 0.5;
 const WRECK_FADE_SECONDS = 0.7;
+/** Rare motherships against a normal mothership: tougher, a touch slower so there's time to land the hits. */
+const RARE_HP = { rare: 1.8, legendary: 4 };
+const RARE_SPEED = { rare: 0.85, legendary: 0.6 };
+/** Drawn width, in regular-alien sizes (rare art is wide, so its height follows the art). */
+const RARE_DRAW = { rare: 2.6, legendary: 5.5 };
 
 /**
  * @typedef {import('./placement-grid.js').PlacementCell} PlacementCell
@@ -153,7 +158,7 @@ const WRECK_FADE_SECONDS = 0.7;
  *   firstSiege?: boolean,
  *   hordeRank?: number,
  *   zapped?: number,
- *   onKillReward?: (info: { isBoss: boolean, xp: number, screenX?: number, screenY?: number }) => void,
+ *   onKillReward?: (info: { isBoss: boolean, rare: boolean, xp: number, screenX?: number, screenY?: number }) => void,
  *   onEnemyDestroyed?: (info: { key: import('./enemies-data.js').EnemySpriteKey }) => void,
  *   onWaveCleared?: (info: { wave: number, nextWave: number|null }) => void,
  *   onLeak?: (info: { leaks: number, maxLeaks: number, penalty: number }) => void,
@@ -178,6 +183,11 @@ const WRECK_FADE_SECONDS = 0.7;
  *   spawnGranddaddy?: boolean,
  *   grannyEnabled?: boolean | (() => boolean),
  *   onGranddaddySpawn?: () => void,
+ *   rareShip?: import('./rare-ships.js').RareShip|null,
+ *   rareFirst?: boolean,
+ *   onRareShipSpawn?: (ship: import('./rare-ships.js').RareShip) => void,
+ *   onRareShipEscaped?: (ship: import('./rare-ships.js').RareShip) => void,
+ *   onRareShipDestroyed?: (ship: import('./rare-ships.js').RareShip, at: { screenX: number, screenY: number }) => void,
  *   onCupcakeUsed?: () => void,
  *   onCupcakeFinished?: () => void,
  *   onNukeStateChange?: () => void,
@@ -223,6 +233,10 @@ export function createTDEngine(canvas, opts) {
   let portalAnimTime = 0;
   let portalSpawnPulse = 0;
   let granddaddySpawnedThisSiege = false;
+  /** A rare mothership leads the end of the opening assault, once per siege. */
+  const rareShip = opts.rareShip ?? null;
+  const rareSprite = rareShip ? Object.assign(new Image(), { src: rareShip.src }) : null;
+  let rareSpawned = false;
   let nukeUiSig = '';
   let siegeTimeLeft = 0;
   let siegeTimerEnded = false;
@@ -646,12 +660,16 @@ export function createTDEngine(canvas, opts) {
 
   function getWaveConfig() {
     const waveNum = wavesCompleted + 1;
-    return waveConfigFor(waveNum, {
+    const cfg = waveConfigFor(waveNum, {
       spawnGranddaddy: opts.spawnGranddaddy && !granddaddySpawnedThisSiege && waveNum >= 3,
       firstSiege: Boolean(opts.firstSiege),
       rank: opts.hordeRank ?? 0,
       zapped: opts.zapped ?? 0,
     });
+    if (waveNum !== 1 || !rareShip) return cfg;
+    const rareSlot = { unit: 'rare', isBoss: true };
+    const spawnQueue = opts.rareFirst ? [rareSlot, ...cfg.spawnQueue] : [...cfg.spawnQueue, rareSlot];
+    return { ...cfg, spawnQueue, totalSpawns: spawnQueue.length };
   }
 
   function formatSiegeTime(sec) {
@@ -713,6 +731,23 @@ export function createTDEngine(canvas, opts) {
       spawnEnemy(2, hp, scaledSpeed('granddaddy', cfg.speedMul, rush), 'granddaddy');
       granddaddySpawnedThisSiege = true;
       opts.onGranddaddySpawn?.();
+      return;
+    }
+
+    if (slot.unit === 'rare') {
+      if (!rareShip || rareSpawned) return;
+      rareSpawned = true;
+      const legendary = rareShip.tier === 'legendary';
+      const hp = Math.round(scaledHp('mothership', cfg.hpScale, ramp) * (legendary ? RARE_HP.legendary : RARE_HP.rare));
+      const speed = scaledSpeed('mothership', cfg.speedMul) * (legendary ? RARE_SPEED.legendary : RARE_SPEED.rare);
+      spawnEnemy(2, hp, speed, 'mothership', null, maze ? lawnSpawnFor('mothership', index) : null);
+      const ship = enemies[enemies.length - 1];
+      ship.rare = rareShip;
+      if (legendary) {
+        ship.attackDamage = 20;
+        ship.attackRange = 125;
+      }
+      opts.onRareShipSpawn?.(rareShip);
       return;
     }
 
@@ -871,8 +906,13 @@ export function createTDEngine(canvas, opts) {
     notifyEnemyKilled(enemy);
     waveKills += 1;
     totalKills += 1;
-    rewardKill(enemy.isBoss, pos.x, pos.y);
-    opts.onEnemyDestroyed?.({ key: spriteKeyForEnemy(enemy) });
+    rewardKill(enemy.isBoss, pos.x, pos.y, Boolean(enemy.rare));
+    if (enemy.rare) {
+      const rect = canvas.getBoundingClientRect();
+      opts.onRareShipDestroyed?.(enemy.rare, { screenX: rect.left + pos.x, screenY: rect.top + pos.y });
+    } else {
+      opts.onEnemyDestroyed?.({ key: spriteKeyForEnemy(enemy) });
+    }
     opts.audio?.playDeath({
       craft: spriteKeyForEnemy(enemy),
       isBoss: enemy.isBoss,
@@ -1396,7 +1436,7 @@ export function createTDEngine(canvas, opts) {
     ctx.restore();
   }
 
-  function rewardKill(isBoss, x, y) {
+  function rewardKill(isBoss, x, y, rare = false) {
     let xp = isBoss ? bossKillBudgetXp : killBudgetXp;
     if (x != null && y != null) {
       for (const t of towers) {
@@ -1411,6 +1451,7 @@ export function createTDEngine(canvas, opts) {
     const rect = canvas.getBoundingClientRect();
     opts.onKillReward?.({
       isBoss,
+      rare,
       xp,
       screenX: x != null ? rect.left + x : undefined,
       screenY: y != null ? rect.top + y : undefined,
@@ -1524,6 +1565,11 @@ export function createTDEngine(canvas, opts) {
     });
 
     enemies = enemies.filter((e) => {
+      if (e.progress >= 1 && e.rare) {
+        notifyEnemyKilled(e);
+        opts.onRareShipEscaped?.(e.rare);
+        return false;
+      }
       if (e.progress >= 1) {
         totalLeaks += 1;
         opts.onLeak?.({ leaks: totalLeaks, maxLeaks, penalty: leakCoinPenalty });
@@ -1717,6 +1763,8 @@ export function createTDEngine(canvas, opts) {
 
   function requestMissionEnd(won) {
     if (phase === 'done' || phase === 'finale') return;
+    const flying = enemies.find((e) => e.rare);
+    if (flying?.rare) opts.onRareShipEscaped?.(flying.rare);
     if (nukeKillBursts.length > 0 || cupcakeBursts.length > 0) {
       pendingMissionEnd = { won, startedAt: performance.now() };
       enemies = [];
@@ -2088,17 +2136,21 @@ export function createTDEngine(canvas, opts) {
     enemies.forEach((e) => {
       const pos = enemyDrawPos(e);
       const key = spriteKeyForEnemy(e);
-      const img = enemySprites[key];
-      const size = spriteSizeForEnemy(e, baseSize);
+      const img = e.rare ? rareSprite : enemySprites[key];
+      const size = e.rare ? baseSize * (e.rare.tier === 'legendary' ? RARE_DRAW.legendary : RARE_DRAW.rare) : spriteSizeForEnemy(e, baseSize);
 
+      const drawH = e.rare && img?.naturalWidth ? size * (img.naturalHeight / img.naturalWidth) : size;
       if (e.flying) {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
         ctx.beginPath();
-        ctx.ellipse(pos.x, pos.y + size * 0.75, size * 0.36, size * 0.12, 0, 0, Math.PI * 2);
+        ctx.ellipse(pos.x, pos.y + drawH * 0.75, size * 0.36, Math.max(drawH, size * 0.33) * 0.12, 0, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      if (img) {
+      if (e.rare && img?.naturalWidth) {
+        drawRareAura(pos, size, drawH, e.rare.tier === 'legendary');
+        ctx.drawImage(img, pos.x - size / 2, pos.y - drawH / 2, size, drawH);
+      } else if (img && !e.rare) {
         ctx.drawImage(img, pos.x - size / 2, pos.y - size / 2, size, size);
       } else {
         ctx.fillStyle = e.bossKind === 'granddaddy' ? '#ff6b35' : e.bossKind === 'mothership' ? '#7cfc00' : '#9d4edd';
@@ -2107,13 +2159,25 @@ export function createTDEngine(canvas, opts) {
         ctx.fill();
       }
 
-      const barW = size * 0.9;
-      const barY = pos.y - size / 2 - 6;
+      const barW = e.rare ? size * 0.6 : size * 0.9;
+      const barY = pos.y - drawH / 2 - 6;
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
       ctx.fillRect(pos.x - barW / 2, barY, barW, 4);
       ctx.fillStyle = '#7cfc00';
       ctx.fillRect(pos.x - barW / 2, barY, barW * (e.hp / e.maxHp), 4);
     });
+  }
+
+  /** A pulsing glow under a rare ship so it stands out from the horde. */
+  function drawRareAura(pos, w, h, legendary) {
+    const pulse = 0.55 + 0.45 * Math.sin(waveTime * 5);
+    const glow = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, w * 0.62);
+    glow.addColorStop(0, legendary ? `rgba(255, 60, 40, ${0.5 * pulse})` : `rgba(255, 214, 90, ${0.45 * pulse})`);
+    glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.ellipse(pos.x, pos.y, w * 0.62, Math.max(h, w * 0.4) * 0.9, 0, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   function drawProjectiles() {

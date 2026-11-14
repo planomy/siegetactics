@@ -48,8 +48,8 @@ test('standalone questions, mixed questions, and forge successes all advance the
 
 test('fresh CSS and script modules are loaded so the browser does not show old shields', () => {
   assert.match(html, /topic-campaign-cards\.css\?v=20261114q2/);
-  assert.match(html, /app\.js\?v=20261114q1/);
-  assert.match(app, /home\.js\?v=20261114p1/);
+  assert.match(html, /app\.js\?v=20261114t4/);
+  assert.match(app, /home\.js\?v=20261114t1/);
   assert.match(app, /battle-prep\.js\?v=20261114n1/);
   assert.match(home, /topic-progression\.js\?v=20261114k1/);
 });
