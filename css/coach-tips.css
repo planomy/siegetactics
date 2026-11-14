@@ -31,27 +31,31 @@
 }
 
 @keyframes coach-ring-glow {
-  50% { stroke: #ffd36b; }
+  50% { stroke: #ffc21a; }
+}
+
+.coach-arrows {
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.55));
 }
 
 .coach-arrow-edge {
   fill: none;
   stroke: #b3121b;
-  stroke-width: 11;
+  stroke-width: 20;
   stroke-linecap: round;
 }
 
 .coach-arrow {
   fill: none;
   stroke: #fff;
-  stroke-width: 5;
+  stroke-width: 11;
   stroke-linecap: round;
 }
 
 .coach-arrow-head {
   fill: #fff;
   stroke: #b3121b;
-  stroke-width: 3;
+  stroke-width: 4.5;
   stroke-linejoin: round;
 }
 
@@ -105,12 +109,13 @@
   height: 58px;
   border: 4px solid #fff;
   border-radius: 50%;
-  background: #ffd36b;
-  color: #a10f18;
+  background: radial-gradient(circle at 35% 30%, #fff3a8 0%, #ffc21a 45%, #f39200 100%);
+  color: #8a0c12;
   font-family: var(--font-display);
   font-size: 2.3rem;
   line-height: 1;
-  box-shadow: 0 4px 0 #b97b12, 0 6px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 0 #a85a00, 0 6px 12px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .coach-title {
@@ -157,8 +162,8 @@
   padding: 8px 18px;
   border: 3px solid #fff;
   border-radius: 14px;
-  background: linear-gradient(180deg, #ffe08a, #ffb627);
-  box-shadow: 0 4px 0 #b97b12;
+  background: linear-gradient(180deg, #ffd84a 0%, #ffb000 55%, #ff9500 100%);
+  box-shadow: 0 4px 0 #a85a00;
   color: #7a0c12;
   font-family: var(--font-display);
   font-size: 1.3rem;
@@ -173,7 +178,17 @@
 
 .coach-next:active {
   transform: translateY(3px);
-  box-shadow: 0 1px 0 #b97b12;
+  box-shadow: 0 1px 0 #a85a00;
+}
+
+.coach-next:focus-visible,
+.coach-off:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.coach-next:focus:not(:focus-visible) {
+  outline: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

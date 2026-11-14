@@ -11,6 +11,8 @@
  * @property {string} text
  * @property {string[]} targets - CSS selectors of what the tip points at
  * @property {number} [step] - Number shown in the badge (opening tour only)
+ * @property {boolean} [between] - Sit the card level with the gap between two stacked targets,
+ *   so one arrow forks up to the first and one down to the second
  */
 
 /** Opening tour, in order. */
@@ -21,8 +23,9 @@ export const COACH_TIPS = {
   pick: {
     step: 1,
     title: 'CHARGE GRANNY’S DEFENCES!',
-    text: 'Get 10 maths questions right. Grab a RANDOM MISSION up here, or pick a topic down there!',
+    text: 'Get 10 maths questions right. Hit the big MISSION button up here, or pick a topic down there!',
     targets: ['#mission-start-mixed', '.mission-all-topics'],
+    between: true,
   },
   level: {
     step: 2,
@@ -104,11 +107,11 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
  * Put the card beside the highlighted area, preferring the side with room.
  * @param {ReturnType<typeof unionRect>} u @param {number} w @param {number} h
  */
-function placeCard(u, w, h, gap = GAP) {
+function placeCard(u, w, h, gap = GAP, centerY = u.top + u.height / 2) {
   const GAP = gap;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const midY = clamp(u.top + u.height / 2 - h / 2, EDGE, vh - h - EDGE);
+  const midY = clamp(centerY - h / 2, EDGE, vh - h - EDGE);
   const midX = clamp(u.left + u.width / 2 - w / 2, EDGE, vw - w - EDGE);
   const options = [
     { x: u.right + GAP, y: midY, side: 'left' },
@@ -118,6 +121,21 @@ function placeCard(u, w, h, gap = GAP) {
   ];
   const fits = options.find((o) => o.x >= EDGE && o.y >= EDGE && o.x + w <= vw - EDGE && o.y + h <= vh - EDGE);
   return fits ?? { x: midX, y: clamp(vh - h - EDGE * 2, EDGE, vh - h - EDGE), side: 'none' };
+}
+
+/**
+ * Where an arrow from a card at the side should land: into the bottom of a target above,
+ * the top of a target below (a little inside, for big areas), or straight into its side.
+ */
+function aimPoint(hole, from) {
+  const w = hole.right - hole.left;
+  const h = hole.bottom - hole.top;
+  const x = from.x > hole.right ? hole.left + w * 0.72
+    : from.x < hole.left ? hole.left + w * 0.28
+    : clamp(from.x, hole.left, hole.right);
+  if (hole.bottom < from.y) return { x, y: hole.bottom };
+  if (hole.top > from.y) return { x, y: hole.top + (h > 150 ? 36 : 0) };
+  return nearestOnRect({ ...hole, width: w, height: h }, from.x, from.y);
 }
 
 /** Closest point on a rect's edge to (x, y). */
@@ -218,15 +236,21 @@ export function showCoachTips(ids, handlers = {}) {
     const cw = card.offsetWidth;
     const ch = card.offsetHeight;
     const u = unionRect(rects);
-    let pos = placeCard(u, cw, ch, rects.length > 1 ? GAP_FORK : GAP);
-    if (pos.side === 'none' && rects.length > 1) pos = placeCard(u, cw, ch, GAP);
+    const tip = COACH_TIPS[queue[index]];
+    // Leave room above the fork for the upward arrowhead.
+    const centerY = tip.between && rects.length === 2 && rects[1].top > rects[0].bottom
+      ? Math.min(rects[0].bottom + PAD + 48, rects[1].top)
+      : undefined;
+    let pos = placeCard(u, cw, ch, rects.length > 1 ? GAP_FORK : GAP, centerY);
+    if (pos.side === 'none' && rects.length > 1) pos = placeCard(u, cw, ch, GAP, centerY);
+    const anchorY = centerY !== undefined ? clamp(centerY, pos.y + 30, pos.y + ch - 30) : pos.y + ch / 2;
     card.style.left = `${Math.round(pos.x)}px`;
     card.style.top = `${Math.round(pos.y)}px`;
 
     // One anchor on the card edge facing the targets, so several arrows fork from the same point.
     const anchor =
-      pos.side === 'left' ? { x: pos.x, y: pos.y + ch / 2 }
-      : pos.side === 'right' ? { x: pos.x + cw, y: pos.y + ch / 2 }
+      pos.side === 'left' ? { x: pos.x, y: anchorY }
+      : pos.side === 'right' ? { x: pos.x + cw, y: anchorY }
       : pos.side === 'top' ? { x: pos.x + cw / 2, y: pos.y }
       : pos.side === 'bottom' ? { x: pos.x + cw / 2, y: pos.y + ch }
       : null;
@@ -245,18 +269,20 @@ export function showCoachTips(ids, handlers = {}) {
     }
     rects.forEach((r) => {
       const hole = { left: r.left - PAD, top: r.top - PAD, right: r.right + PAD, bottom: r.bottom + PAD };
-      const end = nearestOnRect({ ...hole, width: hole.right - hole.left, height: hole.bottom - hole.top }, fork.x, fork.y);
       const horizontal = pos.side === 'left' || pos.side === 'right';
+      const end = horizontal
+        ? aimPoint(hole, fork)
+        : nearestOnRect({ ...hole, width: hole.right - hole.left, height: hole.bottom - hole.top }, fork.x, fork.y);
       const ctrl = horizontal ? { x: end.x, y: fork.y } : { x: fork.x, y: end.y };
       const dx = end.x - ctrl.x;
       const dy = end.y - ctrl.y;
       const len = Math.hypot(dx, dy) || 1;
       const ux = dx / len;
       const uy = dy / len;
-      const tip = { x: end.x - ux * 4, y: end.y - uy * 4 };
-      const base = { x: tip.x - ux * 16, y: tip.y - uy * 16 };
-      const head = `M${tip.x},${tip.y} L${base.x - uy * 11},${base.y + ux * 11} L${base.x + uy * 11},${base.y - ux * 11} Z`;
-      const d = `M${fork.x},${fork.y} Q${ctrl.x},${ctrl.y} ${base.x},${base.y}`;
+      const point = { x: end.x - ux * 3, y: end.y - uy * 3 };
+      const base = { x: point.x - ux * 30, y: point.y - uy * 30 };
+      const head = `M${point.x},${point.y} L${base.x - uy * 22},${base.y + ux * 22} L${base.x + uy * 22},${base.y - ux * 22} Z`;
+      const d = `M${fork.x},${fork.y} Q${ctrl.x},${ctrl.y} ${base.x + ux * 4},${base.y + uy * 4}`;
       arrows.insertAdjacentHTML(
         'beforeend',
         `<path class="coach-arrow-edge" d="${d}" /><path class="coach-arrow" d="${d}" /><path class="coach-arrow-head" d="${head}" />`

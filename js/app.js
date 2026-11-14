@@ -20,7 +20,7 @@ import { STORY_BEATS } from './story.js?v=20261113a1';
 import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261113h1';
 import { DEV } from './dev.js?v=20261113n1';
 import { HEDGE } from './maze-field.js?v=20261113m7';
-import { showCoachTips, isCoachOpen, TOUR_TIPS } from './coach-tips.js?v=20261114c2';
+import { showCoachTips, isCoachOpen, TOUR_TIPS } from './coach-tips.js?v=20261114c4';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
 import { ECONOMY, bankBonusForgeXp } from './economy.js';
