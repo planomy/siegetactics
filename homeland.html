@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Granny Boom — Alien Homeland (prototype)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/homeland.css?v=20261114b1" />
+</head>
+<body>
+  <canvas id="homeland" aria-label="Alien Homeland"></canvas>
+
+  <div class="hl-buttons" id="hl-buttons" hidden>
+    <button type="button" class="hl-action hl-nuke" id="hl-nuke" disabled>☢ NUKE</button>
+    <button type="button" class="hl-action hl-dash" id="hl-dash">🚀 DASH</button>
+  </div>
+
+  <div class="hl-levelup" id="hl-levelup" hidden></div>
+
+  <div class="hl-overlay" id="hl-overlay">
+    <div class="hl-card">
+      <p class="hl-kicker">PROTOTYPE · REGION 1</p>
+      <h1 class="hl-title">ALIEN HOMELAND</h1>
+      <p class="hl-line">All 10 map pieces found. Granny fires up the rocket scooter…</p>
+      <button type="button" class="hl-go" id="hl-start">🚀 LIGHTYEAR JUMP!</button>
+      <ul class="hl-controls">
+        <li><strong>Drive</strong> mouse, finger, arrows or WASD</li>
+        <li><strong>Dash</strong> click, Space or the DASH button</li>
+        <li><strong>Nuke</strong> N or the NUKE button when charged</li>
+        <li><strong>Fire</strong> Granny shoots straight ahead by herself</li>
+      </ul>
+    </div>
+  </div>
+  <script type="module" src="js/homeland/game.js?v=20261114b3"></script>
+</body>
+</html>
