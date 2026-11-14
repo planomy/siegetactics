@@ -2179,6 +2179,12 @@ function bindUI() {
   }
 }
 
+// ?tips replays the onboarding tips from the start (for testing).
+if (new URLSearchParams(location.search).has('tips')) {
+  save.tips = { off: false, seen: [] };
+  persistSave();
+}
+
 bindUI();
 checkNewTrophies({ quiet: true });
 if (DEV.skipToSiege) {
