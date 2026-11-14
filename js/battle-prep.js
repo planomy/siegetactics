@@ -158,6 +158,9 @@ function bonusQuestions(level, cycle, count) {
  *   questionsNeeded?: number,
  *   remainingNeeded?: () => number,
  *   stretchOffer?: () => ({ more: number, seconds: number, coins: number }|null),
+ *   isCharged?: () => boolean,
+ *   chargeLine?: () => string,
+ *   onAgain?: () => void,
  *   onAwardXp: (amount: number) => void,
  *   onAnswer?: (right: boolean, moduleId: string) => void,
  *   onFinished: (results: Record<string, {correct:number, attempts:number, accuracy:number}>, overall:number) => void,
@@ -226,7 +229,7 @@ export function initBattlePrep(host, callbacks) {
         <div class="times-answers">${options}</div>
         <p class="prep-summary-line">${zap
           ? 'Every right answer zaps a scout and adds coins to your war chest.'
-          : `Get ${initialTotal} right to earn your siege. Every right answer charges Granny’s defences.`}</p>
+          : 'Every right answer charges Granny’s defences.'}</p>
       </div>`;
     host.querySelector('#prep-home')?.addEventListener('click', callbacks.onHome);
     host.querySelectorAll('.prep-answer').forEach((button) => {
@@ -263,8 +266,9 @@ export function initBattlePrep(host, callbacks) {
       if (disposed) return;
       index += 1;
       if (index >= deck.length) {
-        // Wrong answers do not charge the defences, so keep going until enough are right.
-        const more = Math.max(0, Math.floor(callbacks.remainingNeeded?.() ?? 0));
+        // Wrong answers do not charge the defences, so top up — but only to this mission's own target.
+        const needed = Math.max(0, Math.floor(callbacks.remainingNeeded?.() ?? 0));
+        const more = zap ? needed : Math.min(needed, initialTotal - totalCorrect);
         if (more > 0) deck.push(...bonusQuestions(callbacks.level, callbacks.cycle, more));
       }
       if (index >= deck.length) finish();
@@ -295,6 +299,21 @@ export function initBattlePrep(host, callbacks) {
           </div>
         </div>`;
       host.querySelector('#prep-defend')?.addEventListener('click', () => callbacks.onReady(overall));
+      host.querySelector('#prep-home-done')?.addEventListener('click', callbacks.onHome);
+      return;
+    }
+    if (callbacks.isCharged && !callbacks.isCharged()) {
+      host.innerHTML = `
+        <div class="panel times-panel times-done prep-panel prep-done">
+          <p class="mission-tag">Mission complete</p>
+          <h2 class="panel-title">${totalCorrect} right — the horde creeps closer!</h2>
+          <p class="granny-line">Granny’s defences: <strong>${escapeHtml(callbacks.chargeLine?.() ?? '')}</strong>. Keep charging to launch the siege.</p>
+          <div class="times-done-actions">
+            <button type="button" class="btn btn-primary" id="prep-again">Another mission</button>
+            <button type="button" class="btn btn-ghost" id="prep-home-done">Home</button>
+          </div>
+        </div>`;
+      host.querySelector('#prep-again')?.addEventListener('click', () => callbacks.onAgain?.());
       host.querySelector('#prep-home-done')?.addEventListener('click', callbacks.onHome);
       return;
     }

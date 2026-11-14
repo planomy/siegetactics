@@ -4,6 +4,7 @@ import { powerStage } from '../js/power-core.js';
 import {
   defaultTrainingGate, recordTrainingQuestions, attackStatus,
   gateProgress, normalizeTrainingGate, resetTrainingGate,
+  chargeFor, answersForCharge, recordMissionMix, GATE,
 } from '../js/training-gate.js';
 
 test('defence artwork moves through meaningful power stages', () => {
@@ -15,29 +16,39 @@ test('defence artwork moves through meaningful power stages', () => {
   for (const [n,stage] of expected) assert.equal(powerStage(n).id, stage, `after ${n} answers`);
 });
 
-test('each maths answer moves the radar and charge forward, including mistakes', () => {
+test('a siege takes 30 charge: 30 answers at Levels 3–6, 20 at Levels 1–2', () => {
+  assert.equal(GATE.questionsRequired, 30);
+  assert.equal(answersForCharge(30, 4), 30);
+  assert.equal(answersForCharge(30, 2), 20);
   let gate = defaultTrainingGate();
-  for (let n = 1; n <= 10; n++) {
-    const right = n !== 3 && n !== 8;
-    const update = recordTrainingQuestions(gate, 1, right ? 1 : 0);
-    assert.equal(update.added, 1);
-    gate = update.gate;
-    assert.equal(gateProgress(gate).done, n);
-  }
+  for (let n = 1; n <= 20; n++) gate = recordTrainingQuestions(gate, chargeFor(1), 1).gate;
   assert.equal(gateProgress(gate).open, true);
-  assert.equal(powerStage(gate.questionsDone).id, 'ready');
   assert.ok(gate.bonusSiegeCoins > 0);
 });
 
-test('warning starts halfway and switches to critical near impact', () => {
+test('the horde closes in at the 10 and 20 checkpoints', () => {
   let gate = defaultTrainingGate();
   assert.equal(attackStatus(gate).urgency, 'calm');
-  for (let n = 0; n < 5; n++) gate = recordTrainingQuestions(gate, 1, 1).gate;
+  gate = recordTrainingQuestions(gate, 10, 1).gate;
   assert.equal(attackStatus(gate).urgency, 'warning');
-  for (let n = 0; n < 3; n++) gate = recordTrainingQuestions(gate, 1, 1).gate;
+  assert.equal(attackStatus(gate).stage, 1);
+  gate = recordTrainingQuestions(gate, 10, 1).gate;
   assert.equal(attackStatus(gate).urgency, 'critical');
-  for (let n = 0; n < 2; n++) gate = recordTrainingQuestions(gate, 1, 1).gate;
+  gate = recordTrainingQuestions(gate, 10, 1).gate;
   assert.equal(attackStatus(gate).urgency, 'now');
+});
+
+test('a ready siege from the old ten-answer gate stays ready; partial progress scales up', () => {
+  assert.equal(gateProgress(normalizeTrainingGate({ questionsDone: 10, battlePrepComplete: true })).open, true);
+  assert.equal(gateProgress(normalizeTrainingGate({ questionsDone: 4 })).done, 12);
+});
+
+test('a Random mission plus a topic set in one charge pays the mix bonus once', () => {
+  let r = recordMissionMix(defaultTrainingGate(), 'random');
+  assert.equal(r.earned, false);
+  r = recordMissionMix(r.gate, 'topic');
+  assert.equal(r.earned, true);
+  assert.equal(recordMissionMix(r.gate, 'topic').earned, false);
 });
 
 test('answered questions persist across reload and reset after a siege', () => {
@@ -45,7 +56,6 @@ test('answered questions persist across reload and reset after a siege', () => {
   for (let i = 0; i < 7; i++) gate = recordTrainingQuestions(gate, 1, 1).gate;
   const restored = normalizeTrainingGate(JSON.parse(JSON.stringify(gate)));
   assert.equal(gateProgress(restored).done, 7);
-  assert.equal(powerStage(restored.questionsDone).id, 'charged');
   const reset = resetTrainingGate(restored);
   assert.equal(gateProgress(reset).done, 0);
   assert.equal(powerStage(reset.questionsDone).id, 'offline');

@@ -1,5 +1,5 @@
 import { MATH_TOPICS } from './topics-data.js?v=20261113h1';
-import { attackStatus } from './training-gate.js?v=20261112h';
+import { attackStatus, answersForCharge } from './training-gate.js?v=20261114n1';
 import { badgeSrc } from './stars.js';
 import { SIEGE_RANKS, siegeRankLevel, rankProgressText } from './siege-ranks.js?v=20261112a2';
 import { hotTopicId } from './hot-topic.js?v=20261112a1';
@@ -16,7 +16,7 @@ import { ENEMY_SPRITE_SRC, GRUNT_STATS, BOSS_STATS } from './enemies-data.js';
 /**
  * Ten clean campaign cards. Mastery is a small permanent mark, while each
  * topic's rank and next-rank progress can grow without ever being "Done".
- * @param {import('./training-gate.js').TrainingGate} gate
+ * @param {import('./training-gate.js?v=20261114n1').TrainingGate} gate
  * @param {ReturnType<typeof attackStatus>} attack
  * @param {import('./level-mastery.js?v=20261114k1').LevelMasterySave} levelMastery
  * @param {import('./map-progress.js').MapProgressSave} mapProgress
@@ -62,7 +62,7 @@ function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTo
     }).join('');
 }
 
-/** @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
+/** @param {import('./training-gate.js?v=20261114n1').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
 function renderPrepChecklist(gate, attack) {
   const items = [{
     code: 'MISSION',
@@ -182,7 +182,7 @@ export function countShieldsEarned(mastery) {
   return TRAINING_MODULE_IDS.reduce((n, id) => n + getQualifiedLevels(mastery, id).length, 0);
 }
 
-/** @param {{ xp: number, siegesCompleted: number, bestKills: number, bestBankedCoins: number, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave }} stats @param {import('./training-gate.js').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
+/** @param {{ xp: number, siegesCompleted: number, bestKills: number, bestBankedCoins: number, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave }} stats @param {import('./training-gate.js?v=20261114n1').TrainingGate} gate @param {ReturnType<typeof attackStatus>} attack */
 function renderCommandSidebar(stats, gate, attack) {
   const readinessPct = attack.open ? 100 : Math.round(attack.pct * 100);
   const readinessLabel = attack.open ? 'CLEARED TO ENGAGE' : 'TRAINING IN PROGRESS';
@@ -266,13 +266,16 @@ function renderRadarEscorts(attack, blipDeg, blipR) {
 
   // Stable positions make approaching aliens appear like a real formation,
   // rather than randomly teleporting around the radar after every answer.
-  const count = Math.max(1, Math.round(12 * progress));
-  const arcSpan = 12 + progress * 26;
+  // More of them, bigger and brighter at each checkpoint: a few scouts become a mass at the fence.
+  const stage = attack.stage ?? 0;
+  const count = Math.max(3, Math.round(4 + 26 * progress));
+  const arcSpan = 16 + progress * 40;
+  const baseSize = [4.5, 6.5, 8.5, 8.5][stage];
   const dots = Array.from({ length: count }, (_, i) => {
     const angle = blipDeg + (((i * 7) % 11) - 5) * arcSpan / 11;
-    const radius = Math.max(5, Math.min(45, blipR + ((i * 3) % 7 - 3) * 1.65));
-    const size = 3.5 + (i % 4) * 0.9;
-    const opacity = 0.42 + (i % 5) * 0.1;
+    const radius = Math.max(5, Math.min(45, blipR + ((i * 3) % 7 - 3) * (1.65 + stage * 0.6)));
+    const size = baseSize + (i % 4) * 1.1;
+    const opacity = 0.78 + (i % 5) * 0.055;
     const delay = ((i % 7) * 0.12).toFixed(2);
     return `<span class="inbound-radar-escort" style="--escort-deg:${angle.toFixed(1)}deg;--escort-r:${radius.toFixed(1)}%;--escort-size:${size.toFixed(1)}px;--escort-opacity:${opacity.toFixed(2)};--escort-delay:${delay}s" aria-hidden="true"></span>`;
   });
@@ -326,6 +329,9 @@ function syncRadarContacts() {
   });
 }
 
+/** Last radar zone shown, so the radar flashes when the horde moves up a zone. @type {number|null} */
+let lastRadarStage = null;
+
 /**
  * @param {ReturnType<typeof attackStatus>} attack
  * @param {boolean} open
@@ -337,6 +343,7 @@ function renderInboundRadar(attack, open) {
   const blipDeg = 42;
 
   if (open) {
+    lastRadarStage = 3;
     return `
       <div class="inbound-radar inbound-radar-contact">
         <div class="inbound-radar-dish inbound-radar-dish-alert">
@@ -351,13 +358,21 @@ function renderInboundRadar(attack, open) {
     `;
   }
 
+  const stage = attack.stage ?? 0;
+  const stageUp = lastRadarStage !== null && stage > lastRadarStage;
+  lastRadarStage = stage;
   return `
-    <div class="inbound-radar inbound-radar-${attack.urgency}">
+    <div class="inbound-radar inbound-radar-${attack.urgency} inbound-radar-stage-${stage}${stageUp ? ' is-stage-up' : ''}">
       <div
         class="inbound-radar-dish"
-        style="--blip-r: ${blipR}%; --blip-deg: ${blipDeg}deg; --sweep-speed: ${attack.urgency === 'critical' ? '2.4s' : attack.urgency === 'warning' ? '3s' : '3.6s'}"
+        style="--blip-r: ${blipR}%; --blip-deg: ${blipDeg}deg; --sweep-speed: ${attack.urgency === 'critical' ? '2s' : attack.urgency === 'warning' ? '2.8s' : '3.6s'}"
       >
         <div class="inbound-radar-grid" aria-hidden="true"></div>
+        <div class="radar-zones" aria-hidden="true">
+          <span class="radar-zone radar-zone--far${stage === 0 ? ' is-current' : ''}"><i>FAR</i></span>
+          <span class="radar-zone radar-zone--closing${stage === 1 ? ' is-current' : ''}"><i>CLOSING</i></span>
+          <span class="radar-zone radar-zone--fence${stage >= 2 ? ' is-current' : ''}"><i>FENCE</i></span>
+        </div>
         <div class="inbound-radar-sweep" aria-hidden="true"></div>
         ${renderRadarEscorts(attack, blipDeg, blipR)}
         <div class="inbound-radar-blip" aria-hidden="true"></div>
@@ -381,7 +396,7 @@ function renderInboundRadar(attack, open) {
 
 /**
  * @param {ReturnType<typeof attackStatus>} attack
- * @param {import('./training-gate.js').TrainingGate} gate
+ * @param {import('./training-gate.js?v=20261114n1').TrainingGate} gate
  * @param {string} playerName
  */
 function renderAttackHero(attack, gate, playerName, isFirstMission) {
@@ -434,7 +449,7 @@ export function stopMissionDossier() {
  *   bestBankedCoins: number,
  *   bestStars: Record<string, number>,
  *   primaryMissionId: string,
- *   gate: import('./training-gate.js').TrainingGate,
+ *   gate: import('./training-gate.js?v=20261114n1').TrainingGate,
  *   levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave,
  *   mapProgress: import('./map-progress.js').MapProgressSave,
  *   topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave,
@@ -459,7 +474,7 @@ const TOPIC_DISPLAY_ORDER = [
 /**
  * Once a siege is earned: what is coming (the opening assault, by alien type) against what the player
  * takes into battle. Extra right answers grow the chest and zap scouts out of the horde, live.
- * @param {ReturnType<typeof import('./waves-data.js').openingHorde>} horde
+ * @param {ReturnType<typeof import('./waves-data.js?v=20261114n1').openingHorde>} horde
  * @param {{ coins: number, bonusSeconds: number, extraLeft: number, coinsPerAnswer: number }} chest
  */
 function renderHordeFaceoff(horde, chest) {
@@ -512,10 +527,11 @@ export function renderMissionControl(host, state) {
   const attack = attackStatus(state.gate);
   const first = state.siegesCompleted === 0;
   host.dataset.threat = attack.urgency;
-  const threatMessage = attack.remaining <= 2 ? 'DANGER: ALIENS AT THE FENCE!'
-    : attack.remaining <= 5 ? 'WARNING: ALIENS CLOSING IN!'
-    : attack.remaining <= 8 ? 'ENEMY SIGNAL DETECTED'
-    : 'DISTANT ALIEN SIGNAL';
+  const charge = `${Math.floor(attack.done)}/${attack.total}`;
+  const threatMessage = (attack.stage >= 2 ? 'DANGER: ALIENS AT THE FENCE!'
+    : attack.stage >= 1 ? 'WARNING: ALIENS CLOSING IN!'
+    : attack.done > 0 ? 'ENEMY SIGNAL DETECTED'
+    : 'DISTANT ALIEN SIGNAL') + ` · ${charge}`;
   host.innerHTML = `
     <div class="mission-control-inner">
       <div class="mission-control-heading">
@@ -831,7 +847,7 @@ export function renderHome(host, state) {
         </div>
         ${attack.open
           ? ''
-          : `<button type="button" id="mission-start-mixed" class="mission-start-art${special ? ' is-special' : ''}" aria-label="${special ? `Special mission: ${SPECIAL_MISSION_XP_MULTIPLIER}× Forge XP` : 'Random mission'}: ${attack.remaining} more right answers needed, from every topic"><img src="assets/ui/random-mission-${missionArt}.png?v=2" alt="" width="760" height="203" />${special ? `<span class="mission-special-badge" aria-hidden="true"><span class="mission-special-rays"></span><span class="mission-special-disc"><b>${SPECIAL_MISSION_XP_MULTIPLIER}×</b><small>XP</small></span></span>` : ''}</button>`}
+          : `<button type="button" id="mission-start-mixed" class="mission-start-art${special ? ' is-special' : ''}" aria-label="${special ? `Special mission: ${SPECIAL_MISSION_XP_MULTIPLIER}× Forge XP` : 'Random mission'}: ${answersForCharge(attack.remaining, state.difficultyLevel)} more right answers needed, from every topic"><img src="assets/ui/random-mission-${missionArt}.png?v=2" alt="" width="760" height="203" />${special ? `<span class="mission-special-badge" aria-hidden="true"><span class="mission-special-rays"></span><span class="mission-special-disc"><b>${SPECIAL_MISSION_XP_MULTIPLIER}×</b><small>XP</small></span></span>` : ''}</button>`}
         <div class="mission-level-control">
           <div class="mission-level-intro">
             <span class="mission-level-title">LEVEL</span>

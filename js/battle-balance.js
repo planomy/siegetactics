@@ -25,9 +25,12 @@ export function balanceMission(mission, siegesCompleted) {
  * @param {number} siegesCompleted
  * @param {number} mathsBonusCoins
  */
+const BIG_BATTLE_BONUS = 25;
+
 export function startingSiegeCoins(mission, siegesCompleted, mathsBonusCoins = 0) {
   const normal = Math.max(0, mission.rewards?.placementBudget ?? 90);
-  const base = siegesCompleted === 0 ? Math.max(125, normal) : normal;
+  // Sieges come after a full charge of maths, so each one starts with a bigger war chest.
+  const base = (siegesCompleted === 0 ? Math.max(125, normal) : normal) + BIG_BATTLE_BONUS;
   return base + Math.max(0, mathsBonusCoins);
 }
 

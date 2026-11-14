@@ -669,16 +669,16 @@
 
 @keyframes radar-escort-ping {
   0%, 78% {
-    opacity: calc(var(--escort-opacity, 0.6) * 0.55);
-    transform: scale(0.8);
+    opacity: calc(var(--escort-opacity, 0.6) * 0.82);
+    transform: scale(0.9);
   }
   86%, 94% {
     opacity: var(--escort-opacity, 0.6);
-    transform: scale(1.15);
+    transform: scale(1.25);
   }
   100% {
-    opacity: calc(var(--escort-opacity, 0.6) * 0.55);
-    transform: scale(0.8);
+    opacity: calc(var(--escort-opacity, 0.6) * 0.82);
+    transform: scale(0.9);
   }
 }
 
@@ -1807,4 +1807,136 @@
   color: #ffd36b;
   letter-spacing: 0.04em;
   white-space: nowrap;
+}
+
+/* Radar zones: the horde moves FAR -> CLOSING -> FENCE at the charge checkpoints.
+   Maths HQ hue-rotates the whole radar by -125deg to make it alien red, so colours here are
+   written 125deg further round: hsl(130) shows as red, hsl(163) as amber, hsl(170) as gold. */
+.radar-zones {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.radar-zone {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border: 1.5px dashed hsl(140 100% 70% / 0.25);
+  border-radius: 50%;
+  translate: -50% -50%;
+}
+
+.radar-zone--far { width: 92%; height: 92%; }
+.radar-zone--closing { width: 62%; height: 62%; }
+.radar-zone--fence { width: 32%; height: 32%; }
+
+.radar-zone i {
+  position: absolute;
+  top: -0.55em;
+  left: 50%;
+  translate: -50% 0;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(4, 10, 8, 0.8);
+  color: hsl(140 100% 75% / 0.6);
+  font-family: var(--font-body);
+  font-size: 0.5rem;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.radar-zone.is-current {
+  border-style: solid;
+  border-width: 2px;
+  border-color: hsl(170 100% 62% / 0.9);
+  box-shadow: 0 0 12px hsl(170 100% 55% / 0.45), inset 0 0 10px hsl(170 100% 55% / 0.25);
+}
+
+.radar-zone.is-current i {
+  color: hsl(170 100% 70%);
+}
+
+.inbound-radar-stage-2 .radar-zone.is-current {
+  border-color: hsl(130 100% 58%);
+  box-shadow: 0 0 16px hsl(130 100% 50% / 0.65), inset 0 0 12px hsl(130 100% 50% / 0.35);
+  animation: radar-zone-throb 1s ease-in-out infinite;
+}
+
+.inbound-radar-stage-2 .radar-zone.is-current i {
+  color: hsl(130 100% 72%);
+}
+
+@keyframes radar-zone-throb {
+  50% { box-shadow: 0 0 26px hsl(130 100% 50% / 0.95), inset 0 0 18px hsl(130 100% 50% / 0.5); }
+}
+
+/* The horde: bright hot-red contacts (written as green; see the note above). */
+body.mission-mode .inbound-radar-escort::after,
+body.mission-mode .inbound-radar-blip::after {
+  background: hsl(135 100% 62%);
+  box-shadow: 0 0 8px hsl(135 100% 55% / 0.85);
+}
+
+body.mission-mode .inbound-radar-stage-2 .inbound-radar-escort::after,
+body.mission-mode .inbound-radar-stage-2 .inbound-radar-blip::after {
+  background: hsl(128 100% 66%);
+  box-shadow: 0 0 11px hsl(128 100% 55% / 0.95);
+}
+
+/* Danger rings: amber while closing, red at the fence (the old colours came out purple and blue). */
+body.mission-mode .mission-control[data-threat="warning"] .mission-control-radar .inbound-radar-dish {
+  border-color: hsl(163 100% 58%);
+  box-shadow: 0 0 22px hsl(163 100% 50% / 0.35);
+}
+
+body.mission-mode .mission-control[data-threat="critical"] .mission-control-radar .inbound-radar-dish {
+  border-color: hsl(130 100% 55%);
+  box-shadow: 0 0 30px hsl(130 100% 50% / 0.5);
+}
+
+/* The dish warms from calm to amber to red as the horde closes in. */
+.inbound-radar-dish::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: none;
+  transition: background 0.6s ease;
+}
+
+.inbound-radar-stage-1 .inbound-radar-dish::after {
+  background: radial-gradient(circle, transparent 25%, hsl(163 100% 50% / 0.22) 100%);
+}
+
+.inbound-radar-stage-2 .inbound-radar-dish::after {
+  background: radial-gradient(circle, hsl(130 100% 50% / 0.1) 15%, hsl(130 100% 50% / 0.36) 100%);
+  animation: radar-dish-alarm 1.2s ease-in-out infinite;
+}
+
+@keyframes radar-dish-alarm {
+  50% { opacity: 0.55; }
+}
+
+/* A flash when the horde moves up a zone. */
+.inbound-radar.is-stage-up .inbound-radar-dish {
+  animation: radar-stage-flash 1.4s ease-out;
+}
+
+@keyframes radar-stage-flash {
+  0%, 30%, 60% { box-shadow: 0 0 0 4px hsl(130 100% 55% / 0.95), 0 0 40px hsl(130 100% 50% / 0.9); }
+  15%, 45% { box-shadow: 0 0 0 0 transparent, 0 0 0 transparent; }
+  100% { box-shadow: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inbound-radar-stage-2 .radar-zone.is-current,
+  .inbound-radar-stage-2 .inbound-radar-dish::after,
+  .inbound-radar.is-stage-up .inbound-radar-dish {
+    animation: none;
+  }
 }

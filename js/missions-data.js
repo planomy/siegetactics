@@ -3,7 +3,7 @@
  * Mission definitions (content only — vertical slice uses first mission).
  */
 
-import { SIEGE_DURATION_SEC } from './waves-data.js?v=20261113h1';
+import { SIEGE_DURATION_SEC } from './waves-data.js?v=20261114n1';
 import { normalizeDifficultyLevel } from './difficulty.js?v=20261114k1';
 
 /** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */

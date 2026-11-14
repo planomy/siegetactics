@@ -5,7 +5,7 @@
  * of truth, including after a page reload.
  */
 const STAGES = [
-  { min: 0, id: 'offline', name: 'GET 10 RIGHT TO POWER UP!', detail: 'Answer maths questions to wake up Granny’s defences.' },
+  { min: 0, id: 'offline', name: 'ANSWER RIGHT TO POWER UP!', detail: 'Answer maths questions to wake up Granny’s defences.' },
   { min: 1, id: 'warming', name: 'POWERING UP', detail: 'The engines are warming up.' },
   { min: 3, id: 'sparking', name: 'WEAPONS ONLINE', detail: 'Turrets are coming to life!' },
   { min: 6, id: 'charged', name: 'MIGHTY DEFENCES', detail: 'Energy surging through the system.' },
@@ -116,8 +116,11 @@ export function pickForgeSquad(owned, levelOf, random = Math.random) {
 export function renderPowerCore(host, state) {
   if (!host) return;
   const total = Math.max(1, state.total ?? 10);
-  const done = Math.min(total, Math.max(0, Math.floor(state.done)));
-  const stage = powerStage(done);
+  const charge = Math.min(total, Math.max(0, Number(state.done) || 0));
+  const done = Math.floor(charge);
+  // The rig's glow, cells and sparks run on ten steps whatever the charge needed.
+  const steps = (charge * 10) / total;
+  const stage = powerStage(steps);
   if (!host.querySelector('.power-rig')) {
     host.innerHTML = `
       <div class="power-rig" data-stage="offline">
@@ -186,7 +189,7 @@ export function renderPowerCore(host, state) {
   }
   const oldProgress = Number(rig.dataset.progress || 0);
   rig.dataset.stage = stage.id;
-  rig.dataset.progress = String(done);
+  rig.dataset.progress = String(charge);
   if (stage.id === 'ready') {
     if (!rig.dataset.readyLine) {
       rig.dataset.readyLine = FULLY_ARMED_LINES[Math.floor(Math.random() * FULLY_ARMED_LINES.length)];
@@ -199,19 +202,22 @@ export function renderPowerCore(host, state) {
   const number = rig.querySelector('.power-charge-number');
   if (number) number.innerHTML = `${done}<span>/${total}</span>`;
   const bar = rig.querySelector('.power-charge-track');
-  if (bar) bar.setAttribute('aria-valuenow', String(done));
+  if (bar) {
+    bar.setAttribute('aria-valuenow', String(done));
+    bar.setAttribute('aria-valuemax', String(total));
+  }
   const fill = rig.querySelector('.power-charge-fill');
   if (fill) fill.style.width = `${Math.round(100 * done / total)}%`;
   rig.querySelectorAll('.power-charge-cell').forEach((cell,i)=> {
-    cell.classList.toggle('is-powered', i < done);
+    cell.classList.toggle('is-powered', i < Math.floor(steps));
   });
-  const activeParticles = powerParticleCount(done);
+  const activeParticles = powerParticleCount(steps);
   rig.querySelectorAll('.forge-mote').forEach((mote, i) => {
     mote.classList.toggle('is-live', i < activeParticles);
   });
 
   // No false "new answer" flash when a save is restored on page load.
-  if (rig.dataset.initialized === 'true' && done > oldProgress) {
+  if (rig.dataset.initialized === 'true' && charge > oldProgress) {
     const burst = rig.querySelector('.power-burst');
     const flare = rig.querySelector('.forge-charge-flare');
     burst?.classList.remove('is-firing');

@@ -24,7 +24,7 @@ export const COACH_TIPS = {
   pick: {
     step: 1,
     title: 'GET READY TO DESTROY SOME ALIENS!',
-    text: 'Select either a RANDOM MISSION or a TOPIC CARD and answer 10 maths questions.',
+    text: 'Select either a RANDOM MISSION or a TOPIC CARD. Every right answer charges Granny’s defences.',
     punch: 'Practice makes KABOOM!',
     targets: ['#mission-start-mixed', '.mission-all-topics'],
     between: true,

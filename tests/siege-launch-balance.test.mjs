@@ -8,8 +8,8 @@ import { bonusSiegeSeconds, defaultTrainingGate, recordTrainingQuestions, normal
 const mission = MISSIONS[0];
 
 test('first invasion gives at least 125 starting coins, plus earned maths bonuses', () => {
-  assert.equal(startingSiegeCoins(mission, 0, 20), 145);
-  assert.equal(startingSiegeCoins(mission, 3, 20), 110);
+  assert.equal(startingSiegeCoins(mission, 0, 20), 170);
+  assert.equal(startingSiegeCoins(mission, 3, 20), 135);
 });
 
 test('first siege is forgiving but later sieges retain a challenge', () => {
@@ -65,11 +65,11 @@ test('launch labels are humorous and do not immediately repeat', () => {
   assert.ok(BATTLE_CRIES.every((s) => s.length <= 45));
 });
 
-test('normal battle remains exactly 60 seconds, bonus is only earned from extra maths', () => {
-  assert.equal(SIEGE_DURATION_SEC, 60);
+test('normal battle lasts 90 seconds, bonus is only earned from extra maths', () => {
+  assert.equal(SIEGE_DURATION_SEC, 90);
   let gate = defaultTrainingGate();
   assert.equal(bonusSiegeSeconds(gate), 0);
-  gate = recordTrainingQuestions(gate, 10, 1).gate;
+  gate = recordTrainingQuestions(gate, 30, 1).gate;
   assert.equal(bonusSiegeSeconds(gate), 0);
   gate = recordTrainingQuestions(gate, 5, 1).gate;
   assert.equal(bonusSiegeSeconds(gate), 15);

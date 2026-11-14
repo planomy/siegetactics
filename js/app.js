@@ -1,5 +1,5 @@
 import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261114k1';
-import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261112g';
+import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261114n1';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261113n1';
 import { renderArmory } from './armory.js?v=20261113a6';
@@ -12,7 +12,7 @@ import { topicXpMultiplier } from './hot-topic.js?v=20261112a1';
 import { normalizeSiegeRecord, recordSiege, siegeRankLevel, renderRankResult } from './siege-ranks.js?v=20261112a2';
 import { normalizeStreak, recordStreakAnswer, streakStatus, localDayKey } from './streak.js?v=20261113a1';
 import { GEAR, normalizeGear, gearStatus, gearEffects } from './gear.js?v=20261113a3';
-import { SIEGE_DURATION_SEC, openingHorde } from './waves-data.js?v=20261113h1';
+import { SIEGE_DURATION_SEC, openingHorde } from './waves-data.js?v=20261114n1';
 import { normalizeDaily, recordChallengeEvent, rollLuckyDrop, DAILY_CHEST_XP } from './daily-challenges.js?v=20261113a1';
 import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20261113a2';
 import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261113a1';
@@ -20,7 +20,7 @@ import { STORY_BEATS } from './story.js?v=20261113a1';
 import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261113h1';
 import { DEV } from './dev.js?v=20261113n1';
 import { HEDGE } from './maze-field.js?v=20261113m7';
-import { showCoachTips, isCoachOpen, TOUR_TIPS } from './coach-tips.js?v=20261114k1';
+import { showCoachTips, isCoachOpen, TOUR_TIPS } from './coach-tips.js?v=20261114n1';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
 import { ECONOMY, bankBonusForgeXp } from './economy.js';
@@ -28,10 +28,10 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261113n1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114k2';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114n1';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
-import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261113a2';
-import { initHowToPlay } from './how-to-play.js?v=20261114k1';
+import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261114n1';
+import { initHowToPlay } from './how-to-play.js?v=20261114n1';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261114m1';
 import { initMeasurementLength } from './measurement-length.js?v=20261114m1';
@@ -39,7 +39,7 @@ import { initFractions } from './fractions.js?v=20261114m1';
 import { initAnglesShapes } from './angles-shapes.js?v=20261114m1';
 import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261114m1';
 import { initExpandedMath } from './expanded-maths.js?v=20261114m1';
-import { initBattlePrep } from './battle-prep.js?v=20261114k1';
+import { initBattlePrep } from './battle-prep.js?v=20261114n1';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js?v=20261114k1';
 import {
   normalizeLevelMastery,
@@ -64,14 +64,17 @@ import {
   resetTrainingGate,
   isUnitDone,
   isTopicDone,
-} from './training-gate.js?v=20261112h';
+  chargeFor,
+  answersForCharge,
+  recordMissionMix,
+} from './training-gate.js?v=20261114n1';
 import { setGateRemainingProvider } from './gate-status.js?v=20261112a1';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
 /** Dev mode plays on a fresh copy of the real save each load, so testing never changes real progress. */
 const DEV_SAVE_KEY = `${SAVE_KEY}.dev`;
 
-/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, levelScale?: number, pausedSets?: Record<string, any>, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js?v=20261114n1').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, levelScale?: number, pausedSets?: Record<string, any>, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -113,7 +116,7 @@ const defaultSave = {
 
 /** @type {SaveData} */
 let save = loadSave();
-setGateRemainingProvider(() => GATE.questionsRequired - gateProgress(save.trainingGate).done);
+setGateRemainingProvider(() => answersForCharge(GATE.questionsRequired - gateProgress(save.trainingGate).done, getDifficultyLevel()));
 setTurretLevels(save.turretLevels);
 
 /** @type {{ waveBudget: number, runForgeXpEarned: number, startCoins: number, selectedTurret: string|null, cacheProgress: number, bossCrystalPaid: boolean }} */
@@ -984,21 +987,25 @@ function announceTopicRankReward(topicId, result) {
   }
 }
 
-/** Every answered question charges the forge, including wrong answers.
- * Correct answers earn the accuracy-based siege-coin boost.
- * Progress is saved immediately, including when students leave mid-session.
+/** Right answers charge the forge; progress is saved immediately, even if students leave mid-session.
  * @param {boolean} right
- * @param {number} [level] Level 3 and 4 bonus answers (after the first ten) also pay stretch coins.
+ * @param {number} [level] Answers at Levels 1–2 charge more, so the bar fills in 20 answers rather than 30.
+ * @param {number} [answers] How many answers this counts as (a Place Value puzzle counts as three).
  */
-function creditTrainingAnswer(right) {
-  // Only right answers charge Granny's defences, so a siege always means ten correct answers.
+function creditTrainingAnswer(right, level, answers = 1) {
+  // Only right answers charge Granny's defences.
   if (!right) {
     lastTrainingAnswerCorrect = false;
     return;
   }
   const previouslyReady = isGateOpen(save.trainingGate);
   const previousBonus = bonusSiegeSeconds(save.trainingGate);
-  const result = recordTrainingQuestions(save.trainingGate, 1, 1);
+  const before = save.trainingGate.questionsDone || 0;
+  // Until the siege is earned, charge depends on level; extra answers after that count one each.
+  const charge = previouslyReady
+    ? answers
+    : Math.min(chargeFor(level ?? getDifficultyLevel()) * answers, GATE.questionsRequired - before);
+  const result = recordTrainingQuestions(save.trainingGate, charge, 1);
   if (!result.added) return;
   save.trainingGate = result.gate;
   lastTrainingAnswerCorrect = right;
@@ -1008,6 +1015,10 @@ function creditTrainingAnswer(right) {
   if (!previouslyReady && isGateOpen(save.trainingGate)) {
     awardUpgradeCore('MISSION COMPLETE');
     showChargedBanner();
+  } else if (!previouslyReady) {
+    const after = save.trainingGate.questionsDone || 0;
+    const crossed = GATE.checkpoints.filter((c) => before < c && after >= c).pop();
+    if (crossed) announceHordeCheckpoint(crossed);
   }
   const extraTime = bonusSiegeSeconds(save.trainingGate);
   if (extraTime > previousBonus) {
@@ -1040,9 +1051,10 @@ function completeTrainingSession(moduleId, level, accuracy) {
   save.mapProgress = result.mapProgress;
   creditTopicSession(moduleId, accuracy);
 
-  // Ten-question drills were credited live by their answer callbacks.
-  // Place Value is a one-puzzle forge, so it earns one credit on success.
-  if (moduleId === 'place-value-siege') creditTrainingAnswer(true);
+  // Topic drills were credited live by their answer callbacks.
+  // Place Value is a one-puzzle forge, so it earns three answers' worth on success.
+  if (moduleId === 'place-value-siege') creditTrainingAnswer(true, level, 3);
+  if (accuracy >= GATE.passAccuracy) noteMissionMix('topic');
   persistSave();
   refreshMissionControl();
 
@@ -1086,7 +1098,7 @@ function createTrainingHandlers(moduleId) {
       trackAnswerStreak(right);
       if (right) creditEngagementAnswer(moduleId, level);
       creditTopicAnswer(moduleId, level, right);
-      creditTrainingAnswer(right);
+      creditTrainingAnswer(right, level);
     },
     onSessionComplete(accuracy) {
       return completeTrainingSession(moduleId, level, accuracy);
@@ -1117,9 +1129,28 @@ function rememberPausedSet(moduleId, level, state) {
   persistSave();
 }
 
+/** The horde moved up a checkpoint: a warning, and the radar shows it on the way home. @param {number} checkpoint */
+function announceHordeCheckpoint(checkpoint) {
+  audio.playWaveWarning(1);
+  showToast(checkpoint >= GATE.checkpoints[GATE.checkpoints.length - 1]
+    ? 'THEY’RE AT THE FENCE! Keep charging Granny’s defences!'
+    : 'THE HORDE IS CLOSING IN! Keep those right answers coming!', { variant: 'warn', duration: 3800 });
+}
+
+/** Finished a Random mission or a topic set; both in one charge pays the "Mix it up!" bonus. @param {'random'|'topic'} kind */
+function noteMissionMix(kind) {
+  const r = recordMissionMix(save.trainingGate, kind);
+  save.trainingGate = r.gate;
+  persistSave();
+  if (r.earned) {
+    window.setTimeout(() => awardUpgradeCore('MIX IT UP!', screenCentre()), 900);
+    showToast('MIX IT UP! A Random mission and a topic card in one charge — bonus crystal!', { variant: 'success', duration: 4200 });
+  }
+}
+
 const TOPIC_SCREENS = new Set(['timesTables', 'measurement', 'fractions', 'angles', 'mathsQuest', 'expanded']);
 
-/** The might builder just filled during a topic set: offer the battle, or let them finish the set. */
+/** The might builder just filled during a topic set: the battle comes once the set is finished. */
 function showChargedBanner() {
   const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'))?.[0];
   if (!active || !TOPIC_SCREENS.has(active)) return;
@@ -1128,16 +1159,9 @@ function showChargedBanner() {
   banner.className = 'charged-banner';
   banner.setAttribute('role', 'status');
   banner.innerHTML = `
-    <div class="charged-banner-text"><b>DEFENCES CHARGED!</b><span>Granny's ready for battle.</span></div>
-    <button type="button" class="charged-banner-go">DEFEND GRANNY ▸</button>
-    <button type="button" class="charged-banner-stay">Finish this set</button>`;
-  banner.querySelector('.charged-banner-go')?.addEventListener('click', () => {
-    banner.remove();
-    audio.warmUp();
-    audio.playLockAndLoad();
-    goToTheAction();
-  });
-  banner.querySelector('.charged-banner-stay')?.addEventListener('click', () => banner.remove());
+    <div class="charged-banner-text"><b>DEFENCES CHARGED!</b><span>Finish this set, then defend Granny!</span></div>
+    <button type="button" class="charged-banner-go">GOT IT</button>`;
+  banner.querySelector('.charged-banner-go')?.addEventListener('click', () => banner.remove());
   document.body.append(banner);
 }
 
@@ -1401,7 +1425,7 @@ function replayTips() {
   if (screens.home?.classList.contains('active')) scheduleTips('home');
 }
 
-/** Level 4+ players are offered more questions after their ten, for bonus time and coins. */
+/** Level 4+ players are offered more questions once their defences are charged, for bonus time and coins. */
 const STRETCH_MIN_LEVEL = 4;
 const STRETCH_COINS_PER_ANSWER = 5;
 
@@ -1410,8 +1434,9 @@ function stretchOffer(level) {
   if (level < STRETCH_MIN_LEVEL) return null;
   const done = Math.max(0, save.trainingGate.questionsDone || 0);
   if (done < GATE.questionsRequired || done >= GATE.maxQuestions) return null;
-  const target = done < 15 ? 15 : GATE.maxQuestions;
-  return { more: target - done, seconds: target === 15 ? 15 : 30, coins: STRETCH_COINS_PER_ANSWER };
+  const halfway = GATE.questionsRequired + 5;
+  const target = done < halfway ? halfway : GATE.maxQuestions;
+  return { more: Math.ceil(target - done), seconds: target === halfway ? 15 : 30, coins: STRETCH_COINS_PER_ANSWER };
 }
 
 /** @param {{ special?: boolean }} [opts] A special mission doubles the Forge XP from its answers. */
@@ -1429,18 +1454,22 @@ function showBattlePrep(opts = {}) {
   disposeActiveTraining = initBattlePrep(host, {
     level,
     cycle: save.trainingGate.cycle,
-    questionsNeeded: GATE.questionsRequired - gateProgress(save.trainingGate).done,
-    remainingNeeded: () => GATE.questionsRequired - gateProgress(save.trainingGate).done,
+    questionsNeeded: answersForCharge(GATE.questionsRequired - gateProgress(save.trainingGate).done, level),
+    remainingNeeded: () => answersForCharge(GATE.questionsRequired - gateProgress(save.trainingGate).done, level),
+    isCharged: () => DEV.skipForge || isGateOpen(save.trainingGate),
+    chargeLine: () => `${Math.floor(gateProgress(save.trainingGate).done)} / ${GATE.questionsRequired} charge`,
+    onAgain: () => showBattlePrep(),
     stretchOffer: () => stretchOffer(level),
     onAwardXp(baseAmount) {
       awardScaledTrainingXp(baseAmount * xpBoost, level);
     },
     onAnswer: (right, moduleId) => creditMixedAnswer(right, moduleId, level),
-    onFinished() {
+    onFinished(_results, overall) {
       // A random mission asks only one or two questions per topic, so it does not count towards
       // map sectors or level shields; those need a full topic drill or Maths Quest.
       if (prepRecorded) return;
       prepRecorded = true;
+      if (overall >= GATE.passAccuracy) noteMissionMix('random');
       battlePrepCoinBonus = save.trainingGate.bonusSiegeCoins;
       persistSave();
       refreshMissionControl();
@@ -1464,7 +1493,7 @@ function creditMixedAnswer(right, moduleId, level) {
   trackAnswerStreak(right);
   if (right) creditEngagementAnswer(moduleId, level);
   creditTopicAnswer(moduleId, level, right);
-  creditTrainingAnswer(right);
+  creditTrainingAnswer(right, level);
 }
 
 /** Right answers still worth having: scouts left to zap, and extra answers left to earn coins with. */

@@ -1,5 +1,5 @@
 import { ECONOMY } from './economy.js';
-import { GATE } from './training-gate.js';
+import { GATE } from './training-gate.js?v=20261114n1';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';

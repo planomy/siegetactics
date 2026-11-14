@@ -269,7 +269,7 @@ function liveTimestamp() {
 
 /**
  * @param {boolean} contact
- * @param {ReturnType<import('./training-gate.js').attackStatus>} attack
+ * @param {ReturnType<import('./training-gate.js?v=20261114n1').attackStatus>} attack
  */
 export function renderThreatDossier(contact, attack) {
   const urgencyClass = contact ? 'threat-dossier-contact' : `threat-dossier-${attack.urgency}`;

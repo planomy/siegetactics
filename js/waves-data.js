@@ -1,5 +1,5 @@
 /** Real-time siege length (seconds). Game-speed buttons do not affect this clock. */
-export const SIEGE_DURATION_SEC = 60;
+export const SIEGE_DURATION_SEC = 90;
 
 /** Maximum optional bonus assault after the original 60-second defence. */
 export const BONUS_TIME_SEC = 30;

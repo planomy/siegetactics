@@ -1,5 +1,5 @@
 import { MAP_PASSES_REQUIRED } from './map-progress.js';
-import { GATE } from './training-gate.js';
+import { GATE } from './training-gate.js?v=20261114n1';
 import { SIEGE_RANKS } from './siege-ranks.js?v=20261112a2';
 
 /**
@@ -13,8 +13,8 @@ export const HOW_TO_QUESTIONS = [
     icon: '⚔️',
     q: 'How do I start a battle?',
     a: [
-      `Get ${GATE.questionsRequired} maths questions right. Only right answers charge Granny’s defences. Press RANDOM MISSION for a mix, or tap any topic card.`,
-      'When the radar says CONTACT, the aliens have landed. Press the big button to defend Granny!',
+      `Every right answer charges Granny’s defences. Fill the charge (${GATE.questionsRequired} right answers, or 20 at Levels 1 and 2) to launch a siege. Press RANDOM MISSION for a mix, or tap any topic card.`,
+      'Watch the radar: the horde gets closer and bigger as your charge grows. When it says CONTACT, finish your set and press the big button to defend Granny!',
     ],
   },
   {
@@ -22,7 +22,7 @@ export const HOW_TO_QUESTIONS = [
     q: 'How do I win a battle?',
     a: [
       'Tap a turret, then tap an empty square on the lawn to build it. Turrets shoot aliens on their own.',
-      'Survive the full minute without too many aliens getting past. The fewer that leak through, the better your result.',
+      'Survive the full battle without too many aliens getting past. The fewer that leak through, the better your result.',
     ],
   },
   {
@@ -40,10 +40,11 @@ export const HOW_TO_QUESTIONS = [
     icon: '💎',
     q: 'How do I get Alien Crystals?',
     a: [
-      `Finish a ${GATE.questionsRequired}-question mission.`,
+      'Fully charge Granny’s defences.',
+      'Do a Random mission AND a topic card in the same charge — MIX IT UP!',
       'Score 80% or better on a Maths Quest.',
       'Rank up a maths topic.',
-      'Defeat a big boss alien in battle. It drops a crystal!',
+      'Defeat the first big boss alien in a battle. It drops a crystal!',
     ],
   },
   {

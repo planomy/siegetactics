@@ -1,14 +1,34 @@
 import { getGateTopics } from './topics-data.js';
 
-/** @typedef {{ cycle: number, battlePrepComplete: boolean, questionsDone: number, bonusSiegeCoins: number, timesTablesDone: string[], topicsDone: string[], unitsDone: Record<string, boolean> }} TrainingGate */
+/**
+ * `questionsDone` is defence charge: each right answer adds chargeFor(level), so younger
+ * levels fill the same bar with fewer answers. `mixRandom` / `mixTopic` track the
+ * "Mix it up!" bonus for doing both kinds of mission in one charge.
+ * @typedef {{ cycle: number, scale: number, battlePrepComplete: boolean, questionsDone: number, bonusSiegeCoins: number, timesTablesDone: string[], topicsDone: string[], unitsDone: Record<string, boolean>, mixRandom: boolean, mixTopic: boolean, mixPaid: boolean }} TrainingGate
+ */
 
 export const GATE = {
   requiredTables: 2,
-  questionsRequired: 10,
-  maxQuestions: 20,
+  /** Charge needed for a siege: 30 answers at Levels 3–6, 20 at Levels 1–2. */
+  questionsRequired: 30,
+  /** Answers past a full charge zap scouts and earn coins and bonus time. */
+  maxQuestions: 40,
+  /** The horde moves closer at each checkpoint. */
+  checkpoints: [10, 20],
+  maxBonusCoins: 40,
   /** Minimum accuracy (0–1) to count a drill toward pushing the attack back. */
   passAccuracy: 0.6,
 };
+
+/** Charge from one right answer: Levels 1–2 fill the bar in 20 answers, Levels 3–6 in 30. @param {number} level */
+export function chargeFor(level) {
+  return level <= 2 ? 1.5 : 1;
+}
+
+/** Right answers still needed at this level. @param {number} chargeLeft @param {number} level */
+export function answersForCharge(chargeLeft, level) {
+  return Math.max(0, Math.ceil(chargeLeft / chargeFor(level) - 1e-9));
+}
 
 /** @returns {number} */
 export function requiredModuleDrills() {
@@ -19,12 +39,16 @@ export function requiredModuleDrills() {
 export function defaultTrainingGate() {
   return {
     cycle: 0,
+    scale: GATE.questionsRequired,
     battlePrepComplete: false,
     questionsDone: 0,
     bonusSiegeCoins: 0,
     timesTablesDone: [],
     topicsDone: [],
     unitsDone: {},
+    mixRandom: false,
+    mixTopic: false,
+    mixPaid: false,
   };
 }
 
@@ -47,11 +71,20 @@ export function normalizeTrainingGate(raw) {
   const base = defaultTrainingGate();
   if (!raw || typeof raw !== 'object') return base;
   const g = /** @type {Record<string, unknown>} */ (raw);
+  let rawDone = Number.isFinite(g.questionsDone) ? Number(g.questionsDone) : (g.battlePrepComplete ? GATE.questionsRequired : 0);
+  // Saves from the ten-answer gate: a ready siege stays ready, partial progress scales up.
+  if (g.scale !== GATE.questionsRequired) {
+    rawDone = rawDone >= 10 ? GATE.questionsRequired + (rawDone - 10) : rawDone * 3;
+  }
   const normalized = repairTrainingGate({
     cycle: typeof g.cycle === 'number' ? g.cycle : 0,
+    scale: GATE.questionsRequired,
     battlePrepComplete: Boolean(g.battlePrepComplete),
-    questionsDone: Number.isFinite(g.questionsDone) ? Math.max(0, Math.min(GATE.maxQuestions, Math.floor(g.questionsDone))) : (g.battlePrepComplete ? GATE.questionsRequired : 0),
-    bonusSiegeCoins: Number.isFinite(g.bonusSiegeCoins) ? Math.max(0, Math.min(25, Math.floor(g.bonusSiegeCoins))) : 0,
+    questionsDone: Math.max(0, Math.min(GATE.maxQuestions, Math.round(rawDone * 2) / 2)),
+    bonusSiegeCoins: Number.isFinite(g.bonusSiegeCoins) ? Math.max(0, Math.min(GATE.maxBonusCoins, Math.floor(g.bonusSiegeCoins))) : 0,
+    mixRandom: Boolean(g.mixRandom),
+    mixTopic: Boolean(g.mixTopic),
+    mixPaid: Boolean(g.mixPaid),
     timesTablesDone: Array.isArray(g.timesTablesDone)
       ? g.timesTablesDone.filter((k) => typeof k === 'string')
       : [],
@@ -84,6 +117,7 @@ export function gateProgress(gate) {
   const g = repairTrainingGate(gate);
   const open = isGateOpen(g);
   const done = open ? GATE.questionsRequired : Math.min(GATE.questionsRequired, g.questionsDone || 0);
+  const stage = open ? 3 : GATE.checkpoints.filter((c) => done >= c).length;
   return {
     tables: g.timesTablesDone.length,
     topics: g.topicsDone.length,
@@ -91,6 +125,8 @@ export function gateProgress(gate) {
     done,
     pct: done / GATE.questionsRequired,
     open,
+    /** 0 far away, 1 closing in, 2 at the fence, 3 attacking. */
+    stage,
   };
 }
 
@@ -101,8 +137,8 @@ export function attackStatus(gate) {
   /** @type {'now'|'critical'|'warning'|'calm'} */
   let urgency = 'calm';
   if (p.open) urgency = 'now';
-  else if (remaining <= 2) urgency = 'critical';
-  else if (remaining <= 5) urgency = 'warning';
+  else if (p.stage >= 2) urgency = 'critical';
+  else if (p.stage >= 1) urgency = 'warning';
 
   return {
     ...p,
@@ -113,7 +149,7 @@ export function attackStatus(gate) {
     countdown: p.open ? 'NOW' : String(remaining),
     subline: p.open
       ? 'Aliens are at the porch — deploy!'
-      : 'Get 10 maths questions right to launch the siege',
+      : 'Charge Granny’s defences with right answers to launch the siege',
   };
 }
 
@@ -124,7 +160,7 @@ export function attackStatus(gate) {
  */
 export function bonusSiegeSeconds(gate) {
   const answered = Math.max(0, Math.min(GATE.maxQuestions, gate.questionsDone || 0));
-  return answered >= 20 ? 30 : answered >= 15 ? 15 : 0;
+  return answered >= GATE.questionsRequired + 10 ? 30 : answered >= GATE.questionsRequired + 5 ? 15 : 0;
 }
 
 /**
@@ -137,13 +173,14 @@ export function bonusSiegeSeconds(gate) {
  */
 export function recordTrainingQuestions(gate, answered, accuracy) {
   const current = Math.max(0, Math.min(GATE.maxQuestions, gate.questionsDone || 0));
-  const safeAnswered = Math.max(0, Math.floor(Number(answered) || 0));
+  const safeAnswered = Math.max(0, Math.round((Number(answered) || 0) * 2) / 2);
   const added = Math.min(safeAnswered, GATE.maxQuestions - current);
   if (added === 0) return { added: 0, gate };
   const safeAccuracy = Math.max(0, Math.min(1, Number(accuracy) || 0));
   const done = current + added;
   const bonusEligible = Math.max(0, Math.min(added, GATE.questionsRequired - current));
-  const bonusSiegeCoins = Math.min(25, (gate.bonusSiegeCoins || 0) + Math.round(bonusEligible * 2.5 * safeAccuracy));
+  const coinsPerCharge = GATE.maxBonusCoins / GATE.questionsRequired;
+  const bonusSiegeCoins = Math.min(GATE.maxBonusCoins, Math.round((gate.bonusSiegeCoins || 0) + bonusEligible * coinsPerCharge * safeAccuracy));
   return {
     added,
     gate: {
@@ -234,6 +271,18 @@ export function recordTopicUnit(gate, topicId, unitId) {
     added: true,
     gate: { ...g, topicsDone: nextTopics, unitsDone: nextUnits },
   };
+}
+
+/**
+ * Note a finished Random mission or topic set. Both in one charge earns the "Mix it up!" bonus, once.
+ * @param {TrainingGate} gate @param {'random'|'topic'} kind
+ * @returns {{ gate: TrainingGate, earned: boolean }}
+ */
+export function recordMissionMix(gate, kind) {
+  const next = { ...gate, mixRandom: gate.mixRandom || kind === 'random', mixTopic: gate.mixTopic || kind === 'topic' };
+  const earned = !gate.mixPaid && next.mixRandom && next.mixTopic;
+  if (earned) next.mixPaid = true;
+  return { gate: next, earned };
 }
 
 /** @param {TrainingGate} gate */
