@@ -28,7 +28,7 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261113n1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114f1';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114i1';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261113a2';
 import { initHowToPlay } from './how-to-play.js?v=20261114h1';
@@ -68,6 +68,8 @@ import {
 import { setGateRemainingProvider } from './gate-status.js?v=20261112a1';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
+/** Dev mode plays on a fresh copy of the real save each load, so testing never changes real progress. */
+const DEV_SAVE_KEY = `${SAVE_KEY}.dev`;
 
 /** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js').TrainingGate, topicProgress: import('./topic-progression.js').TopicProgressSave, levelMastery: import('./level-mastery.js').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js').DifficultyLevel } }} SaveData */
 
@@ -114,13 +116,14 @@ let save = loadSave();
 setGateRemainingProvider(() => GATE.questionsRequired - gateProgress(save.trainingGate).done);
 setTurretLevels(save.turretLevels);
 
-/** @type {{ waveBudget: number, runForgeXpEarned: number, startCoins: number, selectedTurret: string|null, cacheProgress: number }} */
+/** @type {{ waveBudget: number, runForgeXpEarned: number, startCoins: number, selectedTurret: string|null, cacheProgress: number, bossCrystalPaid: boolean }} */
 let run = {
   waveBudget: 0,
   runForgeXpEarned: 0,
   startCoins: 0,
   selectedTurret: null,
   cacheProgress: 0,
+  bossCrystalPaid: false,
 };
 
 let battlePrepCoinBonus = 0;
@@ -277,7 +280,7 @@ function loadSave() {
 }
 
 function persistSave() {
-  localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+  localStorage.setItem(DEV.enabled ? DEV_SAVE_KEY : SAVE_KEY, JSON.stringify(save));
 }
 
 function isUnlocked(id) {
@@ -1716,6 +1719,7 @@ function beginMission() {
     startCoins: 0,
     selectedTurret: null,
     cacheProgress: 0,
+    bossCrystalPaid: false,
   };
   nukeCacheWasReady = false;
 
@@ -1789,6 +1793,7 @@ function launchTestSiege() {
     startCoins: placementBudget,
     selectedTurret: null,
     cacheProgress: 0,
+    bossCrystalPaid: false,
   };
   nukeCacheWasReady = false;
 
@@ -1894,7 +1899,11 @@ function mountTDEngine(canvas, mission) {
       refreshShop();
       addCacheProgress(isBoss ? GRANNY_CACHE.bossKillPoints : GRANNY_CACHE.killPoints);
       if (isBoss) {
-        awardUpgradeCore('BOSS DEFEATED', { x: screenX, y: screenY });
+        // Only the first boss of each siege pays a crystal, so sieges don't swamp the maths rewards.
+        if (!run.bossCrystalPaid) {
+          run.bossCrystalPaid = true;
+          awardUpgradeCore('BOSS DEFEATED', { x: screenX, y: screenY });
+        }
         save.records.bosses += 1;
         challengeEvent('boss');
       }

@@ -577,10 +577,10 @@ export function renderSiegeStats(host, state) {
 }
 
 const VAULT_TIERS = [
-  { at: 100, id: 'legend', name: 'LEGENDARY VAULT', art: 'vault-legend' },
-  { at: 50, id: 'gold', name: 'GOLD VAULT', art: 'vault-gold' },
-  { at: 25, id: 'silver', name: 'SILVER VAULT', art: 'vault-silver' },
-  { at: 10, id: 'bronze', name: 'BRONZE VAULT', art: 'vault-bronze' },
+  { at: 150, id: 'legend', name: 'LEGENDARY VAULT', art: 'vault-legend' },
+  { at: 80, id: 'gold', name: 'GOLD VAULT', art: 'vault-gold' },
+  { at: 40, id: 'silver', name: 'SILVER VAULT', art: 'vault-silver' },
+  { at: 15, id: 'bronze', name: 'BRONZE VAULT', art: 'vault-bronze' },
   { at: 0, id: 'starter', name: 'CRYSTAL VAULT', art: 'vault-green' },
 ];
 
