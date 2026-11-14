@@ -506,6 +506,50 @@ body.mission-mode .radar-launch-ring {
   50% { transform: translate(-50%, -50%) scale(1.05); }
 }
 
+/* Alarm: the button pulses white-hot, wiggles for attention, and drops in when it first appears.
+   scale/rotate are separate from transform so they stack with the centring translate. */
+body.mission-mode .radar-launch {
+  animation:
+    radar-launch-alarm 1s ease-in-out infinite,
+    radar-launch-wiggle 3s ease-in-out infinite;
+}
+
+body.mission-mode .radar-launch.is-arriving {
+  animation:
+    radar-launch-arrive .75s cubic-bezier(.2, 1.6, .4, 1),
+    radar-launch-alarm 1s ease-in-out .75s infinite,
+    radar-launch-wiggle 3s ease-in-out .75s infinite;
+}
+
+body.mission-mode .radar-launch-ring--late {
+  animation-delay: .65s;
+}
+
+@keyframes radar-launch-arrive {
+  0% { scale: 0; filter: hue-rotate(125deg) brightness(3); }
+  60% { scale: 1.25; filter: hue-rotate(125deg) brightness(2); }
+  100% { scale: 1; filter: hue-rotate(125deg) brightness(1); }
+}
+
+@keyframes radar-launch-alarm {
+  0%, 100% {
+    scale: 1;
+    box-shadow: 0 6px 0 #5a0604, 0 0 22px rgba(255, 60, 40, .8), inset 0 -6px 12px rgba(0, 0, 0, .35), inset 0 5px 9px rgba(255, 255, 255, .35);
+  }
+  50% {
+    scale: 1.1;
+    box-shadow: 0 6px 0 #5a0604, 0 0 46px rgba(255, 230, 200, 1), 0 0 80px rgba(255, 60, 40, .9), inset 0 -6px 12px rgba(0, 0, 0, .25), inset 0 5px 14px rgba(255, 255, 255, .6);
+  }
+}
+
+@keyframes radar-launch-wiggle {
+  0%, 82%, 100% { rotate: 0deg; }
+  85% { rotate: -9deg; }
+  88% { rotate: 8deg; }
+  91% { rotate: -6deg; }
+  94% { rotate: 4deg; }
+}
+
 @keyframes radar-launch-ring {
   from { transform: translate(-50%, -50%) scale(1); opacity: .9; }
   to { transform: translate(-50%, -50%) scale(2); opacity: 0; }
@@ -860,6 +904,7 @@ body .topbar-stats .daily-pill.is-complete {
   body.mission-mode .radar-contact,
   body.mission-mode .mission-xp-emblem,
   body.mission-mode .radar-launch,
+  body.mission-mode .radar-launch.is-arriving,
   body.mission-mode .radar-launch-ring,
   body.mission-mode .inbound-radar-scan,
   body .topbar-stats .streak-pill.is-new .streak-flame,

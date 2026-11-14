@@ -6,7 +6,7 @@ import { renderArmory } from './armory.js?v=20261113a6';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel } from './turret-upgrades.js?v=20261112a2';
 import { createTDEngine } from './td-engine.js?v=20261114h1';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
-import { createAudio } from './audio.js?v=20261113m5';
+import { createAudio } from './audio.js?v=20261114p1';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
 import { topicXpMultiplier } from './hot-topic.js?v=20261112a1';
 import { normalizeSiegeRecord, recordSiege, siegeRankLevel, renderRankResult } from './siege-ranks.js?v=20261112a2';
@@ -28,7 +28,7 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261113n1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114n1';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114p1';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261114n1';
 import { initHowToPlay } from './how-to-play.js?v=20261114n1';
@@ -1015,6 +1015,7 @@ function creditTrainingAnswer(right, level, answers = 1) {
   if (!previouslyReady && isGateOpen(save.trainingGate)) {
     awardUpgradeCore('MISSION COMPLETE');
     showChargedBanner();
+    soundBattleSiren();
   } else if (!previouslyReady) {
     const after = save.trainingGate.questionsDone || 0;
     const crossed = GATE.checkpoints.filter((c) => before < c && after >= c).pop();
@@ -1129,6 +1130,16 @@ function rememberPausedSet(moduleId, level, state) {
   persistSave();
 }
 
+/** Gate cycle the siren last sounded for, so it plays once per charge. @type {number|null} */
+let sirenCycle = null;
+
+/** The Defend Granny button has appeared: sound the siren, once per charge. */
+function soundBattleSiren() {
+  if (sirenCycle === save.trainingGate.cycle) return;
+  sirenCycle = save.trainingGate.cycle;
+  audio.playSiren();
+}
+
 /** The horde moved up a checkpoint: a warning, and the radar shows it on the way home. @param {number} checkpoint */
 function announceHordeCheckpoint(checkpoint) {
   audio.playWaveWarning(1);
@@ -1167,6 +1178,7 @@ function showChargedBanner() {
 
 /** Straight from a finished maths session into the siege, without passing Maths HQ, so the music plays on. */
 function goToTheAction() {
+  audio.stopSiren();
   disposeActiveTraining?.();
   disposeActiveTraining = null;
   beginMission();
@@ -1315,6 +1327,7 @@ function makeDashboardState() {
     },
     onHoldTheLine() {
       audio.warmUp();
+      audio.stopSiren();
       audio.playLockAndLoad();
       disposeActiveTraining?.();
       disposeActiveTraining = null;
@@ -1374,6 +1387,7 @@ function showHome(opts) {
   showPendingStory();
   showPendingWeaponAnnouncement();
   scheduleTips('home');
+  if (isGateOpen(save.trainingGate)) soundBattleSiren();
 }
 
 /** Tips this screen could show now, in order: the opening tour first, then one-off moments. */

@@ -343,6 +343,7 @@ function renderInboundRadar(attack, open) {
   const blipDeg = 42;
 
   if (open) {
+    const arriving = lastRadarStage !== 3;
     lastRadarStage = 3;
     return `
       <div class="inbound-radar inbound-radar-contact">
@@ -352,7 +353,8 @@ function renderInboundRadar(attack, open) {
           ${renderRadarEscorts(attack, blipDeg, minR)}
           ${renderRadarContacts()}
           <span class="radar-launch-ring" aria-hidden="true"></span>
-          <button type="button" class="radar-launch" id="btn-hold-line">DEFEND<br />GRANNY</button>
+          <span class="radar-launch-ring radar-launch-ring--late" aria-hidden="true"></span>
+          <button type="button" class="radar-launch${arriving ? ' is-arriving' : ''}" id="btn-hold-line">DEFEND<br />GRANNY</button>
         </div>
       </div>
     `;

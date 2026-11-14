@@ -1,4 +1,4 @@
-/** @typedef {'gun1'|'gun2'|'gun3'|'gun4'|'electro'|'slime'|'lazer1'|'lazer2'|'lazer3'|'missile'|'nukeFire'|'nukeExplosion'|'death'|'mothership'|'granddaddy'|'wave1warning'|'wave2warning'|'wave3warning'|'granddaddywarning'|'scuttling1'|'scuttling2'|'coreEarned'|'coreCollect'|'turretUpgrade'|'correct'|'wrong'|'lightsaber'|'lockAndLoad'} SoundId */
+/** @typedef {'gun1'|'gun2'|'gun3'|'gun4'|'electro'|'slime'|'lazer1'|'lazer2'|'lazer3'|'missile'|'nukeFire'|'nukeExplosion'|'death'|'mothership'|'granddaddy'|'wave1warning'|'wave2warning'|'wave3warning'|'granddaddywarning'|'scuttling1'|'scuttling2'|'coreEarned'|'coreCollect'|'turretUpgrade'|'correct'|'wrong'|'lightsaber'|'lockAndLoad'|'siren'} SoundId */
 
 /** @type {Record<SoundId, string>} */
 const SOUND_SRC = {
@@ -30,6 +30,7 @@ const SOUND_SRC = {
   wrong: 'assets/sounds/wrong.mp3',
   lightsaber: 'assets/sounds/lightsaber-hover.m4a',
   lockAndLoad: 'assets/sounds/lock-and-load.m4a',
+  siren: 'assets/sounds/siren-alert.mp3',
 };
 
 /** @type {Record<string, { id: SoundId, volume: number, rate: number, gap?: number }>} */
@@ -164,6 +165,15 @@ export function createAudio(opts) {
     clip.play().catch(() => {});
   }
 
+  /** @type {HTMLAudioElement|null} */
+  let sirenClip = null;
+
+  function stopSiren() {
+    if (!sirenClip) return;
+    sirenClip.pause();
+    sirenClip = null;
+  }
+
   function stopScuttling() {
     if (!scuttlingLoop) return;
     scuttlingLoop.pause();
@@ -192,6 +202,16 @@ export function createAudio(opts) {
     playWrong() {
       play('wrong', { volume: 0.5, gap: 0.15 });
     },
+    /** Siren when the Defend Granny button appears; stopped as soon as it is pressed. */
+    playSiren() {
+      if (!opts.getEnabled() || !templates.siren?.src) return;
+      stopSiren();
+      sirenClip = new Audio(templates.siren.src);
+      sirenClip.volume = 0.6;
+      sirenClip.addEventListener('ended', () => { sirenClip = null; });
+      sirenClip.play().catch(() => { sirenClip = null; });
+    },
+    stopSiren,
     /** "Lock and load!" with a gun cock, when Defend Granny is pressed. */
     playLockAndLoad() {
       play('lockAndLoad', { volume: 0.85, gap: 0.6 });
