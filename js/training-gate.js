@@ -30,6 +30,24 @@ export function answersForCharge(chargeLeft, level) {
   return Math.max(0, Math.ceil(chargeLeft / chargeFor(level) - 1e-9));
 }
 
+/** How many right answers fill the bar at this level (20 at L1–2, 30 at L3–6). @param {number} level */
+export function answersNeededAtLevel(level) {
+  return answersForCharge(GATE.questionsRequired, level);
+}
+
+/**
+ * Player-facing progress in right answers at the current level.
+ * Internal charge stays in thirtieths; Levels 1–2 count 1.5 charge per answer.
+ * @param {TrainingGate} gate @param {number} level
+ * @returns {{ done: number, total: number, remaining: number }}
+ */
+export function answersProgress(gate, level) {
+  const total = answersNeededAtLevel(level);
+  if (isGateOpen(gate)) return { done: total, total, remaining: 0 };
+  const remaining = answersForCharge(GATE.questionsRequired - gateProgress(gate).done, level);
+  return { done: Math.max(0, total - remaining), total, remaining };
+}
+
 /** @returns {number} */
 export function requiredModuleDrills() {
   return getGateTopics().length;

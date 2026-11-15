@@ -29,6 +29,11 @@
     visibility 0.28s ease;
 }
 
+/* Build mode: keep the toast above the big launch button at the bottom. */
+body.siege-mode .toast {
+  bottom: max(132px, calc(env(safe-area-inset-bottom) + 112px));
+}
+
 .toast.visible {
   transform: translateX(-50%) translateY(0) scale(1);
   opacity: 1;

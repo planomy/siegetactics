@@ -106,15 +106,29 @@ export function tipTargetsPresent(id) {
   return Boolean(tip) && visibleTargets(tip).length > 0;
 }
 
+/** Target must exist, not be hidden, and actually sit in the viewport. */
+function isTargetVisible(el) {
+  if (!(el instanceof HTMLElement)) return false;
+  if (el.hidden || el.closest('[hidden]')) return false;
+  if (typeof el.checkVisibility === 'function') {
+    try {
+      if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return false;
+    } catch {
+      /* older browsers without the options bag */
+    }
+  }
+  const r = el.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0) return false;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  return r.bottom > 8 && r.right > 8 && r.top < vh - 8 && r.left < vw - 8;
+}
+
 /** @param {CoachTip} tip */
 function visibleTargets(tip) {
   return tip.targets
     .map((sel) => /** @type {HTMLElement|null} */ (document.querySelector(sel)))
-    .filter((el) => {
-      if (!el) return false;
-      const r = el.getBoundingClientRect();
-      return r.width > 0 && r.height > 0;
-    });
+    .filter((el) => isTargetVisible(el));
 }
 
 /** @param {DOMRect[]} rects */

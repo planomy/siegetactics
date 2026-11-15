@@ -1,5 +1,5 @@
 import { MATH_TOPICS } from './topics-data.js?v=20261113h1';
-import { attackStatus, answersForCharge } from './training-gate.js?v=20261114n1';
+import { attackStatus, answersForCharge, answersProgress } from './training-gate.js?v=20261115p1';
 import { badgeSrc } from './stars.js';
 import { SIEGE_RANKS, siegeRankLevel, rankProgressText } from './siege-ranks.js?v=20261112a2';
 import { hotTopicId } from './hot-topic.js?v=20261112a1';
@@ -536,7 +536,9 @@ export function renderMissionControl(host, state) {
   const attack = attackStatus(state.gate);
   const first = state.siegesCompleted === 0;
   host.dataset.threat = attack.urgency;
-  const charge = `${Math.floor(attack.done)}/${attack.total}`;
+  // Show right-answer progress at the chosen level (20 at L1–2, 30 at L3–6), not raw charge units.
+  const answers = answersProgress(state.gate, state.difficultyLevel);
+  const charge = `${answers.done}/${answers.total}`;
   const threatMessage = (attack.stage >= 2 ? 'DANGER: ALIENS AT THE FENCE!'
     : attack.stage >= 1 ? 'WARNING: ALIENS CLOSING IN!'
     : attack.done > 0 ? 'ENEMY SIGNAL DETECTED'

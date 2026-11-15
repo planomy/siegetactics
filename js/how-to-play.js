@@ -1,5 +1,4 @@
 import { MAP_PASSES_REQUIRED, MAP_SEASONS } from './map-progress.js?v=20261115h3';
-import { GATE } from './training-gate.js?v=20261114n1';
 import { SIEGE_RANKS } from './siege-ranks.js?v=20261112a2';
 
 /**
@@ -13,8 +12,9 @@ export const HOW_TO_QUESTIONS = [
     icon: '⚔️',
     q: 'How do I start a battle?',
     a: [
-      `Every right answer charges Granny’s defences. Fill the charge (${GATE.questionsRequired} right answers, or 20 at Levels 1 and 2) to launch a siege. Press RANDOM MISSION for a mix, or tap any topic card.`,
+      'Every right answer charges Granny’s defences. You need 20 right answers at Levels 1–2, or 30 at Levels 3–6 — the drill meter, Random Mission count, and Defend Granny button all use that same number. Press RANDOM MISSION for a mix, or tap any topic card.',
       'Watch the radar: the horde gets closer and bigger as your charge grows. When it says CONTACT, finish your set and press the big button to defend Granny!',
+      'After the bar is full you can keep answering for bonus siege coins, scout zaps, and extra battle time — the war chest shows how much charge you have left to earn.',
     ],
   },
   {

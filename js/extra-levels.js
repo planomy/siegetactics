@@ -198,7 +198,11 @@ const year2 = {
     noteType(['y2-name-shape', 'y2-name-shape', 'y2-count-corners', 'y2-shape-facts'][kind]);
     if (kind <= 1) {
       const name = pick(names);
-      return text('What is this shape called?', name, shuffle(names.filter((n) => n !== name)).slice(0, 3), {
+      // A square is a special rectangle — ask for the most specific name, and never
+      // offer "rectangle" beside a square (kids rightly argue both are true).
+      let distractors = names.filter((n) => n !== name);
+      if (name === 'square') distractors = distractors.filter((n) => n !== 'rectangle');
+      return text('What is the most specific name for this shape?', name, shuffle(distractors).slice(0, 3), {
         visual: shapeSvg(name),
         key: `shape-name-${name}`,
       });

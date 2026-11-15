@@ -21,7 +21,8 @@ import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, sho
 import { DEV } from './dev.js?v=20261115y1';
 import { YARD_LAYOUTS } from './yard-obstacles.js?v=20261115y50';
 import { HEDGE } from './maze-field.js?v=20261113m7';
-import { showCoachTips, isCoachOpen, TOUR_TIPS } from './coach-tips.js?v=20261114q1';
+import { showCoachTips, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261115p1';
+import { keepFullscreen } from './fullscreen.js?v=20261115p2';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
 import { ECONOMY, bankBonusForgeXp } from './economy.js';
@@ -29,18 +30,18 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261115h3';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261115p1';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261114n1';
-import { initHowToPlay } from './how-to-play.js?v=20261115h3';
+import { initHowToPlay } from './how-to-play.js?v=20261115p1';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261114v1';
 import { initMeasurementLength } from './measurement-length.js?v=20261114v1';
 import { initFractions } from './fractions.js?v=20261114v1';
-import { initAnglesShapes } from './angles-shapes.js?v=20261114v1';
+import { initAnglesShapes } from './angles-shapes.js?v=20261115p1';
 import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261114v1';
 import { initExpandedMath } from './expanded-maths.js?v=20261114v1';
-import { initBattlePrep } from './battle-prep.js?v=20261114v1';
+import { initBattlePrep } from './battle-prep.js?v=20261115p1';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js?v=20261114k1';
 import {
   normalizeLevelMastery,
@@ -70,8 +71,9 @@ import {
   isTopicDone,
   chargeFor,
   answersForCharge,
+  answersProgress,
   recordMissionMix,
-} from './training-gate.js?v=20261114n1';
+} from './training-gate.js?v=20261115p1';
 import { setGateRemainingProvider } from './gate-status.js?v=20261112a1';
 import { normalizeRareSave, rollRareShip, rareShipById, recordRareSighted, recordRareCaught, rareCrystalReward } from './rare-ships.js?v=20261114t1';
 import { REGIONS as HOMELAND_REGIONS, loadProgress as loadHomelandProgress, regionCrystals } from './homeland/regions.js?v=30';
@@ -1497,9 +1499,10 @@ function refreshMissionControl() {
     forgeSquad = pickForgeSquad(ownedTurrets, turretLevel);
     forgeTitle = pickForgeTitle(forgeTitle);
   }
+  const answers = answersProgress(save.trainingGate, getDifficultyLevel());
   renderPowerCore(powerHost, {
-    done: gateProgress(save.trainingGate).done,
-    total: GATE.questionsRequired,
+    done: answers.done,
+    total: answers.total,
     correct: lastTrainingAnswerCorrect,
     squad: forgeSquad,
     mainLevel: turretLevel(forgeSquad.main),
@@ -1533,7 +1536,8 @@ function tipsFor(where) {
   if (where === 'siege') return seen.has('siege') ? [] : ['siege'];
   const tour = TOUR_TIPS.filter((id) => !seen.has(id));
   if (tour.length) return tour;
-  if (!seen.has('contact') && document.getElementById('btn-hold-line')) return ['contact'];
+  // Only when Defend Granny is actually on-screen (hidden during drills).
+  if (!seen.has('contact') && tipTargetsPresent('contact')) return ['contact'];
   if (!seen.has('crystal') && save.upgradeCores > 0) return ['crystal'];
   return [];
 }
@@ -1608,7 +1612,10 @@ function showBattlePrep(opts = {}) {
     questionsNeeded: answersForCharge(GATE.questionsRequired - gateProgress(save.trainingGate).done, level),
     remainingNeeded: () => answersForCharge(GATE.questionsRequired - gateProgress(save.trainingGate).done, level),
     isCharged: () => DEV.skipForge || isGateOpen(save.trainingGate),
-    chargeLine: () => `${Math.floor(gateProgress(save.trainingGate).done)} / ${GATE.questionsRequired} charge`,
+    chargeLine: () => {
+      const a = answersProgress(save.trainingGate, level);
+      return `${a.done} / ${a.total} right answers`;
+    },
     onAgain: () => showBattlePrep(),
     stretchOffer: () => stretchOffer(level),
     onAwardXp(baseAmount) {
@@ -1956,9 +1963,7 @@ function initSiegeScreen() {
   syncLaunchArrow();
   const yard = tdEngine?.getYardLayout?.();
   if (yard) {
-    const idx = YARD_LAYOUTS.findIndex((l) => l.id === yard.id);
-    const tip = idx >= 0 ? `Yard: ${yard.label} (${idx + 1}/${YARD_LAYOUTS.length}) · try ?yard=${idx + 1 === YARD_LAYOUTS.length ? 0 : idx + 1}` : `Yard: ${yard.label}`;
-    showToast(tip, { variant: 'success' });
+    showToast(`Yard: ${yard.label}`, { variant: 'info', title: 'Backyard' });
   }
   preloadField()
     .then(() => tdEngine?.relayout?.())
@@ -2013,7 +2018,10 @@ function onForgeSuccess(rewards) {
   const placementBudget = rewards.placementBudget ?? mission?.rewards.placementBudget ?? 90;
 
   const startCoins = placementBudget + gearEffects(save.gear).extraStartCoins + save.stretchCoins;
+  // Stretch coins are spent into this siege — persist immediately so a second tab
+  // or refresh during build mode does not show them still waiting in the war chest.
   save.stretchCoins = 0;
+  persistSave();
   run.waveBudget = startCoins;
   run.startCoins = startCoins;
   run.runForgeXpEarned = forgeXp;
@@ -2363,32 +2371,14 @@ function finishRun(stats) {
   }
 }
 
-/**
- * Browsers only allow fullscreen from a click or key press, so the first one of each visit
- * switches to fullscreen. If the player leaves it with Esc, the game does not force them back.
- */
-function enterFullscreenOnFirstTap() {
-  const root = document.documentElement;
-  const request = root.requestFullscreen ?? root.webkitRequestFullscreen;
-  if (!request) return;
-  const go = () => {
-    window.removeEventListener('pointerdown', go, true);
-    window.removeEventListener('keydown', go, true);
-    if (document.fullscreenElement || document.webkitFullscreenElement) return;
-    try {
-      const result = request.call(root);
-      result?.catch?.(() => {});
-    } catch {
-      /* Some browsers refuse inside an embedded frame; the game simply stays windowed. */
-    }
-  };
-  window.addEventListener('pointerdown', go, true);
-  window.addEventListener('keydown', go, true);
-}
-
 function bindUI() {
   initPopups();
-  enterFullscreenOnFirstTap();
+  keepFullscreen({
+    button: document.getElementById('btn-fullscreen'),
+    onExit() {
+      showToast('Tap anywhere to fill the screen again', { variant: 'info', title: 'Fullscreen', duration: 2800 });
+    },
+  });
 
   document.getElementById('topbar-streak')?.addEventListener('click', () => showStreakPanel(streakStatus(save.streak)));
   document.getElementById('topbar-daily')?.addEventListener('click', () => showDailyPanel(dailyState()));

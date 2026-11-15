@@ -22,6 +22,7 @@ import { mapPiecesEarned, normalizeMapProgress, TRAINING_MODULE_IDS, homelandMax
 import { UPGRADES, noUpgrades, rollChoices, crystalsForLevel } from './upgrades.js';
 import { sceneryFor, propImage } from './props.js?v=10';
 import { createSky, updateSky, drawSkyLayers, drawCloudBand, mountainSlide } from './sky.js?v=5';
+import { keepFullscreen } from '../fullscreen.js?v=20261115p2';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('homeland'));
 const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
@@ -598,9 +599,15 @@ function showMap() {
         ${terminals}
       </div>
     </div>
-    <p class="hl-map-hint">${explore
-      ? (palaceReady(progress) ? 'The Palace awaits…' : 'Pick a region · earn all 3 shields · then the Palace')
-      : 'Start at the Landing Zone ↓'}</p>
+    <p class="hl-map-hint">${(() => {
+      if (!explore) return 'Start at the Landing Zone ↓';
+      if (palaceReady(progress)) return 'The Palace awaits…';
+      const maxLevel = Math.max(1, hqMaxLevel());
+      if (maxLevel < 3) {
+        return `You must complete all Level ${maxLevel} missions before progressing to Level ${maxLevel + 1}. You ain't that tough yet.`;
+      }
+      return 'Pick a region · earn all 3 shields · then the Palace';
+    })()}</p>
     <a class="hl-home" href="${HOME_URL}"><img class="hl-house" src="assets/ui/granny-house.webp" alt="" width="192" height="182" />Granny's backyard</a>`;
   overlay.hidden = false;
   for (const r of REGIONS) if (r.logo) image(r.logo);
@@ -685,7 +692,6 @@ function showPlaque(index) {
   const nextLevel = stars >= maxLevel
     ? maxLevel
     : Math.min(maxLevel, stars + 1);
-  const needHqSeason = stars >= maxLevel && maxLevel < 3;
   const bestN = progress.best[region.key] || 0;
   const art = region.logo || region.backdrop || region.boss.sprite;
   // All 3 done → filled 3. Otherwise border for the level they're about to attempt.
@@ -703,7 +709,6 @@ function showPlaque(index) {
           <img src="${art}" alt="" />
         </div>
       </div>
-      ${needHqSeason ? `<p class="hl-plaque-hq-lock">Level ${maxLevel} done here — fly home, finish HQ Season ${maxLevel + 1}, then Level ${maxLevel + 1} unlocks.</p>` : ''}
       <div class="hl-plaque-actions">
         <button type="button" class="hl-plaque-btn" id="hl-back" aria-label="Back to map"><img src="assets/homeland/btn-back-map.webp" alt="" width="640" height="200" /></button>
         <button type="button" class="hl-plaque-btn hl-plaque-go" id="hl-plaque-go" aria-label="Go for level ${nextLevel}">
@@ -2876,5 +2881,8 @@ if (window !== window.top) {
     e.preventDefault();
     if (window.top) window.top.location.href = href;
   });
+} else {
+  // Standalone Doompickle tab: same keep-fullscreen behaviour as Maths HQ.
+  keepFullscreen();
 }
 requestAnimationFrame(frame);

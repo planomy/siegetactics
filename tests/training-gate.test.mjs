@@ -10,6 +10,9 @@ import {
   markBattlePrepComplete,
   resetTrainingGate,
   bonusSiegeSeconds,
+  answersProgress,
+  answersNeededAtLevel,
+  chargeFor,
 } from '../js/training-gate.js';
 
 test('new players need a full charge of 30 to earn their siege', () => {
@@ -92,4 +95,22 @@ test('every completed siege resets maths readiness but keeps the cycle count', (
   assert.equal(reset.bonusSiegeCoins, 0);
   assert.equal(reset.mixPaid, false);
   assert.equal(isGateOpen(reset), false);
+});
+
+test('Levels 1–2 need 20 answers; Levels 3–6 need 30 — meters agree with the launch gate', () => {
+  assert.equal(answersNeededAtLevel(1), 20);
+  assert.equal(answersNeededAtLevel(2), 20);
+  assert.equal(answersNeededAtLevel(3), 30);
+  assert.equal(chargeFor(2), 1.5);
+
+  let gate = defaultTrainingGate();
+  assert.deepEqual(answersProgress(gate, 2), { done: 0, total: 20, remaining: 20 });
+
+  gate = recordTrainingQuestions(gate, 1.5 * 2, 1).gate; // two Level-2 answers
+  assert.equal(gate.questionsDone, 3);
+  assert.deepEqual(answersProgress(gate, 2), { done: 2, total: 20, remaining: 18 });
+
+  for (let i = 0; i < 18; i++) gate = recordTrainingQuestions(gate, 1.5, 1).gate;
+  assert.equal(isGateOpen(gate), true);
+  assert.deepEqual(answersProgress(gate, 2), { done: 20, total: 20, remaining: 0 });
 });
