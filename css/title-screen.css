@@ -1,4 +1,4 @@
-/* First thing visitors see. The picture is the poster; this is the door. */
+/* First thing visitors see. Poster → mission briefing → game. */
 
 html:has(#title-screen),
 html:has(#title-screen) body {
@@ -36,6 +36,12 @@ html:has(#title-screen) body {
   transform: scale(1.04);
   animation: granny-push 18s ease-in-out infinite alternate;
   will-change: transform;
+  transition: filter 280ms ease, transform 280ms ease;
+}
+
+#title-screen.is-briefing .title-art {
+  filter: brightness(0.35) saturate(0.85);
+  animation-play-state: paused;
 }
 
 @keyframes granny-push {
@@ -61,6 +67,11 @@ html:has(#title-screen) body {
   mix-blend-mode: screen;
 }
 
+#title-screen.is-briefing .title-shimmer,
+#title-screen.is-briefing .title-embers {
+  opacity: 0;
+}
+
 @keyframes granny-shimmer {
   from { background-position: 200% center; }
   to { background-position: -200% center; }
@@ -71,6 +82,7 @@ html:has(#title-screen) body {
   inset: 0;
   pointer-events: none;
   overflow: hidden;
+  transition: opacity 280ms ease;
 }
 
 #title-screen .title-embers i {
@@ -109,7 +121,12 @@ html:has(#title-screen) body {
   z-index: 2;
 }
 
-#title-enter {
+#title-screen.is-briefing .title-actions {
+  display: none;
+}
+
+#title-enter,
+.title-brief-cta {
   display: block;
   width: 100%;
   min-height: 52px;
@@ -131,16 +148,20 @@ html:has(#title-screen) body {
   animation: granny-button-pulse 2.4s ease-in-out infinite;
 }
 
-#title-enter:hover {
+#title-enter:hover,
+.title-brief-cta:hover {
   filter: brightness(1.1);
 }
 
-#title-enter:focus-visible {
+#title-enter:focus-visible,
+.title-brief-cta:focus-visible,
+.title-skip:focus-visible {
   outline: 4px solid white;
   outline-offset: 5px;
 }
 
-#title-enter:active {
+#title-enter:active,
+.title-brief-cta:active {
   transform: translateY(4px);
   box-shadow: 0 2px 0 #6e3413;
 }
@@ -150,13 +171,113 @@ html:has(#title-screen) body {
   50% { box-shadow: 0 6px 0 #6e3413, 0 10px 36px rgba(255, 213, 74, 0.75); }
 }
 
-#title-screen .title-actions p {
+#title-screen .title-tagline {
   margin: 12px 0 0;
   font-family: "Nunito", sans-serif;
   font-weight: 900;
   font-size: clamp(13px, 1.5vw, 18px);
   color: #fff2bd;
   text-shadow: 0 2px 6px #07060f;
+}
+
+.title-skip {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 242, 189, 0.85);
+  font-family: "Nunito", sans-serif;
+  font-size: clamp(14px, 1.6vw, 17px);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  touch-action: manipulation;
+  text-shadow: 0 2px 6px #07060f;
+}
+
+.title-skip:hover {
+  color: #fff;
+}
+
+.title-skip[hidden] {
+  display: none !important;
+}
+
+/* ── Mission briefing card ── */
+
+.title-brief {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: none;
+  place-items: center;
+  padding:
+    max(24px, env(safe-area-inset-top))
+    16px
+    max(24px, env(safe-area-inset-bottom));
+  background: rgba(7, 6, 15, 0.28);
+}
+
+#title-screen.is-briefing .title-brief {
+  display: grid;
+}
+
+.title-brief[hidden] {
+  display: none !important;
+}
+
+.title-brief-card {
+  width: min(100%, 460px);
+  padding: clamp(22px, 4vh, 32px) clamp(20px, 4vw, 28px) 22px;
+  border: 3px solid transparent;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, #32284a 0%, #1a1428 100%) padding-box,
+    linear-gradient(180deg, #ffe39a, #d29a35 42%, #8a5a16) border-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.45),
+    0 18px 40px rgba(0, 0, 0, 0.55),
+    0 0 28px rgba(255, 180, 60, 0.18);
+  text-align: center;
+}
+
+.title-brief-step {
+  margin: 0 0 8px;
+  font-family: "Nunito", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 213, 74, 0.75);
+}
+
+.title-brief-heading {
+  margin: 0 0 12px;
+  font-family: "Bangers", Impact, sans-serif;
+  font-size: clamp(2rem, 6vw, 2.75rem);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  color: #ffd54a;
+  text-shadow: 0 3px 0 #4a2c00;
+  text-transform: uppercase;
+}
+
+.title-brief-copy {
+  margin: 0 0 22px;
+  font-family: "Nunito", sans-serif;
+  font-size: clamp(1rem, 2.4vw, 1.15rem);
+  font-weight: 700;
+  line-height: 1.45;
+  color: rgba(245, 240, 255, 0.94);
+}
+
+.title-brief-card .title-skip {
+  margin-top: 12px;
 }
 
 #title-screen.title-exiting {
@@ -170,16 +291,36 @@ html:has(#title-screen) body {
     width: min(52%, 340px);
   }
 
-  #title-enter {
+  #title-enter,
+  .title-brief-cta {
     font-size: 26px;
     padding: 8px 16px;
     border-width: 3px;
     border-radius: 12px;
   }
 
-  #title-screen .title-actions p {
+  #title-screen .title-tagline {
     margin-top: 5px;
     font-size: 12px;
+  }
+
+  .title-brief-card {
+    padding: 14px 16px 12px;
+  }
+
+  .title-brief-heading {
+    font-size: 1.6rem;
+    margin-bottom: 6px;
+  }
+
+  .title-brief-copy {
+    margin-bottom: 12px;
+    font-size: 0.92rem;
+  }
+
+  .title-skip {
+    margin-top: 8px;
+    font-size: 13px;
   }
 }
 
@@ -187,7 +328,8 @@ html:has(#title-screen) body {
   #title-screen .title-art,
   #title-screen .title-shimmer,
   #title-screen .title-embers i,
-  #title-enter {
+  #title-enter,
+  .title-brief-cta {
     animation: none !important;
   }
 

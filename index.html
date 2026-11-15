@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="css/hq-polish.css?v=20261114p1" />
   <link rel="stylesheet" href="css/rare-ships.css?v=20261114t2" />
   <link rel="stylesheet" href="css/readability.css?v=20261114q3" />
-  <link rel="stylesheet" href="css/title-screen.css?v=20261116a" />
+  <link rel="stylesheet" href="css/title-screen.css?v=20261116c" />
   <link rel="stylesheet" href="css/tip-pills.css?v=20261115t1" />
   <link rel="preload" href="assets/home/title-keyart.webp?v=20261116a" as="image" type="image/webp" />
   <link rel="preload" href="assets/field-lawn.jpg" as="image" type="image/jpeg" />
@@ -43,18 +43,32 @@
   <link rel="preload" href="assets/home/hero-village.png" as="image" type="image/png" />
 </head>
 <body>
-  <div id="title-screen" role="dialog" aria-modal="true" aria-label="Granny Boom Siege Tactics">
+  <div id="title-screen" role="dialog" aria-modal="true" aria-label="Granny Boom Siege Tactics" data-step="poster">
     <div class="title-art" aria-hidden="true"></div>
     <div class="title-shimmer" aria-hidden="true"></div>
     <div class="title-embers" aria-hidden="true">
       <i></i><i></i><i></i><i></i><i></i><i></i>
     </div>
-    <div class="title-actions">
-      <button id="title-enter" type="button">HOLD THE LINE</button>
-      <p>They've landed.</p>
+
+    <div class="title-actions" id="title-poster-actions">
+      <button id="title-enter" type="button">NEXT</button>
+      <p class="title-tagline">They've landed.</p>
+      <button id="title-skip" type="button" class="title-skip">Skip</button>
+    </div>
+
+    <div class="title-brief" id="title-brief" hidden>
+      <div class="title-brief-card" role="group" aria-labelledby="title-brief-heading">
+        <p class="title-brief-step" id="title-brief-step">1 / 2</p>
+        <h2 class="title-brief-heading" id="title-brief-heading">Collect the map</h2>
+        <p class="title-brief-copy" id="title-brief-copy">
+          Clear each maths topic to earn a map piece. There are 10 pieces.
+        </p>
+        <button id="title-brief-next" type="button" class="title-brief-cta">NEXT</button>
+        <button id="title-brief-skip" type="button" class="title-skip">Skip</button>
+      </div>
     </div>
   </div>
-  <script src="js/title-screen.js?v=20261115t1"></script>
+  <script src="js/title-screen.js?v=20261116c"></script>
 
   <header class="topbar gb-topbar">
     <div class="topbar-brand">
