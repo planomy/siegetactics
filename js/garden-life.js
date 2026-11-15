@@ -11,6 +11,8 @@
  * @typedef {Object} GardenScene
  * @property {Pt[]} flowers - Normalised spots bees and butterflies visit
  * @property {{ x: number, y: number, rx: number, ry: number }} [pond] - Normalised water ellipse for the fish
+ * @property {{ x: number, y: number, spoutY: number, rx: number, ry: number }} [fountain]
+ *   Painted birdbath on the field art — spout tip + basin for animated water.
  * @property {{ left: number, right: number, top: number, bottom: number }} grass - Where ladybirds crawl
  */
 
@@ -23,7 +25,9 @@ export const LAWN_SCENE = {
     { x: 0.47, y: 0.9 }, { x: 0.27, y: 0.9 }, { x: 0.12, y: 0.92 }, { x: 0.02, y: 0.34 },
     { x: 0.04, y: 0.18 },
   ],
+  // Top-right birdbath fountain baked into field-lawn.jpg.
   pond: { x: 0.745, y: 0.087, rx: 0.015, ry: 0.009 },
+  fountain: { x: 0.745, y: 0.087, spoutY: 0.062, rx: 0.016, ry: 0.01 },
   grass: { left: 0.1, right: 0.82, top: 0.2, bottom: 0.78 },
 };
 
@@ -77,6 +81,9 @@ export function createGardenLife(scene, { bees = 4, butterflies = 3, ladybirds =
   }));
 
   const fish = scene.pond ? { angle: 0, jumpIn: rand(3, 6), jumpT: -1, splashT: -1, splashAt: { x: 0, y: 0 } } : null;
+  /** @type {{ x: number, y: number, vx: number, vy: number, life: number, size: number }[]} */
+  const drops = [];
+  let spoutPulse = 0;
   let time = 0;
 
   function updateFlyer(c, dt) {
@@ -147,12 +154,49 @@ export function createGardenLife(scene, { bees = 4, butterflies = 3, ladybirds =
     }
   }
 
+  function updateFountain(dt) {
+    if (!scene.fountain) return;
+    const f = scene.fountain;
+    spoutPulse += dt;
+    // Spout continuously throws little droplets up then into the basin.
+    const spawn = Math.min(4, Math.floor(dt * 28 + Math.random()));
+    for (let i = 0; i < spawn; i++) {
+      const ang = -Math.PI / 2 + rand(-0.55, 0.55);
+      const speed = rand(0.035, 0.07);
+      drops.push({
+        x: f.x + rand(-0.0015, 0.0015),
+        y: f.spoutY,
+        vx: Math.cos(ang) * speed * 0.35,
+        vy: Math.sin(ang) * speed,
+        life: rand(0.35, 0.7),
+        size: rand(0.7, 1.4),
+      });
+    }
+    for (let i = drops.length - 1; i >= 0; i--) {
+      const d = drops[i];
+      d.life -= dt;
+      d.vy += 0.22 * dt; // gravity (normalised units / sec²)
+      d.x += d.vx * dt;
+      d.y += d.vy * dt;
+      // Settle into the basin surface.
+      if (d.y >= f.y - f.ry * 0.2) {
+        d.y = f.y - f.ry * 0.15 + rand(-0.001, 0.002);
+        d.vy *= -0.15;
+        d.vx *= 0.6;
+        d.life -= dt * 1.5;
+      }
+      if (d.life <= 0) drops.splice(i, 1);
+    }
+    if (drops.length > 48) drops.splice(0, drops.length - 48);
+  }
+
   /** @param {number} dt */
   function update(dt) {
     time += dt;
     critters.forEach((c) => updateFlyer(c, dt));
     crawlers.forEach((c) => updateCrawler(c, dt));
     updateFish(dt);
+    updateFountain(dt);
   }
 
   /** @param {CanvasRenderingContext2D} ctx */
@@ -310,6 +354,65 @@ export function createGardenLife(scene, { bees = 4, butterflies = 3, ladybirds =
     ctx.restore();
   }
 
+  /** Animated pour on the painted birdbath fountain (field art stays static). */
+  function drawFountain(ctx, w, h) {
+    if (!scene.fountain) return;
+    const f = scene.fountain;
+    const cx = f.x * w;
+    const cy = f.y * h;
+    const sx = f.x * w;
+    const sy = f.spoutY * h;
+    const rx = f.rx * w;
+    const ry = f.ry * h;
+
+    // Soft shimmer / ripples in the basin.
+    for (let i = 0; i < 3; i++) {
+      const k = (time * (0.7 + i * 0.25) + i * 1.7) % 1;
+      ctx.strokeStyle = `rgba(210, 245, 255, ${0.35 * (1 - k)})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx * (0.35 + k * 0.75), ry * (0.35 + k * 0.75), 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    // Bright highlight that slides across the pool.
+    const shimmer = (Math.sin(time * 2.4) + 1) * 0.5;
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.12 + shimmer * 0.1})`;
+    ctx.beginPath();
+    ctx.ellipse(cx - rx * 0.2, cy - ry * 0.15, rx * 0.45, ry * 0.28, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Continuous spout column.
+    const pulse = 0.85 + Math.sin(spoutPulse * 14) * 0.15;
+    const grad = ctx.createLinearGradient(sx, sy, sx, cy);
+    grad.addColorStop(0, `rgba(200, 240, 255, ${0.55 * pulse})`);
+    grad.addColorStop(0.55, `rgba(140, 210, 255, ${0.35 * pulse})`);
+    grad.addColorStop(1, 'rgba(180, 230, 255, 0.05)');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = Math.max(1.6, h * 0.0035 * pulse);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.quadraticCurveTo(sx + Math.sin(time * 9) * rx * 0.08, (sy + cy) * 0.5, sx, cy - ry * 0.2);
+    ctx.stroke();
+
+    // Droplets pouring out and back in.
+    for (const d of drops) {
+      const alpha = Math.max(0, Math.min(1, d.life * 2));
+      ctx.fillStyle = `rgba(220, 245, 255, ${0.55 * alpha})`;
+      ctx.beginPath();
+      ctx.ellipse(d.x * w, d.y * h, Math.max(1.1, h * 0.0022 * d.size), Math.max(1.6, h * 0.0035 * d.size), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Tiny splash ring where the jet hits the basin.
+    const splash = (Math.sin(time * 18) + 1) * 0.5;
+    ctx.strokeStyle = `rgba(230, 250, 255, ${0.25 + splash * 0.25})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - ry * 0.1, rx * (0.18 + splash * 0.08), ry * (0.12 + splash * 0.06), 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   /**
    * @param {CanvasRenderingContext2D} ctx
    * @param {number} w @param {number} h
@@ -327,6 +430,7 @@ export function createGardenLife(scene, { bees = 4, butterflies = 3, ladybirds =
         ctx.restore();
       });
     } else {
+      drawFountain(ctx, w, h);
       critters.forEach((c) => {
         ctx.save();
         const bob = Math.sin(time * 5 + c.phase) * s * 0.4;

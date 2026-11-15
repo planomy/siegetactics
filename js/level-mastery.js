@@ -1,4 +1,4 @@
-import { recordMapPass, MAP_PASS_ACCURACY, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS } from './map-progress.js';
+import { recordMapPass, MAP_PASS_ACCURACY, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS } from './map-progress.js?v=20261115h3';
 
 export { MAP_PASS_ACCURACY, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS };
 

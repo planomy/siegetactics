@@ -380,7 +380,6 @@ body.siege-mode .siege-battle-footer .siege-command-bar {
 
 body.siege-mode .siege-battle-footer .siege-command-bar .btn-fire-nukes {
   margin-left: 0;
-  max-width: 100%;
 }
 
 body.siege-mode .siege-battle-footer .siege-deploy-panel {
@@ -427,6 +426,12 @@ body.siege-mode .siege-battle-footer .siege-deploy-summary {
   margin: 5px 0 0;
   font-size: .8rem;
   line-height: 1.3;
+}
+
+body.siege-mode .siege-battle-footer .siege-launch-wrap {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
 }
 
 body.siege-mode .siege-battle-footer .siege-launch-button {

@@ -7,7 +7,7 @@ import { buildPlacementCells, pickPlacementCell } from './placement-grid.js?v=20
 import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed } from './enemies-data.js';
 import { getFieldImage, preloadField } from './preload.js?v=20261114t1';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
-import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261114n1';
+import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261115w1';
 import { ECONOMY } from './economy.js';
 import {
   MAZE_LAYOUT,
@@ -35,7 +35,16 @@ import {
   FLYING_UNITS,
   HEDGE_SMASHERS,
 } from './maze-field.js?v=20261113m7';
-import { createGardenLife, LAWN_SCENE, LANE_SCENE } from './garden-life.js?v=20261113g2';
+import { createGardenLife, LAWN_SCENE, LANE_SCENE } from './garden-life.js?v=20261115y4';
+import {
+  YARD_PROPS,
+  YARD_LAYOUTS,
+  pickYardLayout,
+  loadYardSprites,
+  stampYardBlocked,
+  yardOccupies,
+  yardNestProp,
+} from './yard-obstacles.js?v=20261115y50';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
 export function buildTimeForPlacementCost(cost) {
@@ -191,6 +200,7 @@ const RARE_DRAW = { rare: 2.6, legendary: 5.5 };
  *   onCupcakeUsed?: () => void,
  *   onCupcakeFinished?: () => void,
  *   onNukeStateChange?: () => void,
+ *   yardLayout?: string|number|null,
  * }} opts
  */
 export function createTDEngine(canvas, opts) {
@@ -247,6 +257,18 @@ export function createTDEngine(canvas, opts) {
   let baseKills = 0;
 
   const maze = Boolean(opts.maze);
+  const yardWant = opts.yardLayout;
+  const yardLayout =
+    maze && yardWant !== 'none' && yardWant !== 'off'
+      ? pickYardLayout(
+          yardWant == null || yardWant === ''
+            ? Math.floor(Math.random() * YARD_LAYOUTS.length)
+            : yardWant,
+        )
+      : null;
+  const yardItems = yardLayout?.items ?? [];
+  /** @type {Record<string, HTMLImageElement>} */
+  let yardSprites = {};
   let mazeBlocked = new Uint8Array(CELL_COUNT);
   let mazeDist = computeFlowField(mazeBlocked);
   /** @typedef {{ gate: import('./maze-field.js').MazeGate, route: {col:number,row:number}[] }} GateRoute */
@@ -361,6 +383,7 @@ export function createTDEngine(canvas, opts) {
 
   function rebuildMaze() {
     mazeBlocked = new Uint8Array(CELL_COUNT);
+    if (yardItems.length) stampYardBlocked(mazeBlocked, yardItems);
     towers.forEach((t) => {
       mazeBlocked[cellIndex(t.col, t.row)] = 1;
     });
@@ -400,7 +423,12 @@ export function createTDEngine(canvas, opts) {
     const pos = mazeCellPx(hit.col, hit.row);
     const cell = /** @type {PlacementCell} */ ({ row: hit.row, col: hit.col, x: pos.x, y: pos.y });
     const base = { x: pos.x, y: pos.y, cell };
-    if (isCellOccupied(hit.row, hit.col)) return { ...base, valid: false, reason: 'taken' };
+    if (yardItems.length && yardOccupies(yardItems, hit.col, hit.row)) {
+      return { ...base, valid: false, reason: 'yard' };
+    }
+    if (towers.some((t) => t.row === hit.row && t.col === hit.col)) {
+      return { ...base, valid: false, reason: 'taken' };
+    }
     if (isReservedCell(hit.col, hit.row)) return { ...base, valid: false, reason: 'reserved' };
     const underfoot = mazeCellsUnderfoot();
     if (underfoot.has(cellIndex(hit.col, hit.row))) return { ...base, valid: false, reason: 'alien' };
@@ -594,6 +622,15 @@ export function createTDEngine(canvas, opts) {
       render();
     };
     portalLoader.src = MAZE_LAYOUT.portalSprite.src;
+    if (yardItems.length) {
+      loadYardSprites()
+        .then((sprites) => {
+          yardSprites = sprites;
+          render();
+        })
+        .catch(() => {});
+      rebuildMaze();
+    }
   }
   if (!fieldImg) {
     preloadField().then((img) => {
@@ -612,6 +649,7 @@ export function createTDEngine(canvas, opts) {
   }
 
   function isCellOccupied(row, col) {
+    if (yardItems.length && yardOccupies(yardItems, col, row)) return true;
     return towers.some((t) => t.row === row && t.col === col);
   }
 
@@ -1832,7 +1870,8 @@ export function createTDEngine(canvas, opts) {
     const placing = Boolean(selectedType) && canPlaceTurrets();
     if (!placing && phase !== 'deploy') return;
     ctx.save();
-    if (placing) {
+    // Grid + porch/gate tint while planning — no yard-red flood (pool block looked like a hazard zone).
+    if (placing && phase === 'deploy') {
       for (let row = 0; row < MAZE_LAYOUT.rows; row++) {
         for (let col = 0; col < MAZE_LAYOUT.cols; col++) {
           const c = cellCenter(col, row);
@@ -1848,29 +1887,41 @@ export function createTDEngine(canvas, opts) {
         }
       }
     }
-    const pulse = 0.55 + 0.25 * Math.sin(portalAnimTime * 3);
+    const pulse = 0.75 + 0.2 * Math.sin(portalAnimTime * 3);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.setLineDash([2, 10]);
-    ctx.lineDashOffset = -portalAnimTime * 30;
+    // Longer dashes / shorter gaps so the route reads on green grass.
+    ctx.setLineDash([12, 8]);
+    ctx.lineDashOffset = -portalAnimTime * 36;
     const waveNum = currentWaveNum();
     const soon = gateOpeningAfter(waveNum);
     const shown = (/** @type {GateRoute} */ gr) => gr.gate.opensAtWave <= waveNum || gr.gate === soon;
     const ghosts = pointerActive ? mazeGhostRoutes : null;
-    ctx.lineWidth = 5;
     mazeRoutes.filter(shown).forEach((gr) => {
       if (!gr.route.length) return;
-      traceRouteLine(gr);
       const upcoming = gr.gate.opensAtWave > waveNum;
+      const alpha = ghosts ? (upcoming ? 0.45 : 0.55) : (upcoming ? 0.7 * pulse : pulse);
+      // Dark understroke for contrast, then bright amber/orange on top.
+      traceRouteLine(gr);
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = `rgba(40, 18, 0, ${Math.min(0.55, alpha * 0.65)})`;
+      ctx.stroke();
+      traceRouteLine(gr);
+      ctx.lineWidth = 5;
       ctx.strokeStyle = upcoming
-        ? `rgba(255, 120, 60, ${ghosts ? 0.25 : pulse * 0.6})`
-        : `rgba(255, 214, 90, ${ghosts ? 0.35 : pulse})`;
+        ? `rgba(255, 130, 40, ${alpha})`
+        : `rgba(255, 200, 50, ${alpha})`;
       ctx.stroke();
     });
     ghosts?.filter(shown).forEach((gr) => {
       if (!gr.route.length) return;
       traceRouteLine(gr);
-      ctx.strokeStyle = `rgba(120, 240, 255, ${pulse + 0.2})`;
+      ctx.lineWidth = 7;
+      ctx.strokeStyle = `rgba(10, 40, 60, ${0.45})`;
+      ctx.stroke();
+      traceRouteLine(gr);
+      ctx.lineWidth = 4.5;
+      ctx.strokeStyle = `rgba(80, 230, 255, ${Math.min(1, pulse + 0.25)})`;
       ctx.stroke();
     });
     ctx.restore();
@@ -2103,43 +2154,46 @@ export function createTDEngine(canvas, opts) {
     return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
   }
 
-  function drawTowers() {
+  /** Draw one turret (and its chrome) at its lawn position. */
+  function drawOneTower(t) {
     const sz = Math.max(36, cellRadius() * 2.6);
     const anchorY = FIELD_LAYOUT.turretAnchorY;
-    const drawOrder = maze ? [...towers].sort((a, b) => a.y - b.y) : towers;
-    drawOrder.forEach((t) => {
-      const building = t.buildRemaining > 0 && !t.wrecked;
-      if (building) {
-        ctx.save();
-        ctx.globalAlpha = 0.72;
-        drawTurretAt(t.type, t.x, t.y, { wrecked: t.wrecked, variant: t.variant });
-        ctx.restore();
-      } else if (t.wrecked) {
-        // Shakes, then fades and sinks as it crumbles away.
-        const left = WRECK_CLEAR_SECONDS - (t.wreckAge ?? 0);
-        const crumbling = Math.max(0, Math.min(1, left / WRECK_FADE_SECONDS));
-        const shake = left < WRECK_FADE_SECONDS + 0.6 ? Math.sin((t.wreckAge ?? 0) * 60) * 1.6 : 0;
-        ctx.save();
-        ctx.globalAlpha = crumbling;
-        ctx.translate(shake, (1 - crumbling) * sz * 0.25);
-        drawTurretAt(t.type, t.x, t.y, { wrecked: true, variant: t.variant });
-        ctx.restore();
-      } else {
-        drawUpgradeAura(t, sz);
-        drawTurretAt(t.type, t.x, t.y, { wrecked: false, variant: t.variant });
-        drawUpgradeStars(t, sz);
-      }
-      drawBuildRing(t);
+    const building = t.buildRemaining > 0 && !t.wrecked;
+    if (building) {
+      ctx.save();
+      ctx.globalAlpha = 0.72;
+      drawTurretAt(t.type, t.x, t.y, { wrecked: t.wrecked, variant: t.variant });
+      ctx.restore();
+    } else if (t.wrecked) {
+      // Shakes, then fades and sinks as it crumbles away.
+      const left = WRECK_CLEAR_SECONDS - (t.wreckAge ?? 0);
+      const crumbling = Math.max(0, Math.min(1, left / WRECK_FADE_SECONDS));
+      const shake = left < WRECK_FADE_SECONDS + 0.6 ? Math.sin((t.wreckAge ?? 0) * 60) * 1.6 : 0;
+      ctx.save();
+      ctx.globalAlpha = crumbling;
+      ctx.translate(shake, (1 - crumbling) * sz * 0.25);
+      drawTurretAt(t.type, t.x, t.y, { wrecked: true, variant: t.variant });
+      ctx.restore();
+    } else {
+      drawUpgradeAura(t, sz);
+      drawTurretAt(t.type, t.x, t.y, { wrecked: false, variant: t.variant });
+      drawUpgradeStars(t, sz);
+    }
+    drawBuildRing(t);
 
-      if (!t.wrecked && t.hp < t.maxHp) {
-        const barW = sz * 0.85;
-        const barY = t.y - sz * anchorY - 8;
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
-        ctx.fillRect(t.x - barW / 2, barY, barW, 4);
-        ctx.fillStyle = t.hp / t.maxHp > 0.35 ? '#7cfc00' : '#ff6b35';
-        ctx.fillRect(t.x - barW / 2, barY, barW * (t.hp / t.maxHp), 4);
-      }
-    });
+    if (!t.wrecked && t.hp < t.maxHp) {
+      const barW = sz * 0.85;
+      const barY = t.y - sz * anchorY - 8;
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(t.x - barW / 2, barY, barW, 4);
+      ctx.fillStyle = t.hp / t.maxHp > 0.35 ? '#7cfc00' : '#ff6b35';
+      ctx.fillRect(t.x - barW / 2, barY, barW * (t.hp / t.maxHp), 4);
+    }
+  }
+
+  function drawTowers() {
+    const drawOrder = maze ? [...towers].sort((a, b) => a.y - b.y) : towers;
+    drawOrder.forEach(drawOneTower);
   }
 
   function drawEnemies() {
@@ -2299,15 +2353,587 @@ export function createTDEngine(canvas, opts) {
     }
   }
 
+  /** @type {Map<string, { feet: number[], pad: number }>} */
+  const yardFootCache = new Map();
+
+  /**
+   * Find where the art actually touches the ground.
+   * Uses a *solid* alpha threshold so soft fringe / drop-shadow in the PNG
+   * doesn’t leave the metal foot or wood plank floating above the lawn.
+   * Box props (planters) plant on the wide front plank, not soil drips.
+   * @param {HTMLImageElement} img @param {string} id @param {'feet'|'box'=} mode
+   */
+  function yardFootInfo(img, id, mode = 'feet') {
+    const key = `${id}:${mode}`;
+    const hit = yardFootCache.get(key);
+    if (hit) return hit;
+    /** @type {number[]} */
+    const feet = [];
+    let pad = 0;
+    const probe = document.createElement('canvas');
+    const pw = 64;
+    // Corn bed / wheelbarrow need a deep probe under the art.
+    const ph = Math.min(220, img.naturalHeight || 220);
+    probe.width = pw;
+    probe.height = ph;
+    const pctx = probe.getContext('2d', { willReadFrequently: true });
+    if (!pctx || !img.naturalWidth) {
+      const empty = { feet, pad: 0 };
+      yardFootCache.set(key, empty);
+      return empty;
+    }
+    pctx.drawImage(img, 0, img.naturalHeight - ph, img.naturalWidth, ph, 0, 0, pw, ph);
+    const data = pctx.getImageData(0, 0, pw, ph).data;
+    const rowSolid = (row) => {
+      let solid = 0;
+      for (let col = 0; col < pw; col++) {
+        if (data[(row * pw + col) * 4 + 3] > 120) solid += 1;
+      }
+      return solid;
+    };
+    let solidLowest = -1;
+    // Planter boards span most of the width; ignore narrow soil crumbs under them.
+    const minSolidCols =
+      mode === 'box' ? Math.max(10, Math.floor(pw * 0.35)) : Math.max(2, Math.floor(pw * 0.06));
+    for (let row = ph - 1; row >= 0; row--) {
+      if (rowSolid(row) >= minSolidCols) {
+        solidLowest = row;
+        break;
+      }
+    }
+    // Feet along the planted row (plank / tyre line), not random drips below.
+    const footRow = solidLowest >= 0 ? solidLowest : ph - 1;
+    for (let col = 0; col < pw; col++) {
+      if (data[(footRow * pw + col) * 4 + 3] > 120) {
+        feet.push((col + 0.5) / pw);
+      } else {
+        // Fall back: nearest solid above in this column (handles plank gaps).
+        for (let row = footRow; row >= Math.max(0, footRow - 8); row--) {
+          if (data[(row * pw + col) * 4 + 3] > 120) {
+            feet.push((col + 0.5) / pw);
+            break;
+          }
+        }
+      }
+    }
+    if (solidLowest >= 0) pad = (ph - 1 - solidLowest) / img.naturalHeight;
+    const info = { feet, pad };
+    yardFootCache.set(key, info);
+    return info;
+  }
+
+  /**
+   * Contact shadow hugging the silhouette’s real ground edge (wheels, foot).
+   * Uses the same vertical placement as the sprite so the dark edge lands on
+   * y=0 (the planted contact line) — never padY below it (that looked floaty).
+   */
+  function drawYardSilhouetteShadow(img, drawW, drawH, padY) {
+    if (!img?.complete || img.naturalWidth <= 0) return;
+    const y0 = -drawH + padY;
+    ctx.save();
+    ctx.globalAlpha = 0.34;
+    ctx.scale(1.0, 0.1);
+    ctx.filter = 'brightness(0)';
+    ctx.drawImage(img, -drawW / 2, y0, drawW, drawH);
+    ctx.filter = 'none';
+    ctx.restore();
+    ctx.save();
+    ctx.globalAlpha = 0.24;
+    ctx.scale(0.78, 0.048);
+    ctx.filter = 'brightness(0)';
+    ctx.drawImage(img, -drawW / 2, y0, drawW, drawH);
+    ctx.filter = 'none';
+    ctx.restore();
+  }
+
+  /** Thin contact soak for planter boxes — hugs the front plank at y=0. */
+  function drawYardBoxShadow(drawW) {
+    const half = drawW * 0.46;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.15, half, Math.max(1.8, mazeCellH * 0.03), 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.14)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.7, half * 0.9, Math.max(1.2, mazeCellH * 0.018), 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /**
+   * Where a contact column actually meets the ground in draw-space.
+   * Iso rear wheels sit higher in the PNG — grass must follow that row,
+   * not the global image bottom (that left stray tufts floating underneath).
+   */
+  function yardContactLocalY(img, u, drawH, padY) {
+    const nw = img.naturalWidth || 1;
+    const nh = img.naturalHeight || 1;
+    const col = Math.max(0, Math.min(nw - 1, Math.floor(u * nw)));
+    const probe = document.createElement('canvas');
+    probe.width = 1;
+    probe.height = nh;
+    const pctx = probe.getContext('2d', { willReadFrequently: true });
+    if (!pctx) return padY;
+    pctx.drawImage(img, col, 0, 1, nh, 0, 0, 1, nh);
+    const data = pctx.getImageData(0, 0, 1, nh).data;
+    let row = -1;
+    for (let y = nh - 1; y >= 0; y--) {
+      if (data[y * 4 + 3] > 120) {
+        row = y;
+        break;
+      }
+    }
+    if (row < 0) return padY;
+    // Same mapping as drawImage(img, -drawW/2, -drawH+padY, drawW, drawH).
+    return -drawH + padY + ((row + 0.5) / nh) * drawH;
+  }
+
+  /**
+   * Grass + tiny dirt locked to each wheel / metal foot contact.
+   * @param {number[]} contacts normalised 0–1 x along the sprite
+   */
+  function drawYardWheelGrass(img, contacts, drawW, drawH, padY, seed) {
+    if (!contacts?.length || !img?.naturalWidth) return;
+    for (let i = 0; i < contacts.length; i++) {
+      const jitter = Math.sin(seed * 1.7 + i * 2.3) * 0.5 + 0.5;
+      const x = (contacts[i] - 0.5) * drawW;
+      const y = yardContactLocalY(img, contacts[i], drawH, padY);
+      // Soft dirt right under the tyre / foot.
+      ctx.fillStyle = `rgba(${62 + (i % 3) * 12}, ${48 + (i % 2) * 8}, 28, ${0.42 + jitter * 0.2})`;
+      ctx.beginPath();
+      ctx.ellipse(x, y + 1.1, Math.max(4.2, drawW * 0.042), Math.max(1.7, mazeCellH * 0.026), 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Grass blades overlapping UP onto the contact edge.
+      const blades = 4 + (jitter > 0.5 ? 1 : 0);
+      for (let b = 0; b < blades; b++) {
+        const bx = x + (b - (blades - 1) / 2) * 2.0 + (jitter - 0.5);
+        const bladeH = mazeCellH * (0.05 + jitter * 0.045 + (b % 3) * 0.01);
+        ctx.strokeStyle = b % 2 === 0 ? 'rgba(36, 92, 32, 0.85)' : 'rgba(52, 118, 44, 0.68)';
+        ctx.lineWidth = Math.max(1.1, mazeCellW * 0.022);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(bx, y + 0.2);
+        ctx.lineTo(bx + (i % 2 === 0 ? -1.1 : 1.1) * (0.75 + b * 0.12), y - bladeH);
+        ctx.stroke();
+      }
+    }
+  }
+
+  /**
+   * Soft pin under each contact, at that contact’s real ground row.
+   * @param {number[]} contacts normalised 0–1 x along the sprite
+   */
+  function drawYardPointShadows(img, contacts, drawW, drawH, padY, link) {
+    if (!contacts?.length || !img?.naturalWidth) return;
+    /** @type {{ x: number, y: number }[]} */
+    const pts = contacts.map((u) => ({
+      x: (u - 0.5) * drawW,
+      y: yardContactLocalY(img, u, drawH, padY),
+    }));
+    if (link && pts.length >= 2) {
+      const left = Math.min(...pts.map((p) => p.x));
+      const right = Math.max(...pts.map((p) => p.x));
+      const midY = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.14)';
+      ctx.beginPath();
+      ctx.ellipse((left + right) / 2, midY + 0.4, (right - left) * 0.52 + drawW * 0.03, Math.max(1.4, mazeCellH * 0.02), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (const { x, y } of pts) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + 0.35, Math.max(3.0, drawW * 0.05), Math.max(1.5, mazeCellH * 0.024), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  /**
+   * Once-and-for-all contact dressing: dirt + short grass in front of every
+   * solid ground touch (wheels, metal feet, planter boards, ute tyres…).
+   * Drawn AFTER the sprite so it overlaps the cut edge.
+   * @param {number[]} feet normalised 0–1 contact columns along the sprite bottom
+   */
+  function drawYardContactDressing(feet, drawW, seed) {
+    if (!feet.length) return;
+    // Prefer real foot clusters (wheel + stand) over a flat row of every column.
+    /** @type {number[]} */
+    const anchors = [];
+    let runStart = 0;
+    for (let i = 1; i <= feet.length; i++) {
+      const gap = i === feet.length || feet[i] - feet[i - 1] > 0.045;
+      if (!gap) continue;
+      const mid = feet[Math.floor((runStart + i - 1) / 2)];
+      anchors.push(mid);
+      runStart = i;
+    }
+    const points = anchors.length >= 2 ? anchors : feet;
+    const target = Math.min(14, Math.max(4, Math.round(drawW / (mazeCellW * 0.28))));
+    const step = Math.max(1, Math.floor(points.length / target));
+    for (let i = 0; i < points.length; i += step) {
+      const jitter = Math.sin(seed * 2.1 + i * 1.9) * 0.5 + 0.5;
+      if (jitter < 0.14) continue;
+      const x = (points[i] - 0.5) * drawW + (jitter - 0.5) * mazeCellW * 0.04;
+
+      // Soft pin right under the touch.
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.22 + jitter * 0.12})`;
+      ctx.beginPath();
+      ctx.ellipse(x, 0.35, 2.6 + jitter * 1.2, 1.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Dirt crumbs in front of the wheel / metal foot.
+      ctx.fillStyle = `rgba(${68 + (i % 4) * 10}, ${50 + (i % 3) * 6}, 26, ${0.38 + jitter * 0.22})`;
+      ctx.beginPath();
+      ctx.ellipse(x + (i % 2 === 0 ? -0.9 : 0.9), 1.15 + jitter * 0.45, 2.0 + jitter, 1.15, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      if (jitter > 0.45) {
+        ctx.fillStyle = 'rgba(90, 70, 40, 0.32)';
+        ctx.beginPath();
+        ctx.ellipse(x - 1.8, 1.45, 1.3, 0.9, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Short grass overlapping UP onto the contact edge.
+      const blades = jitter > 0.5 ? 3 : 2;
+      for (let b = 0; b < blades; b++) {
+        const bx = x + (b - (blades - 1) / 2) * 1.5;
+        const bladeH = mazeCellH * (0.045 + jitter * 0.055 + b * 0.008);
+        ctx.strokeStyle = b === 0 ? 'rgba(40, 88, 34, 0.78)' : 'rgba(56, 118, 46, 0.58)';
+        ctx.lineWidth = Math.max(0.9, mazeCellW * 0.02);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(bx, 0.15);
+        ctx.lineTo(bx + (i % 2 === 0 ? -1.1 : 1.1) * (0.7 + b * 0.25), -bladeH);
+        ctx.stroke();
+      }
+    }
+  }
+
+  /**
+   * Rotisserie BBQ: pulsing ember bed in the open barrel + smoke drifting up
+   * from the coals / meat.
+   */
+  function drawYardBbqSmoke(drawW, drawH, t) {
+    // Coals / meat sit in the open barrel tray (slightly left of centre).
+    const bedX = -drawW * 0.04;
+    const bedY = -drawH * 0.46 - 30;
+    const bedRx = drawW * 0.22;
+    const bedRy = drawH * 0.07;
+
+    // Soft heat wash over the charcoal.
+    const pulse = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(t * 7.5));
+    const pulse2 = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(t * 11.2 + 1.3));
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = `rgba(255, 110, 20, ${0.16 * pulse})`;
+    ctx.beginPath();
+    ctx.ellipse(bedX, bedY, bedRx, bedRy, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(255, 180, 40, ${0.14 * pulse2})`;
+    ctx.beginPath();
+    ctx.ellipse(bedX + drawW * 0.02, bedY - drawH * 0.01, bedRx * 0.7, bedRy * 0.75, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Flickering ember sparks across the bed.
+    for (let i = 0; i < 12; i++) {
+      const flicker = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * (9 + (i % 5)) + i * 1.7));
+      const ex = bedX + Math.sin(i * 2.1 + t * 0.6) * bedRx * 0.75;
+      const ey = bedY + Math.cos(i * 1.6 + t * 0.9) * bedRy * 0.7;
+      const er = drawW * (0.008 + (i % 3) * 0.004) * flicker;
+      ctx.fillStyle = i % 2 === 0
+        ? `rgba(255, 200, 60, ${0.35 * flicker})`
+        : `rgba(255, 90, 20, ${0.4 * flicker})`;
+      ctx.beginPath();
+      ctx.ellipse(ex, ey, er, er * 0.85, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Occasional rising spark.
+    for (let i = 0; i < 4; i++) {
+      const life = (t * (1.1 + i * 0.15) + i * 0.31) % 1;
+      const sx = bedX + Math.sin(i * 2.4 + t) * bedRx * 0.5;
+      const sy = bedY - life * drawH * 0.12;
+      const sa = (1 - life) * 0.55;
+      ctx.fillStyle = `rgba(255, 160, 40, ${sa})`;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, drawW * 0.006 * (1 - life * 0.5), drawH * 0.005, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Smoke from coals / meat — rises and drifts.
+    const ox = bedX + drawW * 0.02;
+    const oy = bedY - drawH * 0.06;
+    for (let i = 0; i < 9; i++) {
+      const life = (t * (0.2 + (i % 3) * 0.035) + i * 0.14) % 1;
+      const rise = life * drawH * 0.42;
+      const drift = Math.sin(t * 1.3 + i * 1.6) * drawW * (0.025 + life * 0.07);
+      const waft = Math.cos(t * 0.85 + i * 2.0) * drawW * 0.018 * life;
+      const x = ox + drift + waft + ((i % 2) * 2 - 1) * drawW * 0.015 * life;
+      const y = oy - rise;
+      const s = drawW * (0.045 + life * 0.12 + (i % 3) * 0.012);
+      const a = (1 - life) * (0.2 + (i % 3) * 0.035);
+      ctx.fillStyle = `rgba(205, 205, 210, ${a})`;
+      ctx.beginPath();
+      ctx.ellipse(x, y, s, s * (0.85 + life * 0.3), life * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(230, 230, 235, ${a * 0.4})`;
+      ctx.beginPath();
+      ctx.ellipse(x + s * 0.2, y - s * 0.15, s * 1.35, s * 1.1, -life * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  /**
+   * Live waterfall + basin shimmer on top of the duck-pond sprite.
+   * Falls are clipped to the painted water column (not the rocks).
+   */
+  function drawYardPondWater(drawW, drawH, t) {
+    const left = -drawW / 2;
+    const top = -drawH + 1;
+    const basinX = left + drawW * 0.48;
+    const basinY = top + drawH * 0.52;
+    const basinRx = drawW * 0.26;
+    const basinRy = drawH * 0.16;
+    // Start inside the lip of water on the rock shelf — not on the stone.
+    const fallTopX = left + drawW * 0.64;
+    const fallTopY = top + drawH * 0.34;
+    const fallBotY = basinY - basinRy * 0.25;
+    const fallSpread = drawW * 0.018;
+
+    // Soft ripples in the pool only.
+    for (let i = 0; i < 3; i++) {
+      const k = (t * (0.5 + i * 0.16) + i * 0.31) % 1;
+      ctx.strokeStyle = `rgba(210, 245, 255, ${0.28 * (1 - k)})`;
+      ctx.lineWidth = Math.max(0.7, drawW * 0.004);
+      ctx.beginPath();
+      ctx.ellipse(basinX, basinY, basinRx * (0.3 + k * 0.7), basinRy * (0.3 + k * 0.7), 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    const shimmer = (Math.sin(t * 2.2) + 1) * 0.5;
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.08 + shimmer * 0.08})`;
+    ctx.beginPath();
+    ctx.ellipse(basinX - basinRx * 0.15, basinY - basinRy * 0.15, basinRx * 0.32, basinRy * 0.16, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Clip falls to a narrow water corridor so dots never sit on rock.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(fallTopX - fallSpread * 2.2, fallTopY - 2, fallSpread * 4.4, fallBotY - fallTopY + drawH * 0.04);
+    ctx.clip();
+
+    for (let s = 0; s < 3; s++) {
+      const ox = (s - 1) * fallSpread;
+      const phase = t * (11 + s * 2.2) + s;
+      const wobble = Math.sin(phase) * drawW * 0.006;
+      const pulse = 0.8 + Math.sin(phase * 1.3) * 0.2;
+      const grad = ctx.createLinearGradient(fallTopX + ox, fallTopY, fallTopX + ox, fallBotY);
+      grad.addColorStop(0, `rgba(230, 250, 255, ${0.2 * pulse})`);
+      grad.addColorStop(0.4, `rgba(190, 235, 255, ${0.55 * pulse})`);
+      grad.addColorStop(1, `rgba(255, 255, 255, ${0.12 * pulse})`);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = Math.max(0.8, drawW * 0.0055 * pulse);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(fallTopX + ox, fallTopY);
+      ctx.quadraticCurveTo(fallTopX + ox + wobble, (fallTopY + fallBotY) * 0.55, fallTopX + ox * 0.35, fallBotY);
+      ctx.stroke();
+    }
+
+    for (let i = 0; i < 7; i++) {
+      const u = (t * (1.6 + (i % 3) * 0.22) + i * 0.19) % 1;
+      // Keep droplets on the stream — start a hair below the rock lip.
+      if (u < 0.08) continue;
+      const sx = fallTopX + ((i % 3) - 1) * fallSpread * 0.7 + Math.sin(t * 9 + i) * drawW * 0.003;
+      const sy = fallTopY + (fallBotY - fallTopY) * u;
+      ctx.fillStyle = `rgba(220, 245, 255, ${0.55 * (1 - u * 0.35)})`;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, Math.max(0.7, drawW * 0.0035), Math.max(1.1, drawH * 0.0055), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Splash zone where the falls hit the pool — rings, bubbles, foam spots.
+    const hitX = fallTopX - drawW * 0.01;
+    const hitY = fallBotY + drawH * 0.008;
+    const splash = (Math.sin(t * 16) + 1) * 0.5;
+
+    // Expanding ripple rings at the impact.
+    for (let i = 0; i < 4; i++) {
+      const k = (t * (1.1 + i * 0.35) + i * 0.22) % 1;
+      ctx.strokeStyle = `rgba(230, 250, 255, ${0.45 * (1 - k)})`;
+      ctx.lineWidth = Math.max(0.7, drawW * 0.0035 * (1 - k * 0.5));
+      ctx.beginPath();
+      ctx.ellipse(
+        hitX,
+        hitY,
+        drawW * (0.018 + k * 0.055),
+        drawH * (0.01 + k * 0.028),
+        0,
+        0,
+        Math.PI * 2,
+      );
+      ctx.stroke();
+    }
+
+    // Soft foam mound under the falls.
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.28 + splash * 0.22})`;
+    ctx.beginPath();
+    ctx.ellipse(hitX, hitY, drawW * (0.028 + splash * 0.01), drawH * (0.012 + splash * 0.006), 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bubbles / spots boiling up around the hit.
+    for (let i = 0; i < 10; i++) {
+      const a = t * (7 + (i % 4)) + i * 1.7;
+      const orbit = 0.35 + (i % 3) * 0.25;
+      const bx = hitX + Math.cos(a) * drawW * (0.01 + orbit * 0.022);
+      const by = hitY + Math.sin(a * 1.35) * drawH * (0.006 + orbit * 0.012) - (i % 3) * drawH * 0.004;
+      const rise = (Math.sin(t * 9 + i * 2.1) + 1) * 0.5;
+      const r = drawW * (0.003 + (i % 3) * 0.002 + rise * 0.002);
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + rise * 0.35})`;
+      ctx.beginPath();
+      ctx.ellipse(bx, by, r, r * 0.85, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // A few brighter spark pops on the foam.
+    for (let i = 0; i < 5; i++) {
+      const pop = (t * 2.4 + i * 0.37) % 1;
+      if (pop > 0.55) continue;
+      const fade = 1 - pop / 0.55;
+      const ang = i * 1.4 + t * 0.8;
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.55 * fade})`;
+      ctx.beginPath();
+      ctx.ellipse(
+        hitX + Math.cos(ang) * drawW * 0.02 * pop,
+        hitY - drawH * 0.01 * pop + Math.sin(ang) * drawH * 0.008,
+        drawW * 0.004 * fade,
+        drawH * 0.003 * fade,
+        0,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+    }
+  }
+
+  /**
+   * Foot Y (screen px) for a yard prop — larger = closer to camera / drawn later.
+   * @param {{ col: number, row: number }} item
+   * @param {(typeof YARD_PROPS)[string]} prop
+   */
+  function yardFootY(item, prop) {
+    const br = cellCenter(item.col + prop.w - 1, item.row + prop.h - 1);
+    return br.y * height + mazeCellH * 0.42;
+  }
+
+  /** @param {{ col: number, row: number }} item @param {(typeof YARD_PROPS)[string]} prop */
+  function drawOneYardProp(item, prop) {
+    const img = yardSprites[prop.id];
+    const scale = prop.scale ?? 1.25;
+    const footW = prop.w * mazeCellW;
+    const footH = prop.h * mazeCellH;
+    let drawW = footW * scale;
+    let drawH = footH * scale;
+    if (img?.complete && img.naturalWidth > 0) {
+      const aspect = img.naturalWidth / img.naturalHeight;
+      if (aspect > drawW / drawH) drawW = drawH * aspect;
+      else drawH = drawW / aspect;
+    }
+    const tl = cellCenter(item.col, item.row);
+    const br = cellCenter(item.col + prop.w - 1, item.row + prop.h - 1);
+    const cx = ((tl.x + br.x) / 2) * width;
+    const footY = br.y * height + mazeCellH * 0.42;
+    const seed = item.col * 17 + item.row * 31 + prop.w * 3;
+    const t = portalAnimTime;
+    ctx.save();
+    ctx.translate(cx, footY);
+    if (img?.complete && img.naturalWidth > 0) {
+      const grounding = prop.grounding ?? (prop.noShadow ? 'none' : 'feet');
+      const handContacts = prop.contacts?.length ? prop.contacts : null;
+      const foot =
+        grounding === 'none'
+          ? { pad: 0, feet: /** @type {number[]} */ ([]) }
+          : grounding === 'contacts' && handContacts
+            ? { pad: yardFootInfo(img, prop.id, 'feet').pad, feet: handContacts }
+            : yardFootInfo(img, prop.id, grounding === 'box' ? 'box' : 'feet');
+      // Lift art so the plank / tyre sits on y=0 (ignore soft PNG fringe).
+      const padY = foot.pad * drawH;
+      if (grounding === 'contacts' && handContacts) {
+        if (!prop.noShadow) drawYardPointShadows(img, handContacts, drawW, drawH, padY, prop.id === 'wheelbarrow');
+      } else if (grounding === 'feet') drawYardSilhouetteShadow(img, drawW, drawH, padY);
+      else if (grounding === 'box') drawYardBoxShadow(drawW * 0.92);
+      ctx.drawImage(img, -drawW / 2, -drawH + padY, drawW, drawH);
+      if (prop.water) drawYardPondWater(drawW, drawH, t);
+      if (prop.smoke) drawYardBbqSmoke(drawW, drawH, t);
+      // Grass locked to each wheel/foot row (iso rear contacts sit higher in the PNG).
+      if (grounding === 'contacts' && handContacts) {
+        drawYardWheelGrass(img, handContacts, drawW, drawH, padY, seed);
+      } else if (grounding !== 'none') {
+        drawYardContactDressing(foot.feet, drawW, seed);
+      }
+    } else {
+      ctx.fillStyle = 'rgba(40, 90, 40, 0.55)';
+      ctx.fillRect(-drawW / 2, -drawH, drawW, drawH);
+    }
+    ctx.restore();
+  }
+
+  function drawYardObstacles() {
+    if (!maze || !yardItems.length || mazeCellW <= 0) return;
+    /** @type {{ item: (typeof yardItems)[number], prop: (typeof YARD_PROPS)[string], depth: number }[]} */
+    const sorted = [];
+    for (const item of yardItems) {
+      const prop = YARD_PROPS[item.id];
+      if (!prop) continue;
+      sorted.push({ item, prop, depth: yardFootY(item, prop) });
+    }
+    sorted.sort((a, b) => a.depth - b.depth);
+    for (const { item, prop } of sorted) drawOneYardProp(item, prop);
+  }
+
+  /**
+   * Painter's algorithm: turrets + yard props by foot Y so nest turrets sit
+   * behind the trolley / BBQ / arbor / ute / bed while those props stay in front.
+   * Nest turrets keep normal draw size — only their depth is adjusted.
+   */
+  function drawYardAndTowers() {
+    if (!maze) {
+      drawYardObstacles();
+      drawTowers();
+      return;
+    }
+    /** @type {{ depth: number, kind: 'yard'|'tower', item?: (typeof yardItems)[number], prop?: (typeof YARD_PROPS)[string], tower?: (typeof towers)[number] }[]} */
+    const layers = [];
+    for (const item of yardItems) {
+      const prop = YARD_PROPS[item.id];
+      if (!prop) continue;
+      layers.push({ depth: yardFootY(item, prop), kind: 'yard', item, prop });
+    }
+    for (const tower of towers) {
+      let depth = tower.y;
+      const nest = yardNestProp(yardItems, tower.col, tower.row);
+      if (nest) {
+        // Draw just behind the prop that owns this nest slot (prop stays forefront).
+        depth = yardFootY(nest.item, nest.prop) - 0.5;
+      }
+      layers.push({ depth, kind: 'tower', tower });
+    }
+    // Same depth: draw turret first so the yard prop stays in front.
+    layers.sort((a, b) => a.depth - b.depth || (a.kind === 'tower' ? -1 : 1));
+    for (const layer of layers) {
+      if (layer.kind === 'yard' && layer.item && layer.prop) drawOneYardProp(layer.item, layer.prop);
+      else if (layer.kind === 'tower' && layer.tower) drawOneTower(layer.tower);
+    }
+  }
+
   function render() {
     drawField();
     if (phase !== 'finale') {
       if (maze) drawMazeOverlay();
       garden.draw(ctx, width, height, 'ground');
+      drawYardAndTowers();
       drawPortalVfx();
       if (maze) drawGateMarkers();
       drawGranny();
-      drawTowers();
       drawPlacementPreview();
       drawEnemies();
       garden.draw(ctx, width, height, 'air');
@@ -2380,9 +3006,11 @@ export function createTDEngine(canvas, opts) {
           ? "That would trap the aliens — leave them a path!"
           : reason === 'reserved'
             ? 'Keep the gate and porch steps clear.'
-            : reason === 'alien'
-              ? 'An alien is standing there!'
-              : 'That spot is taken.'
+            : reason === 'yard'
+              ? 'That square is under a yard obstacle.'
+              : reason === 'alien'
+                ? 'An alien is standing there!'
+                : 'That spot is taken.'
       );
       return;
     }
@@ -2498,6 +3126,7 @@ export function createTDEngine(canvas, opts) {
       tryAutoStartWave();
     },
     getPhase: () => phase,
+    getYardLayout: () => yardLayout,
     canFireNukes() {
       if (phase !== 'wave') return false;
       if (cupcakeUsed || cupcakeSalvo.active || cupcakeMissiles.length > 0) return false;

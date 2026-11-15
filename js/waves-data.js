@@ -51,95 +51,97 @@ export const ANNOUNCE_SPLASH_SEC = 2;
  * @property {number} speedMul
  */
 
-/** General's battle plan — each wave sends specific troop types before the full assault. */
+/**
+ * General's battle plan — each wave is a clear step up: tougher mix, slightly more HP,
+ * a touch faster, and a slightly tighter spawn cadence. Never ease off between waves.
+ */
 const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
   {
     codename: 'Probe Swarm',
-    squads: [{ unit: 'monster1', count: 30 }],
-    spawnIntervalSec: 0.46,
-    clumpAt: 18,
-    burstSize: 6,
-    burstGap: 1.5,
-    speedMul: 1.06,
-    hpRamp: 0.018,
+    squads: [{ unit: 'monster1', count: 24 }],
+    spawnIntervalSec: 0.5,
+    clumpAt: 16,
+    burstSize: 5,
+    burstGap: 1.55,
+    speedMul: 1.0,
+    hpRamp: 0.015,
   },
   {
     codename: 'Skirmish Line',
     squads: [
-      { unit: 'monster1', count: 10 },
-      { unit: 'monster2', count: 14 },
-      { unit: 'monster3', count: 8 },
+      { unit: 'monster1', count: 12 },
+      { unit: 'monster2', count: 8 },
+      { unit: 'monster3', count: 2 },
     ],
-    command: ['mothership'],
-    spawnIntervalSec: 0.52,
-    clumpAt: 22,
+    spawnIntervalSec: 0.48,
+    clumpAt: 16,
     burstSize: 5,
-    burstGap: 1.65,
-    speedMul: 1.02,
-    hpRamp: 0.022,
+    burstGap: 1.45,
+    speedMul: 1.03,
+    hpRamp: 0.018,
   },
   {
     codename: 'Twin Pincer',
     squads: [
-      { unit: 'monster2', count: 12 },
-      { unit: 'monster3', count: 14 },
-      { unit: 'monster1', count: 8 },
+      { unit: 'monster1', count: 6 },
+      { unit: 'monster2', count: 8 },
+      { unit: 'monster3', count: 5 },
     ],
     command: ['mothership'],
-    spawnIntervalSec: 0.5,
-    clumpAt: 24,
+    spawnIntervalSec: 0.46,
+    clumpAt: 16,
     burstSize: 5,
-    burstGap: 1.55,
-    speedMul: 1.04,
-    hpRamp: 0.024,
+    burstGap: 1.35,
+    speedMul: 1.06,
+    hpRamp: 0.02,
   },
   {
     codename: 'Heavy Push',
     squads: [
-      { unit: 'monster3', count: 10 },
-      { unit: 'monster4', count: 12 },
-      { unit: 'monster2', count: 8 },
+      { unit: 'monster2', count: 7 },
+      { unit: 'monster3', count: 8 },
+      { unit: 'monster4', count: 5 },
     ],
     command: ['mothership'],
-    spawnIntervalSec: 0.48,
-    clumpAt: 22,
-    burstSize: 4,
-    burstGap: 1.45,
-    speedMul: 1.06,
-    hpRamp: 0.026,
+    spawnIntervalSec: 0.44,
+    clumpAt: 18,
+    burstSize: 5,
+    burstGap: 1.25,
+    speedMul: 1.09,
+    hpRamp: 0.022,
   },
   {
     codename: 'Combined Arms',
     squads: [
-      { unit: 'monster1', count: 10 },
-      { unit: 'monster3', count: 10 },
-      { unit: 'monster4', count: 10 },
-      { unit: 'monster5', count: 8 },
+      { unit: 'monster2', count: 5 },
+      { unit: 'monster3', count: 7 },
+      { unit: 'monster4', count: 6 },
+      { unit: 'monster5', count: 4 },
     ],
     command: ['mothership'],
-    spawnIntervalSec: 0.44,
-    clumpAt: 26,
-    burstSize: 5,
-    burstGap: 1.35,
-    speedMul: 1.08,
-    hpRamp: 0.028,
+    spawnIntervalSec: 0.42,
+    clumpAt: 20,
+    burstSize: 6,
+    burstGap: 1.15,
+    speedMul: 1.12,
+    hpRamp: 0.024,
   },
   {
     codename: 'Full Assault',
     squads: [
-      { unit: 'monster1', count: 8 },
-      { unit: 'monster2', count: 10 },
-      { unit: 'monster3', count: 10 },
-      { unit: 'monster4', count: 10 },
-      { unit: 'monster5', count: 10 },
+      { unit: 'monster1', count: 5 },
+      { unit: 'monster2', count: 7 },
+      { unit: 'monster3', count: 7 },
+      { unit: 'monster4', count: 7 },
+      { unit: 'monster5', count: 6 },
     ],
     command: ['mothership', 'mothership'],
     spawnIntervalSec: 0.4,
-    clumpAt: 28,
+    clumpAt: 22,
     burstSize: 6,
-    burstGap: 1.2,
-    speedMul: 1.1,
-    hpRamp: 0.03,
+    burstGap: 1.05,
+    speedMul: 1.15,
+    hpRamp: 0.026,
   },
 ]);
 
@@ -221,9 +223,10 @@ export function waveConfigFor(waveNum, opts = {}) {
   }, bp.command);
 
   const firstWaveTutorial = Boolean(opts.firstSiege && waveNum === 1);
-  const fullQueue = firstWaveTutorial ? spawnQueue.slice(0, 20) : spawnQueue;
+  const fullQueue = firstWaveTutorial ? spawnQueue.slice(0, 18) : spawnQueue;
   const openingQueue = waveNum === 1 ? zapScouts(fullQueue, opts.zapped ?? 0) : fullQueue;
-  const hpScale = firstWaveTutorial ? 0.88 : 1 + tier * 0.13 + extraTier * 0.1;
+  // ~10% more HP per wave, plus a bit more once we recycle Full Assault.
+  const hpScale = firstWaveTutorial ? 0.88 : 1 + tier * 0.1 + extraTier * 0.08;
 
   return {
     codename: extraTier > 0 ? `${bp.codename} +${extraTier}` : bp.codename,
@@ -231,11 +234,11 @@ export function waveConfigFor(waveNum, opts = {}) {
     totalSpawns: openingQueue.length,
     hpScale,
     hpRamp: bp.hpRamp ?? 0.02,
-    spawnIntervalSec: Math.max(0.32, bp.spawnIntervalSec - extraTier * 0.035),
+    spawnIntervalSec: Math.max(0.3, bp.spawnIntervalSec - extraTier * 0.03),
     clumpAt: bp.clumpAt + extraTier * 3,
     burstSize: bp.burstSize + Math.min(extraTier, 2),
-    burstGap: Math.max(1.0, bp.burstGap - extraTier * 0.08),
-    speedMul: firstWaveTutorial ? 0.88 : bp.speedMul + extraTier * 0.04,
+    burstGap: Math.max(0.9, bp.burstGap - extraTier * 0.06),
+    speedMul: firstWaveTutorial ? 0.88 : bp.speedMul + extraTier * 0.03,
   };
 }
 

@@ -7,16 +7,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/main.css?v=20261113h6" />
+  <link rel="stylesheet" href="css/main.css?v=20261115h2" />
   <link rel="stylesheet" href="css/home-gb.css?v=20261114n2" />
   <link rel="stylesheet" href="css/how-to-play.css?v=20261114c1" />
   <link rel="stylesheet" href="css/popups.css" />
   <link rel="stylesheet" href="css/mission-layout.css?v=20261114m2" />
   <link rel="stylesheet" href="css/defence-forge.css?v=20261112i" />
   <link rel="stylesheet" href="css/armory-showcase.css?v=20261113b4" />
-  <link rel="stylesheet" href="css/siege-deployment.css?v=20261114h1" />
+  <link rel="stylesheet" href="css/siege-deployment.css?v=20261115w2" />
   <link rel="stylesheet" href="css/sticky-header.css?v=20261112h" />
-  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261113h2" />
+  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261115w2" />
   <link rel="stylesheet" href="css/maths-hq-cockpit.css?v=20261112t" />
   <link rel="stylesheet" href="css/ten-topic-dashboard.css?v=20261112b3" />
   <link rel="stylesheet" href="css/game-no-instructions.css?v=20261112m" />
@@ -171,7 +171,7 @@
                   <span id="nuke-cache-status" class="nuke-cache-status">Blast aliens to fill</span>
                 </div>
               </div>
-              <button type="button" class="btn btn-fire-nukes" id="btn-fire-nukes" hidden disabled>Fire nukes</button>
+              <button type="button" class="btn btn-fire-nukes" id="btn-fire-nukes" hidden disabled aria-label="Fire nukes"><span class="btn-fire-nukes-icon" aria-hidden="true">☢</span><span class="btn-fire-nukes-label">NUKE</span></button>
             </div>
 
             <section id="siege-deploy-panel" class="siege-deploy-panel" aria-label="Build your defences before the aliens arrive" hidden>
@@ -179,9 +179,11 @@
                 <span class="siege-deploy-eyebrow">PHASE ONE · BUILD YOUR DEFENCES</span>
                 <div id="siege-deploy-summary" class="siege-deploy-summary" aria-live="polite"></div>
               </div>
-              <button type="button" class="siege-launch-button" id="btn-launch-siege" disabled aria-label="Launch the alien attack">
-                BRING IT ON!
-              </button>
+              <span class="siege-launch-wrap" id="siege-launch-wrap">
+                <button type="button" class="siege-launch-button" id="btn-launch-siege" disabled aria-label="Launch the alien attack">
+                  BRING IT ON!
+                </button>
+              </span>
             </section>
             <div class="siege-footer-spacer" aria-hidden="true"></div>
           </div>
@@ -260,6 +262,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20261115h1"></script>
+  <script type="module" src="js/app.js?v=20261115y50"></script>
 </body>
 </html>

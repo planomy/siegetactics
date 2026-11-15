@@ -8,9 +8,9 @@ import { rareDossiers } from './rare-ships.js?v=20261114t1';
 import {
   renderInterstellarMap, mapPiecesEarned, getMapPasses, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS, MAP_SECTORS,
   currentMapSeason, seasonLabel, seasonPiecesEarned, canWarpToDoompickle, homelandMaxLevel, seasonComplete,
-} from './map-progress.js';
+} from './map-progress.js?v=20261115h3';
 import { topicRankProgress, getTopicRecord } from './topic-progression.js?v=20261114k1';
-import { getQualifiedLevels } from './level-mastery.js?v=20261114k1';
+import { getQualifiedLevels } from './level-mastery.js?v=20261115h3';
 import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel, xpMultiplierFor, DIFFICULTY, isDifficultyLevel } from './difficulty.js?v=20261114k1';
 import { renderArmoryPromo } from './armory-promo.js?v=20261113m8';
@@ -483,7 +483,7 @@ const TOPIC_DISPLAY_ORDER = [
 /**
  * Once a siege is earned: what is coming (the opening assault, by alien type) against what the player
  * takes into battle. Extra right answers grow the chest and zap scouts out of the horde, live.
- * @param {ReturnType<typeof import('./waves-data.js?v=20261114n1').openingHorde>} horde
+ * @param {ReturnType<typeof import('./waves-data.js?v=20261115w1').openingHorde>} horde
  * @param {{ coins: number, bonusSeconds: number, extraLeft: number, coinsPerAnswer: number }} chest
  */
 function renderHordeFaceoff(horde, chest) {

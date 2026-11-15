@@ -18,7 +18,7 @@ import {
   REGIONS, PLANET_MAP, REGION_LEVELS, DIRECTIONAL_SHOTS, loadProgress, saveProgress, regionCrystals,
   regionStars, isRegionLocked, canExplore, palaceReady,
 } from './regions.js?v=31';
-import { mapPiecesEarned, normalizeMapProgress, TRAINING_MODULE_IDS, homelandMaxLevel, canWarpToDoompickle, seasonPiecesEarned } from '../map-progress.js';
+import { mapPiecesEarned, normalizeMapProgress, TRAINING_MODULE_IDS, homelandMaxLevel, canWarpToDoompickle, seasonPiecesEarned } from '../map-progress.js?v=20261115h3';
 import { UPGRADES, noUpgrades, rollChoices, crystalsForLevel } from './upgrades.js';
 import { sceneryFor, propImage } from './props.js?v=10';
 import { createSky, updateSky, drawSkyLayers, drawCloudBand, mountainSlide } from './sky.js?v=5';

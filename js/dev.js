@@ -6,6 +6,9 @@ function devFlag(...values) {
   return params.has('dev') && values.some((v) => devParam === v || params.has(v));
 }
 
+/** Yard obstacle layout: `?yard=0` … `?yard=6` or `?yard=bbq-sunday` etc. */
+const yardParam = params.get('yard');
+
 export const DEV = {
   enabled: params.has('dev'),
   /** Skip forge puzzle and training gate when launching a siege. */
@@ -15,8 +18,14 @@ export const DEV = {
   /** The old six-lane battlefield (`?dev=lanes`); the open-lawn maze is the default. */
   lanes: devFlag('lanes'),
   fastWave: devFlag('fast'),
-  extraBudget: params.has('dev') ? 200 : 0,
+  /** Enough coins to place every turret type (and hedges) while stress-testing. */
+  extraBudget: params.has('dev') ? 2500 : 0,
   unlockAll: params.has('dev'),
   /** Force a rare mothership into the next battle (`?dev=siege&rare=cousin-zorg`). */
   rare: params.has('dev') ? params.get('rare') : null,
+  /**
+   * Which backyard prop layout to load. Omit `yard` for a seeded pick;
+   * set `yard=none` for a bare lawn.
+   */
+  yard: yardParam,
 };

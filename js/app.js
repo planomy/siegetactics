@@ -4,7 +4,7 @@ import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261113n1';
 import { renderArmory } from './armory.js?v=20261113a6';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel } from './turret-upgrades.js?v=20261112a2';
-import { createTDEngine } from './td-engine.js?v=20261114v1';
+import { createTDEngine } from './td-engine.js?v=20261115y50';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
 import { createAudio } from './audio.js?v=20261114s1';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
@@ -12,13 +12,14 @@ import { topicXpMultiplier } from './hot-topic.js?v=20261112a1';
 import { normalizeSiegeRecord, recordSiege, siegeRankLevel, renderRankResult } from './siege-ranks.js?v=20261112a2';
 import { normalizeStreak, recordStreakAnswer, streakStatus, localDayKey } from './streak.js?v=20261113a1';
 import { GEAR, normalizeGear, gearStatus, gearEffects } from './gear.js?v=20261113a3';
-import { SIEGE_DURATION_SEC, openingHorde } from './waves-data.js?v=20261114n1';
+import { SIEGE_DURATION_SEC, openingHorde } from './waves-data.js?v=20261115w1';
 import { normalizeDaily, recordChallengeEvent, rollLuckyDrop, DAILY_CHEST_XP } from './daily-challenges.js?v=20261113a1';
 import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20261114h1';
 import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261113a1';
 import { STORY_BEATS } from './story.js?v=20261113a1';
 import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261114h1';
-import { DEV } from './dev.js?v=20261114t1';
+import { DEV } from './dev.js?v=20261115y1';
+import { YARD_LAYOUTS } from './yard-obstacles.js?v=20261115y50';
 import { HEDGE } from './maze-field.js?v=20261113m7';
 import { showCoachTips, isCoachOpen, TOUR_TIPS } from './coach-tips.js?v=20261114q1';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
@@ -28,10 +29,10 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261115h1';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261115h3';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261114n1';
-import { initHowToPlay } from './how-to-play.js?v=20261115h1';
+import { initHowToPlay } from './how-to-play.js?v=20261115h3';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261114v1';
 import { initMeasurementLength } from './measurement-length.js?v=20261114v1';
@@ -47,11 +48,11 @@ import {
   recordTrainingProgress,
   recommendModuleLevel,
   recommendGlobalLevel,
-} from './level-mastery.js?v=20261115h1';
+} from './level-mastery.js?v=20261115h3';
 import {
   defaultMapProgress, normalizeMapProgress, allMapPiecesEarned, mapPiecesEarned,
   TRAINING_MODULE_IDS, fillMapSeason, homelandMaxLevel,
-} from './map-progress.js?v=20261115h1';
+} from './map-progress.js?v=20261115h3';
 import { getTopic } from './topics-data.js?v=20261113h1';
 import { normalizeTopicProgress, recordTopicAnswer, recordTopicSession, getTopicRecord, topicRankProgress } from './topic-progression.js?v=20261114k1';
 import {
@@ -305,6 +306,8 @@ function loadSave() {
     }
     if (DEV.enabled) {
       data.grannyUnlocked = true;
+      // Localhost / QA: play maths Level 1 with the full turret roster.
+      data.settings = { ...data.settings, difficultyLevel: 1 };
     }
     normalizeMetaSave(data);
     return data;
@@ -962,7 +965,9 @@ function updateFireNukesButton() {
   btn.disabled = !canClick;
   btn.classList.toggle('is-armed', showArmed);
   btn.classList.toggle('is-inbound', salvoActive);
-  btn.textContent = salvoActive ? 'Nukes inbound…' : 'Fire nukes';
+  const label = btn.querySelector('.btn-fire-nukes-label');
+  if (label) label.textContent = salvoActive ? '…' : 'NUKE';
+  btn.setAttribute('aria-label', salvoActive ? 'Nukes inbound' : 'Fire nukes');
 }
 
 /**
@@ -1305,6 +1310,45 @@ function getActiveMission() {
   return mission ? balanceMission(mission, save.siegesCompleted) : null;
 }
 
+const LAUNCH_ARROW_KEY = 'grannyboom.launch-arrow-seen';
+/** Same red pointer as the Landing Zone / Warp guides. */
+const LAUNCH_ARROW = `<svg class="siege-launch-arrow" viewBox="0 0 80 96" aria-hidden="true">
+  <path d="M40 88 L12 48 H28 V8 H52 V48 H68 Z"
+    fill="#e82010" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>`;
+
+function hasSeenLaunchArrow() {
+  try {
+    return localStorage.getItem(LAUNCH_ARROW_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markLaunchArrowSeen() {
+  try {
+    localStorage.setItem(LAUNCH_ARROW_KEY, '1');
+  } catch {}
+  document.querySelector('.siege-launch-arrow')?.remove();
+  document.getElementById('siege-launch-wrap')?.classList.remove('has-arrow');
+}
+
+/** First visit only: float the red arrow above the battle-cry button. */
+function syncLaunchArrow() {
+  const wrap = document.getElementById('siege-launch-wrap');
+  const panel = document.getElementById('siege-deploy-panel');
+  if (!wrap) return;
+  if (!panel || panel.hidden || hasSeenLaunchArrow()) {
+    wrap.querySelector('.siege-launch-arrow')?.remove();
+    wrap.classList.remove('has-arrow');
+    return;
+  }
+  if (!wrap.querySelector('.siege-launch-arrow')) {
+    wrap.insertAdjacentHTML('afterbegin', LAUNCH_ARROW);
+  }
+  wrap.classList.add('has-arrow');
+}
+
 function refreshDeploymentPanel() {
   const panel = document.getElementById('siege-deploy-panel');
   if (!panel || panel.hidden) return;
@@ -1315,6 +1359,7 @@ function refreshDeploymentPanel() {
     summary.textContent = `${count} turret${count === 1 ? '' : 's'} deployed · ${run.waveBudget} coins left`;
   }
   if (btn) btn.disabled = deploymentTurretsPlaced < 1;
+  syncLaunchArrow();
 }
 
 function showBonusAssaultOffer(seconds) {
@@ -1908,6 +1953,13 @@ function initSiegeScreen() {
   selectTurret('granny-blaster');
   tdEngine?.setGoLive(false);
   refreshDeploymentPanel();
+  syncLaunchArrow();
+  const yard = tdEngine?.getYardLayout?.();
+  if (yard) {
+    const idx = YARD_LAYOUTS.findIndex((l) => l.id === yard.id);
+    const tip = idx >= 0 ? `Yard: ${yard.label} (${idx + 1}/${YARD_LAYOUTS.length}) · try ?yard=${idx + 1 === YARD_LAYOUTS.length ? 0 : idx + 1}` : `Yard: ${yard.label}`;
+    showToast(tip, { variant: 'success' });
+  }
   preloadField()
     .then(() => tdEngine?.relayout?.())
     .catch(() => {});
@@ -2060,6 +2112,7 @@ function mountTDEngine(canvas, mission) {
   renderLeakMeter(0, (mission?.maxLeaks ?? 5) + gearFx.extraLeaks);
   tdEngine = createTDEngine(canvas, {
     maze: !DEV.lanes,
+    yardLayout: DEV.yard,
     mission: {
       ...mission,
       maxLeaks: (mission?.maxLeaks ?? 5) + gearFx.extraLeaks,
@@ -2346,6 +2399,7 @@ function bindUI() {
       return;
     }
     if (!tdEngine?.startWave()) return;
+    markLaunchArrowSeen();
     const panel = document.getElementById('siege-deploy-panel');
     if (panel) panel.hidden = true;
     showToast('HERE THEY COME! Protect Granny!', { variant: 'success' });
@@ -2368,19 +2422,42 @@ function bindUI() {
   showHome();
   });
 
-  document.getElementById('btn-fire-nukes')?.addEventListener('click', () => {
+  /** Cupcake nukes: button, Space, or N — same as Doompickle. */
+  function tryFireNukes({ quiet = false } = {}) {
+    if (!document.body.classList.contains('siege-mode') || !tdEngine) return false;
+    const deploy = document.getElementById('siege-deploy-panel');
+    if (deploy && !deploy.hidden) return false;
     audio.warmUp();
     if (run.cacheProgress < GRANNY_CACHE.cost) {
-      showToast('Nuke cache not full yet — keep blasting!');
-      return;
+      if (!quiet) showToast('Nuke cache not full yet — keep blasting!');
+      return false;
     }
-    if (tdEngine?.fireNukes()) {
-      run.cacheProgress -= GRANNY_CACHE.cost;
-      showToast('Nukes away!', { variant: 'success' });
-      save.records.nukes += 1;
-      challengeEvent('nuke');
-      updateNukeCachePanel();
+    if (!tdEngine.fireNukes()) return false;
+    run.cacheProgress -= GRANNY_CACHE.cost;
+    showToast('Nukes away!', { variant: 'success' });
+    save.records.nukes += 1;
+    challengeEvent('nuke');
+    updateNukeCachePanel();
+    return true;
+  }
+
+  document.getElementById('btn-fire-nukes')?.addEventListener('click', () => {
+    tryFireNukes();
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (!document.body.classList.contains('siege-mode')) return;
+    const t = e.target;
+    if (t instanceof HTMLElement) {
+      const tag = t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable) return;
     }
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (k !== ' ' && k !== 'n' && k !== 'N') return;
+    const deploy = document.getElementById('siege-deploy-panel');
+    if (deploy && !deploy.hidden) return;
+    e.preventDefault();
+    tryFireNukes({ quiet: true });
   });
 
   document.getElementById('btn-speed')?.addEventListener('click', (e) => {
@@ -2431,6 +2508,10 @@ function bindUI() {
 if (new URLSearchParams(location.search).has('tips')) {
   save.tips = { off: false, seen: [] };
   persistSave();
+  try {
+    localStorage.removeItem(LAUNCH_ARROW_KEY);
+    localStorage.removeItem('grannyboom.warp-arrow-seen');
+  } catch {}
 }
 
 // ?maps=all → Season 1 complete (Warp + Doompickle L1).

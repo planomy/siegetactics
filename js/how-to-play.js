@@ -1,4 +1,4 @@
-import { MAP_PASSES_REQUIRED, MAP_SEASONS } from './map-progress.js';
+import { MAP_PASSES_REQUIRED, MAP_SEASONS } from './map-progress.js?v=20261115h3';
 import { GATE } from './training-gate.js?v=20261114n1';
 import { SIEGE_RANKS } from './siege-ranks.js?v=20261112a2';
 
