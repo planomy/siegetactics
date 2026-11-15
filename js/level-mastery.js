@@ -118,6 +118,9 @@ export function recordTrainingProgress(mastery, mapProgress, moduleId, level, ac
     mapPassAdded: map.added,
     mapPasses: map.passes,
     mapPieceEarned: map.pieceEarned,
+    mapSeason: map.season,
+    mapSeasonJustCompleted: map.seasonJustCompleted,
+    mapBar: map.bar,
   };
 }
 

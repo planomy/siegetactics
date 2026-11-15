@@ -14,8 +14,11 @@ import { AMMO, CRATE_AMMO, RACK_SLOTS, ammoImage } from './ammo.js?v=3';
 import { GEMS, DEPOSITS, POWERS, gemsFor, rollPower, pickupImage } from './pickups.js?v=2';
 import { view, resizeView, project, horizonY, isBehindHorizon, screenToGround, spawnBehindHorizon, maxXAt, setIndoor } from './world.js?v=6';
 import { ENEMY_TYPES, BOSS_TIME, HORDE_TIMES, MAX_ALIENS, spawnInterval, pickEnemyType, hordeSize } from './enemies.js?v=2';
-import { REGIONS, PLANET_MAP, DIRECTIONAL_SHOTS, loadProgress, saveProgress, regionCrystals } from './regions.js?v=30';
-import { mapPiecesEarned, normalizeMapProgress, TRAINING_MODULE_IDS } from '../map-progress.js';
+import {
+  REGIONS, PLANET_MAP, REGION_LEVELS, DIRECTIONAL_SHOTS, loadProgress, saveProgress, regionCrystals,
+  regionStars, isRegionLocked, canExplore, palaceReady,
+} from './regions.js?v=31';
+import { mapPiecesEarned, normalizeMapProgress, TRAINING_MODULE_IDS, homelandMaxLevel, canWarpToDoompickle, seasonPiecesEarned } from '../map-progress.js';
 import { UPGRADES, noUpgrades, rollChoices, crystalsForLevel } from './upgrades.js';
 import { sceneryFor, propImage } from './props.js?v=10';
 import { createSky, updateSky, drawSkyLayers, drawCloudBand, mountainSlide } from './sky.js?v=5';
@@ -60,16 +63,31 @@ const START_AT = params.has('boss') ? BOSS_TIME - 4 : Math.max(0, Number(params.
 const HOME_URL = 'index.html';
 const MAIN_SAVE_KEY = 'grannyboom.siege.v1';
 /** The test links (and ?dev) skip the map-piece check. */
-const TESTING = ['dev', 'region', 'map', 'story', 'start', 'boss', 'all'].some((p) => params.has(p));
+const TESTING = ['dev', 'region', 'map', 'story', 'start', 'boss', 'all', 'arrive', 'fresh', 'reset'].some((p) => params.has(p));
 
-/** Map pieces found in the main game. Homeland opens once all ten are in. */
-function mapPiecesFound() {
+/** HQ map progress from the main save. */
+function loadMapProgress() {
   try {
     const save = JSON.parse(localStorage.getItem(MAIN_SAVE_KEY) || '{}');
-    return mapPiecesEarned(normalizeMapProgress(save.mapProgress));
+    return normalizeMapProgress(save.mapProgress);
   } catch {
-    return 0;
+    return normalizeMapProgress({});
   }
+}
+
+/** Map pieces found in the main game (current HQ season). */
+function mapPiecesFound() {
+  return mapPiecesEarned(loadMapProgress());
+}
+
+/** Highest Doompickle level unlocked by finished HQ seasons (0–3). */
+function hqMaxLevel() {
+  if (TESTING && (params.has('all') || params.has('arrive') || params.has('map') || params.has('region'))) {
+    if (params.has('all')) return 3;
+    const fromSave = homelandMaxLevel(loadMapProgress());
+    return fromSave || 1;
+  }
+  return homelandMaxLevel(loadMapProgress());
 }
 
 const sprites = Object.fromEntries(
@@ -78,8 +96,22 @@ const sprites = Object.fromEntries(
 const cupcake = image('assets/cupcake-missile.png');
 const hijackedShip = image('assets/enemies/mothership.png');
 let progress = loadProgress();
-if (params.has('all')) progress.unlocked = REGIONS.length;
+/** ?fresh / ?reset: first-visit Doompickle (clear tips, stars, clears) for testing the arrive modal. */
+if (params.has('fresh') || params.has('reset')) {
+  progress = { unlocked: 1, cleared: [], best: {}, stars: {}, tips: {} };
+  saveProgress(progress);
+}
+if (params.has('all')) {
+  progress.unlocked = REGIONS.length;
+  for (const r of REGIONS) {
+    progress.stars[r.key] = 3;
+    if (!progress.cleared.includes(r.key)) progress.cleared.push(r.key);
+  }
+}
 let region = REGIONS.find((r) => r.key === params.get('region')) ?? REGIONS[0];
+/** Which of the region's three levels this run is on (1–3). */
+let runLevel = Math.max(1, Math.min(3, Number(params.get('level')) || 1));
+let levelMods = REGION_LEVELS[runLevel - 1] ?? REGION_LEVELS[0];
 /** Granny's scooter and its weapon for this region. */
 let rig = rigFor(REGIONS.indexOf(region));
 let scenery = sceneryFor(region.scenery);
@@ -382,7 +414,7 @@ function addAlien(type, at, heading) {
   const aimX = heading ? at.x + heading.x : player.x + miss;
   const aimZ = heading ? at.z + heading.z : player.z;
   const aimLen = Math.hypot(aimX - at.x, aimZ - at.z) || 1;
-  const late = (1 + Math.max(0, clock - 60) / 240) * region.tough;
+  const late = (1 + Math.max(0, clock - 60) / 240) * region.tough * levelMods.tough;
   const alien = /** @type {Alien} */ ({
     type, x: at.x, y: 0, z: at.z, hp: Math.ceil(spec.hp * late), maxHp: Math.ceil(spec.hp * late), speed: spec.speed * (0.9 + Math.random() * 0.2),
     size: spec.size, damage: spec.damage, gems: spec.gems, t: Math.random() * 5, hitFlash: 0, phase: 'walk', phaseTime: 0,
@@ -398,7 +430,7 @@ function spawnDirector(dt) {
   spawnIn -= dt;
   if (spawnIn <= 0) {
     addAlien(pickEnemyType(clock, region.mix), spawnBehindHorizon(Math.random()));
-    spawnIn = spawnInterval(clock) * region.pace * (bossTime ? 2.5 : 1) * (0.7 + Math.random() * 0.6);
+    spawnIn = spawnInterval(clock) * region.pace * levelMods.pace * (bossTime ? 2.5 : 1) * (0.7 + Math.random() * 0.6);
   }
   if (hordeIndex < HORDE_TIMES.length && clock >= HORDE_TIMES[hordeIndex]) {
     hordeQueue = { left: hordeSize(hordeIndex), gap: 2.6 / hordeSize(hordeIndex) };
@@ -417,14 +449,18 @@ function spawnDirector(dt) {
     }
   }
   if (bossTime && !boss) {
-    boss = { x: 0, z: 13, hp: region.boss.hp, t: 0, fireIn: 4, dropIn: 6, rainIn: 3, dying: 0, hitFlash: 0, solid: 1 };
-    showBanner(`⚠ ${region.boss.name.toUpperCase()} ⚠`, region.boss.hint);
+    const maxHp = Math.round(region.boss.hp * levelMods.boss);
+    boss = { x: 0, z: 13, hp: maxHp, maxHp, t: 0, fireIn: 4, dropIn: 6, rainIn: 3, dying: 0, hitFlash: 0, solid: 1 };
+    showBanner(`⚠ ${region.boss.name.toUpperCase()} ⚠`, `${region.boss.hint} · ${levelMods.label}`);
     sfx('siren-alert', 0.6);
     sfx('mothership', 0.5);
   }
 }
 
 /* ---------- Game flow ---------- */
+
+/** When true, warp ends on the planet map (fly-from-HQ) instead of starting a run. */
+let arriveToMap = false;
 
 function startWarp() {
   resetRun();
@@ -434,6 +470,13 @@ function startWarp() {
   warpTrailEnd = null;
   overlay.hidden = true;
   sfx('nuke-fire', 0.6);
+}
+
+/** Fly from Maths HQ: same green mothership warp, then land on the fullscreen map. */
+function startArriveWarp() {
+  arriveToMap = true;
+  selectRegion(0);
+  startWarp();
 }
 
 /** @param {number} index */
@@ -448,6 +491,12 @@ function selectRegion(index) {
   resetRun();
 }
 
+/** @param {number} level */
+function setRunLevel(level) {
+  runLevel = Math.max(1, Math.min(3, level));
+  levelMods = REGION_LEVELS[runLevel - 1] ?? REGION_LEVELS[0];
+}
+
 const PADLOCK = `<svg class="hl-spot-lock" viewBox="0 0 64 72" aria-hidden="true">
   <defs><linearGradient id="hl-lock-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset="0.45" stop-color="#ffc430"/><stop offset="1" stop-color="#b8640a"/></linearGradient></defs>
   <path d="M16 32V22a16 16 0 0 1 32 0v10" fill="none" stroke="#d8dce8" stroke-width="7" stroke-linecap="round"/>
@@ -455,37 +504,157 @@ const PADLOCK = `<svg class="hl-spot-lock" viewBox="0 0 64 72" aria-hidden="true
   <circle cx="32" cy="45" r="6" fill="#4a1c02"/><path d="M29 47h6l2 11h-10z" fill="#4a1c02"/>
 </svg>`;
 
+/** Big “start here” pointer above Landing Zone until Level 1 is cleared. */
+const LANDING_ARROW = `<svg class="hl-spot-arrow" viewBox="0 0 80 96" aria-hidden="true">
+  <path d="M40 88 L12 48 H28 V8 H52 V48 H68 Z"
+    fill="#e82010" stroke="#fff" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>`;
+
+/** Soft map ambience — abyss lightning, swamp bubbles, mushroom glow, volcano smoke. */
+function mapAmbience() {
+  return `
+    <div class="hl-ambience" aria-hidden="true">
+      <span class="hl-shooting" style="--d:0s;--x:12%;--y:8%"></span>
+      <span class="hl-shooting" style="--d:9s;--x:62%;--y:5%"></span>
+      <span class="hl-shooting" style="--d:17s;--x:82%;--y:11%"></span>
+
+      <!-- Abyss cavern — brief realistic bolts + flash -->
+      <span class="hl-bolt" style="--d:0s;--x:48.5%;--y:58%"></span>
+      <span class="hl-bolt hl-bolt-b" style="--d:3.8s;--x:51.5%;--y:61%"></span>
+      <span class="hl-bolt" style="--d:8.2s;--x:50%;--y:56%"></span>
+      <span class="hl-bolt-flash" style="--d:0s;--x:50%;--y:60%"></span>
+      <span class="hl-bolt-flash" style="--d:3.8s;--x:50%;--y:60%"></span>
+      <span class="hl-bolt-flash" style="--d:8.2s;--x:50%;--y:60%"></span>
+
+      <!-- Slime swamp — green bubbles rising from pools -->
+      <span class="hl-bubble" style="--d:0s;--x:12%;--y:52%;--s:0.9"></span>
+      <span class="hl-bubble" style="--d:1.1s;--x:15%;--y:55%;--s:1.15"></span>
+      <span class="hl-bubble" style="--d:2.4s;--x:17.5%;--y:49%;--s:0.75"></span>
+      <span class="hl-bubble" style="--d:3.6s;--x:13.5%;--y:57%;--s:1"></span>
+      <span class="hl-bubble" style="--d:4.8s;--x:16%;--y:51%;--s:1.3"></span>
+      <span class="hl-bubble" style="--d:6.1s;--x:11.5%;--y:54%;--s:0.85"></span>
+      <span class="hl-bubble" style="--d:7.3s;--x:18%;--y:56%;--s:1.05"></span>
+      <span class="hl-bubble" style="--d:8.5s;--x:14%;--y:48%;--s:0.7"></span>
+
+      <!-- Glowshroom forest — soft cap pulses (biome sits lower-right) -->
+      <span class="hl-shroom" style="--d:0s;--x:58%;--y:78%;--s:1.3"></span>
+      <span class="hl-shroom" style="--d:1.2s;--x:66%;--y:82%;--s:1"></span>
+      <span class="hl-shroom" style="--d:2.5s;--x:72%;--y:76%;--s:1.45"></span>
+      <span class="hl-shroom" style="--d:3.8s;--x:78%;--y:80%;--s:1.1"></span>
+      <span class="hl-shroom" style="--d:5.1s;--x:62%;--y:86%;--s:0.9"></span>
+      <span class="hl-shroom" style="--d:6.4s;--x:70%;--y:88%;--s:1.2"></span>
+
+      <!-- Smoking vents — plumes from the lava peaks (top-right art) -->
+      <span class="hl-smoke" style="--d:0s;--x:80%;--y:24%;--s:1.15"></span>
+      <span class="hl-smoke" style="--d:1.8s;--x:84%;--y:20%;--s:1.4"></span>
+      <span class="hl-smoke" style="--d:3.5s;--x:88%;--y:26%;--s:1"></span>
+      <span class="hl-smoke" style="--d:5.2s;--x:82%;--y:28%;--s:0.9"></span>
+      <span class="hl-smoke" style="--d:6.8s;--x:86%;--y:18%;--s:1.25"></span>
+      <span class="hl-smoke" style="--d:2.6s;--x:90%;--y:22%;--s:1.05"></span>
+
+    </div>`;
+}
+
 /**
- * The planet map: the painted map of Doompickle with every region in story order, locked until the
- * one before it is beaten. Each panel gets a nameplate; locked ones go dark behind a padlock, open
- * ones glow with a NEW! burst, and beaten ones show a gold star and the best score.
+ * Planet map: full-screen biome art with terminals (blank / 1 / 2 / 3 shields). Name squircle
+ * sits just above each terminal. Granny's backyard top-left; palace hint at the bottom.
  */
 function showMap() {
   state = 'title';
+  const explore = canExplore(progress);
+  const termArt = PLANET_MAP.terminals || [];
+  const terminals = REGIONS.map((r, i) => {
+    const at = PLANET_MAP.spots[r.key];
+    if (!at) return '';
+    const locked = isRegionLocked(progress, i);
+    const stars = regionStars(progress, r.key);
+    const bestN = progress.best[r.key] || 0;
+    const label = at.label || r.title;
+    const src = termArt[stars] || termArt[0] || '';
+    const status = locked
+      ? (r.key === 'palace' ? 'locked — clear every region at Level 3' : 'locked — beat Landing Zone first')
+      : stars ? `level ${stars} of 3, best ${bestN.toLocaleString()}` : 'open';
+    // Stagger bob so terminals don't breathe in sync (irregular offsets).
+    const bobDelay = ((i * 0.73) % 2.8).toFixed(2);
+    const guideLanding = r.key === 'landing' && !explore;
+    return `
+      <div class="hl-spot ${locked ? 'is-locked' : stars ? 'is-cleared' : 'is-new'}${r.key === 'palace' ? ' is-palace' : ''}${guideLanding ? ' is-guide' : ''}"
+           style="left: ${at.x}%; top: ${at.y}%; --rim: ${r.palette.rim}; --bob-delay: ${bobDelay}s">
+        ${guideLanding ? LANDING_ARROW : ''}
+        <button type="button" class="hl-spot-term" data-region="${i}" ${locked ? 'disabled' : ''}
+          aria-label="${label}: ${status}">
+          <span class="hl-spot-shroud" aria-hidden="true"></span>
+          <img src="${src}" alt="" width="120" height="100" draggable="false" />
+        </button>
+        ${locked ? PADLOCK : ''}
+        <span class="hl-spot-name">${label}</span>
+      </div>`;
+  }).join('');
   overlay.innerHTML = `
     <div class="hl-planet">
-      <img class="hl-planet-art" src="${PLANET_MAP.src}" alt="Planet Doompickle map" />
-      ${REGIONS.map((r, i) => {
-        const at = PLANET_MAP.spots[r.key];
-        if (!at) return '';
-        const locked = i >= progress.unlocked;
-        const cleared = progress.cleared.includes(r.key);
-        const best = (progress.best[r.key] || 0).toLocaleString();
-        const [left, top, width, height] = at;
-        const status = locked ? 'locked' : cleared ? `cleared, best ${best}` : 'new';
-        return `
-          <div class="hl-spot ${locked ? 'is-locked' : cleared ? 'is-cleared' : 'is-new'}" style="left: ${left}%; top: ${top}%; width: ${width}%; height: ${height}%; --rim: ${r.palette.rim}">
-            <button type="button" class="hl-spot-panel" data-region="${i}" ${locked ? 'disabled' : ''} aria-label="Region ${i + 1}, ${r.title}: ${status}"></button>
-            ${locked ? PADLOCK : ''}
-            <span class="hl-spot-plate" aria-hidden="true"><b>${r.title}</b>${cleared ? `<small>★ ${best}</small>` : ''}</span>
-            ${locked ? '' : cleared ? '<span class="hl-spot-star" aria-hidden="true">★</span>' : '<span class="hl-spot-new" aria-hidden="true"><b>NEW!</b></span>'}
-          </div>`;
-      }).join('')}
+      <div class="hl-planet-stage">
+        <img class="hl-planet-art" src="${PLANET_MAP.src}" alt="Planet Doompickle map" />
+        ${mapAmbience()}
+        ${terminals}
+      </div>
     </div>
+    <p class="hl-map-hint">${explore
+      ? (palaceReady(progress) ? 'The Palace awaits…' : 'Pick a region · earn all 3 shields · then the Palace')
+      : 'Start at the Landing Zone ↓'}</p>
     <a class="hl-home" href="${HOME_URL}"><img class="hl-house" src="assets/ui/granny-house.webp" alt="" width="192" height="182" />Granny's backyard</a>`;
   overlay.hidden = false;
   for (const r of REGIONS) if (r.logo) image(r.logo);
-  overlay.querySelectorAll('[data-region]').forEach((btn) => btn.addEventListener('click', () => showStory(Number(btn.getAttribute('data-region')))));
+  overlay.querySelectorAll('[data-region]').forEach((btn) =>
+    btn.addEventListener('click', () => showPlaque(Number(btn.getAttribute('data-region')))));
+  maybeShowMapTip(explore);
+}
+
+/**
+ * One-shot briefings on the planet map: first arrival, then after Landing Zone Level 1.
+ * @param {boolean} explore
+ */
+function maybeShowMapTip(explore) {
+  if (!progress.tips) progress.tips = {};
+  if (!explore && !progress.tips.arrive) {
+    showMapTip('arrive', `
+      <p>You shouldn't have come to Doompickle. These critters bite.</p>
+      <p>There is just <strong>1 rule</strong> and zero instructions.</p>
+      <p class="hl-tip-shout">SURVIVE!</p>
+      <p>Click on the landing zone and <strong>BOLA!</strong></p>
+      <p class="hl-tip-aside">Oh, you might wanna learn how to use your <strong>NUKE</strong> button when the hordes attack.</p>`);
+    return;
+  }
+  if (explore && !progress.tips.explore) {
+    showMapTip('explore', `
+      <p>You are free to explore all of Doompickle except the palace.</p>
+      <p>Defeat all regions and all levels to take vengeance on the supreme leader.</p>`);
+  }
+}
+
+/**
+ * @param {'arrive'|'explore'} kind
+ * @param {string} bodyHtml
+ */
+function showMapTip(kind, bodyHtml) {
+  document.getElementById('hl-tip')?.remove();
+  const tip = document.createElement('div');
+  tip.id = 'hl-tip';
+  tip.className = 'hl-tip';
+  tip.setAttribute('role', 'dialog');
+  tip.setAttribute('aria-modal', 'true');
+  tip.innerHTML = `
+    <div class="hl-tip-panel">
+      <button type="button" class="hl-tip-x" id="hl-tip-x" aria-label="Close">×</button>
+      <div class="hl-tip-body">${bodyHtml}</div>
+    </div>`;
+  document.body.append(tip);
+  const close = () => {
+    tip.remove();
+    if (!progress.tips) progress.tips = {};
+    progress.tips[kind] = true;
+    saveProgress(progress);
+  };
+  tip.querySelector('#hl-tip-x')?.addEventListener('click', close);
 }
 
 /** Doompickle can't be found until every map piece is in. @param {number} found */
@@ -502,52 +671,60 @@ function showMapIncomplete(found) {
   overlay.hidden = false;
 }
 
-/** The story card before a region. @param {number} index */
-function showStory(index) {
+/**
+ * Steampunk plaque: title, best score, vignetted region art. No level picking — forced 1→2→3.
+ * Border plaque = attempting that level; filled plaque = that many completed. GO FOR LEVEL N.
+ * @param {number} index
+ */
+function showPlaque(index) {
+  if (isRegionLocked(progress, index)) return;
   selectRegion(index);
-  const kicker = `REGION ${index + 1} OF ${REGIONS.length}`;
-  const foe = region.portraits
-    ? `<div class="hl-story-portraits">${region.portraits.map((p) => `<figure><img src="${p.src}" alt="" /><figcaption>${p.caption}</figcaption></figure>`).join('')}</div>`
-    : `<div class="hl-story-boss"><img src="${region.boss.sprite}" alt="" /><span><em>BOSS</em><strong>${region.boss.name}</strong></span></div>`;
-  const buttons = `
-    <button type="button" class="hl-go hl-go-granny" id="hl-go"><img src="assets/homeland/granny-front.webp" alt="" width="173" height="200" />GO GRANNY!</button>
-    <button type="button" class="hl-back hl-map-btn" id="hl-back" aria-label="Planet map"><img src="assets/homeland/planet-map-button.webp" alt="" /></button>`;
-  const upgraded = index > 0 && rig !== rigFor(index - 1);
-  const upgrade = upgraded ? `<div class="hl-rig"><img src="${rig.sprite}" alt="" /><span><em>UPGRADE!</em><strong>${rig.name}</strong></span></div>` : '';
-  const perk = upgraded ? `<p class="hl-perk">🔧 ${rig.perk}</p>` : '';
-  overlay.innerHTML = region.logo
-    ? `
-    <div class="hl-slide" style="--rim: ${region.palette.rim}">
-      <img class="hl-slide-fill" src="${region.logo}" alt="" />
-      <p class="hl-slide-kicker">${kicker}</p>
-      <div class="hl-slide-stage"><img class="hl-slide-logo" src="${region.logo}" alt="${region.title}" /></div>
-      <div class="hl-slide-panel">
-        ${foe}
-        <div>
-          <p class="hl-slide-line">${region.intro}</p>
-          ${perk}
+  const stars = regionStars(progress, region.key);
+  const maxLevel = Math.max(1, hqMaxLevel());
+  // HQ seasons gate the ceiling; stars gate the next attempt within that ceiling.
+  const nextLevel = stars >= maxLevel
+    ? maxLevel
+    : Math.min(maxLevel, stars + 1);
+  const needHqSeason = stars >= maxLevel && maxLevel < 3;
+  const bestN = progress.best[region.key] || 0;
+  const art = region.logo || region.backdrop || region.boss.sprite;
+  // All 3 done → filled 3. Otherwise border for the level they're about to attempt.
+  const frame = stars >= 3
+    ? (PLANET_MAP.plaqueFilled[3] || PLANET_MAP.plaque)
+    : (PLANET_MAP.plaqueBorder[nextLevel] || PLANET_MAP.plaque);
+  setRunLevel(nextLevel);
+  overlay.innerHTML = `
+    <div class="hl-plaque-wrap">
+      <div class="hl-plaque" style="--rim: ${region.palette.rim}">
+        <img class="hl-plaque-frame" src="${frame}" alt="" />
+        <h2 class="hl-plaque-title">${region.title.toUpperCase()}</h2>
+        <p class="hl-plaque-score">${bestN ? `<span>BEST</span><strong>${bestN.toLocaleString()}</strong>` : '<span>BEST</span><strong>—</strong>'}</p>
+        <div class="hl-plaque-window">
+          <img src="${art}" alt="" />
         </div>
-        <div class="hl-slide-actions">${upgrade}${buttons}</div>
       </div>
-    </div>`
-    : `
-    <div class="hl-card hl-story" style="--rim: ${region.palette.rim}">
-      <p class="hl-kicker">${kicker}</p>
-      <h1 class="hl-title">${region.title.toUpperCase()}</h1>
-      <p class="hl-line">${region.intro}</p>
-      ${perk}
-      ${foe}
-      ${buttons}
+      ${needHqSeason ? `<p class="hl-plaque-hq-lock">Level ${maxLevel} done here — fly home, finish HQ Season ${maxLevel + 1}, then Level ${maxLevel + 1} unlocks.</p>` : ''}
+      <div class="hl-plaque-actions">
+        <button type="button" class="hl-plaque-btn" id="hl-back" aria-label="Back to map"><img src="assets/homeland/btn-back-map.webp" alt="" width="640" height="200" /></button>
+        <button type="button" class="hl-plaque-btn hl-plaque-go" id="hl-plaque-go" aria-label="Go for level ${nextLevel}">
+          <img src="assets/homeland/btn-go-level-${nextLevel}.webp" alt="GO FOR LEVEL ${nextLevel}" width="640" height="200" />
+        </button>
+      </div>
     </div>`;
   overlay.hidden = false;
-  document.getElementById('hl-go')?.addEventListener('click', startWarp);
+  document.getElementById('hl-plaque-go')?.addEventListener('click', startWarp);
   document.getElementById('hl-back')?.addEventListener('click', showMap);
+}
+
+/** Kept for ?story= test links — opens the plaque. @param {number} index */
+function showStory(index) {
+  showPlaque(index);
 }
 
 function startPlay() {
   state = 'play';
   flash = 1;
-  showBanner(region.title.toUpperCase(), `Region ${REGIONS.indexOf(region) + 1} · Survive the horde!`);
+  showBanner(region.title.toUpperCase(), `${levelMods.label} · Survive the horde!`);
   sfx('battle-cry-titans', 0.55);
   const testAmmo = /** @type {AmmoId} */ (params.get('ammo'));
   if (testAmmo in AMMO && testAmmo !== 'blaster') addAmmo(testAmmo);
@@ -564,7 +741,6 @@ function showBanner(text, sub = '') {
 function endRun(won) {
   state = won ? 'won' : 'lost';
   const index = REGIONS.indexOf(region);
-  const next = REGIONS[index + 1];
   const newBest = score > best;
   if (newBest) {
     best = score;
@@ -573,31 +749,37 @@ function endRun(won) {
   const firstClear = won && !progress.cleared.includes(region.key);
   if (won) {
     if (firstClear) progress.cleared.push(region.key);
-    progress.unlocked = Math.min(REGIONS.length, Math.max(progress.unlocked, index + 2));
+    progress.stars[region.key] = Math.max(regionStars(progress, region.key), runLevel);
+    progress.unlocked = Math.min(REGIONS.length, Math.max(progress.unlocked, canExplore(progress) ? REGIONS.length - 1 : 1));
+    if (palaceReady(progress)) progress.unlocked = REGIONS.length;
   }
   saveProgress(progress);
   const title = won ? `${region.boss.name.toUpperCase()} DOWN!` : 'SCOOTER TOAST!';
-  const line = won ? region.outro : 'The horde got Granny this time. One more go?';
-  const go = won ? (next ? `▶ ON TO ${next.title.toUpperCase()}` : '🏆 THE PLANET IS FREE!') : '🛵 TRY AGAIN';
+  const line = won
+    ? `${region.outro} · ${levelMods.label} shield earned!`
+    : 'The horde got Granny this time. One more go?';
+  const go = won ? '🗺 PLANET MAP' : '🛵 TRY AGAIN';
   const reward = firstClear ? `<p class="hl-reward">💎 +${regionCrystals(index)} Alien Crystals waiting in Granny's vault!</p>` : '';
+  const starLine = won
+    ? `<p class="hl-level-stars">${[1, 2, 3].map((n) =>
+      `<span class="${regionStars(progress, region.key) >= n ? 'is-gold' : ''}">★</span>`).join('')}</p>`
+    : '';
   overlay.innerHTML = `
     <div class="hl-card hl-story" style="--rim: ${region.palette.rim}">
-      <p class="hl-kicker">REGION ${index + 1} · ${region.title.toUpperCase()}</p>
+      <p class="hl-kicker">REGION ${index + 1} · ${region.title.toUpperCase()} · ${levelMods.label}</p>
       <h1 class="hl-title ${won ? '' : 'is-lost'}">${title}</h1>
       <p class="hl-line">${line}</p>
+      ${starLine}
       ${reward}
       <p class="hl-final ${newBest ? 'is-best' : ''}">${newBest ? '★ NEW BEST ★' : `BEST ${best.toLocaleString()}`}<strong>${score.toLocaleString()}</strong></p>
       <p class="hl-stats"><span>ALIENS <strong>${player.kills.toLocaleString()}</strong></span><span>LEVEL <strong>${player.level}</strong></span><span>TIME <strong>${formatClock(clock)}</strong></span></p>
       <button type="button" class="hl-go" id="hl-go">${go}</button>
-      <button type="button" class="hl-back hl-map-btn" id="hl-back" aria-label="Planet map"><img src="assets/homeland/planet-map-button.webp" alt="" /></button>
     </div>`;
   overlay.hidden = false;
   document.getElementById('hl-go')?.addEventListener('click', () => {
     if (!won) startWarp();
-    else if (next) showStory(index + 1);
     else showMap();
   });
-  document.getElementById('hl-back')?.addEventListener('click', showMap);
 }
 
 function levelUp() {
@@ -653,7 +835,14 @@ function update(dt) {
   if (state === 'warp') {
     warpTime += dt;
     updateWarpSmoke(dt);
-    if (warpTime > WARP_END) startPlay();
+    if (warpTime > WARP_END) {
+      if (arriveToMap) {
+        arriveToMap = false;
+        showMap();
+      } else {
+        startPlay();
+      }
+    }
     return;
   }
   if (state !== 'play') {
@@ -1707,7 +1896,10 @@ function drawWarp() {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = `rgba(255, 230, 120, ${Math.min(1, warpTime * 1.5) * (warpTime > 2.8 ? Math.max(0, 1 - (warpTime - 2.8) * 2) : 1)})`;
-  ctx.fillText(region === REGIONS[0] ? 'LIGHTYEAR JUMP!' : `TO ${region.title.toUpperCase()}!`, view.cx, view.h * 0.18);
+  const jumpLabel = arriveToMap
+    ? 'WARP SPEED!'
+    : region === REGIONS[0] ? 'LIGHTYEAR JUMP!' : `TO ${region.title.toUpperCase()}!`;
+  ctx.fillText(jumpLabel, view.cx, view.h * 0.18);
   if (warpTime > 3) {
     ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, (warpTime - 3) * 2.5)})`;
     ctx.fillRect(0, 0, view.w, view.h);
@@ -2480,7 +2672,7 @@ function drawHud() {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
     ctx.fillRect(view.cx - barW / 2, top, barW, barH);
     ctx.fillStyle = '#ff3a5a';
-    ctx.fillRect(view.cx - barW / 2, top, barW * (boss.hp / region.boss.hp), barH);
+    ctx.fillRect(view.cx - barW / 2, top, barW * (boss.hp / (boss.maxHp || region.boss.hp)), barH);
     ctx.font = `${Math.round(big * 0.6)}px Bangers, sans-serif`;
     outlineText(region.boss.name.toUpperCase(), view.cx, top + barH + 4, '#ffb3c0');
   } else if (clock < BOSS_TIME) {
@@ -2659,11 +2851,30 @@ resize();
 resetRun();
 loadSounds(['nuke-fire', 'battle-cry-titans', 'siren-alert', 'mothership', 'granddaddywarning', 'lazer1', 'death', 'slime', 'wrong', 'electro', 'missile', 'nuke-explosion', 'turret-upgrade', 'core-collect', 'core-earned', 'button-press']);
 // ?region=, ?start= and ?boss jump straight into a run for testing; otherwise the title leads to the map.
-// ?story (with ?region=) opens that region's story card instead, and ?map opens the planet map.
+// ?story (with ?region=) opens that region's story card; ?map opens the planet map;
+// ?arrive plays the mothership warp then lands on the map (FLY TO DOOMPICKLE).
+// ?fresh / ?reset clears homeland progress so the first-visit briefing shows again.
 const jumpIn = params.has('region') || params.has('start') || params.has('boss');
 document.getElementById('hl-start')?.addEventListener('click', jumpIn ? startWarp : showMap);
-const found = mapPiecesFound();
-if (!TESTING && found < TRAINING_MODULE_IDS.length) showMapIncomplete(found);
+const mapSave = loadMapProgress();
+const found = seasonPiecesEarned(mapSave, 1);
+if (!TESTING && !canWarpToDoompickle(mapSave)) showMapIncomplete(found);
 else if (params.has('story')) showStory(REGIONS.indexOf(region));
+else if (params.has('arrive')) startArriveWarp();
 else if (params.has('map')) showMap();
+// Cap ?level= to what HQ seasons have unlocked (unless ?all).
+if (!params.has('all') && hqMaxLevel() > 0) {
+  setRunLevel(Math.min(runLevel, hqMaxLevel()));
+}
+// When HQ embeds us in an iframe to keep fullscreen, backyard links must leave the frame.
+if (window !== window.top) {
+  document.addEventListener('click', (e) => {
+    const a = /** @type {HTMLElement | null} */ (e.target instanceof Element ? e.target.closest('a[href]') : null);
+    if (!a) return;
+    const href = a.getAttribute('href') || '';
+    if (!/index\.html/.test(href)) return;
+    e.preventDefault();
+    if (window.top) window.top.location.href = href;
+  });
+}
 requestAnimationFrame(frame);

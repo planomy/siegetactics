@@ -1,4 +1,4 @@
-import { MAP_PASSES_REQUIRED } from './map-progress.js';
+import { MAP_PASSES_REQUIRED, MAP_SEASONS } from './map-progress.js';
 import { GATE } from './training-gate.js?v=20261114n1';
 import { SIEGE_RANKS } from './siege-ranks.js?v=20261112a2';
 
@@ -159,8 +159,9 @@ export const HOW_TO_QUESTIONS = [
     icon: '🗺️',
     q: 'What is the Alien Homeland map?',
     a: [
-      'Tap ALIEN HOMELAND under your Crystal Vault to see it. Every topic is one piece of the map.',
-      `Score 80% or better in a full topic drill ${MAP_PASSES_REQUIRED} times to reveal that topic’s piece. Find all 10 to unlock the route to the Alien Homeland!`,
+      'Tap ALIEN HOMELAND under your Crystal Vault to see it. Every topic is one sector on the nav chart.',
+      `There are three HQ seasons. Season 1 needs ${MAP_PASSES_REQUIRED} passes per topic at ${MAP_SEASONS[0].label}+ to unlock Warp and Doompickle Level 1.`,
+      `Come home for Season 2 (${MAP_SEASONS[1].label}+) to open Level 2, then Season 3 (${MAP_SEASONS[2].label}) for Level 3. A miss just means try that drill again — only clean passes count.`,
       'Get 100% in a topic drill to earn a shield for that level. Random missions don’t count towards the map or shields.',
     ],
   },

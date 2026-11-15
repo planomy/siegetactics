@@ -5,7 +5,10 @@ import { SIEGE_RANKS, siegeRankLevel, rankProgressText } from './siege-ranks.js?
 import { hotTopicId } from './hot-topic.js?v=20261112a1';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261114t1';
 import { rareDossiers } from './rare-ships.js?v=20261114t1';
-import { renderInterstellarMap, mapPiecesEarned, hasMapPiece, getMapPasses, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS, MAP_SECTORS } from './map-progress.js';
+import {
+  renderInterstellarMap, mapPiecesEarned, getMapPasses, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS, MAP_SECTORS,
+  currentMapSeason, seasonLabel, seasonPiecesEarned, canWarpToDoompickle, homelandMaxLevel, seasonComplete,
+} from './map-progress.js';
 import { topicRankProgress, getTopicRecord } from './topic-progression.js?v=20261114k1';
 import { getQualifiedLevels } from './level-mastery.js?v=20261114k1';
 import { ECONOMY } from './economy.js';
@@ -616,19 +619,36 @@ export function vaultTierFor(collected) {
  * A big moment when a topic's map sector is charted; the tenth one opens the route to the Alien Homeland.
  * @param {string} moduleId @param {number} earned Sectors charted so far, including this one.
  */
-export function showMapPieceFound(moduleId, earned) {
+/**
+ * @param {string} moduleId
+ * @param {number} earned
+ * @param {{ season?: number, seasonJustCompleted?: boolean, maxLevel?: number }} [meta]
+ */
+export function showMapPieceFound(moduleId, earned, meta = {}) {
   const sector = MAP_SECTORS.find((s) => s.moduleId === moduleId);
   const total = TRAINING_MODULE_IDS.length;
-  const done = earned >= total;
+  const season = meta.season ?? 1;
+  const seasonDone = !!meta.seasonJustCompleted;
+  const maxLevel = meta.maxLevel ?? 0;
   document.querySelector('.map-up')?.remove();
   const el = document.createElement('div');
   el.className = 'rank-up vault-up map-up';
   el.setAttribute('role', 'status');
+  let title = 'MAP PIECE FOUND!';
+  let name = `${(sector?.label ?? 'SECTOR').toUpperCase()} · S${season} ${earned} / ${total}`;
+  if (seasonDone && maxLevel >= 1) {
+    title = maxLevel >= 3 ? 'SEASON 3 COMPLETE!' : maxLevel === 2 ? 'SEASON 2 COMPLETE!' : 'ROUTE UNLOCKED!';
+    name = maxLevel >= 3
+      ? 'DOOMPICKLE LEVEL 3 OPEN!'
+      : maxLevel === 2
+        ? 'DOOMPICKLE LEVEL 2 OPEN — BACK TO HQ FOR SEASON 3!'
+        : 'WARP TO DOOMPICKLE — CLEAR LEVEL 1, THEN RETURN!';
+  }
   el.innerHTML = `
     <span class="core-reward-rays" aria-hidden="true"></span>
-    <span class="map-up-art" aria-hidden="true">${done ? '🛸' : '🗺️'}</span>
-    <strong class="rank-up-title">${done ? 'ROUTE UNLOCKED!' : 'MAP PIECE FOUND!'}</strong>
-    <span class="rank-up-name">${done ? 'FLY TO DOOMPICKLE FROM MATHS HQ!' : `${(sector?.label ?? 'SECTOR').toUpperCase()} · ${earned} / ${total}`}</span>`;
+    <span class="map-up-art" aria-hidden="true">${seasonDone ? '🛸' : '🗺️'}</span>
+    <strong class="rank-up-title">${title}</strong>
+    <span class="rank-up-name">${name}</span>`;
   document.body.append(el);
   window.setTimeout(() => el.classList.add('is-leaving'), 3200);
   window.setTimeout(() => el.remove(), 3800);
@@ -784,20 +804,30 @@ function renderCrystalVault(collected, toSpend) {
  */
 function renderHomelandTrack(mapProgress) {
   const total = TRAINING_MODULE_IDS.length;
-  const earned = mapPiecesEarned(mapProgress);
-  const closest = Math.max(0, ...TRAINING_MODULE_IDS.filter((id) => !hasMapPiece(mapProgress, id)).map((id) => getMapPasses(mapProgress, id)));
-  const pct = earned >= total ? 100 : ((earned + closest / MAP_PASSES_REQUIRED) / total) * 100;
+  const season = currentMapSeason(mapProgress);
+  const bar = seasonLabel(season);
+  const earned = seasonPiecesEarned(mapProgress, season);
+  const maxLevel = homelandMaxLevel(mapProgress);
+  const closest = Math.max(
+    0,
+    ...TRAINING_MODULE_IDS
+      .filter((id) => getMapPasses(mapProgress, id, season) < MAP_PASSES_REQUIRED)
+      .map((id) => getMapPasses(mapProgress, id, season))
+  );
+  const seasonDone = seasonComplete(mapProgress, season) || (season === 3 && maxLevel >= 3);
+  const pct = seasonDone ? 100 : ((earned + closest / MAP_PASSES_REQUIRED) / total) * 100;
   const nodes = Array.from({ length: total }, (_, i) => {
     const n = i + 1;
     const home = n === total;
     return `<span class="homeland-track-node${home ? ' homeland-track-home' : ''}${n <= earned ? ' is-reached' : ''}" style="left:${(n / total) * 100}%">${home ? '🪐' : n}</span>`;
   }).join('');
+  const levelHint = maxLevel ? ` · L${maxLevel} open` : '';
   return `
     <div class="homeland-row">
-    <button type="button" class="homeland-track" aria-label="Alien Homeland: ${earned} of ${total} map pieces. Show the map.">
+    <button type="button" class="homeland-track" aria-label="Alien Homeland season ${season}: ${earned} of ${total} sectors at ${bar}. Show the map.">
       <span class="homeland-track-title">
         <strong>ALIEN HOMELAND</strong>
-        <small>${earned}/${total} map pieces</small>
+        <small>Season ${season} · ${bar} · ${earned}/${total}${levelHint}</small>
       </span>
       <span class="homeland-track-rail" aria-hidden="true">
         <span class="homeland-track-fill" style="width:${pct.toFixed(1)}%"></span>
@@ -805,13 +835,117 @@ function renderHomelandTrack(mapProgress) {
         <span class="homeland-track-ship"><span>🛸</span></span>
       </span>
     </button>
-    ${earned >= total ? renderHomelandLaunch() : ''}
+    ${canWarpToDoompickle(mapProgress) ? renderHomelandLaunch() : ''}
     </div>`;
 }
 
-/** Once every map piece is in, Granny can fly to Doompickle as often as she likes. */
+const WARP_ARROW_KEY = 'grannyboom.warp-arrow-seen';
+
+/** Same red pointer as the Landing Zone guide on the planet map. */
+const WARP_ARROW = `<svg class="homeland-launch-arrow" viewBox="0 0 80 96" aria-hidden="true">
+  <path d="M40 88 L12 48 H28 V8 H52 V48 H68 Z"
+    fill="#e82010" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>`;
+
+function hasSeenWarpArrow() {
+  try {
+    return localStorage.getItem(WARP_ARROW_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markWarpArrowSeen() {
+  try {
+    localStorage.setItem(WARP_ARROW_KEY, '1');
+  } catch {}
+}
+
+/** Once every map piece is in, Granny can warp to Doompickle as often as she likes. */
 function renderHomelandLaunch() {
-  return `<a class="homeland-launch" href="${HOMELAND_URL}"><span aria-hidden="true">🚀</span> FLY TO DOOMPICKLE</a>`;
+  const arrow = hasSeenWarpArrow() ? '' : WARP_ARROW;
+  return `<span class="homeland-launch-wrap${arrow ? ' has-arrow' : ''}">
+    ${arrow}
+    <button type="button" class="homeland-launch">WARP TO DOOMPICKLE</button>
+  </span>`;
+}
+
+/** Same beep as ordinary UI buttons — respects the HQ sound toggle. */
+function playDepartBeep() {
+  try {
+    const save = JSON.parse(localStorage.getItem('grannyboom.siege.v1') || '{}');
+    if (save?.settings?.sound === false) return;
+  } catch {}
+  const beep = new Audio('assets/sounds/button-press.m4a');
+  beep.volume = 0.45;
+  beep.play().catch(() => {});
+}
+
+/**
+ * Fly sequence: black + Granny mad → 5..1 LAUNCH → homeland canvas warp (green mothership
+ * into vanishing point + smoke trail) → land on fullscreen map. Never opens the title card.
+ */
+function flyToDoompickle() {
+  if (document.getElementById('homeland-depart')) return;
+  markWarpArrowSeen();
+  document.querySelector('.homeland-launch-arrow')?.remove();
+  document.querySelector('.homeland-launch-wrap')?.classList.remove('has-arrow');
+  document.querySelector('.gb-sheet-backdrop')?.remove();
+  const layer = document.createElement('div');
+  layer.id = 'homeland-depart';
+  layer.className = 'homeland-depart';
+  layer.setAttribute('role', 'dialog');
+  layer.setAttribute('aria-modal', 'true');
+  layer.setAttribute('aria-label', 'Departing for Doompickle');
+  layer.innerHTML = `
+    <div class="homeland-depart-mad">
+      <img src="assets/homeland/granny-mad.webp?v=20261115f3" alt="Granny is madder than a pocketful of rabid chickens. She has hijacked a mothership and is about to pounce into warp speed. Hold on to your hats!" width="1200" height="901" />
+      <p class="homeland-depart-count" aria-live="assertive">5</p>
+    </div>`;
+  document.body.append(layer);
+  const countEl = /** @type {HTMLElement | null} */ (layer.querySelector('.homeland-depart-count'));
+  const steps = ['5', '4', '3', '2', '1', 'LAUNCH'];
+  let step = 0;
+  const showStep = (i) => {
+    if (!countEl) return;
+    countEl.textContent = steps[i];
+    countEl.classList.toggle('is-launch', steps[i] === 'LAUNCH');
+    countEl.classList.remove('is-pop');
+    void countEl.offsetWidth;
+    countEl.classList.add('is-pop');
+    playDepartBeep();
+  };
+  const tick = () => {
+    step += 1;
+    if (step < steps.length) {
+      showStep(step);
+      window.setTimeout(tick, 1000);
+      return;
+    }
+    // Stay on this page (keeps fullscreen): warp + map load in a full-bleed iframe.
+    const testing = new URLSearchParams(location.search).get('maps') === 'all';
+    const qs = testing ? 'arrive&fresh' : 'arrive';
+    layer.classList.add('is-frame');
+    layer.innerHTML = '';
+    const frame = document.createElement('iframe');
+    frame.className = 'homeland-depart-frame';
+    frame.title = 'Alien Homeland';
+    frame.allow = 'autoplay; fullscreen';
+    frame.src = `${HOMELAND_URL}?${qs}`;
+    layer.append(frame);
+  };
+  showStep(0);
+  window.setTimeout(tick, 1000);
+}
+
+/** @param {ParentNode} root */
+function bindHomelandLaunch(root) {
+  root.querySelectorAll('.homeland-launch').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      flyToDoompickle();
+    });
+  });
 }
 
 /**
@@ -821,22 +955,26 @@ function renderHomelandLaunch() {
  */
 function showHomelandMap(mapProgress) {
   document.querySelector('.gb-sheet-backdrop')?.remove();
-  const earned = mapPiecesEarned(mapProgress);
+  const season = currentMapSeason(mapProgress);
+  const maxLevel = homelandMaxLevel(mapProgress);
   const backdrop = document.createElement('div');
   backdrop.className = 'gb-sheet-backdrop';
   backdrop.innerHTML = `
     <div class="gb-sheet homeland-sheet" role="dialog" aria-modal="true" aria-label="Map to the Alien Homeland">
       <h2 class="gb-sheet-title">🛸 THE ALIEN HOMELAND</h2>
-      <p class="gb-sheet-sub">${earned >= TRAINING_MODULE_IDS.length
-        ? 'Every sector charted! The route to the Alien Homeland is open.'
-        : `Chart all ${TRAINING_MODULE_IDS.length} sectors to find where the aliens come from, then fly there and take the fight to them!`}</p>
+      <p class="gb-sheet-sub">${maxLevel >= 3
+        ? 'All three HQ seasons charted — Doompickle Level 3 is open.'
+        : maxLevel >= 1
+          ? `Warp open for Level ${maxLevel}. Back at HQ, Season ${maxLevel + 1} needs ${seasonLabel(/** @type {1|2|3} */ (maxLevel + 1))}+ passes to unlock the next Doompickle level.`
+          : `Season ${season}: chart all ${TRAINING_MODULE_IDS.length} sectors at ${seasonLabel(season)}+ to open Warp for Doompickle Level 1.`}</p>
       ${renderInterstellarMap(mapProgress)}
-      ${earned >= TRAINING_MODULE_IDS.length ? renderHomelandLaunch() : ''}
+      ${canWarpToDoompickle(mapProgress) ? renderHomelandLaunch() : ''}
       <button type="button" class="gb-sheet-x" aria-label="Close">×</button>
     </div>`;
   const close = () => backdrop.remove();
   backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
   backdrop.querySelector('.gb-sheet-x')?.addEventListener('click', close);
+  bindHomelandLaunch(backdrop);
   document.body.append(backdrop);
 }
 
@@ -893,6 +1031,7 @@ export function renderHome(host, state) {
   host.querySelector('#mission-start-mixed')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-armory-open')?.addEventListener('click', state.onArmory);
   host.querySelector('.homeland-track')?.addEventListener('click', () => showHomelandMap(state.mapProgress));
+  bindHomelandLaunch(host);
   host.querySelectorAll('[data-topic]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-topic');

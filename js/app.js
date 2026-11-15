@@ -28,10 +28,10 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261114h1';
+import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261115h1';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261114n1';
-import { initHowToPlay } from './how-to-play.js?v=20261114n1';
+import { initHowToPlay } from './how-to-play.js?v=20261115h1';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261114v1';
 import { initMeasurementLength } from './measurement-length.js?v=20261114v1';
@@ -47,8 +47,11 @@ import {
   recordTrainingProgress,
   recommendModuleLevel,
   recommendGlobalLevel,
-} from './level-mastery.js?v=20261114k1';
-import { defaultMapProgress, normalizeMapProgress, allMapPiecesEarned, mapPiecesEarned } from './map-progress.js';
+} from './level-mastery.js?v=20261115h1';
+import {
+  defaultMapProgress, normalizeMapProgress, allMapPiecesEarned, mapPiecesEarned,
+  TRAINING_MODULE_IDS, fillMapSeason, homelandMaxLevel,
+} from './map-progress.js?v=20261115h1';
 import { getTopic } from './topics-data.js?v=20261113h1';
 import { normalizeTopicProgress, recordTopicAnswer, recordTopicSession, getTopicRecord, topicRankProgress } from './topic-progression.js?v=20261114k1';
 import {
@@ -1155,9 +1158,13 @@ function completeTrainingSession(moduleId, level, accuracy) {
     }
   }
 
-  if (result.mapPieceEarned) {
+  if (result.mapPieceEarned || result.mapSeasonJustCompleted) {
     window.setTimeout(() => {
-      showMapPieceFound(moduleId, mapPiecesEarned(save.mapProgress));
+      showMapPieceFound(moduleId, result.mapPasses ?? mapPiecesEarned(save.mapProgress), {
+        season: result.mapSeason,
+        seasonJustCompleted: result.mapSeasonJustCompleted,
+        maxLevel: homelandMaxLevel(save.mapProgress),
+      });
       audio.playTurretUpgrade();
     }, result.shieldEarned ? 1400 : 300);
   }
@@ -2424,6 +2431,25 @@ function bindUI() {
 if (new URLSearchParams(location.search).has('tips')) {
   save.tips = { off: false, seen: [] };
   persistSave();
+}
+
+// ?maps=all → Season 1 complete (Warp + Doompickle L1).
+// ?maps=all&tiers=2|3 → also fill later seasons for L2/L3 testing.
+// Resets homeland progress so the first-visit Survive/NUKE briefing shows again while testing.
+{
+  const q = new URLSearchParams(location.search);
+  if (q.get('maps') === 'all') {
+    const tiers = Math.max(1, Math.min(3, Number(q.get('tiers')) || 1));
+    let map = normalizeMapProgress(save.mapProgress);
+    for (let s = 1; s <= tiers; s += 1) map = fillMapSeason(map, /** @type {1|2|3} */ (s));
+    save.mapProgress = map;
+    if (!save.playerName) save.playerName = 'Tester';
+    persistSave();
+    try {
+      localStorage.removeItem('hl-progress');
+      localStorage.removeItem('grannyboom.warp-arrow-seen');
+    } catch {}
+  }
 }
 
 bindUI();

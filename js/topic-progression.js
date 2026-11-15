@@ -76,7 +76,8 @@ export function normalizeTopicProgress(raw, mastery = {}, mapProgress = {}) {
       out[id].correct = Math.min(out[id].correct, out[id].answered);
     } else {
       const levels = Array.isArray(mastery?.[id]) ? new Set(mastery[id].filter((n) => [1, 2, 3, 4, 5, 6].includes(n))) : new Set();
-      const knownMapPasses = Math.min(10, safeCount(mapProgress?.[id]));
+      const season1 = mapProgress?.seasons?.[1] ?? mapProgress;
+      const knownMapPasses = Math.min(10, safeCount(season1?.[id]));
       out[id] = {
         xp: levels.size * 60 + knownMapPasses * 8,
         answered: 0,

@@ -29,7 +29,7 @@ body {
   inset: 0;
   display: grid;
   place-items: center;
-  background: radial-gradient(ellipse at 50% 40%, rgba(40, 8, 60, 0.35), rgba(8, 2, 18, 0.8));
+  background: #0a0414;
 }
 
 .hl-overlay[hidden] {
@@ -647,83 +647,637 @@ body {
 
 /* ---------- Planet map and story cards ---------- */
 
-/* The painted planet map. Each region's patch gets a soft oval button that fades into the painting,
-   a nameplate along its bottom and a status badge. --map is the map's size on screen. */
+/* Full-screen Doompickle biome map. Stage keeps art aspect and covers the viewport
+   (crops overflow) so widescreen isn’t letterboxed; terminal % coords still match the art. */
 .hl-planet {
-  --map: min(90vw, 88vh);
-  --edge: calc(var(--map) * 0.014);
-  position: relative;
-  width: var(--map);
-  aspect-ratio: 1;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #0a0414;
   animation: hl-rise 0.5s ease-out both;
 }
 
-/* The white border is drawn outside the painting so the spots stay lined up with it. */
+.hl-planet-stage {
+  position: relative;
+  width: max(100vw, calc(100vh * 1672 / 941));
+  height: max(100vh, calc(100vw * 941 / 1672));
+}
+
 .hl-planet-art {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 3%;
-  box-shadow:
-    0 0 0 var(--edge) #fff,
-    0 0 0 calc(var(--edge) + 3px) #22073a,
-    0 calc(var(--edge) + 6px) 0 calc(var(--edge) + 3px) rgba(10, 2, 20, 0.55),
-    0 30px 60px rgba(0, 0, 0, 0.75),
-    0 0 110px rgba(200, 90, 255, 0.5);
-}
-
-.hl-planet::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 3%;
-  box-shadow: inset 0 0 calc(var(--map) * 0.04) rgba(10, 2, 24, 0.75), inset 0 0 0 2px rgba(255, 255, 255, 0.35);
-  pointer-events: none;
+  object-fit: fill;
 }
 
 .hl-spot {
   position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: clamp(58px, 7.5vw, 100px);
+  transform: translate(-50%, -55%);
+  animation: hl-term-bob 3.6s ease-in-out var(--bob-delay, 0s) infinite;
 }
 
-.hl-spot-panel {
-  position: absolute;
-  inset: 0;
+.hl-spot-name {
+  z-index: 2;
+  width: max-content;
+  max-width: none;
+  margin: -2px 0 0;
+  padding: 0.34em 0.85em 0.28em;
+  border: 3px solid #fff;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, #4a3c2e 0%, #2a2018 55%, #14100c 100%);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 220, 160, 0.12);
+  color: #e8dcc8;
+  font-family: 'Bangers', cursive;
+  font-size: clamp(0.58rem, 1.25vw, 0.88rem);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 1px 0 #000;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.hl-spot-term {
+  position: relative;
+  display: block;
+  width: 100%;
   padding: 0;
   border: 0;
-  background: transparent;
-  clip-path: ellipse(50% 50%);
+  background: none;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: filter 0.14s ease;
 }
 
-.hl-spot-panel:not(:disabled):hover,
-.hl-spot-panel:focus-visible {
+.hl-spot-shroud {
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  z-index: 0;
+  width: 108%;
+  height: 96%;
+  /* Soft plaque silhouette — rounded panel, slightly wider mid-body */
+  border-radius: 28% / 22%;
+  background: radial-gradient(ellipse 70% 65% at 50% 48%,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.92) 38%,
+    rgba(0, 0, 0, 0.55) 62%,
+    rgba(0, 0, 0, 0) 78%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.hl-spot-term img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  /* Extra silhouette-hugging darkness so the shroud reads with the art */
+  filter:
+    drop-shadow(0 0 6px rgba(0, 0, 0, 0.95))
+    drop-shadow(0 0 14px rgba(0, 0, 0, 0.75))
+    drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7));
+}
+
+.hl-spot-term:not(:disabled):hover,
+.hl-spot-term:focus-visible {
   outline: none;
-  background: radial-gradient(ellipse closest-side, rgba(255, 244, 210, 0.22) 35%, transparent 90%);
+  filter: brightness(1.12);
 }
 
-.hl-spot.is-new .hl-spot-panel::before {
-  content: '';
-  position: absolute;
+.hl-spot-term:not(:disabled):hover img,
+.hl-spot-term:focus-visible img {
+  filter:
+    drop-shadow(0 0 6px rgba(0, 0, 0, 0.95))
+    drop-shadow(0 0 14px rgba(0, 0, 0, 0.75))
+    drop-shadow(0 0 16px color-mix(in srgb, var(--rim) 80%, transparent));
+}
+
+.hl-spot.is-new .hl-spot-shroud {
+  animation: hl-panel-glow 1.8s ease-in-out infinite;
+}
+
+/* First-arrival / post-landing briefings — map plaque, not a generic dialog */
+.hl-tip {
+  position: fixed;
   inset: 0;
-  background: radial-gradient(ellipse closest-side, transparent 35%, color-mix(in srgb, var(--rim) 70%, transparent) 75%, transparent 100%);
-  animation: hl-panel-glow 1.6s ease-in-out infinite;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) 20px max(16px, env(safe-area-inset-bottom));
+  background: rgba(6, 2, 14, 0.62);
 }
 
-.hl-spot.is-new .hl-spot-panel::after {
-  content: '';
+.hl-tip-panel {
+  position: relative;
+  width: min(520px, 90vw);
+  padding: 40px 36px 34px;
+  border: 3px solid #fff;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 0%, rgba(120, 70, 160, 0.22), transparent 55%),
+    linear-gradient(180deg, #3a2e38 0%, #241c26 42%, #161218 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(20, 8, 28, 0.9),
+    0 22px 56px rgba(0, 0, 0, 0.58);
+  color: #efe8f4;
+  text-align: center;
+}
+
+.hl-tip-x {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
-  -webkit-mask-image: radial-gradient(ellipse closest-side, #000 40%, transparent 85%);
-  mask-image: radial-gradient(ellipse closest-side, #000 40%, transparent 85%);
-  transform: translateX(-120%);
-  animation: hl-panel-shine 3.2s ease-in-out infinite;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
 }
 
-.hl-spot.is-locked .hl-spot-panel {
-  background: radial-gradient(ellipse closest-side, rgba(8, 2, 18, 0.92) 50%, rgba(8, 2, 18, 0.7) 78%, transparent 100%);
+.hl-tip-x:hover,
+.hl-tip-x:focus-visible {
+  outline: none;
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.06);
+}
+
+.hl-tip-body {
+  display: grid;
+  gap: 14px;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: clamp(1.08rem, 2.5vw, 1.28rem);
+  font-weight: 800;
+  line-height: 1.4;
+  color: #efe8f4;
+}
+
+.hl-tip-body p {
+  margin: 0;
+}
+
+.hl-tip-body strong {
+  color: #ffe27a;
+  font-weight: 900;
+}
+
+.hl-tip-shout {
+  margin: 6px 0 2px !important;
+  color: #ffe27a;
+  font-family: 'Bangers', cursive;
+  font-size: clamp(2.6rem, 8vw, 3.8rem);
+  font-weight: normal;
+  letter-spacing: 0.05em;
+  line-height: 0.95;
+  text-shadow:
+    0 0 18px rgba(255, 170, 40, 0.45),
+    0 3px 0 #4a1c00;
+}
+
+.hl-tip-aside {
+  margin-top: 2px !important;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(239, 232, 244, 0.86);
+  font-size: 0.92em;
+  font-weight: 700;
+}
+
+/* First arrival: flashing red arrow above Landing Zone */
+.hl-spot.is-guide {
+  z-index: 4;
+}
+
+.hl-spot-arrow {
+  position: absolute;
+  left: 50%;
+  bottom: 108%;
+  z-index: 5;
+  width: clamp(42px, 6.5vw, 72px);
+  height: auto;
+  transform: translateX(-50%);
+  pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.65));
+  animation: hl-landing-arrow 0.85s ease-in-out infinite;
+}
+
+@keyframes hl-landing-arrow {
+  0%, 100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: translateX(-50%) translateY(10%) scale(1.06);
+  }
+}
+
+.hl-spot.is-locked {
+  filter: grayscale(0.4) brightness(0.78);
+}
+
+.hl-spot.is-locked .hl-spot-term {
   cursor: default;
+}
+
+.hl-spot.is-palace.is-locked {
+  filter: brightness(0.85);
+}
+
+.hl-spot-lock {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 34%;
+  height: auto;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
+  z-index: 3;
+}
+
+@keyframes hl-term-bob {
+  0%, 100% { transform: translate(-50%, -55%) translateY(0); }
+  50% { transform: translate(-50%, -55%) translateY(-7px); }
+}
+
+.hl-map-hint {
+  position: fixed;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 6;
+  margin: 0;
+  padding: 8px 16px;
+  border: 2px solid rgba(255, 230, 160, 0.45);
+  border-radius: 999px;
+  background: rgba(18, 8, 36, 0.82);
+  color: #ffe9a8;
+  font-family: 'Bangers', cursive;
+  font-size: clamp(0.95rem, 2vw, 1.25rem);
+  letter-spacing: 0.06em;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Soft map ambience — above the art, under terminal hit targets */
+.hl-ambience {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hl-shooting {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 7%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #fff6c8 40%, #fff);
+  border-radius: 2px;
+  opacity: 0;
+  transform: rotate(-28deg);
+  animation: hl-shoot 14s var(--d) ease-in infinite;
+}
+
+/* Abyss — jagged bolt + soft blue flash in the cavern */
+.hl-bolt {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 5.5%;
+  height: 7%;
+  opacity: 0;
+  filter: drop-shadow(0 0 3px #9ff) drop-shadow(0 0 8px rgba(80, 200, 255, 0.7));
+  background:
+    linear-gradient(112deg, transparent 46%, #eafcff 47%, #eafcff 49%, transparent 50%),
+    linear-gradient(78deg, transparent 52%, #9ef6ff 53%, #9ef6ff 54.5%, transparent 55.5%),
+    linear-gradient(128deg, transparent 58%, #c8fbff 59%, #c8fbff 60%, transparent 61%);
+  clip-path: polygon(42% 0%, 58% 18%, 48% 18%, 62% 42%, 50% 42%, 68% 72%, 40% 48%, 52% 48%, 38% 28%, 48% 28%);
+  animation: hl-bolt 9.5s var(--d) ease-out infinite;
+  transform: translate(-50%, -20%);
+}
+
+.hl-bolt-b {
+  transform: translate(-50%, -20%) scaleX(-1) rotate(8deg);
+  width: 4.5%;
+  height: 6%;
+}
+
+.hl-bolt-flash {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 14%;
+  height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    rgba(160, 230, 255, 0.35) 0%,
+    rgba(60, 140, 220, 0.12) 40%,
+    transparent 70%);
+  opacity: 0;
+  transform: translate(-50%, -40%);
+  animation: hl-bolt-flash 9.5s var(--d) ease-out infinite;
+}
+
+/* Slime swamp bubbles */
+.hl-bubble {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 1.15%;
+  aspect-ratio: 1;
+  border: 1.5px solid rgba(170, 255, 110, 0.65);
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%,
+    rgba(230, 255, 190, 0.75),
+    rgba(90, 210, 60, 0.28) 55%,
+    rgba(40, 120, 40, 0.1));
+  box-shadow: 0 0 8px rgba(120, 255, 80, 0.35);
+  opacity: 0;
+  transform: scale(var(--s, 1));
+  animation: hl-bubble 7.2s var(--d) ease-out infinite;
+}
+
+/* Glowshroom soft pulses */
+.hl-shroom {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 4.2%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%,
+    rgba(255, 180, 255, 0.7) 0%,
+    rgba(180, 100, 255, 0.35) 32%,
+    rgba(100, 60, 200, 0.1) 55%,
+    transparent 70%);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(var(--s, 1));
+  animation: hl-shroom 4.8s var(--d) ease-in-out infinite;
+  filter: blur(1px);
+}
+
+/* Volcano smoke plumes — pale ash so it reads on purple sky */
+.hl-smoke {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 4%;
+  height: 10%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 85%,
+    rgba(200, 185, 210, 0.55) 0%,
+    rgba(140, 125, 150, 0.32) 40%,
+    rgba(80, 70, 95, 0.08) 65%,
+    transparent 78%);
+  filter: blur(6px);
+  opacity: 0;
+  transform: translate(-50%, -80%) scale(var(--s, 1));
+  animation: hl-smoke 7.5s var(--d) ease-out infinite;
+}
+
+@keyframes hl-shoot {
+  0%, 90%, 100% { opacity: 0; transform: rotate(-28deg) translateX(0); }
+  91% { opacity: 0.85; }
+  97% { opacity: 0; transform: rotate(-28deg) translateX(180%); }
+}
+
+@keyframes hl-bolt {
+  0%, 100% { opacity: 0; }
+  8% { opacity: 0; }
+  8.4% { opacity: 0.95; }
+  8.8% { opacity: 0.15; }
+  9.1% { opacity: 0.85; }
+  9.6% { opacity: 0.2; }
+  10.2% { opacity: 0; }
+  /* long quiet gap — feels like real storm cadence */
+}
+
+@keyframes hl-bolt-flash {
+  0%, 100% { opacity: 0; }
+  8.3% { opacity: 0; }
+  8.5% { opacity: 1; }
+  9.4% { opacity: 0.35; }
+  10.5% { opacity: 0; }
+}
+
+@keyframes hl-bubble {
+  0% { opacity: 0; transform: translateY(0) scale(calc(var(--s, 1) * 0.35)); }
+  10% { opacity: 0.85; }
+  65% { opacity: 0.5; transform: translateY(-140%) translateX(8%) scale(var(--s, 1)); }
+  100% { opacity: 0; transform: translateY(-190%) translateX(14%) scale(calc(var(--s, 1) * 1.15)); }
+}
+
+@keyframes hl-shroom {
+  0%, 100% { opacity: 0.25; transform: translate(-50%, -50%) scale(calc(var(--s, 1) * 0.9)); }
+  50% { opacity: 0.85; transform: translate(-50%, -50%) scale(calc(var(--s, 1) * 1.12)); }
+}
+
+@keyframes hl-smoke {
+  0% { opacity: 0; transform: translate(-50%, -80%) scale(calc(var(--s, 1) * 0.7)); }
+  15% { opacity: 0.7; }
+  100% { opacity: 0; transform: translate(-40%, -230%) scale(calc(var(--s, 1) * 1.7)); }
+}
+
+/* Steampunk region plaque */
+.hl-plaque-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  animation: hl-rise 0.4s ease-out both;
+}
+
+.hl-plaque {
+  position: relative;
+  width: min(640px, 96vw);
+  aspect-ratio: 1103 / 1200;
+  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.65));
+}
+
+.hl-plaque-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.hl-plaque-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9.2%;
+  margin: 0;
+  padding: 0 14% 0 16%;
+  color: #ffe27a;
+  font-family: 'Bangers', cursive;
+  font-size: clamp(2.1rem, 7.2vw, 3.15rem);
+  font-weight: normal;
+  letter-spacing: 0.05em;
+  line-height: 0.95;
+  text-align: center;
+  text-shadow:
+    0 1px 0 #6a2a00,
+    0 3px 0 #3a1400,
+    0 5px 0 #1a0800,
+    0 7px 0 rgba(10, 2, 0, 0.9),
+    0 10px 18px rgba(0, 0, 0, 0.85),
+    0 0 22px rgba(255, 180, 40, 0.5),
+    -2px -2px 0 #4a1c00,
+    2px 2px 0 #4a1c00,
+    -2px 2px 0 #4a1c00,
+    2px -2px 0 #4a1c00;
+  pointer-events: none;
+}
+
+.hl-plaque-score {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 16.4%;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.45em;
+  margin: 0;
+  padding: 0 18% 0 20%;
+  color: #fff;
+  font-family: 'Bangers', cursive;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-shadow: 0 2px 0 #1a0624, 0 4px 10px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
+.hl-plaque-score span {
+  color: #ffffff;
+  font-size: clamp(0.95rem, 2.6vw, 1.15rem);
+  opacity: 0.9;
+}
+
+.hl-plaque-score strong {
+  color: #ffffff;
+  font-size: clamp(1.5rem, 4.6vw, 2.1rem);
+  font-weight: normal;
+  text-shadow: 0 2px 0 #1a0624, 0 4px 10px rgba(0, 0, 0, 0.7);
+}
+
+.hl-plaque-window {
+  position: absolute;
+  /* Sit inside the silver pipe viewport (top ~24%, bottom ~56% of plaque art). */
+  left: 14.8%;
+  top: 25.35%;
+  width: 70.4%;
+  height: 29.9%;
+  overflow: hidden;
+  border-radius: 5.5% / 9%;
+  pointer-events: none;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.75);
+}
+
+.hl-plaque-window img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  /* Bleed past the clip so logo file corners never peek as hard edges. */
+  transform: scale(1.14);
+}
+
+.hl-plaque-window::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 28px 10px rgba(8, 4, 16, 0.72);
+  background: radial-gradient(ellipse at center, transparent 42%, rgba(6, 2, 14, 0.55) 100%);
+  pointer-events: none;
+}
+
+.hl-plaque-hq-lock {
+  max-width: min(520px, 92vw);
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  border: 2px solid rgba(255, 226, 122, 0.55);
+  border-radius: 12px;
+  background: rgba(20, 8, 28, 0.88);
+  color: #ffe27a;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.hl-plaque-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 14px;
+}
+
+.hl-plaque-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.hl-plaque-btn img {
+  display: block;
+  width: min(280px, 42vw);
+  height: auto;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.55));
+}
+
+.hl-plaque-btn:hover,
+.hl-plaque-btn:focus-visible {
+  outline: none;
+  transform: translateY(-2px) scale(1.04);
+  filter: brightness(1.08);
+}
+
+.hl-plaque-btn:active {
+  transform: translateY(2px) scale(0.98);
+}
+
+.hl-level-stars {
+  display: flex;
+  justify-content: center;
+  gap: 0.35em;
+  margin: 6px 0 0;
+  font-size: 1.6rem;
+  color: #5a6178;
+}
+
+.hl-level-stars .is-gold {
+  color: #ffd24a;
+  text-shadow: 0 0 8px rgba(255, 200, 60, 0.7);
 }
 
 .hl-spot-plate {
@@ -773,13 +1327,14 @@ body {
 .hl-spot-lock {
   position: absolute;
   left: 50%;
-  top: 48%;
-  width: 17%;
+  top: 40%;
+  width: 48%;
   filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 10px rgba(255, 200, 60, 0.45));
   transform: translate(-50%, -50%);
   transform-origin: 50% 0;
   pointer-events: none;
   animation: hl-lock-sway 3s ease-in-out infinite;
+  z-index: 1;
 }
 
 .hl-spot-new {
@@ -972,27 +1527,6 @@ body {
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45));
 }
 
-.hl-map-btn {
-  padding: 0;
-  transition: transform 0.12s ease, filter 0.12s ease;
-}
-
-.hl-map-btn img {
-  display: block;
-  width: clamp(170px, 22vw, 240px);
-  height: auto;
-  filter: drop-shadow(0 4px 6px rgba(10, 2, 20, 0.6));
-}
-
-.hl-map-btn:hover {
-  transform: translateY(-2px) scale(1.04);
-  filter: brightness(1.1);
-}
-
-.hl-map-btn:active {
-  transform: translateY(2px) scale(0.98);
-}
-
 a.hl-back,
 a.hl-go {
   text-decoration: none;
@@ -1007,7 +1541,7 @@ a.hl-go {
   position: fixed;
   top: max(12px, env(safe-area-inset-top));
   left: 12px;
-  z-index: 1;
+  z-index: 6;
   padding: 8px 16px;
   border: 3px solid #fff;
   border-radius: 999px;

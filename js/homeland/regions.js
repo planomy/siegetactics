@@ -238,24 +238,57 @@ export const REGIONS = [
 ];
 
 /**
- * The painted planet map. Each region's patch on the painting, as [left, top, width, height] in
- * percent of the (square) image. Names, padlocks and badges are laid over the patches live.
+ * Full-screen biome map. Terminals are overlays (blank / 1 / 2 / 3 shields filled).
+ * Spot `{ x, y }` is the path anchor under the terminal base, in % of the map stage.
  */
 export const PLANET_MAP = {
   src: 'assets/homeland/planet-map.webp',
-  /** @type {Record<string, [number, number, number, number]>} */
+  /** Map art aspect — stage letterboxes to this so terminal % coords stay true. */
+  aspect: 1672 / 941,
+  /** Terminal art by stars earned (0 blank → 3 all filled). */
+  terminals: [
+    'assets/homeland/terminal-0.webp',
+    'assets/homeland/terminal-1.webp',
+    'assets/homeland/terminal-2.webp',
+    'assets/homeland/terminal-3.webp',
+  ],
+  /** Empty shields (no progress, unused in live flow — first visit uses border 1). */
+  plaque: 'assets/homeland/plaque-empty.webp',
+  /** Gold border + star — attempting this level (prior levels filled in the art). */
+  plaqueBorder: [
+    '',
+    'assets/homeland/plaque-border-1.webp',
+    'assets/homeland/plaque-border-2.webp',
+    'assets/homeland/plaque-border-3.webp',
+  ],
+  /** Filled gold — this many levels completed. */
+  plaqueFilled: [
+    '',
+    'assets/homeland/plaque-filled-1.webp',
+    'assets/homeland/plaque-filled-2.webp',
+    'assets/homeland/plaque-filled-3.webp',
+  ],
+  /** @type {Record<string, { x: number, y: number, label?: string }>} */
+  // Floating terminals — positions from annotated map (red circle centers).
   spots: {
-    landing: [9.6, 25.5, 29.5, 18.3],
-    glowshroom: [39.1, 22.7, 28.7, 18.3],
-    swamp: [67.4, 28.7, 25.1, 16.7],
-    abyss: [69.4, 45.9, 24.7, 14.8],
-    scrapyard: [37.1, 45.1, 31.9, 15.6],
-    hive: [7.2, 43.9, 29.9, 16.7],
-    vents: [6, 62.6, 26.7, 17.5],
-    ruins: [35.9, 64.2, 31.5, 17.1],
-    palace: [67.4, 63.4, 25.5, 17.5],
+    landing: { x: 30, y: 82.5 },
+    swamp: { x: 22, y: 56.8 },
+    ruins: { x: 28.3, y: 37.4 },
+    scrapyard: { x: 49.8, y: 48.1 },
+    abyss: { x: 45.1, y: 66.6 },
+    glowshroom: { x: 63.1, y: 84.5 },
+    hive: { x: 90.5, y: 50.4 },
+    vents: { x: 73.7, y: 33.5 },
+    palace: { x: 57.4, y: 11.8, label: 'The Palace' },
   },
 };
+
+/** Level 1 / 2 / 3 difficulty knobs on top of each region's own tough & pace. */
+export const REGION_LEVELS = [
+  { level: 1, label: 'LEVEL 1', tough: 1, pace: 1, boss: 1 },
+  { level: 2, label: 'LEVEL 2', tough: 1.22, pace: 0.88, boss: 1.2 },
+  { level: 3, label: 'LEVEL 3', tough: 1.45, pace: 0.78, boss: 1.4 },
+];
 
 /**
  * Alien Crystals a region pays into Granny's vault back home, the first time it is beaten. Maths HQ
@@ -270,19 +303,59 @@ export const DIRECTIONAL_SHOTS = new Set(['alien-slime', 'alien-skull']);
 
 const SAVE_KEY = 'hl-progress';
 
-/** @typedef {{ unlocked: number, cleared: string[], best: Record<string, number> }} Progress */
+/**
+ * `stars` is 0–3 per region (highest level beaten). Landing Level 1 opens free explore;
+ * Palace needs every other region at Level 3.
+ * `tips` remembers which briefing modals Granny has already closed.
+ * @typedef {{ unlocked: number, cleared: string[], best: Record<string, number>, stars: Record<string, number>, tips: { arrive?: boolean, explore?: boolean } }} Progress
+ */
+
+/** @param {Progress} progress @param {string} key */
+export function regionStars(progress, key) {
+  return Math.max(0, Math.min(3, Number(progress.stars?.[key]) || 0));
+}
+
+/** Landing Level 1 beaten → every region except Palace is open. */
+export function canExplore(progress) {
+  return regionStars(progress, 'landing') >= 1 || progress.cleared.includes('landing');
+}
+
+/** Palace opens only when every other region has all three levels. */
+export function palaceReady(progress) {
+  return REGIONS.slice(0, -1).every((r) => regionStars(progress, r.key) >= 3);
+}
+
+/** @param {Progress} progress @param {number} index */
+export function isRegionLocked(progress, index) {
+  const r = REGIONS[index];
+  if (!r) return true;
+  if (r.key === 'landing') return false;
+  if (r.key === 'palace') return !palaceReady(progress);
+  return !canExplore(progress);
+}
 
 /** @returns {Progress} */
 export function loadProgress() {
   try {
     const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+    const cleared = Array.isArray(raw.cleared) ? raw.cleared : [];
+    /** @type {Record<string, number>} */
+    const stars = raw.stars && typeof raw.stars === 'object' ? { ...raw.stars } : {};
+    // Old saves only knew "cleared" — treat those as Level 1 done.
+    for (const key of cleared) if (!stars[key]) stars[key] = 1;
+    const tipsRaw = raw.tips && typeof raw.tips === 'object' ? raw.tips : {};
     return {
       unlocked: Math.max(1, Math.min(REGIONS.length, Number(raw.unlocked) || 1)),
-      cleared: Array.isArray(raw.cleared) ? raw.cleared : [],
+      cleared,
       best: raw.best && typeof raw.best === 'object' ? raw.best : {},
+      stars,
+      tips: {
+        arrive: !!tipsRaw.arrive,
+        explore: !!tipsRaw.explore,
+      },
     };
   } catch {
-    return { unlocked: 1, cleared: [], best: {} };
+    return { unlocked: 1, cleared: [], best: {}, stars: {}, tips: {} };
   }
 }
 

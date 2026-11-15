@@ -556,6 +556,7 @@
   display: flex;
   align-items: stretch;
   gap: 10px;
+  overflow: visible;
 }
 
 .homeland-track {
@@ -696,7 +697,7 @@
     flex-wrap: wrap;
   }
 
-  .homeland-launch {
+  .homeland-launch-wrap {
     flex: 1 1 100%;
   }
 
@@ -726,6 +727,41 @@
   width: min(100%, 820px);
 }
 
+.homeland-launch-wrap {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  z-index: 30;
+}
+
+.homeland-launch-arrow {
+  position: absolute;
+  left: 50%;
+  /* Float above the button (no layout space); +10px y nudges it down toward the CTA. */
+  bottom: calc(100% - 10px);
+  z-index: 40;
+  width: 132px;
+  height: auto;
+  transform: translateX(-50%);
+  pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.65));
+  animation: homeland-launch-arrow 0.85s ease-in-out infinite;
+}
+
+@keyframes homeland-launch-arrow {
+  0%, 100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: translateX(-50%) translateY(8px) scale(1.06);
+  }
+}
+
 .homeland-launch {
   display: flex;
   flex: none;
@@ -738,6 +774,7 @@
   background: linear-gradient(180deg, #b6ff4a, #4fc81e 55%, #2a8a10);
   box-shadow: 0 0 0 2px #1a3a06, 0 4px 0 #14300a, 0 0 22px rgba(160, 255, 80, .55);
   color: #10260a;
+  cursor: pointer;
   font-family: var(--font-display);
   font-size: 1.15rem;
   letter-spacing: .06em;
@@ -747,13 +784,98 @@
   transition: transform .12s ease;
 }
 
+/* Fly to Doompickle: black + Granny mad → countdown → warp → fullscreen map */
+.homeland-depart {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: #000;
+  animation: homeland-depart-fade 0.35s ease-out both;
+}
+
+.homeland-depart.is-frame {
+  display: block;
+  padding: 0;
+  animation: none;
+}
+
+.homeland-depart-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+}
+
+.homeland-depart-mad {
+  position: relative;
+  width: min(720px, 92vw);
+  animation: homeland-depart-pop 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+
+.homeland-depart-mad img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 12px 40px rgba(180, 60, 255, 0.35));
+}
+
+.homeland-depart-count {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: rgba(255, 242, 168, 0.55);
+  font-family: var(--font-display);
+  font-size: clamp(18rem, 64vw, 36rem);
+  letter-spacing: 0.04em;
+  line-height: 0.85;
+  text-shadow: none;
+  -webkit-text-stroke: 3px rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.homeland-depart-count.is-pop {
+  animation: homeland-depart-count-pop 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.homeland-depart-count.is-launch {
+  color: rgba(255, 242, 168, 0.62);
+  font-size: clamp(9rem, 32vw, 18rem);
+  letter-spacing: 0.08em;
+  -webkit-text-stroke: 3px rgba(255, 255, 255, 0.4);
+}
+
+@keyframes homeland-depart-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes homeland-depart-pop {
+  from { opacity: 0; transform: scale(0.86); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes homeland-depart-count-pop {
+  0% { opacity: 0; transform: scale(0.55); }
+  55% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 .homeland-launch:hover {
   transform: translateY(-2px) scale(1.03);
 }
 
-.homeland-sheet .homeland-launch {
+.homeland-sheet .homeland-launch-wrap {
   width: fit-content;
   margin: 14px auto 0;
+}
+
+.homeland-sheet .homeland-launch {
   font-size: 1.4rem;
 }
 
@@ -780,7 +902,8 @@
   .homeland-track-ship,
   .homeland-track-ship > span,
   .homeland-track-ship::after,
-  .homeland-launch { animation: none; }
+  .homeland-launch,
+  .homeland-launch-arrow { animation: none; }
 }
 
 /* All-time crystals: a red seven-segment display bolted over the vault's front lights.
