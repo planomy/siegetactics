@@ -247,18 +247,6 @@ body.dev-mode .topbar::after {
   filter: grayscale(0.45) brightness(0.88);
 }
 
-.topbar-fullscreen-btn {
-  color: #f0e6c8;
-  width: 44px;
-  height: 44px;
-}
-
-.topbar-fullscreen-btn .topbar-fullscreen-icon {
-  width: 28px;
-  height: 28px;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
-}
-
 .topbar-fullscreen-btn .fs-exit {
   display: none;
 }
@@ -269,18 +257,6 @@ body.dev-mode .topbar::after {
 
 .topbar-fullscreen-btn.is-fullscreen .fs-exit {
   display: block;
-}
-
-@media (max-width: 640px) {
-  .topbar-fullscreen-btn {
-    width: 40px;
-    height: 40px;
-  }
-
-  .topbar-fullscreen-btn .topbar-fullscreen-icon {
-    width: 24px;
-    height: 24px;
-  }
 }
 
 .topbar-action-icon {
