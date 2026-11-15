@@ -29,7 +29,7 @@ html:has(#title-screen) body {
 #title-screen .title-art {
   position: absolute;
   inset: -2%;
-  background-image: url("../assets/home/title-keyart.png");
+  background-image: url("../assets/home/title-keyart.webp?v=20261116a");
   background-position: center center;
   background-size: cover;
   background-repeat: no-repeat;
