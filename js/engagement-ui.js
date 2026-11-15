@@ -47,6 +47,15 @@ export function renderStreakPill(el, status) {
   el.classList.toggle('is-new', status.count === 0 && !status.doneToday);
   el.innerHTML = `<img class="streak-flame" src="${ICONS.flame}" alt="" /><strong>${status.count === 0 && !status.doneToday ? 'START' : status.count}</strong>`;
   el.setAttribute('aria-label', `${status.count} day streak. ${status.doneToday ? 'Today is done.' : `${status.toGo} more right answers today to keep it going.`}`);
+  el.setAttribute('data-tip-title', 'Daily Streak');
+  el.setAttribute(
+    'data-tip',
+    status.doneToday
+      ? 'Today is locked in'
+      : status.count === 0
+        ? 'Get right answers to start'
+        : `${status.toGo} more right answers today`
+  );
 }
 
 /** @param {HTMLElement|null} el @param {import('./daily-challenges.js').DailySave} daily */
@@ -57,6 +66,8 @@ export function renderDailyPill(el, daily) {
   el.classList.toggle('is-pending', !daily.chest);
   el.innerHTML = `<img class="daily-dart" src="${daily.chest ? ICONS.chest : ICONS.target}" alt="" /><strong>${done}/3</strong>`;
   el.setAttribute('aria-label', `Daily challenges: ${done} of 3 done`);
+  el.setAttribute('data-tip-title', 'Daily Challenges');
+  el.setAttribute('data-tip', daily.chest ? 'Chest claimed — come back tomorrow' : `${done} of 3 done`);
 }
 
 /* ---------- Streak and daily panels ---------- */

@@ -1067,6 +1067,8 @@ export function renderTopbarBadges(container, record, opts = {}) {
   container.classList.remove('badge-row-compact');
   container.innerHTML = `
     <button type="button" class="rank-badge${level ? '' : ' is-locked'}${rankedUp ? ' is-rank-up' : ''}" aria-haspopup="dialog"
+      data-tip-title="Siege Rank"
+      data-tip="${level ? name : 'Play sieges to earn ranks'}"
       aria-label="${level ? `Your rank: ${name}` : 'No rank yet'}${next ? `. Next: ${next.name}, ${next.hint}, ${progress} done` : '. Top rank reached'}. Show all ranks.">
       <span class="rank-badge-art"><img src="${badgeSrc(shown)}" alt="" width="57" height="57" />${level ? '' : '<span class="rank-badge-lock" aria-hidden="true">🔒</span>'}</span>
       <span class="rank-badge-copy">

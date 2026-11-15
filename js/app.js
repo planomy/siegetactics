@@ -23,6 +23,7 @@ import { YARD_LAYOUTS } from './yard-obstacles.js?v=20261115y50';
 import { HEDGE } from './maze-field.js?v=20261113m7';
 import { showCoachTips, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261115p1';
 import { keepFullscreen } from './fullscreen.js?v=20261115p2';
+import { bindTipPills } from './tip-pills.js?v=20261115t1';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
 import { ECONOMY, bankBonusForgeXp } from './economy.js';
@@ -391,6 +392,11 @@ function refreshSoundButton() {
     btn.classList.toggle('is-muted', !save.settings.sound);
     btn.classList.toggle('music-off', save.settings.sound && !save.settings.music);
     btn.setAttribute('aria-label', !save.settings.sound ? 'Unmute sound' : save.settings.music ? 'Turn music off' : 'Mute all sound');
+    btn.setAttribute('data-tip-title', 'Sound');
+    btn.setAttribute(
+      'data-tip',
+      !save.settings.sound ? 'Tap to unmute' : save.settings.music ? 'Music on — tap to quiet' : 'SFX only — tap to mute'
+    );
   }
 }
 
@@ -2373,6 +2379,7 @@ function finishRun(stats) {
 
 function bindUI() {
   initPopups();
+  bindTipPills(document.querySelector('.topbar-hud') || document);
   keepFullscreen({
     button: document.getElementById('btn-fullscreen'),
     onExit() {

@@ -83,6 +83,8 @@ export function keepFullscreen(opts = {}) {
     btn.classList.toggle('is-fullscreen', on);
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     btn.setAttribute('aria-label', on ? 'Exit fullscreen' : 'Enter fullscreen');
+    btn.setAttribute('data-tip-title', 'Fullscreen');
+    btn.setAttribute('data-tip', on ? 'Leave fullscreen' : 'Fill the screen');
   };
 
   const tryEnter = () => {
