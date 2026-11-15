@@ -35,11 +35,26 @@
   <link rel="stylesheet" href="css/hq-polish.css?v=20261114p1" />
   <link rel="stylesheet" href="css/rare-ships.css?v=20261114t2" />
   <link rel="stylesheet" href="css/readability.css?v=20261114q3" />
+  <link rel="stylesheet" href="css/title-screen.css?v=20261115t1" />
+  <link rel="preload" href="assets/home/title-keyart.png" as="image" type="image/png" />
   <link rel="preload" href="assets/field-lawn.jpg" as="image" type="image/jpeg" />
   <link rel="preload" href="assets/home/granny-boom-siege-logo.png" as="image" type="image/png" />
   <link rel="preload" href="assets/home/hero-village.png" as="image" type="image/png" />
 </head>
 <body>
+  <div id="title-screen" role="dialog" aria-modal="true" aria-label="Granny Boom Siege Tactics">
+    <div class="title-art" aria-hidden="true"></div>
+    <div class="title-shimmer" aria-hidden="true"></div>
+    <div class="title-embers" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <div class="title-actions">
+      <button id="title-enter" type="button">HOLD THE LINE</button>
+      <p>They've landed.</p>
+    </div>
+  </div>
+  <script src="js/title-screen.js?v=20261115t1"></script>
+
   <header class="topbar gb-topbar">
     <div class="topbar-brand">
       <img

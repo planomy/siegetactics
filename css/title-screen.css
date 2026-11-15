@@ -1,0 +1,202 @@
+/* First thing visitors see. The picture is the poster; this is the door. */
+
+html:has(#title-screen),
+html:has(#title-screen) body {
+  overflow: hidden;
+  height: 100%;
+}
+
+#title-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  width: 100%;
+  width: 100dvw;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  background: #07060f;
+  color: white;
+  transition: opacity 400ms ease;
+}
+
+#title-screen,
+#title-screen * {
+  box-sizing: border-box;
+}
+
+#title-screen .title-art {
+  position: absolute;
+  inset: -2%;
+  background-image: url("../assets/home/title-keyart.png");
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transform: scale(1.04);
+  animation: granny-push 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes granny-push {
+  from { transform: scale(1.04); }
+  to { transform: scale(1.12); }
+}
+
+#title-screen .title-shimmer {
+  position: absolute;
+  left: 30%;
+  top: 2%;
+  width: 40%;
+  height: 38%;
+  pointer-events: none;
+  background: linear-gradient(
+    110deg,
+    transparent 25%,
+    rgba(255, 213, 74, 0.12) 48%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+  animation: granny-shimmer 9s linear infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes granny-shimmer {
+  from { background-position: 200% center; }
+  to { background-position: -200% center; }
+}
+
+#title-screen .title-embers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#title-screen .title-embers i {
+  position: absolute;
+  bottom: -4%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffd54a;
+  box-shadow: 0 0 12px #ff9a2e;
+  opacity: 0;
+  animation: granny-ember 8s linear infinite;
+}
+
+#title-screen .title-embers i:nth-child(1) { left: 12%; animation-delay: 0s; }
+#title-screen .title-embers i:nth-child(2) { left: 27%; animation-delay: 2s; }
+#title-screen .title-embers i:nth-child(3) { left: 43%; animation-delay: 4s; }
+#title-screen .title-embers i:nth-child(4) { left: 61%; animation-delay: 1s; }
+#title-screen .title-embers i:nth-child(5) { left: 78%; animation-delay: 5s; }
+#title-screen .title-embers i:nth-child(6) { left: 90%; animation-delay: 3s; }
+
+@keyframes granny-ember {
+  0%   { transform: translateY(0); opacity: 0; }
+  15%  { opacity: 0.7; }
+  85%  { opacity: 0.4; }
+  100% { transform: translateY(-85vh); opacity: 0; }
+}
+
+#title-screen .title-actions {
+  position: absolute;
+  bottom: calc(4% + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  width: min(90%, 480px);
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 2;
+}
+
+#title-enter {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: clamp(10px, 2vh, 18px) 24px;
+  border: 4px solid #171022;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff09b 0%, #ffd54a 40%, #ff9a2e 100%);
+  box-shadow:
+    0 6px 0 #6e3413,
+    0 10px 28px rgba(255, 154, 46, 0.5),
+    inset 0 2px 2px rgba(255, 255, 255, 0.5);
+  color: #211126;
+  font-family: "Bangers", Impact, sans-serif;
+  font-size: clamp(28px, 4vw, 52px);
+  letter-spacing: 0.07em;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  animation: granny-button-pulse 2.4s ease-in-out infinite;
+}
+
+#title-enter:hover {
+  filter: brightness(1.1);
+}
+
+#title-enter:focus-visible {
+  outline: 4px solid white;
+  outline-offset: 5px;
+}
+
+#title-enter:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #6e3413;
+}
+
+@keyframes granny-button-pulse {
+  0%, 100% { box-shadow: 0 6px 0 #6e3413, 0 10px 24px rgba(255, 154, 46, 0.35); }
+  50% { box-shadow: 0 6px 0 #6e3413, 0 10px 36px rgba(255, 213, 74, 0.75); }
+}
+
+#title-screen .title-actions p {
+  margin: 12px 0 0;
+  font-family: "Nunito", sans-serif;
+  font-weight: 900;
+  font-size: clamp(13px, 1.5vw, 18px);
+  color: #fff2bd;
+  text-shadow: 0 2px 6px #07060f;
+}
+
+#title-screen.title-exiting {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-height: 480px) {
+  #title-screen .title-actions {
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    width: min(52%, 340px);
+  }
+
+  #title-enter {
+    font-size: 26px;
+    padding: 8px 16px;
+    border-width: 3px;
+    border-radius: 12px;
+  }
+
+  #title-screen .title-actions p {
+    margin-top: 5px;
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #title-screen .title-art,
+  #title-screen .title-shimmer,
+  #title-screen .title-embers i,
+  #title-enter {
+    animation: none !important;
+  }
+
+  #title-screen .title-shimmer,
+  #title-screen .title-embers {
+    display: none;
+  }
+
+  #title-screen .title-art {
+    transform: scale(1.04);
+  }
+}
