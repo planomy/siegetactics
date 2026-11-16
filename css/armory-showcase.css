@@ -350,6 +350,20 @@
   .armory-feature-copy {text-align:center;}
   .armory-demo-lane {left:20%;right:20%;}
 }
+
+/* iPad landscape is short. The spotlight used to fill the screen, so the
+   turret buttons started below the fold and a tap could not reach them.
+   Show the chooser first; the big preview follows once you scroll. */
+@media (max-height: 820px) {
+  .armory-panel { display: flex; flex-direction: column; }
+  .armory-grid-intro { order: 3; margin-top: 4px; }
+  .armory-grid { order: 4; }
+  #armory-feature-host { order: 5; }
+  .armory-feature { margin: 8px 0 10px; padding: 10px 14px; }
+  .armory-feature-visual { min-height: 150px; }
+  .armory-feature-visual:has(.armory-range) .armory-feature-turret,
+  .armory-feature-turret { max-height: 140px; }
+}
 @media(prefers-reduced-motion:reduce){
   .armory-feature *, .armory-feature-visual * {animation:none!important;}
   .armory-demo-shot {left:48%;opacity:.65;}
@@ -378,13 +392,6 @@
   font-size: .85em;
   letter-spacing: 0;
   vertical-align: middle;
-}
-
-.armory-level-stars span {
-  color: rgba(255, 255, 255, .18);
-}
-
-.armory-level-stars span.is-earned {
   color: #ffd84a;
   text-shadow: 0 0 6px rgba(255, 200, 60, .7);
 }

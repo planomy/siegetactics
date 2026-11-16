@@ -1205,6 +1205,7 @@ body.dev-mode .topbar::after {
 
 .shop-buy-btn {
   position: relative;
+  touch-action: manipulation;
   min-height: 0;
   min-width: 0;
   padding: 2px 1px 2px;
@@ -1270,6 +1271,10 @@ body.dev-mode .topbar::after {
   height: 39px;
   object-fit: contain;
   margin-top: 6px;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .shop-buy-btn.flip-x img {
@@ -1510,6 +1515,7 @@ body.dev-mode .topbar::after {
 
 .armory-card {
   position: relative;
+  touch-action: manipulation;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1522,6 +1528,13 @@ body.dev-mode .topbar::after {
   cursor: pointer;
   text-align: center;
   transition: border-color 0.2s, box-shadow 0.2s, filter 0.2s, opacity 0.2s;
+}
+
+.armory-card img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .armory-card--locked {

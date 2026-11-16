@@ -1,8 +1,8 @@
 import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261114v1';
 import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261114v1';
 import { initForge } from './forge.js';
-import { renderShopBar, updateShopBar } from './shop.js?v=20261113n1';
-import { renderArmory } from './armory.js?v=20261113a6';
+import { renderShopBar, updateShopBar } from './shop.js?v=20261116b1';
+import { renderArmory } from './armory.js?v=20261116b1';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel } from './turret-upgrades.js?v=20261112a2';
 import { createTDEngine } from './td-engine.js?v=20261115y50';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
@@ -21,7 +21,7 @@ import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, sho
 import { DEV } from './dev.js?v=20261115y1';
 import { YARD_LAYOUTS } from './yard-obstacles.js?v=20261115y50';
 import { HEDGE } from './maze-field.js?v=20261113m7';
-import { showCoachTips, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261115p1';
+import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261115p1';
 import { keepFullscreen } from './fullscreen.js?v=20261116h';
 import { bindTipPills } from './tip-pills.js?v=20261115t1';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
@@ -487,6 +487,9 @@ function renderArmoryScreen() {
 let armoryTab = 'turrets';
 
 function openArmory() {
+  // The tour card sits on top of whatever is open. On an iPad it covers the
+  // turret grid, so those buttons never receive the tap.
+  closeCoach();
   dismissWeaponAnnouncement();
   const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'));
   const key = active?.[0] ?? 'home';

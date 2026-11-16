@@ -161,12 +161,16 @@ function bindShopPopover(btn, t, state) {
     if (popoverAnchor === btn) hideShopPopover();
   };
 
+  // Hover tips only for a real mouse. On iPad, mouseenter and touchstart both
+  // insert the popover under the finger and Safari then drops the click, so a
+  // tap never switches turret.
+  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (!finePointer) return;
+
   btn.addEventListener('mouseenter', () => show());
   btn.addEventListener('mouseleave', hide);
   btn.addEventListener('focus', () => show());
   btn.addEventListener('blur', hide);
-
-  btn.addEventListener('touchstart', () => show(), { passive: true });
 }
 
 /**
@@ -224,21 +228,42 @@ export function renderShopBar(barEl, state) {
 
     btn.innerHTML = `
       <span class="price-tag price-place">${priceLabel}</span>
-      <img src="${t.sprite}" alt="" />
+      <img src="${t.sprite}" alt="" draggable="false" />
       <span class="turret-name">${t.name}</span>
     `;
 
     bindShopPopover(btn, t, state);
 
-    // Affordability must be checked at click time. Kills add coins while
+    // Affordability must be checked at tap time. Kills add coins while
     // the battle is running, so a captured initial "canPlace" becomes stale.
-    btn.addEventListener('click', () => {
+    const choose = () => {
       if (!canAffordTurret(state, t)) {
         showShopPopover(btn, t, state, { pulse: true });
         return;
       }
       hideShopPopover();
       state.onSelect(id);
+    };
+    /** @type {{ x: number, y: number, id: number, type: string }|null} */
+    let origin = null;
+    let handledByTouch = false;
+    btn.addEventListener('pointerdown', (event) => {
+      origin = { x: event.clientX, y: event.clientY, id: event.pointerId, type: event.pointerType };
+    });
+    btn.addEventListener('pointerup', (event) => {
+      if (!origin || origin.id !== event.pointerId || origin.type === 'mouse') return;
+      const moved = Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 12;
+      origin = null;
+      if (moved) return;
+      handledByTouch = true;
+      choose();
+    });
+    btn.addEventListener('click', () => {
+      if (handledByTouch) {
+        handledByTouch = false;
+        return;
+      }
+      choose();
     });
 
     turretsEl?.appendChild(btn);

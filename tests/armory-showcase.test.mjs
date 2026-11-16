@@ -1,8 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { armoryPromoState, renderArmoryPromo } from '../js/armory-promo.js';
 import { TURRET_ORDER, TURRETS, STARTER_TURRETS } from '../js/turrets-data.js';
 import { powerParticleCount } from '../js/power-core.js';
+
+test('a new player keeps level 1 turret stats and a single earned star', async () => {
+  const { setTurretLevels, turretLevel, effectiveTurret } = await import('../js/turret-upgrades.js?v=20261112a2');
+  setTurretLevels(null);
+  assert.equal(turretLevel('granny-blaster'), 1);
+  assert.equal(turretLevel('boom-gnome'), 1);
+  assert.equal(effectiveTurret('boom-gnome').damage, TURRETS['boom-gnome'].damage);
+  const armory = readFileSync(new URL('../js/armory.js', import.meta.url), 'utf8');
+  assert.match(armory, /'★'\.repeat\(level\)/);
+  assert.doesNotMatch(armory, /is-earned/);
+  const css = readFileSync(new URL('../css/armory-showcase.css', import.meta.url), 'utf8');
+  assert.match(css, /@media \(max-height: 820px\)[\s\S]*\.armory-grid \{ order: 4; \}/);
+  assert.match(css, /#armory-feature-host \{ order: 5; \}/);
+});
 
 test('Armory promotion advertises the next weapon and precise Forge XP shortfall', () => {
   const owned = new Set(STARTER_TURRETS);

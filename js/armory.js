@@ -81,10 +81,14 @@ export function nextLockedTurret(xp, unlocked) {
   return TURRET_ORDER.find((id) => !unlocked.has(id)) ?? null;
 }
 
-/** Gold stars for the turret's level, dim for levels still to earn. @param {string} id */
+/**
+ * Only the stars already earned. A level 1 turret is one star, never a row of three
+ * empty ones that reads as max level.
+ * @param {string} id
+ */
 function levelStars(id) {
   const level = turretLevel(id);
-  return `<span class="armory-level-stars" aria-label="Level ${level} of ${TURRET_MAX_LEVEL}">${Array.from({ length: TURRET_MAX_LEVEL }, (_, i) => `<span class="${i < level ? 'is-earned' : ''}">★</span>`).join('')}</span>`;
+  return `<span class="armory-level-stars" aria-label="Level ${level} of ${TURRET_MAX_LEVEL}">${'★'.repeat(level)}</span>`;
 }
 
 const coreText = (n) => `${n} alien crystal${n === 1 ? '' : 's'}`;
@@ -220,7 +224,7 @@ export function renderArmory(host, callbacks) {
       >
         <span class="armory-card-badge armory-card-badge--${status.tone}">${status.label}</span>
         <span class="armory-card-art">
-          <img src="${t.sprite}" alt="" class="${t.flipX ? 'flip-x' : ''}${mystery ? ' is-mystery' : ''}" width="72" height="72" loading="lazy" />
+          <img src="${t.sprite}" alt="" draggable="false" class="${t.flipX ? 'flip-x' : ''}${mystery ? ' is-mystery' : ''}" width="72" height="72" loading="lazy" />
         </span>
         <span class="armory-card-name">${mystery ? '???' : t.name}</span>
         ${isUnlocked ? levelStars(id) : ''}
@@ -272,7 +276,12 @@ export function renderArmory(host, callbacks) {
   bindUpgrade();
 
   host.querySelectorAll('.armory-card').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    // iPad delivers the tap to the turret art and often drops the click, especially
+    // after a scroll. A finger tap chooses on pointerup; a mouse still uses click.
+    /** @type {{ x: number, y: number, id: number, type: string }|null} */
+    let origin = null;
+    let handledByTouch = false;
+    const choose = () => {
       const id = btn.getAttribute('data-turret-id');
       if (!id || !TURRETS[id]) return;
       const preview = host.querySelector('#armory-feature-host');
@@ -283,6 +292,24 @@ export function renderArmory(host, callbacks) {
       });
       if (unlocked.has(id) || xp < TURRETS[id].unlockXp) return;
       if (onUnlock(id)) showToast(`${TURRETS[id].name} unlocked permanently!`, { variant: 'success' });
+    };
+    btn.addEventListener('pointerdown', (event) => {
+      origin = { x: event.clientX, y: event.clientY, id: event.pointerId, type: event.pointerType };
+    });
+    btn.addEventListener('pointerup', (event) => {
+      if (!origin || origin.id !== event.pointerId || origin.type === 'mouse') return;
+      const moved = Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 12;
+      origin = null;
+      if (moved) return;
+      handledByTouch = true;
+      choose();
+    });
+    btn.addEventListener('click', () => {
+      if (handledByTouch) {
+        handledByTouch = false;
+        return;
+      }
+      choose();
     });
   });
 }

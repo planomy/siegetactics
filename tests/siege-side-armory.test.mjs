@@ -5,6 +5,7 @@ import { canAffordTurret } from '../js/shop.js';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const layoutCSS = readFileSync(new URL('../css/siege-side-armory.css', import.meta.url), 'utf8');
+const mainCSS = readFileSync(new URL('../css/main.css', import.meta.url), 'utf8');
 const shopJS = readFileSync(new URL('../js/shop.js', import.meta.url), 'utf8');
 const appJS = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 
@@ -44,6 +45,14 @@ test('the command rail stays visible on desktop and becomes a compact mobile doc
   assert.match(layoutCSS, /\.shop-turrets\s*\{[\s\S]*display:\s*flex/);
   assert.match(layoutCSS, /overflow-x:\s*auto/);
   assert.match(appJS, /classList\.toggle\('siege-mode', id === 'siege'\)/);
+});
+
+test('a finger tap can switch turrets without a hover tip stealing the click', () => {
+  assert.doesNotMatch(shopJS, /addEventListener\('touchstart'/);
+  assert.match(shopJS, /origin\.type === 'mouse'/);
+  assert.match(shopJS, /hover: hover/);
+  assert.match(mainCSS, /\.shop-buy-btn img\s*\{[^}]*pointer-events:\s*none/);
+  assert.match(mainCSS, /\.armory-card img\s*\{[^}]*pointer-events:\s*none/);
 });
 
 test('a turret becomes selectable as soon as kills earn enough coins', () => {
