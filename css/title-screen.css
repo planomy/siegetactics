@@ -26,49 +26,31 @@ html:has(#title-screen) body {
   box-sizing: border-box;
 }
 
+/* 16:9 stage matches contain sizing so overlays stay locked to the poster. */
+#title-screen .title-stage {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: min(100%, calc(100dvh * 16 / 9));
+  height: min(100%, calc(100dvw * 9 / 16));
+  overflow: hidden;
+  transition: filter 280ms ease;
+}
+
 #title-screen .title-art {
   position: absolute;
   inset: 0;
   background-image: url("../assets/home/title-keyart.webp?v=20261116a");
   background-position: center center;
-  background-size: contain;
+  background-size: 100% 100%;
   background-repeat: no-repeat;
-  transition: filter 280ms ease;
 }
 
-#title-screen.is-briefing .title-art {
+#title-screen.is-briefing .title-stage {
   filter: brightness(0.35) saturate(0.85);
 }
 
-#title-screen .title-shimmer {
-  position: absolute;
-  left: 30%;
-  top: 2%;
-  width: 40%;
-  height: 38%;
-  pointer-events: none;
-  background: linear-gradient(
-    110deg,
-    transparent 25%,
-    rgba(255, 213, 74, 0.12) 48%,
-    transparent 70%
-  );
-  background-size: 250% 100%;
-  animation: granny-shimmer 9s linear infinite;
-  mix-blend-mode: screen;
-}
-
-#title-screen.is-briefing .title-shimmer,
-#title-screen.is-briefing .title-embers {
-  opacity: 0;
-}
-
-@keyframes granny-shimmer {
-  from { background-position: 200% center; }
-  to { background-position: -200% center; }
-}
-
-#title-screen .title-embers {
+#title-screen .title-fx {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -76,30 +58,284 @@ html:has(#title-screen) body {
   transition: opacity 280ms ease;
 }
 
-#title-screen .title-embers i {
-  position: absolute;
-  bottom: -4%;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #ffd54a;
-  box-shadow: 0 0 12px #ff9a2e;
+#title-screen.is-briefing .title-fx {
   opacity: 0;
-  animation: granny-ember 8s linear infinite;
 }
 
-#title-screen .title-embers i:nth-child(1) { left: 12%; animation-delay: 0s; }
-#title-screen .title-embers i:nth-child(2) { left: 27%; animation-delay: 2s; }
-#title-screen .title-embers i:nth-child(3) { left: 43%; animation-delay: 4s; }
-#title-screen .title-embers i:nth-child(4) { left: 61%; animation-delay: 1s; }
-#title-screen .title-embers i:nth-child(5) { left: 78%; animation-delay: 5s; }
-#title-screen .title-embers i:nth-child(6) { left: 90%; animation-delay: 3s; }
+/* ── Sky artefacts ── */
+#title-screen .title-sky {
+  position: absolute;
+  inset: 0 0 42% 0;
+  overflow: hidden;
+}
 
-@keyframes granny-ember {
-  0%   { transform: translateY(0); opacity: 0; }
-  15%  { opacity: 0.7; }
-  85%  { opacity: 0.4; }
-  100% { transform: translateY(-85vh); opacity: 0; }
+#title-screen .title-sky-stars {
+  position: absolute;
+  left: 8%;
+  top: 12%;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #fffce8;
+  box-shadow:
+    6vw 2vh 0 0 rgba(255, 252, 220, 0.85),
+    14vw 8vh 0 1px rgba(180, 255, 210, 0.7),
+    22vw 3vh 0 0 rgba(255, 255, 255, 0.55),
+    31vw 11vh 0 0 rgba(255, 230, 160, 0.8),
+    39vw 5vh 0 1px rgba(200, 255, 240, 0.65),
+    48vw 14vh 0 0 rgba(255, 255, 255, 0.45),
+    57vw 4vh 0 0 rgba(255, 240, 200, 0.75),
+    66vw 9vh 0 1px rgba(170, 255, 200, 0.7),
+    74vw 2vh 0 0 rgba(255, 255, 255, 0.6),
+    82vw 12vh 0 0 rgba(255, 220, 180, 0.7),
+    88vw 6vh 0 1px rgba(200, 240, 255, 0.65),
+    11vw 18vh 0 0 rgba(255, 255, 255, 0.4),
+    27vw 16vh 0 0 rgba(190, 255, 220, 0.5),
+    71vw 17vh 0 0 rgba(255, 250, 210, 0.55),
+    93vw 15vh 0 0 rgba(255, 255, 255, 0.45);
+  animation: title-sky-twinkle 3.6s ease-in-out infinite;
+}
+
+@keyframes title-sky-twinkle {
+  0%, 100% { opacity: 0.55; filter: brightness(0.9); }
+  40% { opacity: 1; filter: brightness(1.35); }
+  70% { opacity: 0.7; filter: brightness(1.05); }
+}
+
+#title-screen .title-sky-streak {
+  position: absolute;
+  width: 58px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), rgba(160, 255, 200, 0.4), transparent);
+  opacity: 0;
+  transform: rotate(-28deg);
+  animation: title-sky-streak 7.5s linear infinite;
+}
+
+#title-screen .title-sky-streak:nth-child(2) {
+  top: 18%;
+  left: -10%;
+  animation-delay: 0.4s;
+}
+
+#title-screen .title-sky-streak:nth-child(3) {
+  top: 28%;
+  left: 20%;
+  width: 42px;
+  animation-delay: 3.1s;
+  animation-duration: 9s;
+}
+
+#title-screen .title-sky-streak:nth-child(4) {
+  top: 12%;
+  left: 55%;
+  width: 70px;
+  animation-delay: 5.4s;
+  animation-duration: 8.2s;
+}
+
+@keyframes title-sky-streak {
+  0%, 82% { opacity: 0; transform: translate(0, 0) rotate(-28deg); }
+  84% { opacity: 0.85; }
+  92% { opacity: 0.5; transform: translate(28vw, 10vh) rotate(-28deg); }
+  100% { opacity: 0; transform: translate(36vw, 13vh) rotate(-28deg); }
+}
+
+#title-screen .title-sky-mote {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(210, 255, 190, 0.75);
+  box-shadow: 0 0 8px rgba(120, 255, 160, 0.55);
+  opacity: 0;
+  animation: title-sky-mote 11s linear infinite;
+}
+
+#title-screen .title-sky-mote:nth-child(5)  { left: 8%;  top: 40%; animation-delay: 0s; }
+#title-screen .title-sky-mote:nth-child(6)  { left: 18%; top: 22%; animation-delay: 1.6s; width: 2px; height: 2px; }
+#title-screen .title-sky-mote:nth-child(7)  { left: 34%; top: 48%; animation-delay: 3.2s; }
+#title-screen .title-sky-mote:nth-child(8)  { left: 62%; top: 20%; animation-delay: 4.8s; width: 2px; height: 2px; }
+#title-screen .title-sky-mote:nth-child(9)  { left: 76%; top: 36%; animation-delay: 6.1s; }
+#title-screen .title-sky-mote:nth-child(10) { left: 90%; top: 26%; animation-delay: 7.7s; width: 2px; height: 2px; }
+
+@keyframes title-sky-mote {
+  0%   { transform: translate(0, 8px); opacity: 0; }
+  12%  { opacity: 0.7; }
+  70%  { opacity: 0.45; }
+  100% { transform: translate(12px, -46px); opacity: 0; }
+}
+
+/* ── Spaceship hull rings ── */
+#title-screen .title-hull {
+  position: absolute;
+  width: 7.5%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+
+#title-screen .title-hull--a {
+  left: 22%;
+  top: 13.5%;
+}
+
+#title-screen .title-hull--b {
+  left: 78.5%;
+  top: 10.5%;
+  width: 6.5%;
+}
+
+#title-screen .title-hull span {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(120, 255, 90, 0.85);
+  box-shadow:
+    0 0 10px rgba(80, 255, 120, 0.55),
+    inset 0 0 12px rgba(160, 255, 120, 0.25);
+  opacity: 0;
+  animation: title-hull-ring 3.4s ease-out infinite;
+}
+
+#title-screen .title-hull span:nth-child(2) { animation-delay: 1.1s; }
+#title-screen .title-hull span:nth-child(3) { animation-delay: 2.2s; }
+
+#title-screen .title-hull--b span {
+  animation-duration: 3.8s;
+}
+
+@keyframes title-hull-ring {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.85;
+    border-color: rgba(170, 255, 120, 0.95);
+  }
+  70% {
+    opacity: 0.25;
+  }
+  100% {
+    transform: scale(2.35);
+    opacity: 0;
+    border-color: rgba(80, 255, 140, 0.15);
+  }
+}
+
+/* ── Fountain spray ── */
+#title-screen .title-fountain {
+  position: absolute;
+  left: 52%;
+  top: 46%;
+  width: 14%;
+  height: 18%;
+  transform: translateX(-50%);
+  overflow: visible;
+}
+
+#title-screen .title-fountain i {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  width: 3px;
+  height: 3px;
+  margin-left: -1.5px;
+  border-radius: 50%;
+  background: rgba(210, 245, 255, 0.95);
+  box-shadow: 0 0 6px rgba(140, 220, 255, 0.8);
+  opacity: 0;
+  animation: title-fountain-bubble 2.4s ease-out infinite;
+}
+
+#title-screen .title-fountain i:nth-child(odd) {
+  width: 2px;
+  height: 9px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(230, 250, 255, 0.95), rgba(140, 210, 255, 0.15));
+  box-shadow: none;
+  animation-name: title-fountain-line;
+}
+
+#title-screen .title-fountain i:nth-child(1)  { --dx: -18%; --rise: 78%; animation-delay: 0s; }
+#title-screen .title-fountain i:nth-child(2)  { --dx: 6%;   --rise: 92%; animation-delay: 0.18s; }
+#title-screen .title-fountain i:nth-child(3)  { --dx: 22%;  --rise: 70%; animation-delay: 0.35s; }
+#title-screen .title-fountain i:nth-child(4)  { --dx: -8%;  --rise: 86%; animation-delay: 0.52s; }
+#title-screen .title-fountain i:nth-child(5)  { --dx: 14%;  --rise: 64%; animation-delay: 0.7s; }
+#title-screen .title-fountain i:nth-child(6)  { --dx: -26%; --rise: 74%; animation-delay: 0.88s; }
+#title-screen .title-fountain i:nth-child(7)  { --dx: 0%;   --rise: 96%; animation-delay: 1.05s; }
+#title-screen .title-fountain i:nth-child(8)  { --dx: 28%;  --rise: 68%; animation-delay: 1.22s; }
+#title-screen .title-fountain i:nth-child(9)  { --dx: -12%; --rise: 82%; animation-delay: 1.4s; }
+#title-screen .title-fountain i:nth-child(10) { --dx: 18%;  --rise: 88%; animation-delay: 1.58s; }
+#title-screen .title-fountain i:nth-child(11) { --dx: -22%; --rise: 60%; animation-delay: 1.75s; }
+#title-screen .title-fountain i:nth-child(12) { --dx: 8%;   --rise: 76%; animation-delay: 1.92s; }
+#title-screen .title-fountain i:nth-child(13) { --dx: -4%;  --rise: 90%; animation-delay: 2.08s; }
+#title-screen .title-fountain i:nth-child(14) { --dx: 24%;  --rise: 58%; animation-delay: 2.25s; }
+
+@keyframes title-fountain-bubble {
+  0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  15%  { opacity: 0.95; }
+  55%  { opacity: 0.7; }
+  100% { transform: translate(var(--dx), calc(-1 * var(--rise))) scale(1.15); opacity: 0; }
+}
+
+@keyframes title-fountain-line {
+  0%   { transform: translate(0, 0) scaleY(0.4); opacity: 0; }
+  18%  { opacity: 0.9; }
+  100% { transform: translate(var(--dx), calc(-1 * var(--rise))) scaleY(1); opacity: 0; }
+}
+
+/* ── House window glow ── */
+#title-screen .title-windows {
+  position: absolute;
+  inset: 0;
+}
+
+#title-screen .title-windows span {
+  position: absolute;
+  border-radius: 3px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 210, 110, 0.7) 0%,
+    rgba(255, 160, 60, 0.28) 42%,
+    transparent 72%
+  );
+  mix-blend-mode: screen;
+  animation: title-window-glow 2.8s ease-in-out infinite;
+}
+
+#title-screen .title-windows span:nth-child(1) {
+  left: 83.5%;
+  top: 30.5%;
+  width: 5.2%;
+  height: 8.5%;
+}
+
+#title-screen .title-windows span:nth-child(2) {
+  left: 88.2%;
+  top: 30%;
+  width: 4.4%;
+  height: 8%;
+  animation-delay: 0.7s;
+}
+
+#title-screen .title-windows span:nth-child(3) {
+  left: 84%;
+  top: 22%;
+  width: 3.6%;
+  height: 5.5%;
+  animation-delay: 1.3s;
+}
+
+#title-screen .title-windows span:nth-child(4) {
+  left: 90.5%;
+  top: 35%;
+  width: 3.2%;
+  height: 5%;
+  animation-delay: 1.9s;
+}
+
+@keyframes title-window-glow {
+  0%, 100% { opacity: 0.45; filter: brightness(0.95); transform: scale(0.96); }
+  50% { opacity: 0.95; filter: brightness(1.25); transform: scale(1.06); }
 }
 
 #title-screen .title-actions {
@@ -470,15 +706,26 @@ html:has(#title-screen) body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #title-screen .title-shimmer,
-  #title-screen .title-embers i,
   #title-enter,
-  .title-brief-cta {
+  .title-brief-cta,
+  #title-screen .title-sky-stars,
+  #title-screen .title-sky-streak,
+  #title-screen .title-sky-mote,
+  #title-screen .title-hull span,
+  #title-screen .title-fountain i,
+  #title-screen .title-windows span {
     animation: none !important;
   }
 
-  #title-screen .title-shimmer,
-  #title-screen .title-embers {
+  #title-screen .title-sky-streak,
+  #title-screen .title-sky-mote,
+  #title-screen .title-hull span,
+  #title-screen .title-fountain i {
     display: none;
+  }
+
+  #title-screen .title-sky-stars,
+  #title-screen .title-windows span {
+    opacity: 0.65;
   }
 }
