@@ -80,8 +80,8 @@
   const BEATS = [
     {
       step: "1 / 2",
-      title: "Collect the map",
-      copy: "Clear each maths topic to earn a map piece. There are 10 pieces.",
+      title: "Collect all 10 map pieces",
+      copy: "Earn a piece by completing 10 sets of a topic.",
       cta: "NEXT",
       visual: mapVisual,
     },
