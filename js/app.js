@@ -31,7 +31,7 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261117a3';
+import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261117a5';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261114n1';
 import { initHowToPlay } from './how-to-play.js?v=20261116xp35';
@@ -368,8 +368,8 @@ function showScreen(id) {
   if (missionShell) missionShell.hidden = !inLearning;
   document.body.classList.toggle('mission-mode', inLearning);
   document.body.classList.toggle('siege-mode', id === 'siege');
-  // The invasion radar is for a maths mission, where answers move the horde.
-  // Maths HQ is the mission picker, so the radar stays off that screen.
+  // Maths HQ keeps the radar, welcome and blueprint. The "INVASION IN" strip
+  // under the quiz is for mission screens only.
   document.body.classList.toggle('hq-home', id === 'home');
   Object.entries(screens).forEach(([key, el]) => {
     el?.classList.toggle('active', key === id);
@@ -380,8 +380,21 @@ function showScreen(id) {
     const workspace = document.getElementById('mission-workspace');
     if (workspace) workspace.scrollTop = 0;
   }
+  syncInvasionStrip(id, inLearning);
   syncMissionControlAction(id);
   refreshTopbar();
+}
+
+/** @param {string} id @param {boolean} inLearning */
+function syncInvasionStrip(id, inLearning) {
+  const invasion = document.getElementById('mission-invasion');
+  if (!invasion) return;
+  if (id === 'home' || !inLearning) {
+    invasion.hidden = true;
+    invasion.innerHTML = '';
+    return;
+  }
+  renderInvasionBriefing(invasion, makeDashboardState());
 }
 
 function syncMissionControlAction(id) {
@@ -1520,7 +1533,6 @@ function refreshMissionControl() {
   const state = makeDashboardState();
   const scrollTop = host.scrollTop;
   renderMissionControl(host, state);
-  renderInvasionBriefing(document.getElementById('mission-invasion'), state);
   host.scrollTop = scrollTop;
   const powerHost = document.getElementById('mission-power');
   const ownedTurrets = TURRET_ORDER.filter((id) => save.unlockedTurrets.includes(id));

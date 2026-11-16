@@ -1030,19 +1030,8 @@ function showHomelandMap(mapProgress) {
 export function renderHome(host, state) {
   const attack = attackStatus(state.gate);
   const special = missionArt === 'special' && !attack.open;
-  const greeting = state.siegesCompleted === 0 ? 'Welcome' : 'Welcome back';
   host.innerHTML = `
     <div class="mission-home">
-      <div class="hq-hello">
-        <h1 class="hq-hello-name">${greeting}, <span>${escapeHtml(state.playerName)}</span></h1>
-        <button type="button" class="mission-xp" id="home-forge-xp" aria-label="${formatForgeXp(state.xp)} Forge XP. Spend it in the Armory.">
-          <img class="mission-xp-emblem" src="assets/ui/xp-emblem.png?v=1" alt="" width="317" height="320" />
-          <span class="mission-xp-copy">
-            <span class="mission-xp-value">${formatForgeXp(state.xp)}</span>
-            <span class="mission-xp-label">FORGE XP</span>
-          </span>
-        </button>
-      </div>
       <header class="mission-workspace-heading">
         <span class="mission-kicker">MATHS HQ</span>
         <h1>Maths missions</h1>
@@ -1085,7 +1074,6 @@ export function renderHome(host, state) {
   host.querySelector('#mission-start-mixed')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-defend')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-armory-open')?.addEventListener('click', state.onArmory);
-  host.querySelector('#home-forge-xp')?.addEventListener('click', () => state.onArmory?.());
   host.querySelector('.homeland-track')?.addEventListener('click', () => showHomelandMap(state.mapProgress));
   bindHomelandLaunch(host);
   host.querySelectorAll('[data-topic]').forEach((btn) => {

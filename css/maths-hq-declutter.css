@@ -4,38 +4,10 @@
  * number and progress bar a player uses stays.
  */
 
-/* The invasion radar, its countdown and the enemy dossier track answers during a
-   mission. Maths HQ is the mission picker, so that whole side panel stays off
-   and the topics sit beside the forge. */
-body.mission-mode.hq-home #mission-control,
+/* "INVASION IN" lives under the quiz during a maths mission. Maths HQ keeps the
+   radar, welcome and blueprint; only that stakes strip stays off the picker. */
 body.mission-mode.hq-home #mission-invasion {
   display: none !important;
-}
-
-@media (min-width: 1321px) {
-  body.mission-mode.hq-home .mission-shell {
-    grid-template-columns: minmax(0, 1fr) minmax(290px, 345px);
-  }
-}
-
-body.mission-mode #screen-home .hq-hello {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-body.mission-mode #screen-home .hq-hello-name {
-  margin: 0;
-  font-size: clamp(1.4rem, 2vw, 2rem);
-}
-
-@media (min-width: 1600px) and (min-height: 600px) {
-  body.mission-mode #screen-home .hq-hello {
-    grid-area: intro;
-    margin-bottom: 0;
-  }
 }
 
 /* Author display rules were beating the hidden attribute, so "Maths HQ" showed on Maths HQ. */

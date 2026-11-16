@@ -51,8 +51,10 @@ test('Mission Control uses the existing blueprint, with no duplicate 10-question
   assert.match(home, /id="mission-start-mixed"/);
   assert.match(home, /id="mission-defend"/);
   assert.match(app, /classList\.toggle\('hq-home', id === 'home'\)/);
+  assert.match(app, /function syncInvasionStrip\(/);
+  assert.match(app, /id === 'home' \|\| !inLearning/);
   const declutter = readFileSync(new URL('../css/maths-hq-declutter.css', import.meta.url), 'utf8');
-  assert.match(declutter, /body\.mission-mode\.hq-home #mission-control/);
+  assert.doesNotMatch(declutter, /hq-home #mission-control/);
   assert.match(declutter, /body\.mission-mode\.hq-home #mission-invasion/);
 });
 
