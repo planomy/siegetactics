@@ -7,18 +7,90 @@
 
   const BRIEFING_KEY = "grannyboom.mission-briefing-seen";
 
+  /** Same sector order as the Maths HQ nav chart. */
+  const MAP_PIECES = [
+    { ref: "8842", label: "1" },
+    { ref: "7719", label: "2" },
+    { ref: "6204", label: "3" },
+    { ref: "3305", label: "4" },
+    { ref: "4417", label: "5" },
+    { ref: "9921", label: "6" },
+    { ref: "5186", label: "7" },
+    { ref: "2743", label: "8" },
+    { ref: "1068", label: "9" },
+    { ref: "7350", label: "10" },
+  ];
+
+  function mapVisual() {
+    const cells = MAP_PIECES.map(
+      (piece) => `
+      <div class="title-map-cell">
+        <div class="title-map-shroud" aria-hidden="true"></div>
+        <span class="title-map-num">${piece.label}</span>
+      </div>`
+    ).join("");
+
+    return `
+      <div class="title-map" aria-label="Alien Homeland map with 10 locked pieces">
+        <img
+          class="title-map-img"
+          src="assets/home/interstellar-map.jpg"
+          alt=""
+          width="1024"
+          height="576"
+          decoding="async"
+        />
+        <div class="title-map-grid">${cells}</div>
+        <div class="title-map-home" aria-hidden="true">
+          <span>HOME</span>
+        </div>
+      </div>`;
+  }
+
+  function inspireVisual() {
+    return `
+      <div class="title-inspire" aria-label="Doompickle and the alien homeworld">
+        <img
+          class="title-inspire-hero"
+          src="assets/homeland/planet-map.webp"
+          alt="The alien homeworld"
+          width="1024"
+          height="576"
+          decoding="async"
+        />
+        <div class="title-inspire-row">
+          <img
+            src="assets/homeland/slides/landing-title.webp"
+            alt="Doompickle"
+            width="640"
+            height="360"
+            decoding="async"
+          />
+          <img
+            src="assets/homeland/granny-front.webp"
+            alt="Granny ready for battle"
+            width="185"
+            height="206"
+            decoding="async"
+          />
+        </div>
+      </div>`;
+  }
+
   const BEATS = [
     {
       step: "1 / 2",
       title: "Collect the map",
       copy: "Clear each maths topic to earn a map piece. There are 10 pieces.",
       cta: "NEXT",
+      visual: mapVisual,
     },
     {
       step: "2 / 2",
       title: "Fly to Doompickle",
       copy: "When all 10 are in, Granny warps to the alien homeworld for new games and challenges.",
       cta: "LET'S GO",
+      visual: inspireVisual,
     },
   ];
 
@@ -29,6 +101,7 @@
   const briefStep = document.getElementById("title-brief-step");
   const briefHeading = document.getElementById("title-brief-heading");
   const briefCopy = document.getElementById("title-brief-copy");
+  const briefVisual = document.getElementById("title-brief-visual");
   const briefNext = document.getElementById("title-brief-next");
   const briefSkip = document.getElementById("title-brief-skip");
 
@@ -118,6 +191,10 @@
     if (briefStep) briefStep.textContent = beat.step;
     if (briefHeading) briefHeading.textContent = beat.title;
     if (briefCopy) briefCopy.textContent = beat.copy;
+    if (briefVisual) {
+      briefVisual.innerHTML = typeof beat.visual === "function" ? beat.visual() : "";
+      briefVisual.hidden = !briefVisual.innerHTML.trim();
+    }
     if (briefNext) {
       briefNext.textContent = beat.cta;
       briefNext.focus({ preventScroll: true });
@@ -155,7 +232,6 @@
     enterGame();
   }
 
-  // onclick survives better than only addEventListener when overlays steal pointer events.
   primary.onclick = onPrimary;
   if (skipPoster) skipPoster.onclick = onSkip;
   if (briefNext) {

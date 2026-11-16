@@ -230,8 +230,10 @@ html:has(#title-screen) body {
 }
 
 .title-brief-card {
-  width: min(100%, 460px);
-  padding: clamp(22px, 4vh, 32px) clamp(20px, 4vw, 28px) 22px;
+  width: min(100%, 560px);
+  max-height: min(92dvh, 900px);
+  overflow: auto;
+  padding: clamp(16px, 3vh, 26px) clamp(16px, 3.5vw, 26px) 18px;
   border: 3px solid transparent;
   border-radius: 22px;
   background:
@@ -268,12 +270,143 @@ html:has(#title-screen) body {
 }
 
 .title-brief-copy {
-  margin: 0 0 22px;
+  margin: 0 0 14px;
   font-family: "Nunito", sans-serif;
-  font-size: clamp(1rem, 2.4vw, 1.15rem);
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
   font-weight: 700;
-  line-height: 1.45;
+  line-height: 1.4;
   color: rgba(245, 240, 255, 0.94);
+}
+
+.title-brief-visual {
+  margin: 0 0 16px;
+}
+
+.title-brief-visual[hidden] {
+  display: none !important;
+}
+
+/* Beat 1 — fogged nav chart, 10 pieces to unlock */
+.title-map {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 213, 74, 0.35);
+  background: #05040a;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.55);
+}
+
+.title-map-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.title-map-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 2px;
+  pointer-events: none;
+}
+
+.title-map-cell {
+  position: relative;
+  overflow: hidden;
+}
+
+.title-map-shroud {
+  position: absolute;
+  inset: 1px;
+  border-radius: 3px;
+  background:
+    linear-gradient(160deg, rgba(16, 10, 32, 0.55), rgba(6, 4, 14, 0.72));
+  box-shadow: inset 0 0 0 1.5px rgba(255, 213, 74, 0.45);
+}
+
+.title-map-num {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: "Bangers", Impact, sans-serif;
+  font-size: clamp(1.15rem, 3.6vw, 1.75rem);
+  letter-spacing: 0.04em;
+  color: #ffd54a;
+  text-shadow:
+    0 2px 0 #3a2400,
+    0 0 12px rgba(255, 180, 60, 0.55),
+    0 0 2px #000;
+  z-index: 1;
+}
+
+.title-map-home {
+  position: absolute;
+  right: 4%;
+  bottom: 5%;
+  padding: 5px 10px 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(80, 24, 110, 0.92), rgba(28, 8, 40, 0.95));
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 140, 220, 0.65),
+    0 4px 12px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.title-map-home span {
+  font-family: "Bangers", Impact, sans-serif;
+  font-size: clamp(0.72rem, 2vw, 0.95rem);
+  letter-spacing: 0.12em;
+  color: #ffb0e8;
+  text-shadow: 0 2px 0 #2a0830;
+}
+
+/* Beat 2 — alien homeworld + Doompickle + Granny */
+.title-inspire {
+  display: grid;
+  gap: 8px;
+}
+
+.title-inspire-hero {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: center 40%;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 213, 74, 0.35);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+}
+
+.title-inspire-row {
+  display: grid;
+  grid-template-columns: 1.35fr 0.65fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.title-inspire-row img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 88px;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 213, 74, 0.28);
+  background: #0a0814;
+}
+
+.title-inspire-row img:last-child {
+  object-fit: contain;
+  background:
+    radial-gradient(circle at 50% 40%, #2a1848, #0a0814 70%);
 }
 
 .title-brief-card .title-skip {
@@ -305,17 +438,31 @@ html:has(#title-screen) body {
   }
 
   .title-brief-card {
-    padding: 14px 16px 12px;
+    width: min(100%, 520px);
+    padding: 12px 14px 10px;
   }
 
   .title-brief-heading {
-    font-size: 1.6rem;
-    margin-bottom: 6px;
+    font-size: 1.45rem;
+    margin-bottom: 4px;
   }
 
   .title-brief-copy {
-    margin-bottom: 12px;
-    font-size: 0.92rem;
+    margin-bottom: 8px;
+    font-size: 0.88rem;
+  }
+
+  .title-brief-visual {
+    margin-bottom: 10px;
+  }
+
+  .title-inspire-row img {
+    min-height: 64px;
+    max-height: 78px;
+  }
+
+  .title-map-num {
+    font-size: 1rem;
   }
 
   .title-skip {
