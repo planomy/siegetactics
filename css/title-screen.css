@@ -153,11 +153,19 @@ html:has(#title-screen) body {
   filter: brightness(1.1);
 }
 
-#title-enter:focus-visible,
 .title-brief-cta:focus-visible,
 .title-skip:focus-visible {
   outline: 4px solid white;
   outline-offset: 5px;
+}
+
+#title-enter:focus {
+  outline: none;
+}
+
+#title-enter:focus-visible {
+  outline: 3px solid rgba(255, 213, 74, 0.9);
+  outline-offset: 4px;
 }
 
 #title-enter:active,

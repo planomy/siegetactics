@@ -124,8 +124,6 @@
     el.inert = true;
   });
 
-  primary.focus({ preventScroll: true });
-
   function markBriefingSeen() {
     briefingDone = true;
     try {
