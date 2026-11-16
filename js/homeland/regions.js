@@ -10,21 +10,27 @@
  *   name: string, sprite: string, w: number, hp: number, sway: number,
  *   fire: [number, number], volley: [number, number], spread: number, shot: ShotKind, angryShot: ShotKind,
  *   drop: { type: 'swarmer'|'grunt'|'leaper'|'spitter'|'splitter'|'tank', count: number, gap: number },
- *   hint: string, phase?: boolean, rain?: boolean, chill?: boolean,
+ *   hint: string, phase?: boolean, rain?: boolean, chill?: boolean, bounce?: boolean,
+ *   minLevel?: number,
  * }} BossDef
  * `fire` and `volley` are [calm, angry]: seconds between volleys and shots per volley. `phase` bosses
  * fade in and out and can only be hurt while solid; `rain` bosses drop fire all over the ground;
- * `chill` shots slow Granny down.
+ * `chill` shots slow Granny down. `bounce` bosses hop and shake the screen on landing.
+ * `minLevel` (default 1) is the lowest mission level that spawns this boss.
  * @typedef {{
  *   sky: [string, string, string], mountains: [string, string], ground: [string, string, string], rim: string,
  *   decalTint?: string,
  * }} Palette
  * @typedef {{
+ *   id: string, name: string, role: 'swarmer'|'grunt'|'leaper'|'spitter'|'splitter'|'tank',
+ *   unlockLevel: 1|2|3, unlockAt: number, weight?: number,
+ * }} RegionRosterUnit
+ * @typedef {{
  *   key: string, title: string, scenery: string | null, intro: string, outro: string, palette: Palette,
  *   mix: Partial<Record<'swarmer'|'grunt'|'leaper'|'spitter'|'splitter'|'tank', number>>, hordeSwarm: number,
  *   tough: number, pace: number, boss: BossDef,
  *   portraits?: { src: string, caption: string }[], backdrop?: string, skyline?: string, frame?: string,
- *   dim?: number, monsters?: string, logo?: string,
+ *   dim?: number, monsters?: string, logo?: string, roster?: RegionRosterUnit[],
  * }} Region
  * `portraits` replace the boss sprite on the story card with big painted pictures. A `backdrop`
  * makes the region indoors: the painting is the far wall and the floor meets it in a straight line
@@ -34,7 +40,8 @@
  * whole battlefield along the top and sides of the screen. `dim` (0 to about 0.5) shades the
  * backdrop so the distance sits back behind the frame and the aliens stand out against it.
  * `monsters` is a folder holding the region's own swarmer, grunt, leaper, spitter and splitter
- * sprites (TYPE.webp); without it the region uses the standard aliens. A `logo` is a 16:9
+ * sprites (TYPE.webp); without it the region uses the standard aliens. A `roster` replaces that
+ * five-type pack with named units (files `{id}.webp` in the monsters folder). A `logo` is a 16:9
  * painting of the region with its name painted on as a game logo, the centrepiece of its story card.
  */
 
@@ -223,16 +230,40 @@ export const REGIONS = [
       { src: 'assets/homeland/story/supreme-leader.webp', caption: 'The real Supreme Leader' },
     ],
     intro: 'Gold everywhere! Gold statues of the Supreme Leader, gold fountains, a gold hot tub. It is the tackiest place in the galaxy, and he is home. This is it, Granny!',
-    outro: 'The Supreme Leader\'s golden saucer crashes into his own fountain. The planet is free, and Granny is a legend!',
+    outro: 'The Supreme Leader face-plants into his own fountain. The planet is free, and Granny is a legend!',
     palette: { sky: ['#1a0630', '#7a2a8a', '#ffd23a'], mountains: ['#c8902a', '#8a5a1a'], ground: ['#c8283a', '#7a1020', '#2a0408'], rim: '#ffe27a' },
     mix: { leaper: 1.3, spitter: 1.3, splitter: 1.3, tank: 1.5 },
     hordeSwarm: 0.5,
     tough: 1.65,
     pace: 0.8,
+    /** 16 palace goons — unlock by mission level; Level 3 is the full assault. */
+    roster: [
+      // Level 1 — light goons
+      { id: 'hamburger', name: 'Burger Guard', role: 'swarmer', unlockLevel: 1, unlockAt: 0, weight: 1.4 },
+      { id: 'robo-copier', name: 'Robo-Copier', role: 'swarmer', unlockLevel: 1, unlockAt: 10, weight: 1.2 },
+      { id: 'chook', name: 'Chook Guard', role: 'grunt', unlockLevel: 1, unlockAt: 0, weight: 1.3 },
+      { id: 'ladybug', name: 'Ladybug Guard', role: 'leaper', unlockLevel: 1, unlockAt: 18, weight: 1.1 },
+      { id: 'beep-boffin', name: 'Beep Boffin', role: 'spitter', unlockLevel: 1, unlockAt: 35, weight: 1 },
+      // Level 2 — mid mix + first transformers (show up early so the level reads differently)
+      { id: 'shock-bot', name: 'Shock Bot', role: 'grunt', unlockLevel: 2, unlockAt: 0, weight: 1.2 },
+      { id: 'short-circuit-sid', name: 'Short Circuit Sid', role: 'leaper', unlockLevel: 2, unlockAt: 0, weight: 1.1 },
+      { id: 'toastinator', name: 'The Toastinator', role: 'spitter', unlockLevel: 2, unlockAt: 8, weight: 1 },
+      { id: 'sir-clanks', name: 'Sir Clanks-a-Lot', role: 'splitter', unlockLevel: 2, unlockAt: 18, weight: 0.95 },
+      { id: 'trex', name: 'T-Rex Guard', role: 'splitter', unlockLevel: 2, unlockAt: 28, weight: 0.9 },
+      { id: 'grumble-dozer', name: 'Grumble Dozer', role: 'tank', unlockLevel: 2, unlockAt: 22, weight: 0.85 },
+      { id: 'tow-wrestler', name: 'Tow Wrestler', role: 'tank', unlockLevel: 2, unlockAt: 40, weight: 0.85 },
+      // Level 3 — remaining transformers for the full-on assault
+      { id: 'crane-truck', name: 'Crane Truck', role: 'tank', unlockLevel: 3, unlockAt: 0, weight: 0.9 },
+      { id: 'disco-diesel', name: 'Disco Diesel', role: 'tank', unlockLevel: 3, unlockAt: 12, weight: 0.9 },
+      { id: 'rally-rita', name: 'Rally Rita', role: 'tank', unlockLevel: 3, unlockAt: 28, weight: 0.85 },
+      { id: 'sir-honks', name: 'Sir Honks', role: 'tank', unlockLevel: 3, unlockAt: 45, weight: 0.8 },
+    ],
     boss: {
-      name: 'The Supreme Leader', sprite: 'assets/enemies/bosses/palace.webp', w: 3.8, hp: 1200, sway: 0.6,
-      fire: [1.8, 1.1], volley: [5, 7], spread: 0.45, shot: 'alien-tentacle', angryShot: 'alien-skull',
-      drop: { type: 'splitter', count: 3, gap: 6 }, hint: 'He throws everything he\'s got! Don\'t stop moving!', rain: true, chill: true,
+      name: 'The Supreme Leader', sprite: 'assets/enemies/bosses/palace.webp', w: 3.4, hp: 1200, sway: 0.28,
+      fire: [2.0, 1.25], volley: [4, 6], spread: 0.4, shot: 'alien-tentacle', angryShot: 'alien-skull',
+      drop: { type: 'splitter', count: 3, gap: 6 },
+      hint: 'He bounces — watch the ground shake, then blast him!',
+      rain: true, chill: true, bounce: true, minLevel: 3,
     },
   },
 ];

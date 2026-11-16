@@ -132,9 +132,10 @@ body {
 /* ---------- Bottom bar ---------- */
 
 .hl-bar {
-  --bar-h: clamp(78px, 13vh, 118px);
+  --bar-h: clamp(64px, 11vh, 118px);
   position: relative;
   flex: none;
+  min-width: 0;
   padding-bottom: env(safe-area-inset-bottom);
   background:
     radial-gradient(ellipse at 15% -30%, rgba(255, 90, 140, 0.35), transparent 55%),
@@ -193,9 +194,10 @@ body {
 .hl-bar-row {
   display: flex;
   align-items: center;
-  gap: clamp(10px, 1.6vw, 28px);
+  gap: clamp(6px, 1.2vw, 28px);
   height: var(--bar-h);
-  padding: 6px clamp(12px, 1.8vw, 28px) 0;
+  min-width: 0;
+  padding: 6px clamp(8px, 1.5vw, 28px) 0;
 }
 
 /* Dash and nuke: round buttons that fill up as they recharge */
@@ -229,6 +231,12 @@ body {
   font-size: 1.6em;
 }
 
+.hl-dash,
+.hl-nuke {
+  flex: 0 0 auto;
+  z-index: 2;
+}
+
 .hl-dash {
   --c: #ff8a1f;
 }
@@ -259,11 +267,11 @@ body {
 
 .hl-health {
   display: flex;
-  flex: 2 1 260px;
+  flex: 1 1 140px;
   align-items: center;
   gap: 10px;
   max-width: 460px;
-  min-width: 160px;
+  min-width: 0;
 }
 
 .hl-heart {
@@ -342,9 +350,9 @@ body {
 
 .hl-score {
   display: grid;
-  flex: 2 1 240px;
+  flex: 1 1 110px;
   justify-items: center;
-  min-width: 170px;
+  min-width: 0;
   line-height: 1;
 }
 
@@ -355,7 +363,7 @@ body {
 }
 
 .hl-score-num {
-  font-size: clamp(2.4rem, 7vh, 4rem);
+  font-size: clamp(1.55rem, 5.2vw, 4rem);
   background: linear-gradient(180deg, #fff6b0 0%, #ffd23a 45%, #ff8a1a 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -526,14 +534,32 @@ body {
   to { background-position: 200% 0; }
 }
 
-@media (max-width: 760px) {
-  .hl-best,
-  .hl-hp-text {
+/* Keep DASH + NUKE on-screen when Opera sidebar / zoom eats width. */
+@media (max-width: 1100px) {
+  .hl-kills,
+  .hl-best {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .hl-hp-text,
+  .hl-combo {
     display: none;
   }
 
-  .hl-kills {
-    padding-right: 10px;
+  .hl-heart {
+    font-size: clamp(1.35rem, 4vh, 2.2rem);
+  }
+
+  .hl-action {
+    width: calc(var(--bar-h) * 0.74);
+    height: calc(var(--bar-h) * 0.74);
+    font-size: clamp(0.8rem, 1.8vh, 1.05rem);
+  }
+
+  .hl-action-icon {
+    font-size: 1.35em;
   }
 }
 

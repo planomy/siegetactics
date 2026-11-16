@@ -13,11 +13,11 @@ import { rigFor } from './rigs.js?v=1';
 import { AMMO, CRATE_AMMO, RACK_SLOTS, ammoImage } from './ammo.js?v=3';
 import { GEMS, DEPOSITS, POWERS, gemsFor, rollPower, pickupImage } from './pickups.js?v=2';
 import { view, resizeView, project, horizonY, isBehindHorizon, screenToGround, spawnBehindHorizon, maxXAt, setIndoor } from './world.js?v=6';
-import { ENEMY_TYPES, BOSS_TIME, HORDE_TIMES, MAX_ALIENS, spawnInterval, pickEnemyType, hordeSize } from './enemies.js?v=2';
+import { ENEMY_TYPES, BOSS_TIME, HORDE_TIMES, MAX_ALIENS, spawnInterval, pickEnemyType, pickPalaceUnit, pickPalaceHordeUnit, hordeSize } from './enemies.js?v=20261116p4';
 import {
   REGIONS, PLANET_MAP, REGION_LEVELS, DIRECTIONAL_SHOTS, loadProgress, saveProgress, regionCrystals,
   regionStars, isRegionLocked, canExplore, palaceReady,
-} from './regions.js?v=31';
+} from './regions.js?v=20261116p4';
 import { mapPiecesEarned, normalizeMapProgress, TRAINING_MODULE_IDS, homelandMaxLevel, canWarpToDoompickle, seasonPiecesEarned } from '../map-progress.js?v=20261115h3';
 import { UPGRADES, noUpgrades, rollChoices, crystalsForLevel } from './upgrades.js';
 import { sceneryFor, propImage } from './props.js?v=10';
@@ -84,7 +84,8 @@ function mapPiecesFound() {
 /** Highest Doompickle level unlocked by finished HQ seasons (0–3). */
 function hqMaxLevel() {
   if (TESTING && (params.has('all') || params.has('arrive') || params.has('map') || params.has('region'))) {
-    if (params.has('all')) return 3;
+    // ?all or an explicit ?level= — full ceiling so QA can jump straight to L2/L3.
+    if (params.has('all') || params.has('level')) return 3;
     const fromSave = homelandMaxLevel(loadMapProgress());
     return fromSave || 1;
   }
@@ -124,7 +125,7 @@ let skyline = null;
 let arch = null;
 /** Where the HUD at the top of the screen starts, so it sits under the frame's centrepiece. */
 let frameHudTop = 0;
-/** The region's own alien sprites, by type. The tank is always Granddaddy. @type {Partial<Record<string, HTMLImageElement>>} */
+/** The region's own alien sprites, keyed by type or roster id. @type {Partial<Record<string, HTMLImageElement>>} */
 let monsters = {};
 function useBackdrop() {
   backdrop = region.backdrop ? image(region.backdrop) : null;
@@ -133,7 +134,13 @@ function useBackdrop() {
   frameHudTop = 0;
   setIndoor(!!backdrop);
   const folder = region.monsters;
-  monsters = folder ? Object.fromEntries(['swarmer', 'grunt', 'leaper', 'spitter', 'splitter'].map((type) => [type, image(`${folder}/${type}.webp`)])) : {};
+  if (folder && region.roster?.length) {
+    monsters = Object.fromEntries(region.roster.map((unit) => [unit.id, image(`${folder}/${unit.id}.webp`)]));
+  } else {
+    monsters = folder
+      ? Object.fromEntries(['swarmer', 'grunt', 'leaper', 'spitter', 'splitter'].map((type) => [type, image(`${folder}/${type}.webp`)]))
+      : {};
+  }
 }
 useBackdrop();
 /** @type {Map<string, HTMLImageElement>} */
@@ -157,7 +164,7 @@ function image(src) {
 }
 
 /**
- * @typedef {{ type: keyof typeof ENEMY_TYPES, x: number, y: number, z: number, hp: number, maxHp: number, speed: number,
+ * @typedef {{ type: keyof typeof ENEMY_TYPES, spriteId?: string, x: number, y: number, z: number, hp: number, maxHp: number, speed: number,
  *   size: number, damage: number, gems: number, t: number, hitFlash: number, phase: 'walk'|'crouch'|'leap',
  *   phaseTime: number, dirX: number, dirZ: number, holdTime: number, fireIn: number, orbitCd: number, waveHit: number, seed: number,
  *   slow: number }} Alien
@@ -407,17 +414,19 @@ function fireNuke() {
  * is right now, the rest pass a little to one side of her.
  * @param {keyof typeof ENEMY_TYPES} type @param {{ x: number, z: number }} at
  * @param {{ x: number, z: number }} [heading] A direction to travel instead of aiming near Granny.
+ * @param {string} [spriteId] Roster sprite key (palace); defaults to the combat type.
  */
-function addAlien(type, at, heading) {
+function addAlien(type, at, heading, spriteId) {
   if (aliens.length >= MAX_ALIENS) return null;
   const spec = ENEMY_TYPES[type];
+  if (!spec) return null;
   const miss = Math.random() < 0.5 ? 0 : (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 1.1);
   const aimX = heading ? at.x + heading.x : player.x + miss;
   const aimZ = heading ? at.z + heading.z : player.z;
   const aimLen = Math.hypot(aimX - at.x, aimZ - at.z) || 1;
   const late = (1 + Math.max(0, clock - 60) / 240) * region.tough * levelMods.tough;
   const alien = /** @type {Alien} */ ({
-    type, x: at.x, y: 0, z: at.z, hp: Math.ceil(spec.hp * late), maxHp: Math.ceil(spec.hp * late), speed: spec.speed * (0.9 + Math.random() * 0.2),
+    type, spriteId: spriteId || type, x: at.x, y: 0, z: at.z, hp: Math.ceil(spec.hp * late), maxHp: Math.ceil(spec.hp * late), speed: spec.speed * (0.9 + Math.random() * 0.2),
     size: spec.size, damage: spec.damage, gems: spec.gems, t: Math.random() * 5, hitFlash: 0, phase: 'walk', phaseTime: 0,
     dirX: (aimX - at.x) / aimLen, dirZ: (aimZ - at.z) / aimLen, holdTime: 5, fireIn: 1 + Math.random(), orbitCd: 0, waveHit: -1, seed: Math.random(),
     slow: 0,
@@ -426,11 +435,21 @@ function addAlien(type, at, heading) {
   return alien;
 }
 
+/** Spawn one alien using the region's roster when present. */
+function spawnRegionAlien(at) {
+  if (region.roster?.length) {
+    const unit = pickPalaceUnit(clock, runLevel, region.roster);
+    if (!unit) return null;
+    return addAlien(unit.role, at, undefined, unit.id);
+  }
+  return addAlien(pickEnemyType(clock, region.mix), at);
+}
+
 function spawnDirector(dt) {
   const bossTime = clock >= BOSS_TIME;
   spawnIn -= dt;
   if (spawnIn <= 0) {
-    addAlien(pickEnemyType(clock, region.mix), spawnBehindHorizon(Math.random()));
+    spawnRegionAlien(spawnBehindHorizon(Math.random()));
     spawnIn = spawnInterval(clock) * region.pace * levelMods.pace * (bossTime ? 2.5 : 1) * (0.7 + Math.random() * 0.6);
   }
   if (hordeIndex < HORDE_TIMES.length && clock >= HORDE_TIMES[hordeIndex]) {
@@ -443,15 +462,27 @@ function spawnDirector(dt) {
   if (hordeQueue.left > 0) {
     hordeIn -= dt;
     while (hordeIn <= 0 && hordeQueue.left > 0) {
-      const type = Math.random() < region.hordeSwarm ? 'swarmer' : pickEnemyType(clock, region.mix);
-      addAlien(type, spawnBehindHorizon(Math.random(), 1.1 + Math.random() * 0.25));
+      const at = spawnBehindHorizon(Math.random(), 1.1 + Math.random() * 0.25);
+      if (region.roster?.length) {
+        const unit = pickPalaceHordeUnit(clock, runLevel, region.roster, region.hordeSwarm);
+        if (unit) addAlien(unit.role, at, undefined, unit.id);
+      } else {
+        const type = Math.random() < region.hordeSwarm ? 'swarmer' : pickEnemyType(clock, region.mix);
+        addAlien(type, at);
+      }
       hordeQueue.left -= 1;
       hordeIn += hordeQueue.gap;
     }
   }
   if (bossTime && !boss) {
+    const minBossLevel = region.boss.minLevel ?? 1;
+    if (runLevel < minBossLevel) {
+      // Palace L1/L2: surviving the full assault earns the shield — slug waits for Level 3.
+      endRun(true);
+      return;
+    }
     const maxHp = Math.round(region.boss.hp * levelMods.boss);
-    boss = { x: 0, z: 13, hp: maxHp, maxHp, t: 0, fireIn: 4, dropIn: 6, rainIn: 3, dying: 0, hitFlash: 0, solid: 1 };
+    boss = { x: 0, z: 13, hp: maxHp, maxHp, t: 0, fireIn: 4, dropIn: 6, rainIn: 3, dying: 0, hitFlash: 0, solid: 1, bounceY: 0, bounceLanded: true };
     showBanner(`⚠ ${region.boss.name.toUpperCase()} ⚠`, `${region.boss.hint} · ${levelMods.label}`);
     sfx('siren-alert', 0.6);
     sfx('mothership', 0.5);
@@ -759,9 +790,14 @@ function endRun(won) {
     if (palaceReady(progress)) progress.unlocked = REGIONS.length;
   }
   saveProgress(progress);
-  const title = won ? `${region.boss.name.toUpperCase()} DOWN!` : 'SCOOTER TOAST!';
+  const clearedWithoutBoss = won && (region.boss.minLevel ?? 1) > runLevel;
+  const title = won
+    ? (clearedWithoutBoss ? `${region.title.toUpperCase()} CLEARED!` : `${region.boss.name.toUpperCase()} DOWN!`)
+    : 'SCOOTER TOAST!';
   const line = won
-    ? `${region.outro} · ${levelMods.label} shield earned!`
+    ? (clearedWithoutBoss
+      ? `The palace goons are down · ${levelMods.label} shield earned! The Supreme Leader still waits on Level 3…`
+      : `${region.outro} · ${levelMods.label} shield earned!`)
     : 'The horde got Granny this time. One more go?';
   const go = won ? '🗺 PLANET MAP' : '🛵 TRY AGAIN';
   const reward = firstClear ? `<p class="hl-reward">💎 +${regionCrystals(index)} Alien Crystals waiting in Granny's vault!</p>` : '';
@@ -1595,6 +1631,25 @@ function updateBoss(dt) {
   }
   const def = region.boss;
   b.x = Math.sin(b.t * def.sway) * maxXAt(BOSS_Z) * 0.55;
+  // Slow fat bounce — land thump shakes the screen (palace slug).
+  if (def.bounce) {
+    const period = 1.85;
+    const phase = (b.t % period) / period;
+    const prev = b.bounceY || 0;
+    if (phase < 0.18) b.bounceY = -phase * 28;
+    else if (phase < 0.55) {
+      const u = (phase - 0.18) / 0.37;
+      b.bounceY = -5 + Math.sin(u * Math.PI) * 52;
+    } else b.bounceY = 0;
+    if (prev > 8 && b.bounceY <= 0 && !b.bounceLanded) {
+      shake = Math.max(shake, 12);
+      b.bounceLanded = true;
+      sfx('slime', 0.35);
+    }
+    if (phase < 0.2) b.bounceLanded = false;
+  } else {
+    b.bounceY = 0;
+  }
   const angry = b.hp < def.hp / 2;
   if (def.phase) {
     const want = Math.sin(b.t * 1.1) > -0.25 ? 1 : 0;
@@ -1623,7 +1678,17 @@ function updateBoss(dt) {
   if (b.dropIn <= 0) {
     b.dropIn = def.drop.gap * (angry ? 0.66 : 1);
     const count = Math.ceil(def.drop.count * (angry ? 1.5 : 1));
-    for (let i = 0; i < count; i++) addAlien(def.drop.type, { x: b.x + (Math.random() - 0.5) * 2, z: b.z - 0.5 });
+    for (let i = 0; i < count; i++) {
+      const dropAt = { x: b.x + (Math.random() - 0.5) * 2, z: b.z - 0.5 };
+      if (region.roster?.length) {
+        const candidates = region.roster.filter((u) => u.role === def.drop.type && u.unlockLevel <= runLevel);
+        const unit = candidates[Math.floor(Math.random() * Math.max(1, candidates.length))];
+        if (unit) addAlien(unit.role, dropAt, undefined, unit.id);
+        else addAlien(def.drop.type, dropAt);
+      } else {
+        addAlien(def.drop.type, dropAt);
+      }
+    }
   }
 }
 
@@ -2329,7 +2394,7 @@ function tinted(img, name, tint) {
 
 /** @param {Alien} a */
 function drawAlien(a) {
-  const own = monsters[a.type];
+  const own = monsters[a.spriteId || a.type] || monsters[a.type];
   const img = own?.naturalWidth ? own : a.type === 'tank' ? sprites.granddaddy : sprites[ENEMY_TYPES[a.type].sprite];
   const ground = project(a.x, 0, a.z);
   const at = project(a.x, a.y, a.z);
@@ -2574,8 +2639,10 @@ function drawBoss() {
   const at = project(boss.x, 1.25, boss.z);
   const w = region.boss.w * view.unit * at.s;
   const h = w * (img.naturalHeight / img.naturalWidth);
-  const hover = Math.sin(boss.t * 2) * 6;
-  glow(at.x, at.y - h / 2, w * 0.7, `${region.palette.rim}55`);
+  const hover = region.boss.bounce
+    ? -(boss.bounceY || 0)
+    : Math.sin(boss.t * 2) * 6;
+  glow(at.x, at.y - h / 2 + hover * 0.2, w * 0.7, `${region.palette.rim}55`);
   ctx.globalAlpha = 0.12 + 0.88 * boss.solid;
   if (boss.dying) ctx.globalAlpha = Math.max(0, 1 - boss.dying / 2.6);
   if (boss.hitFlash > 0) ctx.filter = `brightness(${1 + boss.hitFlash * 0.8})`;
@@ -2867,6 +2934,7 @@ if (!TESTING && !canWarpToDoompickle(mapSave)) showMapIncomplete(found);
 else if (params.has('story')) showStory(REGIONS.indexOf(region));
 else if (params.has('arrive')) startArriveWarp();
 else if (params.has('map')) showMap();
+else if (jumpIn) startWarp(); // ?region= / ?start= / ?boss= — overlay stays hidden; jump straight in
 // Cap ?level= to what HQ seasons have unlocked (unless ?all).
 if (!params.has('all') && hqMaxLevel() > 0) {
   setRunLevel(Math.min(runLevel, hqMaxLevel()));

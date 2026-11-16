@@ -51,3 +51,62 @@ export function pickEnemyType(t, mix = {}, rand = Math.random) {
 export function hordeSize(index) {
   return 34 + index * 14;
 }
+
+/**
+ * A palace roster unit: unique sprite + combat role + when it unlocks.
+ * @typedef {{ id: string, name: string, role: keyof typeof ENEMY_TYPES, unlockLevel: 1|2|3, unlockAt: number, weight?: number }} PalaceUnit
+ */
+
+/**
+ * Weight a roster unit so the current mission level's new faces dominate.
+ * Older unlocks stay in the mix as fillers, not the whole screen.
+ * @param {PalaceUnit} unit
+ * @param {number} level
+ */
+function palaceWeight(unit, level) {
+  const base = unit.weight ?? 1;
+  if (unit.unlockLevel === level) return base * 3.2;
+  if (unit.unlockLevel === level - 1) return base * 0.85;
+  return base * 0.35;
+}
+
+/**
+ * Pick a palace roster unit for the current mission level and run time.
+ * @param {number} t
+ * @param {number} level
+ * @param {PalaceUnit[]} roster
+ * @param {() => number} [rand]
+ * @returns {PalaceUnit | null}
+ */
+export function pickPalaceUnit(t, level, roster, rand = Math.random) {
+  const open = roster.filter((u) => u.unlockLevel <= level && t >= (u.unlockAt ?? 0));
+  if (!open.length) return null;
+  const table = open.map((u) => /** @type {[PalaceUnit, number]} */ ([u, palaceWeight(u, level)]));
+  let roll = rand() * table.reduce((sum, [, w]) => sum + w, 0);
+  for (const [unit, weight] of table) {
+    roll -= weight;
+    if (roll < 0) return unit;
+  }
+  return open[0];
+}
+
+/**
+ * Horde preference: favour light roles when the roster has them.
+ * Prefer goons unlocked on this mission level so L2/L3 hordes aren't all burger/chook.
+ * @param {number} t
+ * @param {number} level
+ * @param {PalaceUnit[]} roster
+ * @param {number} swarmChance
+ * @param {() => number} [rand]
+ */
+export function pickPalaceHordeUnit(t, level, roster, swarmChance, rand = Math.random) {
+  const open = roster.filter((u) => u.unlockLevel <= level && t >= (u.unlockAt ?? 0));
+  if (!open.length) return null;
+  if (rand() < swarmChance) {
+    const light = open.filter((u) => u.role === 'swarmer' || u.role === 'grunt' || u.role === 'leaper');
+    const fresh = light.filter((u) => u.unlockLevel === level);
+    const pool = fresh.length ? fresh : light.length ? light : open;
+    return pool[Math.floor(rand() * pool.length)];
+  }
+  return pickPalaceUnit(t, level, roster, rand);
+}
