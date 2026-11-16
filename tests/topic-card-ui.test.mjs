@@ -30,6 +30,7 @@ test('the hot-topic pill sits on the art and scales with the card, not the brows
   assert.match(css, /@container \(min-width: 200px\)/);
   assert.match(css, /@keyframes hot-edge-race/);
   assert.match(css, /hot-edge-race 1\.5s linear infinite/);
+  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?border:\s*2px solid #fff;/);
   assert.doesNotMatch(css, /\.gb-topic-hot\s*\{[^}]*text-overflow:\s*ellipsis/);
   assert.doesNotMatch(css, /\.gb-topic-hot\s*\{[^}]*\.76vw/);
 });

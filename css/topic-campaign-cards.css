@@ -230,6 +230,7 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card.is-ho
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
+  --hot-edge: 0deg;
   position: absolute;
   /* Sit on the metal plaque, not the transparent padding around the PNG. */
   top: 6%;
@@ -238,10 +239,10 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   box-sizing: border-box;
   max-width: 74%;
   padding: 0.28em 0.7em;
+  border: 2px solid #fff;
   border-radius: 999px;
-  overflow: hidden;
-  isolation: isolate;
-  background: transparent;
+  overflow: visible;
+  background: linear-gradient(180deg, #ffb340, #ff5a1f);
   color: #2a0d00;
   /* Scale with the card art (cqi), not the browser width (vw). */
   font-size: clamp(0.62rem, 11cqi, 1.05rem);
@@ -249,42 +250,50 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   letter-spacing: 0.02em;
   line-height: 1.15;
   white-space: nowrap;
-  box-shadow: 0 0 14px rgba(255, 110, 30, .75);
+  box-shadow:
+    0 0 0 1px rgba(40, 10, 0, 0.25),
+    0 0 14px rgba(255, 110, 30, .75);
   transform: translateX(-50%);
   pointer-events: none;
   animation: hot-flicker 1.6s ease-in-out infinite;
 }
 
-/* Tiny highlight racing around the pill rim every 1.5s. */
+/* Bright spark racing the white stroke every 1.5s. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::before {
   content: '';
   position: absolute;
-  inset: -55%;
+  inset: -4px;
+  border-radius: inherit;
+  padding: 3px;
   background: conic-gradient(
-    from 0deg,
-    transparent 0 76%,
-    rgba(255, 255, 255, 0.15) 84%,
-    #ffffff 89%,
-    #ffe7a0 93%,
-    transparent 100%
+    from var(--hot-edge),
+    transparent 0 58%,
+    rgba(255, 255, 255, 0.35) 66%,
+    #ffffff 74%,
+    #ffe27a 82%,
+    rgba(255, 255, 255, 0.35) 88%,
+    transparent 96% 100%
   );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   animation: hot-edge-race 1.5s linear infinite;
-  z-index: 0;
+  pointer-events: none;
+  z-index: 3;
 }
 
-/* Orange fill sits inside the rim so only the edge shimmer shows. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::after {
-  content: '';
-  position: absolute;
-  inset: 1.5px;
-  border-radius: inherit;
-  background: linear-gradient(180deg, #ffb340, #ff5a1f);
-  z-index: 1;
+  content: none;
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot > * {
   position: relative;
-  z-index: 2;
+  z-index: 4;
 }
 
 /* Default to the short label so Chrome on a windowed laptop never shows "HOT TOPI…". */
@@ -308,12 +317,18 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
 }
 
 @keyframes hot-flicker {
-  0%, 100% { box-shadow: 0 0 10px rgba(255, 110, 30, .6); }
-  50% { box-shadow: 0 0 20px rgba(255, 150, 40, .95); }
+  0%, 100% { box-shadow: 0 0 0 1px rgba(40, 10, 0, 0.25), 0 0 10px rgba(255, 110, 30, .6); }
+  50% { box-shadow: 0 0 0 1px rgba(40, 10, 0, 0.25), 0 0 20px rgba(255, 150, 40, .95); }
 }
 
 @keyframes hot-edge-race {
-  to { transform: rotate(360deg); }
+  to { --hot-edge: 360deg; }
+}
+
+@property --hot-edge {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
 }
 
 /* Desktop dashboard: two rows of five share the height Maths HQ has left (see
