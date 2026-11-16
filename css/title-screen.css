@@ -28,25 +28,16 @@ html:has(#title-screen) body {
 
 #title-screen .title-art {
   position: absolute;
-  inset: -2%;
+  inset: 0;
   background-image: url("../assets/home/title-keyart.webp?v=20261116a");
   background-position: center center;
-  background-size: cover;
+  background-size: contain;
   background-repeat: no-repeat;
-  transform: scale(1.04);
-  animation: granny-push 18s ease-in-out infinite alternate;
-  will-change: transform;
-  transition: filter 280ms ease, transform 280ms ease;
+  transition: filter 280ms ease;
 }
 
 #title-screen.is-briefing .title-art {
   filter: brightness(0.35) saturate(0.85);
-  animation-play-state: paused;
-}
-
-@keyframes granny-push {
-  from { transform: scale(1.04); }
-  to { transform: scale(1.12); }
 }
 
 #title-screen .title-shimmer {
@@ -479,7 +470,6 @@ html:has(#title-screen) body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #title-screen .title-art,
   #title-screen .title-shimmer,
   #title-screen .title-embers i,
   #title-enter,
@@ -490,9 +480,5 @@ html:has(#title-screen) body {
   #title-screen .title-shimmer,
   #title-screen .title-embers {
     display: none;
-  }
-
-  #title-screen .title-art {
-    transform: scale(1.04);
   }
 }
