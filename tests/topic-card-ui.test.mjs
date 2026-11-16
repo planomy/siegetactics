@@ -43,6 +43,8 @@ test('topic cards show L1–L6 shields instead of the old ★ XP rank meter', ()
   assert.doesNotMatch(home, /XP to ★/);
   assert.match(home, /of 6 level shields earned/);
   assert.match(css, /\.gb-topic-shields\s*\{/);
+  assert.match(css, /\.gb-level-shield\s*\{[\s\S]*?13\.2cqi/);
+  assert.match(css, /\.gb-topic-campaign-card\s*\{[\s\S]*?container-type:\s*inline-size;/);
   assert.match(howto, /What are the shields on the topic cards\?/);
   assert.doesNotMatch(howto, /What are the stars on the topic cards\?/);
 });

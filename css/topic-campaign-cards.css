@@ -21,7 +21,7 @@ body.mission-mode #screen-home .mission-all-topics {
   --topic-art-ratio: .8;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  column-gap: 6px;
+  column-gap: 10px;
   row-gap: 7px;
   align-items: start;
   padding: 10px 12px;
@@ -29,6 +29,8 @@ body.mission-mode #screen-home .mission-all-topics {
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card {
   position: relative;
+  /* Shields size themselves to this card width in windowed Maths HQ. */
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -196,27 +198,33 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-s
   text-shadow: 0 2px 5px #000;
 }
 
-/* Brag board: six level shields. Soft path = light up L1; flex = fill through L6. */
+/* Brag board: six level shields. Soft path = light up L1; flex = fill through L6.
+   Scale to the card so L6 never crashes into the next topic in windowed mode. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-topic-shields {
   display: flex;
   position: static;
+  box-sizing: border-box;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
-  height: 28px;
+  height: clamp(18px, 22cqi, 28px);
   justify-content: center;
   align-items: center;
-  gap: 3px;
-  padding: 0 4px 2px;
+  gap: clamp(1px, 1.2cqi, 3px);
+  padding: 0 0 2px;
+  overflow: hidden;
   pointer-events: none;
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-level-shield {
-  width: 20px;
-  height: 24px;
+  flex: 0 1 auto;
+  width: clamp(11px, 13.2cqi, 20px);
+  height: clamp(13px, 15.8cqi, 24px);
+  min-width: 0;
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-level-shield-num {
-  font-size: 0.58rem;
+  font-size: clamp(0.42rem, 5.2cqi, 0.58rem);
   padding-top: 1px;
 }
 
