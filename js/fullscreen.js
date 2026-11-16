@@ -1,14 +1,9 @@
 /**
- * Keep the game in fullscreen as hard as browsers allow.
+ * Optional fullscreen via the topbar icon only.
  *
- * Limits (cannot be bypassed by any website):
- * - Entering fullscreen always needs a click/tap/key (never on bare page load).
- * - Esc / the browser UI can always leave fullscreen.
- * - iOS Safari often has no Fullscreen API for web pages; Add to Home Screen is the
- *   real full-bleed option there.
- *
- * What we do: enter on the first gesture, re-enter on the next gesture after any
- * exit, offer a topbar button, and use navigationUI: 'hide' where supported.
+ * Windowed is the default. Kids / classrooms leave Esc often; re-entering on
+ * every tap felt broken. iOS Safari often has no Fullscreen API for web pages —
+ * Add to Home Screen is the real full-bleed option there.
  */
 
 function requestFn(el) {
@@ -60,24 +55,27 @@ export function exitFullscreen() {
 }
 
 /**
+ * Wire the topbar fullscreen toggle. Does not auto-enter or re-enter on taps.
+ *
  * @param {{
- *   onExit?: () => void,
  *   button?: HTMLElement | null,
  * }} [opts]
  */
 export function keepFullscreen(opts = {}) {
   const root = document.documentElement;
+  const btn = opts.button ?? null;
+
   if (!requestFn(root)) {
-    if (opts.button) opts.button.hidden = true;
+    if (btn) btn.hidden = true;
     return { supported: false, tryEnter: () => Promise.reject(new Error('unsupported')) };
   }
 
-  let coolUntil = 0;
-  let exitNotified = false;
+  // Standalone Doompickle (no topbar button): stay windowed; no sticky capture.
+  if (!btn) {
+    return { supported: true, tryEnter: () => requestFullscreen(root), syncButton: () => {} };
+  }
 
   const syncButton = () => {
-    const btn = opts.button;
-    if (!btn) return;
     const on = isFullscreen();
     btn.hidden = false;
     btn.classList.toggle('is-fullscreen', on);
@@ -89,43 +87,17 @@ export function keepFullscreen(opts = {}) {
 
   const tryEnter = () => {
     if (isFullscreen()) return Promise.resolve();
-    if (performance.now() < coolUntil) return Promise.resolve();
-    return requestFullscreen(root).then(
-      () => {
-        exitNotified = false;
-        syncButton();
-      },
-      () => {
-        // Denied or unsupported in this context — back off briefly so we do not spam.
-        coolUntil = performance.now() + 1800;
-      }
-    );
+    return requestFullscreen(root).then(syncButton, () => {});
   };
-
-  const onGesture = () => {
-    void tryEnter();
-  };
-
-  window.addEventListener('pointerdown', onGesture, true);
-  window.addEventListener('keydown', onGesture, true);
 
   const onFsChange = () => {
     syncButton();
-    if (isFullscreen()) {
-      exitNotified = false;
-      return;
-    }
-    // Left fullscreen (Esc, gesture, browser chrome). Next tap re-enters; tell them once.
-    if (!exitNotified) {
-      exitNotified = true;
-      opts.onExit?.();
-    }
   };
 
   document.addEventListener('fullscreenchange', onFsChange);
   document.addEventListener('webkitfullscreenchange', onFsChange);
 
-  opts.button?.addEventListener('click', (e) => {
+  btn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (isFullscreen()) void exitFullscreen().then(syncButton);
     else void tryEnter();

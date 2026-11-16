@@ -22,7 +22,7 @@ import { DEV } from './dev.js?v=20261115y1';
 import { YARD_LAYOUTS } from './yard-obstacles.js?v=20261115y50';
 import { HEDGE } from './maze-field.js?v=20261113m7';
 import { showCoachTips, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261115p1';
-import { keepFullscreen } from './fullscreen.js?v=20261115p2';
+import { keepFullscreen } from './fullscreen.js?v=20261116h';
 import { bindTipPills } from './tip-pills.js?v=20261115t1';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
@@ -2382,9 +2382,6 @@ function bindUI() {
   bindTipPills(document.querySelector('.topbar-hud') || document);
   keepFullscreen({
     button: document.getElementById('btn-fullscreen'),
-    onExit() {
-      showToast('Tap anywhere to fill the screen again', { variant: 'info', title: 'Fullscreen', duration: 2800 });
-    },
   });
 
   document.getElementById('topbar-streak')?.addEventListener('click', () => showStreakPanel(streakStatus(save.streak)));

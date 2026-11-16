@@ -1,6 +1,6 @@
 /**
  * Title gate: poster → optional mission briefing → enter game.
- * The first click is also the gesture browsers need for fullscreen.
+ * Stays windowed; kids use the topbar fullscreen icon when they want it.
  */
 (function () {
   "use strict";
@@ -141,28 +141,10 @@
     }
   }
 
-  function requestFs() {
-    const root = document.documentElement;
-    const request =
-      root.requestFullscreen ||
-      root.webkitRequestFullscreen ||
-      root.msRequestFullscreen;
-    if (!request) return;
-    try {
-      const result = request.call(root, { navigationUI: "hide" });
-      if (result && typeof result.catch === "function") {
-        result.catch(() => {});
-      }
-    } catch (_) {
-      // Unsupported or refused. Still let them in.
-    }
-  }
-
   function enterGame() {
     if (entering) return;
     entering = true;
     markBriefingSeen();
-    requestFs();
     screen.classList.add("title-exiting");
 
     window.setTimeout(() => {
@@ -202,7 +184,6 @@
   }
 
   function openBriefing() {
-    requestFs();
     showBeat(0);
   }
 

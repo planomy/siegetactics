@@ -22,7 +22,7 @@ import { mapPiecesEarned, normalizeMapProgress, TRAINING_MODULE_IDS, homelandMax
 import { UPGRADES, noUpgrades, rollChoices, crystalsForLevel } from './upgrades.js';
 import { sceneryFor, propImage } from './props.js?v=10';
 import { createSky, updateSky, drawSkyLayers, drawCloudBand, mountainSlide } from './sky.js?v=5';
-import { keepFullscreen } from '../fullscreen.js?v=20261115p2';
+import { keepFullscreen } from '../fullscreen.js?v=20261116h';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('homeland'));
 const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
@@ -2882,7 +2882,7 @@ if (window !== window.top) {
     if (window.top) window.top.location.href = href;
   });
 } else {
-  // Standalone Doompickle tab: same keep-fullscreen behaviour as Maths HQ.
+  // Standalone Doompickle tab: windowed by default (no sticky fullscreen).
   keepFullscreen();
 }
 requestAnimationFrame(frame);
