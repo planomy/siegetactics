@@ -75,7 +75,7 @@
     {
       step: "1 / 2",
       title: "Collect all 10 map pieces",
-      copy: "Earn a piece by completing 10 sets of a topic.",
+      copy: "Complete 10 sets of questions on a topic to earn a map piece.",
       cta: "NEXT",
       visual: mapVisual,
     },
@@ -169,10 +169,7 @@
       briefVisual.innerHTML = typeof beat.visual === "function" ? beat.visual() : "";
       briefVisual.hidden = !briefVisual.innerHTML.trim();
     }
-    if (briefNext) {
-      briefNext.textContent = beat.cta;
-      briefNext.focus({ preventScroll: true });
-    }
+    if (briefNext) briefNext.textContent = beat.cta;
   }
 
   function openBriefing() {
