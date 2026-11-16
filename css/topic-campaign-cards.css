@@ -230,7 +230,6 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card.is-ho
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
-  --hot-edge: 0deg;
   position: absolute;
   /* Sit on the metal plaque, not the transparent padding around the PNG. */
   top: 6%;
@@ -258,7 +257,7 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   animation: hot-flicker 1.6s ease-in-out infinite;
 }
 
-/* Bright spark racing the white stroke every 1.5s. */
+/* Short spark racing the white stroke every 1.5s (transform, not @property). */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::before {
   content: '';
   position: absolute;
@@ -266,13 +265,12 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::before {
   border-radius: inherit;
   padding: 3px;
   background: conic-gradient(
-    from var(--hot-edge),
-    transparent 0 58%,
-    rgba(255, 255, 255, 0.35) 66%,
-    #ffffff 74%,
-    #ffe27a 82%,
-    rgba(255, 255, 255, 0.35) 88%,
-    transparent 96% 100%
+    from 0deg,
+    transparent 0 86%,
+    rgba(255, 255, 255, 0.45) 90%,
+    #ffffff 93%,
+    #ffe27a 96%,
+    transparent 100%
   );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -322,13 +320,7 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
 }
 
 @keyframes hot-edge-race {
-  to { --hot-edge: 360deg; }
-}
-
-@property --hot-edge {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 0deg;
+  to { transform: rotate(360deg); }
 }
 
 /* Desktop dashboard: two rows of five share the height Maths HQ has left (see
