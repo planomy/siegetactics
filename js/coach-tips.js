@@ -44,7 +44,7 @@ export const COACH_TIPS = {
   contact: {
     title: 'THEY’VE LANDED!',
     text: 'Your defences are charged. Press DEFEND GRANNY to start the battle!',
-    targets: ['#btn-hold-line'],
+    targets: ['#btn-hold-line', '#mission-defend'],
   },
   siege: {
     title: 'BUILD A MAZE!',

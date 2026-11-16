@@ -21,7 +21,7 @@ import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, sho
 import { DEV } from './dev.js?v=20261115y1';
 import { YARD_LAYOUTS } from './yard-obstacles.js?v=20261115y50';
 import { HEDGE } from './maze-field.js?v=20261113m7';
-import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261115p1';
+import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261117a1';
 import { keepFullscreen } from './fullscreen.js?v=20261116h';
 import { bindTipPills } from './tip-pills.js?v=20261115t1';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
@@ -31,7 +31,7 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261116xp32';
+import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261117a3';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261114n1';
 import { initHowToPlay } from './how-to-play.js?v=20261116xp35';
@@ -164,7 +164,7 @@ document.addEventListener('pointerover', (e) => {
   audio.playCardHover();
 });
 /** Buttons that already make their own sound on press. */
-const OWN_SOUND_BUTTONS = '.times-answer-btn, .gb-topic-campaign-card, #btn-hold-line, #mission-start-mixed, .armory-upgrade-btn';
+const OWN_SOUND_BUTTONS = '.times-answer-btn, .gb-topic-campaign-card, #btn-hold-line, #mission-defend, #mission-start-mixed, .armory-upgrade-btn';
 document.addEventListener('click', (e) => {
   const btn = e.target instanceof Element ? e.target.closest('button, [role="button"]') : null;
   if (!btn || btn.matches(':disabled, [aria-disabled="true"]') || btn.matches(OWN_SOUND_BUTTONS)) return;
@@ -368,6 +368,9 @@ function showScreen(id) {
   if (missionShell) missionShell.hidden = !inLearning;
   document.body.classList.toggle('mission-mode', inLearning);
   document.body.classList.toggle('siege-mode', id === 'siege');
+  // The invasion radar is for a maths mission, where answers move the horde.
+  // Maths HQ is the mission picker, so the radar stays off that screen.
+  document.body.classList.toggle('hq-home', id === 'home');
   Object.entries(screens).forEach(([key, el]) => {
     el?.classList.toggle('active', key === id);
   });

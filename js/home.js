@@ -1030,8 +1030,19 @@ function showHomelandMap(mapProgress) {
 export function renderHome(host, state) {
   const attack = attackStatus(state.gate);
   const special = missionArt === 'special' && !attack.open;
+  const greeting = state.siegesCompleted === 0 ? 'Welcome' : 'Welcome back';
   host.innerHTML = `
     <div class="mission-home">
+      <div class="hq-hello">
+        <h1 class="hq-hello-name">${greeting}, <span>${escapeHtml(state.playerName)}</span></h1>
+        <button type="button" class="mission-xp" id="home-forge-xp" aria-label="${formatForgeXp(state.xp)} Forge XP. Spend it in the Armory.">
+          <img class="mission-xp-emblem" src="assets/ui/xp-emblem.png?v=1" alt="" width="317" height="320" />
+          <span class="mission-xp-copy">
+            <span class="mission-xp-value">${formatForgeXp(state.xp)}</span>
+            <span class="mission-xp-label">FORGE XP</span>
+          </span>
+        </button>
+      </div>
       <header class="mission-workspace-heading">
         <span class="mission-kicker">MATHS HQ</span>
         <h1>Maths missions</h1>
@@ -1043,7 +1054,7 @@ export function renderHome(host, state) {
           <h2>${attack.open ? 'Granny’s under attack!' : 'Mixed Maths Mission'}</h2>
         </div>
         ${attack.open
-          ? ''
+          ? `<button type="button" id="mission-defend" class="mission-defend">DEFEND GRANNY</button>`
           : `<button type="button" id="mission-start-mixed" class="mission-start-art${special ? ' is-special' : ''}" aria-label="${special ? `Special mission: ${SPECIAL_MISSION_XP_MULTIPLIER}× Forge XP` : 'Random mission'}: ${answersForCharge(attack.remaining, state.difficultyLevel)} more right answers needed, from every topic"><img src="assets/ui/random-mission-${missionArt}.png?v=2" alt="" width="760" height="203" />${special ? `<span class="mission-special-badge" aria-hidden="true"><span class="mission-special-rays"></span><span class="mission-special-disc"><b>${SPECIAL_MISSION_XP_MULTIPLIER}×</b><small>XP</small></span></span>` : ''}</button>`}
         <div class="mission-level-control">
           <div class="mission-level-intro">
@@ -1072,7 +1083,9 @@ export function renderHome(host, state) {
   `;
 
   host.querySelector('#mission-start-mixed')?.addEventListener('click', state.onHoldTheLine);
+  host.querySelector('#mission-defend')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-armory-open')?.addEventListener('click', state.onArmory);
+  host.querySelector('#home-forge-xp')?.addEventListener('click', () => state.onArmory?.());
   host.querySelector('.homeland-track')?.addEventListener('click', () => showHomelandMap(state.mapProgress));
   bindHomelandLaunch(host);
   host.querySelectorAll('[data-topic]').forEach((btn) => {
