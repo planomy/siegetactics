@@ -232,41 +232,44 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card.is-ho
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   position: absolute;
   /* Sit on the metal plaque, not the transparent padding around the PNG. */
-  top: 7%;
+  top: 6%;
   left: 50%;
   z-index: 3;
   box-sizing: border-box;
-  max-width: 78%;
-  padding: 0.19em 0.54em;
+  max-width: 74%;
+  padding: 0.28em 0.7em;
   border-radius: 999px;
   background: linear-gradient(180deg, #ffb340, #ff5a1f);
   color: #2a0d00;
   /* Scale with the card art (cqi), not the browser width (vw). */
-  font-size: clamp(0.5rem, 8.9cqi, 0.94rem);
+  font-size: clamp(0.62rem, 11cqi, 1.05rem);
   font-weight: 900;
   letter-spacing: 0.02em;
   line-height: 1.15;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   box-shadow: 0 0 14px rgba(255, 110, 30, .75);
   transform: translateX(-50%);
   pointer-events: none;
   animation: hot-flicker 1.6s ease-in-out infinite;
 }
 
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
+/* Default to the short label so Chrome on a windowed laptop never shows "HOT TOPI…". */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-full {
   display: none;
 }
 
-/* Narrow windowed cards: keep the whole label inside the plaque. */
-@container (max-width: 140px) {
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
+  display: inline;
+}
+
+/* Fullscreen / big cards only: room for the full wording. */
+@container (min-width: 200px) {
   body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-full {
-    display: none;
+    display: inline;
   }
 
   body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
-    display: inline;
+    display: none;
   }
 }
 
