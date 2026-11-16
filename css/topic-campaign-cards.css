@@ -93,6 +93,9 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-story-art {
   position: relative;
+  /* Hot-topic pill sizes itself to this art box, not the whole browser window. */
+  container-type: inline-size;
+  width: 100%;
 }
 
 /* Baked into every topic PNG: three green “status” lights on the bottom lip.
@@ -221,32 +224,50 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-l
   filter: drop-shadow(0 0 4px rgba(255, 200, 80, 0.75));
 }
 
-/* Today's hot topic: a flame banner across the top of the card and a warm glow. */
-body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card.is-hot .gb-story-art {
-  position: relative;
-}
-
+/* Today's hot topic: a flame banner across the top of the art and a warm glow. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card.is-hot .gb-story-art-img {
   filter: drop-shadow(0 0 10px rgba(255, 140, 40, .75));
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   position: absolute;
-  top: 6%;
+  /* Sit on the metal plaque, not the transparent padding around the PNG. */
+  top: 7%;
   left: 50%;
-  z-index: 2;
-  padding: 3px 9px;
+  z-index: 3;
+  box-sizing: border-box;
+  max-width: 70%;
+  padding: 0.16em 0.45em;
   border-radius: 999px;
   background: linear-gradient(180deg, #ffb340, #ff5a1f);
   color: #2a0d00;
-  font-size: clamp(.68rem, .76vw, .82rem);
+  /* Scale with the card art (cqi), not the browser width (vw). */
+  font-size: clamp(0.42rem, 7.4cqi, 0.78rem);
   font-weight: 900;
-  letter-spacing: .04em;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   box-shadow: 0 0 14px rgba(255, 110, 30, .75);
   transform: translateX(-50%);
   pointer-events: none;
   animation: hot-flicker 1.6s ease-in-out infinite;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
+  display: none;
+}
+
+/* Narrow windowed cards: keep the whole label inside the plaque. */
+@container (max-width: 140px) {
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-full {
+    display: none;
+  }
+
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
+    display: inline;
+  }
 }
 
 @keyframes hot-flicker {

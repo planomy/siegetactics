@@ -43,6 +43,9 @@ function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTo
       const art = topic.moduleArt
         ? `<img class="gb-story-art-img" src="${topic.moduleArt}" alt="" width="400" height="400" loading="lazy" />`
         : `<span class="gb-story-art-emoji">${topic.emoji}</span>`;
+      const hotPill = hot
+        ? '<span class="gb-topic-hot" aria-hidden="true"><span class="gb-topic-hot-full">🔥 HOT TOPIC · 2× XP</span><span class="gb-topic-hot-short">🔥 2× XP</span></span>'
+        : '';
       const shieldNote = earned
         ? `${earned} of 6 level shields earned`
         : 'no level shields yet — clear a set at 100% to earn one';
@@ -52,8 +55,7 @@ function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTo
           data-topic="${topic.id}"
           aria-label="${topic.title}${hot ? ', hot topic today, double XP' : ''}, ${shieldNote}"
           ${locked ? 'disabled' : ''}>
-          <span class="${artClass}" aria-hidden="true">${art}</span>
-          ${hot ? '<span class="gb-topic-hot" aria-hidden="true">🔥 HOT TOPIC · 2× XP</span>' : ''}
+          <span class="${artClass}" aria-hidden="true">${art}${hotPill}</span>
           ${topic.moduleArt ? '' : `<span class="gb-story-title">${topic.title}</span>`}
           <span class="gb-topic-shields" aria-hidden="true">${renderModuleLevelPips(levelMastery, topic.id)}</span>
         </button>
