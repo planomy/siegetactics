@@ -249,6 +249,8 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   border: 2px solid #fff;
   border-radius: 999px;
   overflow: visible;
+  /* Opaque fill covers the spinning disc; only the overhanging rim shows. */
+  isolation: isolate;
   background: linear-gradient(180deg, #ffb340, #ff5a1f);
   color: #2a0d00;
   /* Scale with the card art (cqi), not the browser width (vw). */
@@ -265,41 +267,27 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   animation: hot-flicker 1.6s ease-in-out infinite;
 }
 
-/* Short spark racing the white stroke every 1.5s (transform, not @property). */
+/* Short spark behind the pill: opaque fill hides the middle, rim traces the edge. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::before {
   content: '';
   position: absolute;
-  inset: -4px;
+  inset: -3px;
+  z-index: -1;
   border-radius: inherit;
-  padding: 3px;
   background: conic-gradient(
     from 0deg,
-    transparent 0 86%,
-    rgba(255, 255, 255, 0.45) 90%,
-    #ffffff 93%,
-    #ffe27a 96%,
+    transparent 0 88%,
+    rgba(255, 255, 255, 0.55) 91%,
+    #ffffff 94%,
+    #ffe27a 97%,
     transparent 100%
   );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
   animation: hot-edge-race 1.5s linear infinite;
   pointer-events: none;
-  z-index: 3;
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::after {
   content: none;
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot > * {
-  position: relative;
-  z-index: 4;
 }
 
 /* Default to the short label so Chrome on a windowed laptop never shows "HOT TOPI…". */
