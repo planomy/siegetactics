@@ -727,6 +727,8 @@
   box-shadow: 0 0 22px rgba(255, 110, 20, .6);
   pointer-events: none;
   transform: translateX(-50%);
+  opacity: 1;
+  transition: opacity 0.7s ease, transform 0.7s ease;
 }
 
 .onfire-badge[hidden] {
@@ -735,6 +737,11 @@
 
 .onfire-badge.is-bump {
   animation: onfire-bump .45s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.onfire-badge.is-fade {
+  opacity: 0;
+  transform: translateX(-50%) scale(0.92);
 }
 
 @keyframes onfire-bump {
@@ -768,6 +775,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .onfire-badge.is-bump { animation: none; }
+  .onfire-badge.is-fade { transition: opacity 0.2s ease; transform: translateX(-50%); }
 }
 
 /* The daily challenge dart, in the header pill, the panel and the "challenge done" pop. */

@@ -509,16 +509,14 @@ body.mission-mode .radar-launch-ring {
 /* Alarm: the button pulses white-hot, wiggles for attention, and drops in when it first appears.
    scale/rotate are separate from transform so they stack with the centring translate. */
 body.mission-mode .radar-launch {
-  animation:
-    radar-launch-alarm 1s ease-in-out infinite,
-    radar-launch-wiggle 3s ease-in-out infinite;
+  /* Pop + glow only — no wiggle/shake. */
+  animation: radar-launch-alarm 1s ease-in-out infinite;
 }
 
 body.mission-mode .radar-launch.is-arriving {
   animation:
     radar-launch-arrive .75s cubic-bezier(.2, 1.6, .4, 1),
-    radar-launch-alarm 1s ease-in-out .75s infinite,
-    radar-launch-wiggle 3s ease-in-out .75s infinite;
+    radar-launch-alarm 1s ease-in-out .75s infinite;
 }
 
 body.mission-mode .radar-launch-ring--late {
@@ -590,13 +588,17 @@ body.mission-mode .inbound-radar-dish-alert .radar-contact {
   filter: hue-rotate(125deg);
 }
 
-/* Contact: the incoming horde against the player's war chest, in the same gold-bevelled slate as the
-   header. Alien counts are red, the player's side gold. */
+/* Contact: horde vs war chest. Labels on row 1; VS sits on row 2 between ×N and the chest. */
 body.mission-mode .horde-faceoff {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) auto minmax(0, 1fr);
+  grid-template-areas:
+    "hl . cl"
+    "troops vs chest"
+    "actions actions actions";
   align-items: center;
-  gap: 0 8px;
+  justify-items: center;
+  gap: 2px 8px;
   padding: 7px 12px 6px;
   border: 2px solid transparent;
   border-radius: 12px;
@@ -606,11 +608,123 @@ body.mission-mode .horde-faceoff {
   box-shadow: inset 0 -3px 6px rgba(0, 0, 0, .45), 0 2px 8px rgba(0, 0, 0, .5);
 }
 
-body.mission-mode .faceoff-side {
+body.mission-mode .horde-faceoff .faceoff-label-horde { grid-area: hl; }
+body.mission-mode .horde-faceoff .faceoff-label-chest { grid-area: cl; }
+body.mission-mode .horde-faceoff .faceoff-troops { grid-area: troops; }
+body.mission-mode .horde-faceoff .faceoff-vs { grid-area: vs; }
+body.mission-mode .horde-faceoff .faceoff-chest { grid-area: chest; }
+body.mission-mode .horde-faceoff .faceoff-actions { grid-area: actions; }
+
+/* Under-quiz faceoff: compact card, big horde + chest art, louder type. */
+body.mission-mode .invasion-briefing.is-open .horde-faceoff {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 6px 12px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 2px 0 0;
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-label {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2.8vw, 1.45rem);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-troops,
+body.mission-mode .invasion-briefing.is-open .faceoff-chest {
+  justify-self: center;
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-vs {
+  justify-self: center;
+  align-self: center;
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-troop img {
+  width: clamp(72px, 12vw, 104px);
+  height: clamp(72px, 12vw, 104px);
+  filter: drop-shadow(0 0 12px rgba(255, 80, 60, 0.75));
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-troop b {
+  font-size: clamp(2.1rem, 4.5vw, 2.8rem);
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-vs {
+  font-size: clamp(1.6rem, 3.2vw, 2rem);
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-zapped {
+  font-size: 1.25rem;
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-chest {
   display: grid;
   justify-items: center;
+  align-content: center;
+  gap: 4px;
+  min-height: 128px;
+  width: min(100%, 11.5rem);
+  padding: 10px 16px 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(70, 48, 18, 0.55), rgba(28, 16, 6, 0.7));
+  box-shadow: inset 0 0 0 1px rgba(255, 210, 100, 0.35);
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-chest-row {
+  flex-direction: column;
   gap: 2px;
-  min-width: 0;
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-chest-art {
+  width: clamp(72px, 11vw, 96px);
+  height: auto;
+  filter: drop-shadow(0 0 12px rgba(255, 200, 80, 0.75));
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-coins {
+  font-size: clamp(2.4rem, 6vw, 3.1rem);
+  line-height: 0.95;
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-coins-label {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-zap {
+  flex-wrap: wrap;
+  min-height: 48px;
+  margin-top: 0;
+  padding: 10px 14px 12px;
+  white-space: normal;
+  gap: 2px 10px;
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-zap strong {
+  font-size: 1.55rem;
+}
+
+body.mission-mode .invasion-briefing.is-open .faceoff-zap span {
+  flex: 1 1 100%;
+  max-width: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  white-space: normal;
+  text-align: center;
 }
 
 body.mission-mode .faceoff-label {
@@ -620,7 +734,7 @@ body.mission-mode .faceoff-label {
   color: rgba(255, 225, 160, .75);
 }
 
-body.mission-mode .faceoff-horde .faceoff-label {
+body.mission-mode .faceoff-label-horde {
   color: #ff8a6a;
 }
 
@@ -691,6 +805,13 @@ body.mission-mode .faceoff-vs {
   font-size: 1.35rem;
   color: #ffd84a;
   text-shadow: 0 2px 0 #4a2c00;
+}
+
+body.mission-mode .faceoff-chest {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
 }
 
 body.mission-mode .faceoff-chest-row {

@@ -319,12 +319,20 @@ body.mission-mode .mission-control-metrics {
     width: min(290px, 19vw, 32dvh);
   }
 
+  body.mission-mode .mission-control.is-theatre .mission-control-radar .inbound-radar-dish {
+    width: min(330px, 22vw, 38dvh);
+  }
+
   /* One fixed height, whichever alien is on file, so the panel never jumps. */
   body.mission-mode .mission-control-blueprint .threat-dossier {
     display: flex;
     flex-direction: column;
     height: 236px;
     overflow: hidden;
+  }
+
+  body.mission-mode .mission-control.is-theatre .mission-control-blueprint .threat-dossier {
+    height: clamp(224px, 27dvh, 288px);
   }
 
   body.mission-mode .mission-control-blueprint .threat-dossier-body {

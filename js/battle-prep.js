@@ -4,7 +4,6 @@ import { makeLengthQuestion } from './measurement-length.js?v=20261114v1';
 import { makeFractionQuestion } from './fractions.js?v=20261114v1';
 import { makeAnglesQuestion } from './angles-shapes.js?v=20261115p1';
 import { makeExpandedQuestion } from './expanded-maths.js?v=20261114v1';
-import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
 import { labelQuestion } from './maths-skills.js';
 
@@ -179,6 +178,7 @@ export function initBattlePrep(host, callbacks) {
   const coreQuestions = questionsPerCoreModule(callbacks.level);
   let index = 0;
   let totalCorrect = 0;
+  let sessionXp = 0;
   let answered = false;
   let finished = false;
   let disposed = false;
@@ -192,11 +192,6 @@ export function initBattlePrep(host, callbacks) {
 
   function renderQuestion() {
     const item = deck[index];
-    const modulePosition = PREP_MODULES.findIndex((module) => module.id === item.moduleId) + 1;
-    const moduleTarget = item.moduleId === 'times-tables' ? 2 : coreQuestions;
-    const moduleQuestion = deck
-      .slice(0, index + 1)
-      .filter((question) => question.moduleId === item.moduleId && !question.rescue).length;
     const answeredBefore = deck.slice(0, index);
     const moduleRail = PREP_MODULES.map((module) => {
       const answeredForModule = answeredBefore.filter(
@@ -216,20 +211,24 @@ export function initBattlePrep(host, callbacks) {
     `).join('');
     host.innerHTML = `
       <div class="panel times-panel prep-panel">
-        <button type="button" class="btn btn-ghost btn-sm times-back" id="prep-home">← Home</button>
-        <p class="mission-tag">${zap ? 'Zap the scouts' : 'Battle Prep'} · ${difficultyTrainingTag(callbacks.level)}</p>
-        <h2 class="panel-title">${escapeHtml(item.moduleTitle)}</h2>
-        ${zap ? '' : `<div class="prep-module-rail" aria-label="Battle Prep module progress">${moduleRail}</div>`}
-        <div class="prep-track"><span style="width:${Math.round((index / deck.length) * 100)}%"></span></div>
-        <div class="times-quiz-header">
-          <span class="times-quiz-tag">${zap ? 'Mixed maths' : `Module ${modulePosition} / ${PREP_MODULES.length}`}</span>
-          <span class="times-quiz-progress">${zap ? `Question ${index + 1} / ${deck.length}` : `${item.rescue ? 'Bonus question' : `Question ${moduleQuestion} / ${moduleTarget}`} · Overall ${index + 1} / ${deck.length}`}</span>
+        <div class="times-quiz-header times-quiz-toolbar prep-toolbar">
+          <div class="times-toolbar-left">
+            <button type="button" class="btn btn-ghost btn-sm times-back" id="prep-home">← Home</button>
+          </div>
+          <div class="times-toolbar-centre">
+            <div class="session-xp-badge" aria-label="Session XP ${sessionXp}">
+              <span class="session-xp-badge-label">XP</span>
+              <strong class="session-xp-badge-num" id="prep-session-xp">${sessionXp}</strong>
+            </div>
+          </div>
+          <div class="times-toolbar-right">
+            ${zap ? '' : `<div class="prep-module-rail" aria-label="Battle Prep module progress">${moduleRail}</div>`}
+          </div>
         </div>
+        <div class="prep-track" role="progressbar" aria-valuenow="${index + 1}" aria-valuemin="1" aria-valuemax="${deck.length}" aria-label="${item.rescue ? 'Bonus question' : `Question ${index + 1} of ${deck.length}`}"><span style="width:${Math.round((index / deck.length) * 100)}%"></span></div>
+        ${zap ? `<div class="times-quiz-header"><span class="times-quiz-tag">Mixed maths</span><span class="times-quiz-progress">Question ${index + 1} / ${deck.length}</span></div>` : item.rescue ? `<div class="times-quiz-header"><span class="times-quiz-progress">Bonus question</span></div>` : ''}
         <div class="times-question-wrap">${item.visual ? `<div class="question-visual">${item.visual}</div>` : ''}<p class="times-question length-question">${escapeHtml(item.prompt)}</p></div>
         <div class="times-answers">${options}</div>
-        <p class="prep-summary-line">${zap
-          ? 'Every right answer zaps a scout and adds coins to your war chest.'
-          : 'Every right answer charges Granny’s defences.'}</p>
       </div>`;
     host.querySelector('#prep-home')?.addEventListener('click', callbacks.onHome);
     host.querySelectorAll('.prep-answer').forEach((button) => {
@@ -247,7 +246,17 @@ export function initBattlePrep(host, callbacks) {
     if (right) {
       stats.correct += 1;
       totalCorrect += 1;
-      callbacks.onAwardXp(item.moduleId === 'times-tables' ? 3 : 4);
+      const gain = item.moduleId === 'times-tables' ? 3 : 4;
+      sessionXp += gain;
+      callbacks.onAwardXp(gain);
+      const xpEl = host.querySelector('#prep-session-xp');
+      const badge = host.querySelector('.session-xp-badge');
+      if (xpEl) xpEl.textContent = String(sessionXp);
+      if (badge) {
+        badge.classList.remove('is-pop');
+        void badge.offsetWidth;
+        badge.classList.add('is-pop');
+      }
     }
     host.querySelectorAll('.prep-answer').forEach((candidate) => {
       const isAnswer = valuesMatch(candidate.getAttribute('data-value') ?? '', item.answer);
@@ -290,27 +299,23 @@ export function initBattlePrep(host, callbacks) {
     if (zap) {
       host.innerHTML = `
         <div class="panel times-panel times-done prep-panel prep-done">
-          <p class="mission-tag">Zap run complete</p>
+          <button type="button" class="btn btn-ghost btn-sm times-back times-done-home" id="prep-home-done">← Home</button>
+          <p class="mission-tag">Mission complete</p>
           <h2 class="panel-title">${escapeHtml(callbacks.doneTitle?.(totalCorrect) ?? `${totalCorrect} right!`)}</h2>
-          <p class="granny-line">${totalCorrect} right out of ${deck.length}. Check your war chest in Mission Control.</p>
-          <div class="times-done-actions has-action">
-            <button type="button" class="btn btn-ghost" id="prep-home-done">Home</button>
-            <button type="button" class="btn btn-primary done-action-btn" id="prep-defend">Take me to the action!</button>
-          </div>
         </div>`;
-      host.querySelector('#prep-defend')?.addEventListener('click', () => callbacks.onReady(overall));
       host.querySelector('#prep-home-done')?.addEventListener('click', callbacks.onHome);
       return;
     }
     if (callbacks.isCharged && !callbacks.isCharged()) {
+      const more = Math.max(1, Math.floor(callbacks.remainingNeeded?.() ?? callbacks.questionsNeeded ?? 10));
+      const againLabel = `Give me ${more} more question${more === 1 ? '' : 's'}`;
       host.innerHTML = `
         <div class="panel times-panel times-done prep-panel prep-done">
+          <button type="button" class="btn btn-ghost btn-sm times-back times-done-home" id="prep-home-done">← Home</button>
           <p class="mission-tag">Mission complete</p>
-          <h2 class="panel-title">${totalCorrect} right — the horde creeps closer!</h2>
-          <p class="granny-line">Granny’s defences: <strong>${escapeHtml(callbacks.chargeLine?.() ?? '')}</strong>. Keep charging to launch the siege.</p>
-          <div class="times-done-actions">
-            <button type="button" class="btn btn-primary" id="prep-again">Another mission</button>
-            <button type="button" class="btn btn-ghost" id="prep-home-done">Home</button>
+          <h2 class="panel-title">${totalCorrect} right!</h2>
+          <div class="times-done-actions is-again-only">
+            <button type="button" class="btn btn-primary times-done-again" id="prep-again">${escapeHtml(againLabel)}</button>
           </div>
         </div>`;
       host.querySelector('#prep-again')?.addEventListener('click', () => callbacks.onAgain?.());
@@ -320,19 +325,16 @@ export function initBattlePrep(host, callbacks) {
     const offer = callbacks.stretchOffer?.() ?? null;
     host.innerHTML = `
       <div class="panel times-panel times-done prep-panel prep-done">
-        <p class="mission-tag">Battle Prep complete</p>
-        <h2 class="panel-title">Cleared to defend Granny</h2>
-        <p class="granny-line">${totalCorrect} right out of ${deck.length}. Accuracy: ${Math.round(overall * 100)}%.</p>
+        <button type="button" class="btn btn-ghost btn-sm times-back times-done-home" id="prep-home-done">← Home</button>
+        <p class="mission-tag">Mission complete</p>
+        <h2 class="panel-title">${totalCorrect} right!</h2>
         ${offer ? `
         <button type="button" class="prep-stretch" id="prep-stretch">
           <strong>🔥 KEEP GOING!</strong>
-          <span>${offer.more} more right = +${offer.seconds}s bonus battle time · +${offer.coins} coins each</span>
+          <span>${offer.more} more right = +${offer.seconds}s · +${offer.coins} coins each</span>
         </button>` : ''}
-        <div class="times-done-actions">
-          <button type="button" class="btn btn-primary" id="prep-defend">Defend Granny</button>
-          <button type="button" class="btn btn-ghost" id="prep-home-done">Home</button>
-        </div>
       </div>`;
+    host.querySelector('#prep-home-done')?.addEventListener('click', callbacks.onHome);
     host.querySelector('#prep-stretch')?.addEventListener('click', () => {
       if (!offer || disposed) return;
       finished = false;
@@ -340,8 +342,6 @@ export function initBattlePrep(host, callbacks) {
       deck.push(...bonusQuestions(callbacks.level, callbacks.cycle, offer.more));
       renderQuestion();
     });
-    host.querySelector('#prep-defend')?.addEventListener('click', () => callbacks.onReady(overall));
-    host.querySelector('#prep-home-done')?.addEventListener('click', callbacks.onHome);
   }
 
   renderQuestion();

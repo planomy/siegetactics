@@ -1,9 +1,9 @@
 import { ECONOMY } from './economy.js';
 import { labelQuestion } from './maths-skills.js';
 import { GATE, tableKey } from './training-gate.js?v=20261114n1';
-import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
+import { gateRemaining } from './gate-status.js?v=20261116xp21';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
-import { renderDoneActions, bindDoneActions } from './done-actions.js';
+import { renderDoneActions, bindDoneActions } from './done-actions.js?v=20261116xp27';
 import { isResumable } from './drill-session.js?v=20261114m1';
 
 /** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */
@@ -139,12 +139,12 @@ export function initTimesTables(host, callbacks) {
         </button>`
       : '';
     host.innerHTML = `
-      <div class="panel times-panel">
-        <button type="button" class="btn btn-ghost btn-sm times-back" id="times-home">← Home</button>
-        <p class="mission-tag">Number · Fluency · ${difficultyTrainingTag(callbacks.difficultyLevel)}</p>
-        <h2 class="panel-title">Times Tables</h2>
-        <p class="granny-line">Choose a table and sharpen your rapid recall. Every correct answer earns ${ECONOMY.forgeXpLabel}.</p>
-        <p class="times-gate-progress">${done.size} practice set${done.size === 1 ? '' : 's'} logged this cycle</p>
+      <div class="panel times-panel times-pick">
+        <div class="times-pick-bar">
+          <button type="button" class="btn btn-ghost btn-sm times-back" id="times-home">← Home</button>
+          <h2 class="times-pick-title">Times Tables <span>· ${difficultyTrainingTag(callbacks.difficultyLevel)}</span></h2>
+          ${done.size ? `<span class="times-pick-sets">${done.size} set${done.size === 1 ? '' : 's'} this cycle</span>` : ''}
+        </div>
         <div class="times-table-grid">
           ${tableBtns.join('')}
           ${mixedBtn}
@@ -204,20 +204,28 @@ export function initTimesTables(host, callbacks) {
 
     host.innerHTML = `
       <div class="panel times-panel">
-        <button type="button" class="btn btn-ghost btn-sm times-back" id="times-quit">← Quit</button>
-        <div class="times-quiz-header">
-          <span class="times-quiz-tag">${tableLabel}</span>
-          <span class="times-quiz-progress">${index + 1} / ${deck.length}</span>
-        </div>
-        <div class="times-streak" id="times-streak" hidden>
-          <span class="times-streak-label">Streak</span>
-          <span class="times-streak-num" id="times-streak-num">0</span>
+        <div class="times-quiz-header times-quiz-toolbar">
+          <div class="times-toolbar-left">
+            <button type="button" class="btn btn-ghost btn-sm times-back" id="times-quit">← Quit</button>
+            <span class="times-quiz-tag">${tableLabel}</span>
+          </div>
+          <div class="times-toolbar-centre">
+            <div class="session-xp-badge" aria-label="Session XP ${sessionXp}">
+              <span class="session-xp-badge-label">XP</span>
+              <strong class="session-xp-badge-num" id="times-session-xp">${sessionXp}</strong>
+            </div>
+          </div>
+          <div class="times-toolbar-right">
+            <div class="times-streak" id="times-streak" hidden>
+              <span class="times-streak-label">Streak</span>
+              <span class="times-streak-num" id="times-streak-num">0</span>
+            </div>
+          </div>
         </div>
         <div class="times-question-wrap">
           <p class="times-question">${q.a} × ${q.b} = ?</p>
         </div>
         <div class="times-answers" id="times-answers">${opts}</div>
-        <p class="times-session-xp">Session XP: <strong id="times-session-xp">${sessionXp}</strong></p>
       </div>
     `;
 
@@ -258,7 +266,13 @@ export function initTimesTables(host, callbacks) {
           sessionXp += gain;
           callbacks.onAwardXp(gain);
           const xpEl = host.querySelector('#times-session-xp');
+          const badge = host.querySelector('.session-xp-badge');
           if (xpEl) xpEl.textContent = String(sessionXp);
+          if (badge) {
+            badge.classList.remove('is-pop');
+            void badge.offsetWidth;
+            badge.classList.add('is-pop');
+          }
         } else {
           streak = 0;
           callbacks.showToast(`It's ${q.answer}. Keep going!`, { variant: 'shop' });
@@ -304,33 +318,26 @@ export function initTimesTables(host, callbacks) {
    * @param {boolean} [gateAdded]
    * @param {string} [gateReason]
    */
-  function renderDone(bonus = 0, accuracy = correct / Math.max(1, deck.length), gateAdded = false, gateReason) {
-    const pct = Math.round(accuracy * 100);
-    const passed = accuracy >= GATE.passAccuracy;
-    const label = chosenTable > 0 ? `×${chosenTable}` : 'Mixed';
-    let gateNote = '';
-    if (gateAdded) {
-      gateNote = siegeGateNote();
-    } else if (passed && gateReason) {
-      gateNote = gateReason;
-    } else if (!passed) {
-      gateNote = `Practise more to earn extra XP and siege coins.`;
-    }
+  function renderDone(bonus = 0, accuracy = correct / Math.max(1, deck.length), gateAdded = false, _gateReason) {
+    const charged = gateAdded || Boolean(callbacks.siegeReady?.());
+    const more = Math.max(1, gateRemaining() || TIMES_TABLES.questionsPerSession);
+    // Charged: no "again" — the red radar Defend is the next move. Uncharged: more questions to fill the bar.
+    const againLabel = charged
+      ? null
+      : `Give me ${more} more question${more === 1 ? '' : 's'}`;
     host.innerHTML = `
       <div class="panel times-panel times-done">
         <p class="mission-tag">Session complete</p>
         <h2 class="panel-title">${correct} / ${deck.length} correct</h2>
-        <p class="granny-line">${pct}% on the ${label} drill.${gateNote ? ` ${gateNote}` : ''}</p>
         <div class="times-done-xp">
           <span class="times-done-xp-num">+${sessionXp}</span>
           <span class="times-done-xp-label">${ECONOMY.forgeXpLabel}</span>
         </div>
-        ${bonus > 0 ? `<p class="times-bonus-note">Accuracy bonus +${bonus} XP!</p>` : ''}
-        ${gateAdded ? '<p class="times-gate-added">SIEGE UNLOCKED!</p>' : ''}
-        ${renderDoneActions({ againLabel: 'Drill again', siegeReady: callbacks.siegeReady, onAction: callbacks.onAction })}
+        ${charged ? '<p class="times-gate-added">SIEGE UNLOCKED — hit Defend Granny on the radar!</p>' : ''}
+        ${renderDoneActions({ againLabel, siegeReady: () => false })}
       </div>
     `;
-    bindDoneActions(host, { onAgain: () => startSession(false), onHome: callbacks.onHome, onAction: callbacks.onAction });
+    bindDoneActions(host, { onAgain: () => startSession(false), onHome: callbacks.onHome });
   }
 
   if (isResumable(paused) && typeof paused.table === 'number') {

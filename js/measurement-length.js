@@ -6,7 +6,7 @@ import { GATE } from './training-gate.js?v=20261114n1';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
-import { renderDoneActions, bindDoneActions } from './done-actions.js';
+import { renderDoneActions, bindDoneActions } from './done-actions.js?v=20261116xp27';
 import { isResumable } from './drill-session.js?v=20261114m1';
 
 /** @typedef {import('./difficulty.js?v=20261114k1').DifficultyLevel} DifficultyLevel */
@@ -426,8 +426,14 @@ export function initMeasurementLength(host, callbacks) {
 
     host.innerHTML = `
       <div class="panel times-panel length-panel">
-        <button type="button" class="btn btn-ghost btn-sm times-back" id="length-home">← Home</button>
-        <p class="mission-tag">Measurement · Length · ${difficultyTrainingTag(callbacks.difficultyLevel)}</p>
+        <div class="prep-top">
+          <button type="button" class="btn btn-ghost btn-sm times-back" id="length-home">← Home</button>
+          <p class="mission-tag">Measurement · Length · ${difficultyTrainingTag(callbacks.difficultyLevel)}</p>
+          <div class="session-xp-badge" aria-label="Session XP ${sessionXp}">
+            <span class="session-xp-badge-label">XP</span>
+            <strong class="session-xp-badge-num" id="length-session-xp">${sessionXp}</strong>
+          </div>
+        </div>
         <h2 class="panel-title">Length Lab</h2>
         <div class="times-quiz-header">
           <span class="times-quiz-tag">Compare & convert</span>
@@ -437,7 +443,6 @@ export function initMeasurementLength(host, callbacks) {
           <p class="times-question length-question">${q.prompt}</p>
         </div>
         <div class="times-answers" id="length-answers">${opts}</div>
-        <p class="times-session-xp">Session XP: <strong id="length-session-xp">${sessionXp}</strong></p>
       </div>
     `;
 
@@ -460,7 +465,13 @@ export function initMeasurementLength(host, callbacks) {
           sessionXp += LENGTH_LAB.xpPerCorrect;
           callbacks.onAwardXp(LENGTH_LAB.xpPerCorrect);
           const xpEl = host.querySelector('#length-session-xp');
+          const badge = host.querySelector('.session-xp-badge');
           if (xpEl) xpEl.textContent = String(sessionXp);
+          if (badge) {
+            badge.classList.remove('is-pop');
+            void badge.offsetWidth;
+            badge.classList.add('is-pop');
+          }
         } else {
           callbacks.showToast(`Correct: ${q.options.find((o) => o.value === q.answer)?.label ?? q.answer}`, {
             variant: 'shop',

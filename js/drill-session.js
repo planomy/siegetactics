@@ -3,7 +3,7 @@ import { GATE } from './training-gate.js?v=20261114n1';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
-import { renderDoneActions, bindDoneActions } from './done-actions.js';
+import { renderDoneActions, bindDoneActions } from './done-actions.js?v=20261116xp27';
 
 /**
  * Shared multiple-choice drill UI for topic modules.
@@ -110,8 +110,14 @@ export function initDrillSession(host, config) {
 
     host.innerHTML = `
       <div class="panel times-panel drill-panel">
-        <button type="button" class="btn btn-ghost btn-sm times-back" id="drill-home">← Home</button>
-        <p class="mission-tag">${config.missionTag} · ${difficultyTrainingTag(config.difficultyLevel)}</p>
+        <div class="prep-top">
+          <button type="button" class="btn btn-ghost btn-sm times-back" id="drill-home">← Home</button>
+          <p class="mission-tag">${config.missionTag} · ${difficultyTrainingTag(config.difficultyLevel)}</p>
+          <div class="session-xp-badge" aria-label="Session XP ${sessionXp}">
+            <span class="session-xp-badge-label">XP</span>
+            <strong class="session-xp-badge-num" id="drill-session-xp">${sessionXp}</strong>
+          </div>
+        </div>
         <h2 class="panel-title">${config.title}</h2>
         <div class="times-quiz-header">
           <span class="times-quiz-tag">${config.quizTag}</span>
@@ -122,7 +128,6 @@ export function initDrillSession(host, config) {
           <p class="times-question length-question">${q.prompt}</p>
         </div>
         <div class="times-answers">${opts}</div>
-        <p class="times-session-xp">Session XP: <strong id="drill-session-xp">${sessionXp}</strong></p>
       </div>
     `;
 
@@ -145,7 +150,13 @@ export function initDrillSession(host, config) {
           sessionXp += config.xpPerCorrect;
           config.onAwardXp(config.xpPerCorrect);
           const xpEl = host.querySelector('#drill-session-xp');
+          const badge = host.querySelector('.session-xp-badge');
           if (xpEl) xpEl.textContent = String(sessionXp);
+          if (badge) {
+            badge.classList.remove('is-pop');
+            void badge.offsetWidth;
+            badge.classList.add('is-pop');
+          }
         } else {
           const label = q.options.find((o) => valuesMatch(o.value, q.answer))?.label ?? String(q.answer);
           config.showToast(`Correct: ${label}`, { variant: 'shop' });

@@ -2,7 +2,7 @@ import { ECONOMY } from './economy.js';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { createQuestSet, getQuestSetsForLevel } from './maths-quest-data.js?v=20261114v1';
 import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
-import { renderDoneActions, bindDoneActions } from './done-actions.js';
+import { renderDoneActions, bindDoneActions } from './done-actions.js?v=20261116xp27';
 
 export const MATHS_QUEST = {
   problemsPerSet: 10,
@@ -143,7 +143,13 @@ export function initMathsQuest(host, callbacks) {
 
     host.innerHTML = `
       <div class="panel times-panel quest-panel">
-        <button type="button" class="btn btn-ghost btn-sm times-back" id="quest-quit">← Sets</button>
+        <div class="prep-top">
+          <button type="button" class="btn btn-ghost btn-sm times-back" id="quest-quit">← Sets</button>
+          <div class="session-xp-badge" aria-label="Session XP ${sessionXp}">
+            <span class="session-xp-badge-label">XP</span>
+            <strong class="session-xp-badge-num" id="quest-session-xp">${sessionXp}</strong>
+          </div>
+        </div>
         <div class="times-quiz-header">
           <span class="times-quiz-tag">${escapeHtml(activeSet.title)}</span>
           <span class="times-quiz-progress">${progress}</span>
@@ -152,7 +158,6 @@ export function initMathsQuest(host, callbacks) {
           <p class="times-question quest-prompt">${escapeHtml(problem.prompt)}</p>
         </div>
         ${answerArea}
-        <p class="times-session-xp">Session XP: <strong id="quest-session-xp">${sessionXp}</strong></p>
       </div>
     `;
 
@@ -222,7 +227,13 @@ export function initMathsQuest(host, callbacks) {
       sessionXp += MATHS_QUEST.xpPerCorrect;
       callbacks.onAwardXp(MATHS_QUEST.xpPerCorrect);
       const xpEl = host.querySelector('#quest-session-xp');
+      const badge = host.querySelector('.session-xp-badge');
       if (xpEl) xpEl.textContent = String(sessionXp);
+      if (badge) {
+        badge.classList.remove('is-pop');
+        void badge.offsetWidth;
+        badge.classList.add('is-pop');
+      }
     } else {
       const hint = problem.hint ? ` ${problem.hint}` : '';
       const shown =

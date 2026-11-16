@@ -94,6 +94,66 @@ body.mission-mode #app {
   width: min(200px, 56vw);
 }
 
+/* Stakes moved under the quiz — left rail becomes threat theatre. */
+body.mission-mode .mission-control.is-theatre .mission-control-radar .inbound-radar {
+  max-width: none;
+}
+
+body.mission-mode .mission-control.is-theatre .mission-control-radar .inbound-radar-dish {
+  width: min(300px, 92%, 34dvh);
+}
+
+body.mission-mode .mission-control.is-theatre .mission-control-blueprint {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+}
+
+body.mission-mode .mission-control.is-theatre .mission-control-blueprint .threat-dossier {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
+  height: clamp(208px, 26dvh, 272px);
+  margin-left: 0;
+  opacity: 0.92;
+}
+
+body.mission-mode .mission-control.is-theatre .mission-control-blueprint .threat-dossier-frame {
+  height: 100%;
+}
+
+body.mission-mode .mission-control.is-theatre .mission-control-blueprint .threat-dossier-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+body.mission-mode .mission-control.is-theatre .mission-control-blueprint .threat-dossier-wire {
+  min-height: 0;
+  height: auto;
+  align-self: stretch;
+}
+
+.mission-control-signal {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 120, 90, 0.35);
+  background: rgba(40, 12, 18, 0.55);
+  color: #ffb39a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.mission-control-signal[data-urgency='critical'],
+.mission-control-signal[data-urgency='now'] {
+  border-color: rgba(255, 70, 70, 0.55);
+  color: #ff8a7a;
+  box-shadow: 0 0 14px rgba(255, 60, 40, 0.25);
+}
+
 .mission-control-radar .inbound-radar-label {
   margin: 2px 0 0;
   color: #b6e0bd;
@@ -248,10 +308,188 @@ body.mission-mode #app {
 }
 
 .mission-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   min-height: min(760px, 75dvh);
   background: linear-gradient(160deg, rgba(29, 22, 49, 0.97), rgba(12, 11, 22, 0.99) 58%);
   box-shadow: 0 14px 42px rgba(0, 0, 0, 0.28);
   padding: clamp(18px, 2.25vw, 34px);
+}
+
+.mission-workspace > .screen {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+.mission-invasion {
+  flex: 0 0 auto;
+  margin-top: 44px;
+}
+
+.mission-invasion[hidden] {
+  display: none !important;
+}
+
+.invasion-briefing {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 18px;
+  width: 80%;
+  max-width: 720px;
+  margin-inline: auto;
+  padding: 10px 16px 12px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, #2a1830, #140a18) padding-box,
+    linear-gradient(180deg, #ff9a6a, #c42828 55%, #5a1010) border-box;
+  box-shadow: 0 0 22px rgba(255, 60, 40, 0.28), inset 0 -3px 8px rgba(0, 0, 0, 0.4);
+}
+
+.invasion-briefing.is-detected {
+  background:
+    linear-gradient(180deg, #3a1420, #18060c) padding-box,
+    linear-gradient(180deg, #ffe27a, #ff5a3a 50%, #8a1010) border-box;
+  animation: invasion-pulse 1.1s ease-in-out infinite alternate;
+}
+
+.invasion-briefing.is-open {
+  display: block;
+  position: relative;
+  padding: 14px 16px 16px;
+  background:
+    linear-gradient(180deg, #2c2443, #161122) padding-box,
+    linear-gradient(180deg, #ffe39a, #d29a35 40%, #8a5a16) border-box;
+  animation: none;
+}
+
+.invasion-countdown {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 9.5rem;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+.invasion-kicker {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 2.2vw, 1.2rem);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: #ffc8b0;
+  text-shadow: 0 2px 0 rgba(40, 8, 6, 0.85);
+}
+
+.invasion-briefing.is-detected .invasion-kicker {
+  color: #ffe27a;
+}
+
+.invasion-count {
+  font-family: var(--font-display);
+  font-size: clamp(3.8rem, 9.5vw, 5.4rem);
+  font-weight: 400;
+  color: #fff4e0;
+  text-shadow: 0 3px 0 #4a0a08, 0 0 18px rgba(255, 80, 40, 0.55);
+  transform-origin: center;
+}
+
+.invasion-briefing.is-detected .invasion-count {
+  color: #ffd36b;
+  text-shadow: 0 3px 0 #4a2a00, 0 0 20px rgba(255, 180, 40, 0.6);
+}
+
+/* Last five answers: big pulse + zoom so kids feel the siege coming. */
+.invasion-count.is-pulse {
+  color: #ff6a4a;
+  text-shadow: 0 3px 0 #4a0a08, 0 0 26px rgba(255, 60, 30, 0.85);
+  animation: invasion-count-pulse 0.7s ease-in-out infinite alternate;
+}
+
+.invasion-briefing.is-final {
+  animation: invasion-pulse 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes invasion-count-pulse {
+  from { transform: scale(1); filter: brightness(1); }
+  to { transform: scale(1.22); filter: brightness(1.25); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invasion-count.is-pulse,
+  .invasion-briefing.is-final,
+  .invasion-briefing.is-detected {
+    animation: none;
+  }
+}
+
+.invasion-unit {
+  margin-top: 1px;
+  font-family: var(--font-display);
+  font-size: clamp(0.85rem, 1.9vw, 1.05rem);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: #ffd2c0;
+  text-align: center;
+  text-shadow: 0 2px 0 rgba(40, 8, 6, 0.85);
+}
+
+.invasion-meter {
+  position: relative;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 140, 100, 0.45);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.invasion-meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff5a3a, #ffb02e);
+  box-shadow: 0 0 12px rgba(255, 90, 40, 0.55);
+  transition: width 220ms ease;
+}
+
+.invasion-meter-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #fff;
+  text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+}
+
+.invasion-sub {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: rgba(255, 220, 200, 0.75);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+@keyframes invasion-pulse {
+  from { box-shadow: 0 0 16px rgba(255, 80, 40, 0.25); }
+  to { box-shadow: 0 0 28px rgba(255, 140, 40, 0.5); }
+}
+
+@media (max-width: 640px) {
+  .invasion-briefing:not(.is-open) {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .invasion-meter {
+    width: 100%;
+  }
 }
 
 .mission-workspace-heading {

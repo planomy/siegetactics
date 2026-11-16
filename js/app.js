@@ -31,18 +31,18 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261115p1';
+import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261116xp29';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261114n1';
 import { initHowToPlay } from './how-to-play.js?v=20261115p1';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
-import { initTimesTables } from './times-tables.js?v=20261114v1';
-import { initMeasurementLength } from './measurement-length.js?v=20261114v1';
-import { initFractions } from './fractions.js?v=20261114v1';
-import { initAnglesShapes } from './angles-shapes.js?v=20261115p1';
-import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261114v1';
-import { initExpandedMath } from './expanded-maths.js?v=20261114v1';
-import { initBattlePrep } from './battle-prep.js?v=20261115p1';
+import { initTimesTables } from './times-tables.js?v=20261116xp27';
+import { initMeasurementLength } from './measurement-length.js?v=20261116xp1';
+import { initFractions } from './fractions.js?v=20261116xp1';
+import { initAnglesShapes } from './angles-shapes.js?v=20261116xp1';
+import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261116xp1';
+import { initExpandedMath } from './expanded-maths.js?v=20261116xp1';
+import { initBattlePrep } from './battle-prep.js?v=20261116xp27';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js?v=20261114k1';
 import {
   normalizeLevelMastery,
@@ -75,7 +75,7 @@ import {
   answersProgress,
   recordMissionMix,
 } from './training-gate.js?v=20261115p1';
-import { setGateRemainingProvider } from './gate-status.js?v=20261112a1';
+import { setGateRemainingProvider } from './gate-status.js?v=20261116xp21';
 import { normalizeRareSave, rollRareShip, rareShipById, recordRareSighted, recordRareCaught, rareCrystalReward } from './rare-ships.js?v=20261114t1';
 import { REGIONS as HOMELAND_REGIONS, loadProgress as loadHomelandProgress, regionCrystals } from './homeland/regions.js?v=30';
 
@@ -383,9 +383,9 @@ function showScreen(id) {
 
 function syncMissionControlAction(id) {
   const action = document.getElementById('btn-hold-line');
-  // During a drill, leave the radar and forge visible. Only offer
-  // the main battle button on HQ; activities have their own finish controls.
-  if (action) action.hidden = id !== 'home';
+  // Hide the red radar Defend during drills — unless the gate is already open,
+  // so charged kids always have one clear launch button (not orange duplicates).
+  if (action) action.hidden = id !== 'home' && !isGateOpen(save.trainingGate);
   const homeButton = document.getElementById('mission-back-to-hq');
   if (homeButton) homeButton.hidden = id === 'home';
 }
@@ -404,6 +404,9 @@ function refreshSoundButton() {
   }
 }
 
+/** Hide the ON FIRE badge a few seconds after the last bump (streak music can keep going). */
+let onFireFadeTimer = 0;
+
 /** Right answers in a row drive the hot-streak music and the ON FIRE badge; a wrong answer resets it. @param {boolean} right */
 function trackAnswerStreak(right) {
   answerStreak = right ? answerStreak + 1 : 0;
@@ -416,19 +419,28 @@ function trackAnswerStreak(right) {
     badge.setAttribute('aria-live', 'polite');
     document.body.append(badge);
   }
+  window.clearTimeout(onFireFadeTimer);
   badge.hidden = answerStreak < STREAK_MUSIC_FROM;
   if (!badge.hidden) {
+    badge.classList.remove('is-fade');
     badge.textContent = `🔥 ON FIRE ×${answerStreak}`;
     badge.classList.remove('is-bump');
     void badge.offsetWidth;
     badge.classList.add('is-bump');
+    onFireFadeTimer = window.setTimeout(() => {
+      badge.classList.add('is-fade');
+    }, 3000);
   }
 }
 
 function endAnswerStreak() {
   answerStreak = 0;
+  window.clearTimeout(onFireFadeTimer);
   const badge = document.getElementById('onfire-badge');
-  if (badge) badge.hidden = true;
+  if (badge) {
+    badge.classList.remove('is-fade', 'is-bump');
+    badge.hidden = true;
+  }
 }
 
 function refreshTopbar() {
@@ -1135,7 +1147,7 @@ function creditTrainingAnswer(right, level, answers = 1) {
       duration: 4200,
     });
   } else if (!previouslyReady && isGateOpen(save.trainingGate)) {
-    showToast('Defences fully charged! Finish your activity, then defend Granny!', {
+    showToast('Defences fully charged! Hit Defend Granny on the radar whenever you’re ready!', {
       variant: 'success',
       duration: 4200,
     });
@@ -1281,7 +1293,7 @@ function showChargedBanner() {
   banner.className = 'charged-banner';
   banner.setAttribute('role', 'status');
   banner.innerHTML = `
-    <div class="charged-banner-text"><b>DEFENCES CHARGED!</b><span>Finish this set, then defend Granny!</span></div>
+    <div class="charged-banner-text"><b>DEFENCES CHARGED!</b><span>Hit Defend Granny on the radar whenever you’re ready!</span></div>
     <button type="button" class="charged-banner-go">GOT IT</button>`;
   banner.querySelector('.charged-banner-go')?.addEventListener('click', () => banner.remove());
   document.body.append(banner);
@@ -1505,6 +1517,7 @@ function refreshMissionControl() {
   const state = makeDashboardState();
   const scrollTop = host.scrollTop;
   renderMissionControl(host, state);
+  renderInvasionBriefing(document.getElementById('mission-invasion'), state);
   host.scrollTop = scrollTop;
   const powerHost = document.getElementById('mission-power');
   const ownedTurrets = TURRET_ORDER.filter((id) => save.unlockedTurrets.includes(id));
@@ -1723,11 +1736,10 @@ function showTimesTables() {
         const result = recordTimesTable(save.trainingGate, table, accuracy);
         if (result.added) persistGate(result.gate);
       }
+      const open = isGateOpen(save.trainingGate);
       return {
-        gateAdded: isGateOpen(save.trainingGate),
-        reason: isGateOpen(save.trainingGate)
-          ? 'Siege unlocked — return to HQ!'
-          : 'Your maths progress has been saved.',
+        gateAdded: open,
+        reason: open ? 'Siege unlocked — hit Defend Granny on the radar!' : undefined,
       };
     },
     onHome: training.onHome,
@@ -2269,6 +2281,15 @@ function mountTDEngine(canvas, mission) {
 
   if (run.selectedTurret && isUnlocked(run.selectedTurret)) {
     tdEngine.setSelectedType(run.selectedTurret);
+  }
+
+  // Button keeps the last picked speed across sieges; a fresh engine starts at 1× unless we re-apply it.
+  const speedBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById('btn-speed'));
+  const speed = Number(speedBtn?.dataset.speed) || 1;
+  tdEngine.setSpeed(speed);
+  if (speedBtn) {
+    speedBtn.dataset.speed = String(speed);
+    speedBtn.textContent = `${speed}× SPEED`;
   }
 
   setShopActive(true);

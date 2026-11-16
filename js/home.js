@@ -487,37 +487,87 @@ const TOPIC_DISPLAY_ORDER = [
  * @param {{ coins: number, bonusSeconds: number, extraLeft: number, coinsPerAnswer: number }} chest
  */
 function renderHordeFaceoff(horde, chest) {
-  const troops = horde.troops.map(({ unit, count }) => `
-    <li class="faceoff-troop" title="${GRUNT_STATS[unit]?.codename ?? BOSS_STATS[unit]?.codename ?? unit}">
-      <img src="${ENEMY_SPRITE_SRC[unit]}" alt="" />
+  const troops = horde.troops.map(({ unit, count }) => {
+    const name = GRUNT_STATS[unit]?.codename ?? BOSS_STATS[unit]?.codename ?? unit;
+    return `
+    <li class="faceoff-troop" title="${name}">
+      <img src="${ENEMY_SPRITE_SRC[unit]}" alt="${name}" />
       <b>×${count}</b>
-      <span>${GRUNT_STATS[unit]?.codename ?? BOSS_STATS[unit]?.codename ?? unit}</span>
-    </li>`).join('');
+    </li>`;
+  }).join('');
   const canZap = horde.zapped < horde.zapCap;
-  const action = chest.extraLeft <= 0
-    ? '<p class="faceoff-tip">Maths maxed out. Go get them!</p>'
+  const zapsLeft = Math.max(0, horde.zapCap - horde.zapped);
+  const n = canZap ? zapsLeft : chest.extraLeft;
+  // Reward, not a cost: each right answer pays coins (and zaps a scout while any remain).
+  const zap = chest.extraLeft <= 0
+    ? '<p class="faceoff-tip">Maths maxed out — hit Defend Granny on the radar!</p>'
     : `<button type="button" class="faceoff-zap">
-        <strong>${canZap ? 'ZAP SCOUTS' : 'MORE COINS'}</strong>
-        <span>+${chest.coinsPerAnswer} coins${canZap ? ' &amp; a zap' : ''} per right answer</span>
+        <strong>${canZap ? `ZAP ${zapsLeft} SCOUT${zapsLeft === 1 ? '' : 'S'}` : 'MORE COINS'}</strong>
+        <span>Answer ${n} more question${n === 1 ? '' : 's'} — Earn +${chest.coinsPerAnswer} coins each</span>
       </button>`;
   return `
     <section class="horde-faceoff" aria-label="Incoming horde: ${horde.total} aliens. Your war chest: ${chest.coins} coins.">
-      <div class="faceoff-side faceoff-horde">
-        <span class="faceoff-label">INCOMING HORDE</span>
-        <ul class="faceoff-troops${horde.troops.length > 2 ? ' is-many' : ''}">${troops}${horde.zapped
-          ? `<li class="faceoff-zapped" title="${horde.zapped} scout${horde.zapped === 1 ? '' : 's'} zapped by extra maths">−${horde.zapped}</li>`
-          : ''}</ul>
-      </div>
+      <span class="faceoff-label faceoff-label-horde">INCOMING HORDE</span>
+      <span class="faceoff-label faceoff-label-chest">WAR CHEST</span>
+      <ul class="faceoff-troops${horde.troops.length > 2 ? ' is-many' : ''}">${troops}${horde.zapped
+        ? `<li class="faceoff-zapped" title="${horde.zapped} scout${horde.zapped === 1 ? '' : 's'} zapped by extra maths">−${horde.zapped}</li>`
+        : ''}</ul>
       <span class="faceoff-vs" aria-hidden="true">VS</span>
-      <div class="faceoff-side faceoff-chest">
-        <span class="faceoff-label">WAR CHEST</span>
+      <div class="faceoff-chest">
         <span class="faceoff-chest-row">
           <img class="faceoff-chest-art" src="assets/ui/icons/chest.png?v=1" alt="" />
           <strong class="faceoff-coins">${chest.coins}</strong>
         </span>
         <span class="faceoff-coins-label">COINS${chest.bonusSeconds ? ` · +${chest.bonusSeconds}s` : ''}</span>
       </div>
-      ${action}
+      ${zap ? `<div class="faceoff-actions">${zap}</div>` : ''}
+    </section>`;
+}
+
+/**
+ * Under-quiz stakes strip: big "INVASION IN N", then horde lock-on near 75%, then war chest + Zap.
+ * Uses player-facing answer counts (20 at Levels 1–2, 30 at Levels 3–6).
+ * @param {HTMLElement | null} host
+ * @param {any} state
+ */
+export function renderInvasionBriefing(host, state) {
+  if (!host) return;
+  const answers = answersProgress(state.gate, state.difficultyLevel);
+  const attack = attackStatus(state.gate);
+  const pct = answers.total ? answers.done / answers.total : 0;
+  const detected = attack.open || pct >= 0.75;
+  host.hidden = false;
+  host.dataset.phase = attack.open ? 'open' : detected ? 'detected' : 'countdown';
+
+  // Gate open → war chest + Zap. Until then the big number stays "answers until invasion".
+  if (attack.open) {
+    host.innerHTML = `
+      <div class="invasion-briefing is-open" data-urgency="now">
+        ${renderHordeFaceoff(state.horde, state.warChest)}
+      </div>`;
+    host.querySelector('.faceoff-zap')?.addEventListener('click', () => state.onZap?.());
+    return;
+  }
+
+  const remaining = answers.remaining;
+  const meterPct = Math.min(100, Math.round(pct * 100));
+  const unit = remaining === 1 ? 'RIGHT ANSWER TO GO' : 'RIGHT ANSWERS TO GO';
+  const sub = detected
+    ? `<p class="invasion-sub">Horde detected · <strong>${state.horde.total}</strong> aliens inbound · ${remaining} more right answer${remaining === 1 ? '' : 's'} unlocks the siege</p>`
+    : '';
+
+  host.innerHTML = `
+    <section class="invasion-briefing ${detected ? 'is-detected' : 'is-countdown'}${remaining <= 5 ? ' is-final' : ''}" data-urgency="${attack.urgency}" aria-label="Invasion in ${remaining} right answers">
+      <div class="invasion-countdown">
+        <span class="invasion-kicker">${detected ? 'HORDE LOCKED · INVASION IN' : 'INVASION IN'}</span>
+        <strong class="invasion-count${remaining <= 5 ? ' is-pulse' : ''}">${remaining}</strong>
+        <span class="invasion-unit">${unit}</span>
+      </div>
+      <div class="invasion-meter" role="progressbar" aria-valuemin="0" aria-valuemax="${answers.total}" aria-valuenow="${answers.done}" aria-label="Defence charge ${answers.done} of ${answers.total}">
+        <div class="invasion-meter-fill" style="width:${meterPct}%"></div>
+        <span class="invasion-meter-label">${answers.done}/${answers.total}</span>
+      </div>
+      ${sub}
     </section>`;
 }
 
@@ -543,6 +593,8 @@ export function renderMissionControl(host, state) {
     : attack.stage >= 1 ? 'WARNING: ALIENS CLOSING IN!'
     : attack.done > 0 ? 'ENEMY SIGNAL DETECTED'
     : 'DISTANT ALIEN SIGNAL') + ` · ${charge}`;
+  // Stakes (countdown / horde / war chest + zap) live under the quiz in #mission-invasion.
+  host.classList.add('is-theatre');
   host.innerHTML = `
     <div class="mission-control-inner">
       <div class="mission-control-heading">
@@ -559,9 +611,7 @@ export function renderMissionControl(host, state) {
       <div class="mission-control-radar" aria-label="Alien radar and progress towards the next defence">
         ${renderInboundRadar(attack, attack.open)}
       </div>
-      ${attack.open
-        ? renderHordeFaceoff(state.horde, state.warChest)
-        : `<div class="mission-control-alert" data-urgency="${attack.urgency}">${threatMessage}</div>`}
+      <p class="mission-control-signal" data-urgency="${attack.urgency}">${threatMessage}</p>
       <div class="mission-control-blueprint">
         ${renderThreatDossier(attack.open, attack)}
       </div>
@@ -577,7 +627,6 @@ export function renderMissionControl(host, state) {
   host.querySelector('#btn-hold-line')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-back-to-hq')?.addEventListener('click', state.onHome);
   host.querySelector('.mission-xp')?.addEventListener('click', () => state.onArmory?.());
-  host.querySelector('.faceoff-zap')?.addEventListener('click', () => state.onZap?.());
   playMissionXp(host, state.xp);
 }
 
