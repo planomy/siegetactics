@@ -24,8 +24,8 @@ test('the hot-topic pill sits on the art and scales with the card, not the brows
   assert.match(home, /gb-topic-hot-full/);
   assert.match(home, /gb-topic-hot-short/);
   assert.match(css, /\.gb-story-art\s*\{[\s\S]*?container-type:\s*inline-size;/);
-  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?max-width:\s*70%;/);
-  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?7\.4cqi/);
+  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?max-width:\s*78%;/);
+  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?8\.9cqi/);
   assert.match(css, /@container \(max-width: 140px\)/);
   assert.doesNotMatch(css, /\.gb-topic-hot\s*\{[^}]*\.76vw/);
 });

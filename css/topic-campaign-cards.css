@@ -236,13 +236,13 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   left: 50%;
   z-index: 3;
   box-sizing: border-box;
-  max-width: 70%;
-  padding: 0.16em 0.45em;
+  max-width: 78%;
+  padding: 0.19em 0.54em;
   border-radius: 999px;
   background: linear-gradient(180deg, #ffb340, #ff5a1f);
   color: #2a0d00;
   /* Scale with the card art (cqi), not the browser width (vw). */
-  font-size: clamp(0.42rem, 7.4cqi, 0.78rem);
+  font-size: clamp(0.5rem, 8.9cqi, 0.94rem);
   font-weight: 900;
   letter-spacing: 0.02em;
   line-height: 1.15;
