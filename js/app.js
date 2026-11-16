@@ -320,7 +320,11 @@ function loadSave() {
 }
 
 function persistSave() {
-  localStorage.setItem(DEV.enabled ? DEV_SAVE_KEY : SAVE_KEY, JSON.stringify(save));
+  try {
+    localStorage.setItem(DEV.enabled ? DEV_SAVE_KEY : SAVE_KEY, JSON.stringify(save));
+  } catch {
+    // Private mode / blocked storage (seen on locked-down Opera) — keep playing in-memory.
+  }
 }
 
 function isUnlocked(id) {
@@ -2402,18 +2406,54 @@ function bindUI() {
   document.getElementById('btn-bonus-accept')?.addEventListener('click', () => resolveBonusAssault(true));
   document.getElementById('btn-bonus-decline')?.addEventListener('click', () => resolveBonusAssault(false));
 
-  document.getElementById('btn-welcome-go')?.addEventListener('click', () => {
-    audio.warmUp();
+  function clearTitleGateLock() {
+    // Safety net if the title overlay left #app inert (Opera has stuck here).
+    [document.querySelector('header'), document.getElementById('app'), document.getElementById('toast')].forEach((el) => {
+      if (!el) return;
+      try {
+        el.inert = false;
+        el.removeAttribute('inert');
+      } catch {
+        /* ignore */
+      }
+    });
+    const title = document.getElementById('title-screen');
+    if (title) {
+      title.style.pointerEvents = 'none';
+      title.remove();
+    }
+  }
+
+  function submitWelcomeName() {
+    clearTitleGateLock();
+    try {
+      audio.warmUp();
+    } catch {
+      /* audio unlock is best-effort */
+    }
     const input = /** @type {HTMLInputElement|null} */ (document.getElementById('player-name'));
-    const name = input?.value.trim();
+    // Opera autofill can paint a name before .value updates — nudge then re-read.
+    if (input) {
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    const name = (input?.value || '').trim();
     if (!name) {
       showToast('Tell Granny your name first.');
+      input?.focus();
       return;
     }
-  save.playerName = name;
-  persistSave();
-  preloadDeployAssets({ unlocked: getUnlockedSet(), grannyUnlocked: save.grannyUnlocked });
-  showHome();
+    save.playerName = name;
+    persistSave();
+    preloadDeployAssets({ unlocked: getUnlockedSet(), grannyUnlocked: save.grannyUnlocked });
+    showHome();
+  }
+
+  document.getElementById('btn-welcome-go')?.addEventListener('click', submitWelcomeName);
+  document.getElementById('player-name')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitWelcomeName();
+    }
   });
 
   /** Cupcake nukes: button, Space, or N — same as Doompickle. */

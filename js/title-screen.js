@@ -118,11 +118,26 @@
     primary.textContent = "NEXT";
   }
 
-  const behind = () => document.querySelectorAll("body > :not(#title-screen)");
+  /** Only lock real UI shells — never scripts. Opera can leave inert stuck otherwise. */
+  function behindUi() {
+    return document.querySelectorAll(
+      "body > header, body > #app, body > #toast, body > #howto-modal, body > #weapon-unlock-notice"
+    );
+  }
 
-  behind().forEach((el) => {
-    el.inert = true;
-  });
+  function setBehindLocked(locked) {
+    behindUi().forEach((el) => {
+      try {
+        el.inert = locked;
+        if (locked) el.setAttribute("inert", "");
+        else el.removeAttribute("inert");
+      } catch (_) {
+        // Older engines: ignore and keep going.
+      }
+    });
+  }
+
+  setBehindLocked(true);
 
   function markBriefingSeen() {
     briefingDone = true;
@@ -137,17 +152,22 @@
     if (entering) return;
     entering = true;
     markBriefingSeen();
+    // Unlock immediately so the name screen works even if remove() is delayed.
+    setBehindLocked(false);
     screen.classList.add("title-exiting");
+    screen.style.pointerEvents = "none";
 
     window.setTimeout(() => {
-      behind().forEach((el) => {
-        el.inert = false;
-      });
-      screen.remove();
+      setBehindLocked(false);
+      if (screen.isConnected) screen.remove();
       const welcome = document.getElementById("screen-welcome");
       if (welcome && welcome.classList.contains("active")) {
         const name = document.getElementById("player-name");
-        if (name) name.focus();
+        try {
+          if (name) name.focus();
+        } catch (_) {
+          // Focus can throw in some embedded browsers — don't block enter.
+        }
       }
       window.dispatchEvent(new CustomEvent("siege:enter"));
     }, 400);
