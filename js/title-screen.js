@@ -49,24 +49,18 @@
 
   function inspireVisual() {
     return `
-      <div class="title-inspire" aria-label="Doompickle and the alien homeworld">
-        <img
-          class="title-inspire-hero"
-          src="assets/homeland/planet-map.webp"
-          alt="The alien homeworld"
-          width="1024"
-          height="576"
-          decoding="async"
-        />
-        <div class="title-inspire-row">
+      <div class="title-inspire" aria-label="Granny flying to the alien homeworld">
+        <div class="title-inspire-stage">
           <img
-            src="assets/homeland/slides/landing-title.webp"
-            alt="Doompickle"
-            width="640"
-            height="360"
+            class="title-inspire-hero"
+            src="assets/homeland/planet-map.webp"
+            alt="The alien homeworld"
+            width="1024"
+            height="576"
             decoding="async"
           />
           <img
+            class="title-inspire-granny"
             src="assets/homeland/granny-front.webp"
             alt="Granny ready for battle"
             width="185"
@@ -88,7 +82,7 @@
     {
       step: "2 / 2",
       title: "Fly to Doompickle",
-      copy: "When you have the map, warp Granny to Doompickle, the alien homeworld, to take the fight to them with new games and challenges!",
+      copy: "When you have the entire map, warp Granny to Doompickle, the alien homeworld, to take the fight to them with new games and challenges!",
       cta: "LET'S GO",
       visual: inspireVisual,
     },
