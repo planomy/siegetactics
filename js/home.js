@@ -9,8 +9,7 @@ import {
   renderInterstellarMap, mapPiecesEarned, getMapPasses, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS, MAP_SECTORS,
   currentMapSeason, seasonLabel, seasonPiecesEarned, canWarpToDoompickle, homelandMaxLevel, seasonComplete,
 } from './map-progress.js?v=20261115h3';
-import { topicRankProgress, getTopicRecord } from './topic-progression.js?v=20261114k1';
-import { getQualifiedLevels } from './level-mastery.js?v=20261115h3';
+import { getQualifiedLevels, renderModuleLevelPips } from './level-mastery.js?v=20261116xp34';
 import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel, xpMultiplierFor, DIFFICULTY, isDifficultyLevel } from './difficulty.js?v=20261114k1';
 import { renderArmoryPromo } from './armory-promo.js?v=20261113m8';
@@ -21,49 +20,42 @@ import { ENEMY_SPRITE_SRC, GRUNT_STATS, BOSS_STATS } from './enemies-data.js';
 const HOMELAND_URL = 'homeland.html';
 
 /**
- * Ten clean campaign cards. Mastery is a small permanent mark, while each
- * topic's rank and next-rank progress can grow without ever being "Done".
+ * Ten campaign cards. Brag board = level shields (L1–L6) earned with a perfect run
+ * at that difficulty. Soft path = L1 on every topic; flex = fill L2–L6. Topic ★ XP
+ * still accrues in the background but stays off the card so kids see one story.
  * @param {import('./training-gate.js?v=20261114n1').TrainingGate} gate
  * @param {ReturnType<typeof attackStatus>} attack
  * @param {import('./level-mastery.js?v=20261114k1').LevelMasterySave} levelMastery
  * @param {import('./map-progress.js').MapProgressSave} mapProgress
  * @param {string[]} selectedTopics
- * @param {import('./topic-progression.js?v=20261114k1').TopicProgressSave} topicProgress
+ * @param {import('./topic-progression.js?v=20261114k1').TopicProgressSave} [_topicProgress]
  */
-function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id), topicProgress = {}) {
+function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTopics = MATH_TOPICS.map((t) => t.id), _topicProgress = {}) {
   // Respect the five-by-two screen order, never re-sort by "completion".
   return MATH_TOPICS.filter((topic) => selectedTopics.includes(topic.id))
     .sort((a, b) => selectedTopics.indexOf(a.id) - selectedTopics.indexOf(b.id))
     .map((topic) => {
       const locked = !topic.available;
-      const campaign = topicRankProgress(getTopicRecord(topicProgress, topic.id).xp);
       const qualified = getQualifiedLevels(levelMastery, topic.id);
-      const highestMastery = Math.max(0, ...qualified);
-      const masteryLabel = highestMastery ? `L${highestMastery} ✓` : '';
+      const earned = qualified.length;
       const artClass = `gb-story-art gb-story-art-${topic.id.replace(/[^a-z-]/g, '')}`;
       const hot = !locked && topic.id === hotTopicId();
-      const close = campaign.percent >= 70;
       const art = topic.moduleArt
         ? `<img class="gb-story-art-img" src="${topic.moduleArt}" alt="" width="400" height="400" loading="lazy" />`
         : `<span class="gb-story-art-emoji">${topic.emoji}</span>`;
+      const shieldNote = earned
+        ? `${earned} of 6 level shields earned`
+        : 'no level shields yet — clear a set at 100% to earn one';
       return `
         <button type="button"
           class="gb-story-card gb-topic-campaign-card${locked ? ' gb-story-locked' : ''}${hot ? ' is-hot' : ''}"
           data-topic="${topic.id}"
-          aria-label="${topic.title}${hot ? ', hot topic today, double XP' : ''}, topic rank ${campaign.rank}${highestMastery ? `, Level ${highestMastery} mastered` : ''}. ${campaign.remaining} topic XP to rank ${campaign.nextRank}."
+          aria-label="${topic.title}${hot ? ', hot topic today, double XP' : ''}, ${shieldNote}"
           ${locked ? 'disabled' : ''}>
           <span class="${artClass}" aria-hidden="true">${art}</span>
           ${hot ? '<span class="gb-topic-hot" aria-hidden="true">🔥 HOT TOPIC · 2× XP</span>' : ''}
           ${topic.moduleArt ? '' : `<span class="gb-story-title">${topic.title}</span>`}
-          <span class="gb-topic-campaign-line" data-rank="${campaign.rank}">
-            <span class="gb-topic-rank">★ <strong>${campaign.rank}</strong></span>
-            ${highestMastery ? `<span class="gb-topic-mastery" title="Level ${highestMastery} mastery earned">${masteryLabel}</span>` : ''}
-            <span class="gb-topic-next">NEXT ${campaign.remaining.toLocaleString()} XP</span>
-          </span>
-          <span class="gb-topic-rank-track" aria-hidden="true">
-            <span class="gb-topic-rank-fill" style="width:${campaign.percent}%"></span>
-            <span class="gb-topic-prize${close ? ' is-close' : ''}" title="Rank up for an alien crystal"><span class="core-gem"></span></span>
-          </span>
+          <span class="gb-topic-shields" aria-hidden="true">${renderModuleLevelPips(levelMastery, topic.id)}</span>
         </button>
       `;
     }).join('');

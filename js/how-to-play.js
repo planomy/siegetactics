@@ -12,9 +12,9 @@ export const HOW_TO_QUESTIONS = [
     icon: '⚔️',
     q: 'How do I start a battle?',
     a: [
-      'Every right answer charges Granny’s defences. You need 20 right answers at Levels 1–2, or 30 at Levels 3–6 — the drill meter, Random Mission count, and Defend Granny button all use that same number. Press RANDOM MISSION for a mix, or tap any topic card.',
-      'Watch the radar: the horde gets closer and bigger as your charge grows. When it says CONTACT, finish your set and press the big button to defend Granny!',
-      'After the bar is full you can keep answering for bonus siege coins, scout zaps, and extra battle time — the war chest shows how much charge you have left to earn.',
+      'Every right answer charges Granny’s defences. You need 20 right answers at Levels 1–2, or 30 at Levels 3–6. Press RANDOM MISSION for a mix, or tap any topic card.',
+      'Watch the invasion strip and the radar as the horde closes in. When defences are charged, hit the red DEFEND GRANNY on the radar whenever you’re ready — you don’t have to finish the set first.',
+      'After the bar is full you can keep answering for bonus siege coins, scout zaps, and extra battle time — Zap Scouts on the war chest is optional.',
     ],
   },
   {
@@ -43,7 +43,6 @@ export const HOW_TO_QUESTIONS = [
       'Fully charge Granny’s defences.',
       'Do a Random mission AND a topic card in the same charge — MIX IT UP!',
       'Score 80% or better on a Maths Quest.',
-      'Rank up a maths topic.',
       'Defeat the first big boss alien in a battle. It drops a crystal!',
     ],
   },
@@ -96,18 +95,19 @@ export const HOW_TO_QUESTIONS = [
     a: SIEGE_RANKS.map((rank) => `${rank.name}: ${rank.hint.toLowerCase()}.`),
   },
   {
-    icon: '⭐',
-    q: 'What are the stars on the topic cards?',
+    icon: '🛡️',
+    q: 'What are the shields on the topic cards?',
     a: [
-      'Every topic has its own rank. Correct answers in that topic push its bar along.',
-      'Each new topic rank gives you an Alien Crystal. Every fifth rank also gives bonus Forge XP.',
+      'Each topic shows six shields — one for difficulty Levels 1 to 6.',
+      'Clear that topic at 100% on a level to light its shield. Soft path: earn Level 1 on all ten topics. Bragging rights: fill Levels 2 through 6 as well.',
+      'Random missions don’t count towards shields. Topic drills and Maths Quest do.',
     ],
   },
   {
     icon: '🔥',
     q: 'What is the Hot Topic?',
     a: [
-      'One topic is hot each day. It gives double topic XP, so it ranks up twice as fast.',
+      'One topic is hot each day and pays bonus rewards for right answers.',
       'Come back tomorrow for a new one!',
     ],
   },
@@ -152,7 +152,7 @@ export const HOW_TO_QUESTIONS = [
     icon: '⏱️',
     q: 'Can I get more time in a battle?',
     a: [
-      'Yes! Keep answering after the first ten. 15 questions adds 15 seconds, and 20 questions adds 30 seconds.',
+      'Yes! Keep answering after defences are charged. Extra right answers can add bonus siege time and fill the war chest.',
     ],
   },
   {
@@ -162,7 +162,8 @@ export const HOW_TO_QUESTIONS = [
       'Tap ALIEN HOMELAND under your Crystal Vault to see it. Every topic is one sector on the nav chart.',
       `There are three HQ seasons. Season 1 needs ${MAP_PASSES_REQUIRED} passes per topic at ${MAP_SEASONS[0].label}+ to unlock Warp and Doompickle Level 1.`,
       `Come home for Season 2 (${MAP_SEASONS[1].label}+) to open Level 2, then Season 3 (${MAP_SEASONS[2].label}) for Level 3. A miss just means try that drill again — only clean passes count.`,
-      'Get 100% in a topic drill to earn a shield for that level. Random missions don’t count towards the map or shields.',
+      'Doompickle runs are forced Level 1 → 2 → 3 — you can’t pick an easier completed level again once you’ve moved on.',
+      'Random missions don’t count towards the map. Level shields on the topic cards are separate — see “What are the shields on the topic cards?”',
     ],
   },
 ];

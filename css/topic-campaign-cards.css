@@ -95,10 +95,32 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-s
   position: relative;
 }
 
+/* Baked into every topic PNG: three green “status” lights on the bottom lip.
+   Cover them with a metal patch in % units so it scales on fullscreen. */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-story-art::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2.4%;
+  z-index: 2;
+  width: 22%;
+  height: 4.2%;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, #3a3e42 0%, #23262a 45%, #181a1c 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-story-art::after {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 1;
   background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .55) 48%, rgba(200, 255, 150, .25) 52%, transparent 65%) no-repeat;
   background-size: 250% 100%;
   background-position: 140% 0;
@@ -115,12 +137,6 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:
 @keyframes topic-shine {
   0% { opacity: 1; background-position: 140% 0; }
   100% { opacity: 1; background-position: -40% 0; }
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-topic-rank,
-body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-topic-next {
-  color: #eaffd0;
-  text-shadow: 0 0 6px rgba(120, 255, 70, .7);
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:focus-visible {
@@ -177,113 +193,32 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-s
   text-shadow: 0 2px 5px #000;
 }
 
-/* Rank, mastery and next XP: one compact row on the black surface, outside the art. */
-body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-topic-campaign-line {
+/* Brag board: six level shields. Soft path = light up L1; flex = fill through L6. */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-topic-shields {
   display: flex;
   position: static;
   width: 100%;
   min-width: 0;
-  height: 26px;
+  height: 28px;
   justify-content: center;
   align-items: center;
-  gap: 6px;
-  padding: 0 5px;
-  background: transparent;
-  white-space: nowrap;
+  gap: 3px;
+  padding: 0 4px 2px;
   pointer-events: none;
 }
 
-/* Rank is hidden at rank 1, then becomes a gold star pill once the topic ranks up. */
-body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-line[data-rank="1"] .gb-topic-rank {
-  display: none;
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-level-shield {
+  width: 20px;
+  height: 24px;
 }
 
-body.mission-mode #screen-home .mission-all-topics .gb-topic-rank {
-  padding: 3px 11px 3px 9px;
-  border: 1px solid #ffe9a8;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #ffd65a, #e09a12);
-  color: #2a1700;
-  font-size: .95rem;
-  font-weight: 800;
-  line-height: 1;
-  box-shadow: 0 0 12px rgba(255, 200, 60, .65), 0 2px 0 #7a4a00;
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-level-shield-num {
+  font-size: 0.58rem;
+  padding-top: 1px;
 }
 
-body.mission-mode #screen-home .mission-all-topics .gb-topic-rank strong {
-  color: #2a1700;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-mastery {
-  color: #ffe092;
-  font-size: .7rem;
-  font-weight: 800;
-}
-
-/* XP to the next rank only shows on hover or keyboard focus. */
-body.mission-mode #screen-home .mission-all-topics .gb-topic-next {
-  display: none;
-  color: #ded8c7;
-  font-size: clamp(.5rem, .56vw, .65rem);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:not(:disabled):hover .gb-topic-next,
-body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card:focus-visible .gb-topic-next {
-  display: inline;
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-track {
-  display: block;
-  width: 100%;
-  height: 2px;
-  margin-bottom: 1px;
-  background: rgba(120, 70, 190, .28);
-  pointer-events: none;
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-fill {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #8a3cff, #d14bff 45%, #ff8a1f);
-  box-shadow: 0 0 6px rgba(255, 120, 40, .7), 0 0 10px rgba(170, 70, 255, .45);
-  transition: width .3s ease;
-}
-
-/* The prize: an alien crystal waits at the end of every topic's XP bar, and pulses when close. */
-body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-track {
-  position: relative;
-  height: 4px;
-  border-radius: 2px;
-  overflow: visible;
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-prize {
-  position: absolute;
-  right: -6px;
-  top: 50%;
-  display: grid;
-  place-items: center;
-  transform: translateY(-50%);
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-prize .core-gem {
-  --gem-size: 18px;
-  filter: drop-shadow(0 0 3px rgba(80, 255, 170, .7)) grayscale(.35) brightness(.8);
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-prize.is-close .core-gem {
-  filter: drop-shadow(0 0 8px rgba(120, 255, 190, 1));
-  animation: prize-pulse 1.1s ease-in-out infinite;
-}
-
-@keyframes prize-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.35) rotate(8deg); }
+body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-level-shield.is-earned .gb-level-shield-img {
+  filter: drop-shadow(0 0 4px rgba(255, 200, 80, 0.75));
 }
 
 /* Today's hot topic: a flame banner across the top of the card and a warm glow. */
@@ -361,8 +296,6 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
 
 @media (prefers-reduced-motion: reduce) {
   body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card,
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-rank-fill,
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-prize .core-gem,
   body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
     transition: none;
     animation: none;

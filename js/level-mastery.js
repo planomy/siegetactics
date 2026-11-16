@@ -145,7 +145,7 @@ function buildShieldNudge(level, accuracy, shieldEarned) {
 }
 
 /** Shield art for per-module level qualifications. */
-export const LEVEL_SHIELD_SRC = 'assets/badges/level-shield.png';
+export const LEVEL_SHIELD_SRC = 'assets/badges/level-shield.png?v=20261116xp34';
 
 /** @param {LevelMasterySave} mastery @param {string} moduleId */
 export function renderModuleLevelPips(mastery, moduleId) {
@@ -155,7 +155,7 @@ export function renderModuleLevelPips(mastery, moduleId) {
       (n) => `
         <span
           class="gb-level-shield${qualified.has(n) ? ' is-earned' : ''}"
-          title="${qualified.has(n) ? `Perfect at level ${n}` : `Level ${n} — need 100%`}"
+          title="${qualified.has(n) ? `Level ${n} shield earned` : `Level ${n} — clear at 100% to earn`}"
         >
           <img class="gb-level-shield-img" src="${LEVEL_SHIELD_SRC}" width="64" height="72" alt="" aria-hidden="true" />
           <span class="gb-level-shield-num">${n}</span>

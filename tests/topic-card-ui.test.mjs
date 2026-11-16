@@ -5,12 +5,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 const home = readFileSync(new URL('../js/home.js', import.meta.url), 'utf8');
 const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 const mixed = readFileSync(new URL('../js/battle-prep.js', import.meta.url), 'utf8');
+const howto = readFileSync(new URL('../js/how-to-play.js', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../css/topic-campaign-cards.css', import.meta.url), 'utf8');
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
-test('all ten cards are artwork-led without grey squircle borders, shields or Done labels', () => {
+test('all ten cards are artwork-led without grey squircle borders or Done labels', () => {
   assert.match(home, /class="gb-story-card gb-topic-campaign-card/);
-  assert.doesNotMatch(home, /renderModuleLevelPips\(/);
   assert.doesNotMatch(home, /gb-story-badge-done/);
   assert.doesNotMatch(home, /gb-module-level-pips/);
   assert.match(css, /\.gb-topic-campaign-card\s*\{[\s\S]*?border:\s*none;/);
@@ -19,15 +19,16 @@ test('all ten cards are artwork-led without grey squircle borders, shields or Do
   assert.match(home, /TOPIC_DISPLAY_ORDER/);
 });
 
-test('topic cards display real Rank, tiny earned mastery and a next-rank meter', () => {
-  assert.match(home, /getTopicRecord\(topicProgress, topic\.id\)/);
-  assert.match(home, /getQualifiedLevels\(levelMastery, topic\.id\)/);
-  assert.match(home, /class="gb-topic-rank"/);
-  assert.match(home, /class="gb-topic-mastery"/);
-  assert.match(home, /class="gb-topic-next"/);
-  assert.match(home, /class="gb-topic-rank-track"/);
-  assert.match(home, /aria-label="\$\{topic\.title\}[^"]*, topic rank \$\{campaign\.rank\}/);
-  assert.match(css, /\.gb-topic-rank-fill\s*\{/);
+test('topic cards show L1–L6 shields instead of the old ★ XP rank meter', () => {
+  assert.match(home, /renderModuleLevelPips\(/);
+  assert.match(home, /class="gb-topic-shields"/);
+  assert.doesNotMatch(home, /class="gb-topic-rank"/);
+  assert.doesNotMatch(home, /class="gb-topic-rank-track"/);
+  assert.doesNotMatch(home, /XP to ★/);
+  assert.match(home, /of 6 level shields earned/);
+  assert.match(css, /\.gb-topic-shields\s*\{/);
+  assert.match(howto, /What are the shields on the topic cards\?/);
+  assert.doesNotMatch(howto, /What are the stars on the topic cards\?/);
 });
 
 test('topic stats persist separately from Forge XP and existing level mastery', () => {
@@ -46,12 +47,13 @@ test('standalone questions, mixed questions, and forge successes all advance the
   assert.match(app, /creditTopicAnswer\(\'place-value-siege\', level, true\)/);
 });
 
-test('fresh CSS and script modules are loaded so the browser does not show old shields', () => {
-  assert.match(html, /topic-campaign-cards\.css\?v=20261114q2/);
-  assert.match(html, /app\.js\?v=20261114v1/);
-  assert.match(app, /home\.js\?v=20261114t1/);
-  assert.match(app, /battle-prep\.js\?v=20261114v1/);
-  assert.match(home, /topic-progression\.js\?v=20261114k1/);
+test('fresh CSS and script modules are loaded for the shield board', () => {
+  assert.match(html, /topic-campaign-cards\.css\?v=/);
+  assert.match(html, /app\.js\?v=/);
+  assert.match(app, /home\.js\?v=/);
+  assert.match(app, /battle-prep\.js\?v=/);
+  assert.match(app, /how-to-play\.js\?v=/);
+  assert.match(home, /level-mastery\.js\?v=/);
 });
 
 test('two rows share the height Maths HQ has left, and the art scales to fit its cell', () => {
@@ -75,7 +77,7 @@ test('topic-campaign-cards.css is the only stylesheet that styles the topic card
   }
 });
 
-test('original art is never cropped, zoomed, faded or covered by an extra title', () => {
+test('original art is not cropped, zoomed or faded, and the baked green lights are covered', () => {
   assert.match(css, /object-fit:\s*contain;/);
   assert.match(css, /object-position: center;/);
   assert.match(css, /filter: none;/);
@@ -83,13 +85,13 @@ test('original art is never cropped, zoomed, faded or covered by an extra title'
   assert.match(css, /background: #000;/);
   assert.doesNotMatch(home, /gb-topic-card-shade/);
   assert.match(home, /topic\.moduleArt \? '' :/);
-  assert.match(css, /\.gb-topic-campaign-line\s*\{[\s\S]*?position: static;/);
+  assert.match(css, /\.gb-story-art::before\s*\{/);
+  assert.match(css, /three green/);
 });
 
-test('the shared gallery is black, while individual cards and rank strips are transparent', () => {
+test('the shared gallery is black, while individual cards are transparent', () => {
   assert.match(css, /\.mission-topic-section,\s*body\.mission-mode #screen-home \.mission-all-topics\s*\{\s*background: #000;/);
   assert.match(css, /\.gb-topic-campaign-card\s*\{[\s\S]*?background: transparent;/);
-  assert.match(css, /\.gb-topic-campaign-line\s*\{[\s\S]*?background: transparent;/);
   assert.match(css, /\.gb-story-art\s*\{[\s\S]*?overflow: visible;/);
   assert.match(css, /\.gb-story-art-img\s*\{[\s\S]*?height: auto;[\s\S]*?object-fit: contain;/);
 });

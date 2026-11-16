@@ -31,10 +31,10 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261116xp29';
+import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261116xp32';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261114n1';
-import { initHowToPlay } from './how-to-play.js?v=20261115p1';
+import { initHowToPlay } from './how-to-play.js?v=20261116xp35';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261116xp27';
 import { initMeasurementLength } from './measurement-length.js?v=20261116xp1';
@@ -50,7 +50,7 @@ import {
   recordTrainingProgress,
   recommendModuleLevel,
   recommendGlobalLevel,
-} from './level-mastery.js?v=20261115h3';
+} from './level-mastery.js?v=20261116xp34';
 import {
   defaultMapProgress, normalizeMapProgress, allMapPiecesEarned, mapPiecesEarned,
   TRAINING_MODULE_IDS, fillMapSeason, homelandMaxLevel,
