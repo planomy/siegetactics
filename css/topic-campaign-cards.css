@@ -239,7 +239,9 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   max-width: 74%;
   padding: 0.28em 0.7em;
   border-radius: 999px;
-  background: linear-gradient(180deg, #ffb340, #ff5a1f);
+  overflow: hidden;
+  isolation: isolate;
+  background: transparent;
   color: #2a0d00;
   /* Scale with the card art (cqi), not the browser width (vw). */
   font-size: clamp(0.62rem, 11cqi, 1.05rem);
@@ -251,6 +253,38 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   transform: translateX(-50%);
   pointer-events: none;
   animation: hot-flicker 1.6s ease-in-out infinite;
+}
+
+/* Tiny highlight racing around the pill rim every 1.5s. */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::before {
+  content: '';
+  position: absolute;
+  inset: -55%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 76%,
+    rgba(255, 255, 255, 0.15) 84%,
+    #ffffff 89%,
+    #ffe7a0 93%,
+    transparent 100%
+  );
+  animation: hot-edge-race 1.5s linear infinite;
+  z-index: 0;
+}
+
+/* Orange fill sits inside the rim so only the edge shimmer shows. */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  border-radius: inherit;
+  background: linear-gradient(180deg, #ffb340, #ff5a1f);
+  z-index: 1;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot > * {
+  position: relative;
+  z-index: 2;
 }
 
 /* Default to the short label so Chrome on a windowed laptop never shows "HOT TOPI…". */
@@ -276,6 +310,10 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
 @keyframes hot-flicker {
   0%, 100% { box-shadow: 0 0 10px rgba(255, 110, 30, .6); }
   50% { box-shadow: 0 0 20px rgba(255, 150, 40, .95); }
+}
+
+@keyframes hot-edge-race {
+  to { transform: rotate(360deg); }
 }
 
 /* Desktop dashboard: two rows of five share the height Maths HQ has left (see
@@ -320,7 +358,8 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
 
 @media (prefers-reduced-motion: reduce) {
   body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card,
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot,
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::before {
     transition: none;
     animation: none;
   }
