@@ -88,7 +88,7 @@
     {
       step: "2 / 2",
       title: "Fly to Doompickle",
-      copy: "When all 10 are in, Granny warps to the alien homeworld for new games and challenges.",
+      copy: "When you have the map, warp Granny to Doompickle, the alien homeworld, to take the fight to them with new games and challenges!",
       cta: "LET'S GO",
       visual: inspireVisual,
     },
