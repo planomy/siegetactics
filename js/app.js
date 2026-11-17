@@ -36,7 +36,7 @@ import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js
 import { initHowToPlay } from './how-to-play.js?v=20261117f3';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261118a4';
-import { initMeasurementLength } from './measurement-length.js?v=20261118a1';
+import { initMeasurementLength } from './measurement-length.js?v=20261118e4';
 import { initFractions } from './fractions.js?v=20261116xp1';
 import { initAnglesShapes } from './angles-shapes.js?v=20261116xp1';
 import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261118a1';

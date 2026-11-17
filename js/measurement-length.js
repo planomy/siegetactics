@@ -5,7 +5,7 @@ import { noteType, labelQuestion } from './maths-skills.js';
 import { GATE } from './training-gate.js?v=20261114n1';
 import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
-import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
+import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
 import { renderDoneActions, bindDoneActions } from './done-actions.js?v=20261116xp27';
 import { isResumable } from './drill-session.js?v=20261114m1';
 
@@ -454,11 +454,12 @@ export function initMeasurementLength(host, callbacks) {
       btn.addEventListener('click', () => {
         if (answered || disposed) return;
         answered = true;
-        const picked = Number(btn.getAttribute('data-value'));
-        const right = picked === q.answer;
+        // Year 2 / 7 banks use string answers ("cm", "22 cm") — never coerce with Number().
+        const picked = btn.getAttribute('data-value') ?? '';
+        const right = valuesMatch(picked, q.answer);
         btn.classList.add(right ? 'is-correct' : 'is-wrong');
         host.querySelectorAll('.length-opt').forEach((b) => {
-          if (Number(b.getAttribute('data-value')) === q.answer) b.classList.add('is-correct');
+          if (valuesMatch(b.getAttribute('data-value') ?? '', q.answer)) b.classList.add('is-correct');
           b.disabled = true;
         });
 
@@ -475,7 +476,7 @@ export function initMeasurementLength(host, callbacks) {
             badge.classList.add('is-pop');
           }
         } else {
-          callbacks.showToast(`Correct: ${q.options.find((o) => o.value === q.answer)?.label ?? q.answer}`, {
+          callbacks.showToast(`Correct: ${q.options.find((o) => valuesMatch(o.value, q.answer))?.label ?? q.answer}`, {
             variant: 'shop',
           });
         }
