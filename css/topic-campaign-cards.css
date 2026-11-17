@@ -239,8 +239,8 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card.is-ho
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   position: absolute;
-  /* Sit on the metal plaque, not the transparent padding around the PNG. */
-  top: 6%;
+  /* Sit on the grey metal / hazard stripe rim at the top of the card art. */
+  top: 10px;
   left: 50%;
   z-index: 3;
   display: inline-flex;
@@ -252,8 +252,8 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   border: 2px solid #fff;
   border-radius: 999px;
   overflow: visible;
-  background: linear-gradient(180deg, #ffb340, #ff5a1f);
-  color: #2a0d00;
+  background: linear-gradient(180deg, #4a4a4e, #2a2a2e);
+  color: #fff;
   /* Scale with the card art (cqi), not the browser width (vw). */
   font-size: clamp(0.62rem, 11cqi, 1.05rem);
   font-weight: 900;
@@ -261,8 +261,8 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   line-height: 1.15;
   white-space: nowrap;
   box-shadow:
-    0 0 0 1px rgba(40, 10, 0, 0.25),
-    0 0 14px rgba(255, 110, 30, .75);
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.55);
   transform: translateX(-50%);
   pointer-events: none;
   animation: hot-flicker 1.6s ease-in-out infinite;
@@ -273,13 +273,13 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::after {
   content: none;
 }
 
-/* Real emoji flame + rising sparks/smoke (taller than the pill). */
+/* Real emoji flame + rising smoke — tip clears the pill’s top border. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-flame {
   position: relative;
   flex: 0 0 auto;
-  width: 1.55em;
-  height: 1.7em;
-  margin: -0.55em 0.08em -0.35em -0.22em;
+  width: 1.85em;
+  height: 2.35em;
+  margin: -1.05em 0.06em -0.4em -0.28em;
   overflow: visible;
   z-index: 3;
 }
@@ -287,9 +287,9 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-flame {
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-flame-emoji {
   position: absolute;
   left: 50%;
-  bottom: -0.08em;
+  bottom: -0.1em;
   display: block;
-  font-size: 1.55em;
+  font-size: 2.15em;
   line-height: 1;
   transform: translateX(-50%);
   transform-origin: 50% 85%;
@@ -308,7 +308,7 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::after {
   content: '';
   position: absolute;
   left: 42%;
-  top: -0.15em;
+  top: -0.35em;
   width: 0.55em;
   height: 0.7em;
   border-radius: 60% 40% 55% 45%;
@@ -358,8 +358,8 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
 }
 
 @keyframes hot-flicker {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(40, 10, 0, 0.25), 0 0 10px rgba(255, 110, 30, .6); }
-  50% { box-shadow: 0 0 0 1px rgba(40, 10, 0, 0.25), 0 0 20px rgba(255, 150, 40, .95); }
+  0%, 100% { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.5); }
+  50% { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 2px 12px rgba(0, 0, 0, 0.7), 0 0 10px rgba(255, 255, 255, 0.12); }
 }
 
 @keyframes hot-flame-wobble {

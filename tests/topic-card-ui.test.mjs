@@ -29,9 +29,14 @@ test('the hot-topic pill sits on the art and scales with the card, not the brows
   assert.match(css, /\.gb-story-art\s*\{[\s\S]*?container-type:\s*inline-size;/);
   assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?max-width:\s*78%;/);
   assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?11cqi/);
+  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?top:\s*10px;/);
+  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?background:\s*linear-gradient\(180deg, #4a4a4e, #2a2a2e\)/);
+  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?color:\s*#fff;/);
   assert.match(css, /\.gb-topic-hot-full\s*\{\s*display:\s*none;/);
   assert.match(css, /@container \(min-width: 200px\)/);
   assert.match(css, /drop-shadow\(1px 2px 0/);
+  assert.match(css, /\.gb-topic-hot-flame\s*\{[\s\S]*?margin:\s*-1\.05em/);
+  assert.match(css, /\.gb-topic-hot-flame-emoji\s*\{[\s\S]*?font-size:\s*2\.15em/);
   assert.match(css, /@keyframes hot-smoke-a/);
   assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?border:\s*2px solid #fff;/);
   assert.doesNotMatch(css, /\.gb-topic-hot\s*\{[^}]*text-overflow:\s*ellipsis/);
