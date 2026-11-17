@@ -4,7 +4,7 @@
  * only draws them.
  */
 import { STREAK_DAILY_GOAL, STREAK_MILESTONES } from './streak.js?v=20261113a1';
-import { challengesFor, DAILY_CHEST_XP } from './daily-challenges.js?v=20261113a1';
+import { challengesFor, DAILY_CHEST_XP, DAILY_CHEST_CRYSTALS } from './daily-challenges.js?v=20261118d1';
 import { TROPHIES } from './trophies.js?v=20261114h1';
 import { SIEGE_RANKS, rankProgressText } from './siege-ranks.js?v=20261112a2';
 import { badgeSrc } from './stars.js';
@@ -111,7 +111,7 @@ export function showDailyPanel(daily) {
     <ol class="daily-list">${list}</ol>
     <div class="daily-chest${daily.chest ? ' is-open' : ''}">
       <span aria-hidden="true">${daily.chest ? '🎁' : '🔒'}</span>
-      <div><strong>${daily.chest ? 'CHEST OPENED!' : 'GRANNY’S CHEST'}</strong><span>1 Alien Crystal + ${DAILY_CHEST_XP} XP</span></div>
+      <div><strong>${daily.chest ? 'CHEST OPENED!' : 'GRANNY’S CHEST'}</strong><span>${DAILY_CHEST_CRYSTALS} Alien Crystals + ${DAILY_CHEST_XP} XP</span></div>
     </div>`);
 }
 

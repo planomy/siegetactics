@@ -1,7 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeStreak, recordStreakAnswer, streakStatus, STREAK_DAILY_GOAL } from '../js/streak.js';
-import { challengesFor, normalizeDaily, recordChallengeEvent, rollLuckyDrop, LUCKY } from '../js/daily-challenges.js';
+import {
+  challengesFor,
+  normalizeDaily,
+  recordChallengeEvent,
+  rollLuckyDrop,
+  LUCKY,
+  DAILY_CHEST_XP,
+  DAILY_CHEST_CRYSTALS,
+} from '../js/daily-challenges.js';
 import { makeChallengeCode, readChallengeCode } from '../js/challenge-code.js';
 import { checkTrophies, normalizeRecords, TROPHIES } from '../js/trophies.js';
 import { STORY_BEATS } from '../js/story.js';
@@ -79,6 +87,19 @@ test('lucky drops are rare and crystal drops are capped each day', () => {
   assert.equal(rollLuckyDrop(daily, () => 0.99), null);
   assert.deepEqual(rollLuckyDrop(daily, () => 0), { kind: 'crystal' });
   assert.equal(rollLuckyDrop({ ...daily, luckyCrystals: LUCKY.maxCrystalsPerDay }, () => 0).kind, 'xp');
+});
+
+test('daily challenges pay enough Forge XP and crystals to be worth chasing', () => {
+  assert.ok(DAILY_CHEST_XP >= 100);
+  assert.ok(DAILY_CHEST_CRYSTALS >= 2);
+  assert.ok(LUCKY.xp >= 40);
+  assert.ok(LUCKY.chance >= 1 / 12);
+  assert.ok(LUCKY.maxCrystalsPerDay >= 3);
+  for (const day of ['2026-11-13', '2026-11-14', '2026-12-01']) {
+    for (const c of challengesFor(day)) {
+      assert.ok(c.xp >= 70, `${c.id} XP too low (${c.xp})`);
+    }
+  }
 });
 
 test('challenge codes round-trip and reject made-up codes', () => {

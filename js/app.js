@@ -13,11 +13,11 @@ import { normalizeSiegeRecord, recordSiege, siegeRankLevel, renderRankResult } f
 import { normalizeStreak, recordStreakAnswer, streakStatus, localDayKey } from './streak.js?v=20261113a1';
 import { GEAR, normalizeGear, gearStatus, gearEffects } from './gear.js?v=20261113a3';
 import { SIEGE_DURATION_SEC, openingHorde } from './waves-data.js?v=20261115w1';
-import { normalizeDaily, recordChallengeEvent, rollLuckyDrop, DAILY_CHEST_XP } from './daily-challenges.js?v=20261113a1';
+import { normalizeDaily, recordChallengeEvent, rollLuckyDrop, DAILY_CHEST_XP, DAILY_CHEST_CRYSTALS } from './daily-challenges.js?v=20261118d1';
 import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20261114h1';
 import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261113a1';
 import { STORY_BEATS } from './story.js?v=20261113a1';
-import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261114h1';
+import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261118d1';
 import { DEV } from './dev.js?v=20261115y1';
 import { HEDGE } from './maze-field.js?v=20261113m7';
 import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261117f3';
@@ -674,7 +674,10 @@ function challengeEvent(event, info) {
   });
   if (r.chestOpened) {
     creditForgeXp(DAILY_CHEST_XP);
-    window.setTimeout(() => awardUpgradeCore('GRANNY’S CHEST OPENED', screenCentre()), 1200);
+    window.setTimeout(
+      () => awardUpgradeCore('GRANNY’S CHEST OPENED', screenCentre(), DAILY_CHEST_CRYSTALS),
+      1200,
+    );
   }
   refreshEngagementPills();
 }

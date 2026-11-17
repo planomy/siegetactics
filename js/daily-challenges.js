@@ -8,15 +8,17 @@
 /** @typedef {{ id: string, text: string, event: ChallengeEvent, need: number, topic?: string, xp: number, max?: boolean }} DailyChallenge */
 /** @typedef {{ day: string|null, progress: Record<string, number>, done: string[], chest: boolean, luckyCrystals: number }} DailySave */
 
-export const DAILY_CHEST_XP = 50;
+/** Finish all three challenges: fat Forge XP plus crystals worth chasing. */
+export const DAILY_CHEST_XP = 120;
+export const DAILY_CHEST_CRYSTALS = 2;
 
 export const LUCKY = {
   /** Chance that a right answer triggers a lucky drop. */
-  chance: 1 / 16,
+  chance: 1 / 10,
   /** Share of lucky drops that are a crystal rather than bonus XP. */
-  crystalShare: 0.25,
-  maxCrystalsPerDay: 2,
-  xp: 25,
+  crystalShare: 0.35,
+  maxCrystalsPerDay: 3,
+  xp: 40,
 };
 
 const TOPICS = [
@@ -32,20 +34,20 @@ const TOPICS = [
 
 /** @type {DailyChallenge[]} */
 const MATHS = [
-  { id: 'right-15', text: 'Get 15 maths questions right', event: 'right', need: 15, xp: 30 },
-  { id: 'right-25', text: 'Get 25 maths questions right', event: 'right', need: 25, xp: 45 },
-  { id: 'right-l2', text: 'Get 10 right on Level 2 or higher', event: 'right-level2', need: 10, xp: 40 },
-  { id: 'quest80', text: 'Score 80% or better on a Maths Quest', event: 'quest80', need: 1, xp: 40 },
+  { id: 'right-15', text: 'Get 15 maths questions right', event: 'right', need: 15, xp: 70 },
+  { id: 'right-25', text: 'Get 25 maths questions right', event: 'right', need: 25, xp: 100 },
+  { id: 'right-l2', text: 'Get 10 right on Level 2 or higher', event: 'right-level2', need: 10, xp: 85 },
+  { id: 'quest80', text: 'Score 80% or better on a Maths Quest', event: 'quest80', need: 1, xp: 85 },
 ];
 
 /** @type {DailyChallenge[]} */
 const BATTLE = [
-  { id: 'siege-won', text: 'Win a siege', event: 'siege-won', need: 1, xp: 30 },
-  { id: 'siege-won-3', text: 'Win a siege with 3 or fewer aliens getting through', event: 'siege-won-3', need: 1, xp: 45 },
-  { id: 'kills-60', text: 'Blast 60 aliens in one siege', event: 'siege-kills', need: 60, xp: 35, max: true },
-  { id: 'kills-90', text: 'Blast 90 aliens in one siege', event: 'siege-kills', need: 90, xp: 50, max: true },
-  { id: 'boss', text: 'Defeat a boss alien', event: 'boss', need: 1, xp: 35 },
-  { id: 'nuke', text: 'Fire Granny’s nukes', event: 'nuke', need: 1, xp: 30 },
+  { id: 'siege-won', text: 'Win a siege', event: 'siege-won', need: 1, xp: 70 },
+  { id: 'siege-won-3', text: 'Win a siege with 3 or fewer aliens getting through', event: 'siege-won-3', need: 1, xp: 100 },
+  { id: 'kills-60', text: 'Blast 60 aliens in one siege', event: 'siege-kills', need: 60, xp: 80, max: true },
+  { id: 'kills-90', text: 'Blast 90 aliens in one siege', event: 'siege-kills', need: 90, xp: 110, max: true },
+  { id: 'boss', text: 'Defeat a boss alien', event: 'boss', need: 1, xp: 80 },
+  { id: 'nuke', text: 'Fire Granny’s nukes', event: 'nuke', need: 1, xp: 70 },
 ];
 
 /** Small, repeatable random numbers from the date, so everyone gets the same challenges. @param {string} seed */
@@ -71,7 +73,7 @@ export function challengesFor(day) {
     event: /** @type {ChallengeEvent} */ ('right-topic'),
     need: 8,
     topic: topic.id,
-    xp: 35,
+    xp: 80,
   };
   const first = rand() < 0.5 ? topicChallenge : pick(MATHS);
   const second = pick(BATTLE);
