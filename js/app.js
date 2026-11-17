@@ -20,7 +20,7 @@ import { STORY_BEATS } from './story.js?v=20261113a1';
 import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261118d1';
 import { DEV } from './dev.js?v=20261115y1';
 import { HEDGE } from './maze-field.js?v=20261113m7';
-import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261117f3';
+import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261118e2';
 import { keepFullscreen } from './fullscreen.js?v=20261116h';
 import { bindTipPills } from './tip-pills.js?v=20261117f1';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
@@ -30,7 +30,7 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261118a5';
+import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261118e2';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261117d1';
 import { initHowToPlay } from './how-to-play.js?v=20261117f3';
@@ -163,7 +163,7 @@ document.addEventListener('pointerover', (e) => {
   audio.playCardHover();
 });
 /** Buttons that already make their own sound on press. */
-const OWN_SOUND_BUTTONS = '.times-answer-btn, .gb-topic-campaign-card, #btn-hold-line, #mission-defend, #mission-start-mixed, .armory-upgrade-btn';
+const OWN_SOUND_BUTTONS = '.times-answer-btn, .gb-topic-campaign-card, #btn-hold-line, #mission-start-mixed, .armory-upgrade-btn';
 document.addEventListener('click', (e) => {
   const btn = e.target instanceof Element ? e.target.closest('button, [role="button"]') : null;
   if (!btn || btn.matches(':disabled, [aria-disabled="true"]') || btn.matches(OWN_SOUND_BUTTONS)) return;
@@ -1508,6 +1508,21 @@ function makeDashboardState() {
         return;
       }
       showToast('That training is still in the forge.');
+    },
+    onRandomMission() {
+      audio.warmUp();
+      disposeActiveTraining?.();
+      disposeActiveTraining = null;
+      // Random Mission stays maths — even when the radar Defend button is lit.
+      if (DEV.skipForge || isGateOpen(save.trainingGate)) {
+        if (zapsLeft() > 0 || currentWarChest().extraLeft > 0) {
+          showZapRun();
+          return;
+        }
+        showToast('Hit Defend Granny on the radar whenever you’re ready!', { variant: 'success' });
+        return;
+      }
+      showBattlePrep({ special: isSpecialMission() });
     },
     onHoldTheLine() {
       audio.warmUp();

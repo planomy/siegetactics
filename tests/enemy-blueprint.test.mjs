@@ -49,7 +49,9 @@ test('Mission Control uses the existing blueprint, with no duplicate 10-question
   assert.match(home, /threatDossierCleanup\?\.\(\)/);
   assert.doesNotMatch(home, /id="btn-hold-line">START/);
   assert.match(home, /id="mission-start-mixed"/);
-  assert.match(home, /id="mission-defend"/);
+  assert.doesNotMatch(home, /id="mission-defend"/);
+  assert.match(home, /onRandomMission/);
+  assert.match(home, /radar-launch-label/);
   assert.match(app, /classList\.toggle\('hq-home', id === 'home'\)/);
   assert.match(app, /function syncInvasionStrip\(/);
   assert.match(app, /id === 'home' \|\| !inLearning/);

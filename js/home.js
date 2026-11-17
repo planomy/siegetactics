@@ -356,7 +356,7 @@ function renderInboundRadar(attack, open) {
           ${renderRadarContacts()}
           <span class="radar-launch-ring" aria-hidden="true"></span>
           <span class="radar-launch-ring radar-launch-ring--late" aria-hidden="true"></span>
-          <button type="button" class="radar-launch${arriving ? ' is-arriving' : ''}" id="btn-hold-line">DEFEND<br />GRANNY</button>
+          <button type="button" class="radar-launch${arriving ? ' is-arriving' : ''}" id="btn-hold-line"><span class="radar-launch-label">DEFEND<br />GRANNY</span></button>
         </div>
       </div>
     `;
@@ -1077,15 +1077,13 @@ export function renderHome(host, state) {
         <span class="mission-kicker">MATHS HQ</span>
         <h1>Maths missions</h1>
       </header>
-      <section class="mission-mixed-card${attack.open ? ' is-under-attack' : ''}" aria-label="Mixed maths mission">
+      <section class="mission-mixed-card" aria-label="Mixed maths mission">
         <div class="mission-mixed-symbol" aria-hidden="true">⚡</div>
         <div class="mission-mixed-copy">
-          <span class="mission-recommended">${attack.open ? 'READY FOR ACTION' : 'QUICK START'}</span>
-          <h2>${attack.open ? 'Granny’s under attack!' : 'Mixed Maths Mission'}</h2>
+          <span class="mission-recommended">QUICK START</span>
+          <h2>Mixed Maths Mission</h2>
         </div>
-        ${attack.open
-          ? `<button type="button" id="mission-defend" class="mission-defend">DEFEND GRANNY</button>`
-          : `<button type="button" id="mission-start-mixed" class="mission-start-art${special ? ' is-special' : ''}" aria-label="${special ? `Special mission: ${SPECIAL_MISSION_XP_MULTIPLIER}× Forge XP` : 'Random mission'}: ${answersForCharge(attack.remaining, state.difficultyLevel)} more right answers needed, from every topic"><img src="assets/ui/random-mission-${missionArt}.png?v=2" alt="" width="760" height="203" />${special ? `<span class="mission-special-badge" aria-hidden="true"><span class="mission-special-rays"></span><span class="mission-special-disc"><b>${SPECIAL_MISSION_XP_MULTIPLIER}×</b><small>XP</small></span></span>` : ''}</button>`}
+        <button type="button" id="mission-start-mixed" class="mission-start-art${special ? ' is-special' : ''}" aria-label="${special ? `Special mission: ${SPECIAL_MISSION_XP_MULTIPLIER}× Forge XP` : 'Random mission'}: ${answersForCharge(attack.remaining, state.difficultyLevel)} more right answers needed, from every topic"><img src="assets/ui/random-mission-${missionArt}.png?v=2" alt="" width="760" height="203" />${special ? `<span class="mission-special-badge" aria-hidden="true"><span class="mission-special-rays"></span><span class="mission-special-disc"><b>${SPECIAL_MISSION_XP_MULTIPLIER}×</b><small>XP</small></span></span>` : ''}</button>
         <div class="mission-level-control">
           <div class="mission-level-intro">
             <span class="mission-level-title">LEVEL</span>
@@ -1112,8 +1110,10 @@ export function renderHome(host, state) {
     </div>
   `;
 
-  host.querySelector('#mission-start-mixed')?.addEventListener('click', state.onHoldTheLine);
-  host.querySelector('#mission-defend')?.addEventListener('click', state.onHoldTheLine);
+  host.querySelector('#mission-start-mixed')?.addEventListener('click', () => {
+    if (typeof state.onRandomMission === 'function') state.onRandomMission();
+    else state.onHoldTheLine?.();
+  });
   host.querySelector('#mission-armory-open')?.addEventListener('click', state.onArmory);
   host.querySelector('[data-homeland-map]')?.addEventListener('click', () => showHomelandMap(state.mapProgress));
   bindHomelandTrackSlots(host);
