@@ -844,8 +844,9 @@ function renderCrystalVault(collected, toSpend) {
 }
 
 /**
- * Long-term HQ goal: one bar slot per topic card (same order). Each qualifying set
- * fills a tenth of that topic’s slot; ten sets charts the sector. Last slot = Maths Quest / planet.
+ * Long-term HQ goal: one bar slot per topic card (same order). Bubbles 1–10 sit at
+ * the start of each slot; each good set fills toward the next. The planet sits after
+ * 10 and lights when the season is charted.
  * @param {import('./map-progress.js').MapProgressSave} mapProgress
  */
 function renderHomelandTrack(mapProgress) {
@@ -860,7 +861,6 @@ function renderHomelandTrack(mapProgress) {
   const shipPct = seasonDone ? 100 : (passSum / (total * MAP_PASSES_REQUIRED)) * 100;
   const slots = order.map((id, i) => {
     const n = i + 1;
-    const home = n === total;
     const passes = getMapPasses(mapProgress, id, season);
     const frac = mapPassFraction(mapProgress, id, season);
     const done = passes >= MAP_PASSES_REQUIRED;
@@ -872,14 +872,14 @@ function renderHomelandTrack(mapProgress) {
     // Inline width so one pass (10% of a slot ≈ 1% of the bar) still paints reliably.
     const fillPct = `${(frac * 100).toFixed(1)}%`;
     return `
-      <button type="button" class="homeland-track-slot${done ? ' is-done' : ''}${inProgress ? ' is-progress' : ''}${home ? ' is-home' : ''}"
+      <button type="button" class="homeland-track-slot${done ? ' is-done' : ''}${inProgress ? ' is-progress' : ''}"
         data-homeland-slot="${id}"
         style="--fill:${frac}"
         data-tip-title="${title}"
         data-tip="${tipBody}"
         aria-label="${title}: ${tipBody}">
         <span class="homeland-track-slot-fill" style="width:${fillPct}" aria-hidden="true"></span>
-        <span class="homeland-track-node${home ? ' homeland-track-home' : ''}${done ? ' is-reached' : ''}${inProgress ? ' is-progress' : ''}" aria-hidden="true">${home ? '🪐' : n}</span>
+        <span class="homeland-track-node${done ? ' is-reached' : ''}${inProgress ? ' is-progress' : ''}" aria-hidden="true">${n}</span>
       </button>`;
   }).join('');
   const levelHint = maxLevel ? ` · L${maxLevel} open` : '';
@@ -893,6 +893,7 @@ function renderHomelandTrack(mapProgress) {
       </button>
       <div class="homeland-track-rail">
         <div class="homeland-track-slots">${slots}</div>
+        <span class="homeland-track-home${seasonDone ? ' is-reached' : ''}" aria-hidden="true">🪐</span>
         <span class="homeland-track-ship" style="left:${shipPct.toFixed(1)}%" aria-hidden="true"><span>🛸</span></span>
       </div>
     </div>

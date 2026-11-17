@@ -58,7 +58,7 @@ export const COACH_TIPS = {
   },
   homeland: {
     title: 'ALIEN HOMELAND',
-    text: 'Each bubble on the bar is one topic card. Ten good sets on that topic charts its sector. Tap a bubble to see which.',
+    text: 'Bubbles 1–10 match the topic cards. Fill each stretch with good sets — finish all ten and you hit the home planet.',
     punch: 'Random missions don’t count — topic drills and Maths Quest do!',
     targets: ['.homeland-track'],
   },

@@ -32,7 +32,8 @@ test('tapping a slot shows a tip; the title opens the map', () => {
   assert.match(home, /showTipPill\(btn\)/);
   assert.match(coach, /homeland:\s*\{/);
   assert.match(app, /!seen\.has\('homeland'\)/);
-  assert.match(howto, /one bubble per topic card/);
+  assert.match(howto, /1–10/);
+  assert.match(home, /homeland-track-home/);
 });
 
 test('three different topics each with one pass fill three separate tenths', () => {

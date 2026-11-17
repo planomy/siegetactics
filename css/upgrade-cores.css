@@ -613,14 +613,17 @@
   flex: 1 1 auto;
   height: 8px;
   margin-left: 6px;
+  /* Room for bubble 1 on the left and the planet on the right. */
+  padding: 0 18px 0 10px;
   border-radius: 4px;
   background: rgba(120, 80, 200, .28);
+  background-clip: content-box;
 }
 
-/* One slot per topic card — each good set fills a tenth of that slot. */
+/* One slot per topic card — bubble at the start, fill runs toward the next. */
 .homeland-track-slots {
   position: absolute;
-  inset: 0;
+  inset: 0 18px 0 10px;
   display: flex;
   z-index: 2;
 }
@@ -676,7 +679,7 @@
 
 .homeland-track-node {
   position: absolute;
-  left: 100%;
+  left: 0;
   top: 50%;
   z-index: 3;
   display: grid;
@@ -708,13 +711,24 @@
   box-shadow: 0 0 10px rgba(90, 255, 160, .8);
 }
 
+/* Destination after bubble 10 — lights when the season is fully charted. */
 .homeland-track-home {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
   width: 34px;
   height: 34px;
-  border-color: rgba(255, 120, 200, .6);
+  border: 2px solid rgba(255, 120, 200, .6);
+  border-radius: 50%;
   background: radial-gradient(circle, #3a1450, #12081f);
   font-size: 1.2rem;
+  line-height: 1;
   box-shadow: 0 0 14px rgba(255, 100, 200, .45);
+  transform: translate(0, -50%);
+  pointer-events: none;
 }
 
 .homeland-track-home.is-reached {
