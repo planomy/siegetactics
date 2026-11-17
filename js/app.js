@@ -421,7 +421,7 @@ function refreshSoundButton() {
   }
 }
 
-/** Hide the ON FIRE badge 1s after the last bump (streak music can keep going). */
+/** Hide the ON FIRE badge 2s after the last bump (streak music can keep going). */
 let onFireFadeTimer = 0;
 
 /** Right answers in a row drive the hot-streak music and the ON FIRE badge; a wrong answer resets it. @param {boolean} right */
@@ -446,7 +446,7 @@ function trackAnswerStreak(right) {
     badge.classList.add('is-bump');
     onFireFadeTimer = window.setTimeout(() => {
       badge.classList.add('is-fade');
-    }, 1000);
+    }, 2000);
   }
 }
 
