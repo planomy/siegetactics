@@ -44,7 +44,15 @@ function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTo
         ? `<img class="gb-story-art-img" src="${topic.moduleArt}" alt="" width="400" height="400" loading="lazy" />`
         : `<span class="gb-story-art-emoji">${topic.emoji}</span>`;
       const hotPill = hot
-        ? '<span class="gb-topic-hot" aria-hidden="true"><span class="gb-topic-hot-full">🔥 HOT TOPIC · 2× XP</span><span class="gb-topic-hot-short">🔥 2× XP</span></span>'
+        ? `<span class="gb-topic-hot" aria-hidden="true"><span class="gb-topic-hot-flame"><span class="gb-topic-hot-flame-emoji">🔥</span><span class="gb-topic-hot-sparks">${Array.from({ length: 48 }, (_, i) => {
+            const t = (i + 0.5) / 48;
+            const side = i % 2 === 0 ? 1 : -1;
+            const dx = ((0.2 + t * 1.15) * side * (0.55 + (i % 5) * 0.12)).toFixed(3);
+            const rise = (2.1 + (i % 7) * 0.24).toFixed(3);
+            const delay = (i * 0.045).toFixed(2);
+            const dur = (0.95 + (i % 6) * 0.1).toFixed(2);
+            return `<i style="--dx:${dx}em;--rise:${rise}em;--delay:${delay}s;--dur:${dur}s"></i>`;
+          }).join('')}</span><span class="gb-topic-hot-smoke"></span></span><span class="gb-topic-hot-full">HOT TOPIC · 2× XP</span><span class="gb-topic-hot-short">2× XP</span></span>`
         : '';
       const shieldNote = earned
         ? `${earned} of 6 level shields earned`

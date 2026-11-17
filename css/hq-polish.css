@@ -5,17 +5,13 @@
 /* 1. The forge at 0/10: dimmed but alive, waiting for the player, never a dead grey slab. */
 body.mission-mode .mission-power .power-rig[data-stage="offline"] .power-turret-main img {
   filter: grayscale(.35) brightness(.78) drop-shadow(0 0 14px rgba(120, 255, 90, .35));
+  /* Glow only — no zoom/bob; the galactic swirl behind carries the motion. */
   animation: forge-idle 3.2s ease-in-out infinite;
 }
 
 body.mission-mode .mission-power .power-rig[data-stage="offline"] .power-turret-left,
 body.mission-mode .mission-power .power-rig[data-stage="offline"] .power-turret-right {
   opacity: .38;
-}
-
-body.mission-mode .mission-power .power-rig[data-stage="offline"] .power-halo {
-  opacity: .5;
-  animation: forge-halo-idle 3.2s ease-in-out infinite;
 }
 
 body.mission-mode .mission-power .power-rig[data-stage="offline"] .power-rank-name {
@@ -28,11 +24,7 @@ body.mission-mode .mission-power .power-rig[data-stage="offline"] .power-rank-na
 }
 
 @keyframes forge-idle {
-  50% { filter: grayscale(.2) brightness(.92) drop-shadow(0 0 22px rgba(120, 255, 90, .55)); transform: translateY(3px) scale(.95); }
-}
-
-@keyframes forge-halo-idle {
-  50% { opacity: .85; }
+  50% { filter: grayscale(.2) brightness(.92) drop-shadow(0 0 22px rgba(120, 255, 90, .55)); }
 }
 
 @keyframes forge-call {

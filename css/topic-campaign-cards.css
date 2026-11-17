@@ -243,14 +243,15 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   top: 6%;
   left: 50%;
   z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12em;
   box-sizing: border-box;
-  max-width: 74%;
-  padding: 0.28em 0.7em;
+  max-width: 78%;
+  padding: 0.28em 0.72em 0.28em 0.28em;
   border: 2px solid #fff;
   border-radius: 999px;
   overflow: visible;
-  /* Opaque fill covers the spinning disc; only the overhanging rim shows. */
-  isolation: isolate;
   background: linear-gradient(180deg, #ffb340, #ff5a1f);
   color: #2a0d00;
   /* Scale with the card art (cqi), not the browser width (vw). */
@@ -267,27 +268,112 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   animation: hot-flicker 1.6s ease-in-out infinite;
 }
 
-/* Short spark behind the pill: opaque fill hides the middle, rim traces the edge. */
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::before {
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::before,
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::after {
+  content: none;
+}
+
+/* Real emoji flame + rising sparks/smoke (taller than the pill). */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-flame {
+  position: relative;
+  flex: 0 0 auto;
+  width: 1.55em;
+  height: 1.7em;
+  margin: -0.55em 0.08em -0.35em -0.22em;
+  overflow: visible;
+  z-index: 3;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-flame-emoji {
+  position: absolute;
+  left: 50%;
+  bottom: -0.08em;
+  display: block;
+  font-size: 1.55em;
+  line-height: 1;
+  transform: translateX(-50%);
+  transform-origin: 50% 85%;
+  filter: drop-shadow(0 0 4px rgba(255, 90, 0, 0.85));
+  animation: hot-flame-wobble 0.55s ease-in-out infinite alternate;
+}
+
+/* Dense spark spray: birth in the flame core, shoot up, then arc out. */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 4;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-sparks i {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 0.11em;
+  height: 0.11em;
+  margin: 0;
+  border-radius: 50%;
+  background: #fff8c8;
+  box-shadow: 0 0 3px 0.5px rgba(255, 210, 90, 0.95);
+  animation: hot-spark-arc var(--dur, 1s) cubic-bezier(0.15, 0.7, 0.25, 1) infinite;
+  animation-delay: calc(var(--delay, 0s) * -1);
+  opacity: 0;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-sparks i:nth-child(3n) {
+  width: 0.08em;
+  height: 0.08em;
+  background: #ffe27a;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-sparks i:nth-child(4n) {
+  width: 0.07em;
+  height: 0.07em;
+  background: #ff9a3a;
+  box-shadow: 0 0 2px rgba(255, 140, 40, 0.9);
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-sparks i:nth-child(5n) {
+  width: 0.13em;
+  height: 0.13em;
+  background: #ffffff;
+}
+
+/* Soft smoke wisps drifting up from the tip. */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke,
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::before,
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::after {
   content: '';
   position: absolute;
-  inset: -3px;
-  z-index: -1;
-  border-radius: inherit;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0 88%,
-    rgba(255, 255, 255, 0.55) 91%,
-    #ffffff 94%,
-    #ffe27a 97%,
-    transparent 100%
-  );
-  animation: hot-edge-race 1.5s linear infinite;
+  left: 42%;
+  top: -0.15em;
+  width: 0.55em;
+  height: 0.7em;
+  border-radius: 60% 40% 55% 45%;
+  background: radial-gradient(ellipse at 50% 70%, rgba(220, 220, 230, 0.45) 0%, rgba(180, 180, 190, 0.18) 45%, transparent 72%);
+  filter: blur(1.5px);
   pointer-events: none;
 }
 
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::after {
-  content: none;
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke {
+  animation: hot-smoke-a 2.4s ease-out infinite;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::before {
+  left: 0.1em;
+  top: 0.05em;
+  width: 0.45em;
+  height: 0.55em;
+  animation: hot-smoke-b 2.8s ease-out infinite 0.6s;
+}
+
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::after {
+  left: -0.15em;
+  top: 0.1em;
+  width: 0.4em;
+  height: 0.5em;
+  animation: hot-smoke-c 2.2s ease-out infinite 1.1s;
 }
 
 /* Default to the short label so Chrome on a windowed laptop never shows "HOT TOPI…". */
@@ -315,8 +401,51 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
   50% { box-shadow: 0 0 0 1px rgba(40, 10, 0, 0.25), 0 0 20px rgba(255, 150, 40, .95); }
 }
 
-@keyframes hot-edge-race {
-  to { transform: rotate(360deg); }
+@keyframes hot-flame-wobble {
+  0% { transform: translateX(-50%) scale(1) rotate(-4deg); }
+  100% { transform: translateX(-50%) scale(1.06, 0.96) rotate(5deg); }
+}
+
+/* Spurt up from the core, then peel sideways into an arc. */
+@keyframes hot-spark-arc {
+  0% {
+    transform: translate(-50%, 0.15em) scale(0.35);
+    opacity: 0;
+  }
+  8% {
+    transform: translate(-50%, -0.05em) scale(1);
+    opacity: 1;
+  }
+  35% {
+    transform: translate(calc(-50% + (var(--dx) * 0.35)), calc(var(--rise) * -0.55)) scale(0.85);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(calc(-50% + (var(--dx) * 0.85)), calc(var(--rise) * -0.9)) scale(0.45);
+    opacity: 0.75;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(var(--rise) * -1)) scale(0.1);
+    opacity: 0;
+  }
+}
+
+@keyframes hot-smoke-a {
+  0% { transform: translate(0, 0.15em) scale(0.6); opacity: 0; }
+  20% { opacity: 0.55; }
+  100% { transform: translate(0.35em, -1.35em) scale(1.35); opacity: 0; }
+}
+
+@keyframes hot-smoke-b {
+  0% { transform: translate(0, 0.1em) scale(0.5); opacity: 0; }
+  25% { opacity: 0.4; }
+  100% { transform: translate(-0.4em, -1.5em) scale(1.5); opacity: 0; }
+}
+
+@keyframes hot-smoke-c {
+  0% { transform: translate(0, 0.2em) scale(0.55); opacity: 0; }
+  22% { opacity: 0.35; }
+  100% { transform: translate(0.15em, -1.2em) scale(1.25); opacity: 0; }
 }
 
 /* Desktop dashboard: two rows of five share the height Maths HQ has left (see
@@ -362,7 +491,11 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
 @media (prefers-reduced-motion: reduce) {
   body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card,
   body.mission-mode #screen-home .mission-all-topics .gb-topic-hot,
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::before {
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-flame-emoji,
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-sparks i,
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke,
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::before,
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::after {
     transition: none;
     animation: none;
   }

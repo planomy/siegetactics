@@ -71,13 +71,14 @@ export function powerParticleCount(done) {
 /** @returns {string} Deterministic particles never jump positions on re-render. */
 function renderEnergyParticles() {
   return Array.from({ length: 40 }, (_, i) => {
-    const angle = (i * 137.508) % 360;
-    const radius = 45 + ((i * 31) % 85);
-    const duration = (5.2 + (i % 7) * 0.67).toFixed(2);
-    const delay = ((i * 0.37) % 7.5).toFixed(2);
+    // Flat ellipses around the hat tip: wider than tall, staggered sizes.
+    const rx = 52 + ((i * 19) % 68);
+    const ry = 9 + ((i * 13) % 12);
+    const duration = (6.8 + (i % 7) * 0.9).toFixed(2);
+    const delay = ((i * 0.43) % 8.5).toFixed(2);
     const size = i % 7 === 0 ? 5 : 2 + (i % 3);
     const type = i % 5 === 0 ? ' forge-mote--spark' : '';
-    return `<span class="forge-mote${type}" style="--forge-angle:${angle.toFixed(1)}deg;--forge-radius:${radius}px;--forge-duration:${duration}s;--forge-delay:-${delay}s;--forge-size:${size}px" aria-hidden="true"></span>`;
+    return `<span class="forge-mote${type}" style="--forge-rx:${rx}px;--forge-ry:${ry}px;--forge-duration:${duration}s;--forge-delay:-${delay}s;--forge-size:${size}px" aria-hidden="true"></span>`;
   }).join('');
 }
 
@@ -132,8 +133,6 @@ export function renderPowerCore(host, state) {
         <div class="power-scene" aria-hidden="true">
           <div class="forge-mist forge-mist--outer"></div>
           <div class="forge-mist forge-mist--inner"></div>
-          <div class="power-halo power-halo-outer"></div>
-          <div class="power-halo power-halo-inner"></div>
           <div class="power-energy-beams"></div>
           <div class="power-energy-ring"></div>
           <div class="power-turret power-turret-left"><img src="assets/turrets/boom-gnome.png" alt="" /></div>
