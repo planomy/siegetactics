@@ -9,10 +9,6 @@ import { GEAR, gearArt, gearStatus } from './gear.js?v=20261113a3';
 let armoryPreviewId = /** @type {string|null} */ (null);
 
 /** @param {number} n */
-function crystalText(n) {
-  return `${n} alien ${n === 1 ? 'crystal' : 'crystals'}`;
-}
-
 /** Granny's Gear shelf: one card per item with its art, what it does and its crystal price. */
 function renderGearShelf(owned, cores) {
   const cards = GEAR.map((g) => {
@@ -203,9 +199,7 @@ export function renderArmory(host, callbacks) {
   const { xp, cores, unlocked, onUnlock, onUpgrade, onBack, showToast } = callbacks;
   const tab = callbacks.tab === 'gear' ? 'gear' : 'turrets';
   const gearOwned = callbacks.gear ?? [];
-  const owned = TURRET_ORDER.filter((id) => unlocked.has(id)).length;
   const next = nextLockedTurret(xp, unlocked);
-  const nextT = next ? TURRETS[next] : null;
   const canUnlockNow = nextUnlockableTurret(xp, unlocked);
   const upgradeReady = TURRET_ORDER.find((id) => nextUpgrade(id, cores, unlocked.has(id))?.ready) ?? null;
   const featuredId =
@@ -214,19 +208,6 @@ export function renderArmory(host, callbacks) {
     ?? canUnlockNow
     ?? next
     ?? TURRET_ORDER[TURRET_ORDER.length - 1];
-
-  let headline = `${owned} / ${TURRET_ORDER.length} turrets in your arsenal`;
-  if (upgradeReady) {
-    headline = `You have ${coreText(cores)} to spend. Power up a turret!`;
-  } else if (canUnlockNow) {
-    headline = `Ready to unlock ${TURRETS[canUnlockNow].name}!`;
-  } else if (nextT) {
-    const gap = Math.max(0, nextT.unlockXp - xp);
-    headline =
-      gap > 0
-        ? `Next: ${nextT.name} — ${gap.toLocaleString()} ${ECONOMY.forgeXpLabel} to go`
-        : `Next: ${nextT.name} — unlock ready`;
-  }
 
   const cards = TURRET_ORDER.map((id) => {
     const t = TURRETS[id];
@@ -260,19 +241,21 @@ export function renderArmory(host, callbacks) {
 
   host.innerHTML = `
     <div class="panel armory-panel">
-      <button type="button" class="btn btn-ghost btn-sm times-back" id="armory-back">← Back</button>
-      <p class="mission-tag">Granny’s Armory</p>
-      <nav class="armory-tabs" role="tablist">
-        <button type="button" role="tab" data-armory-tab="turrets" class="${tab === 'turrets' ? 'is-active' : ''}">TURRETS</button>
-        <button type="button" role="tab" data-armory-tab="gear" class="${tab === 'gear' ? 'is-active' : ''}">GRANNY’S GEAR</button>
-      </nav>
-      <p class="granny-line armory-lead">${tab === 'gear'
-        ? `Permanent power-ups for every siege. You have ${crystalText(cores)} to spend.`
-        : `${headline}${/[.!?]$/.test(headline) ? '' : '.'} ${ECONOMY.forgeXpLabel} unlocks turrets forever. Crystals upgrade them.`}</p>
-      <div class="armory-xp-bar">
-        <span class="armory-xp-label">${ECONOMY.forgeXpLabel}</span>
-        <span class="armory-xp-val">${xp.toLocaleString()}</span>
-        <span class="armory-cores"><span class="core-gem" aria-hidden="true"></span><strong>${cores}</strong> alien ${cores === 1 ? 'crystal' : 'crystals'}</span>
+      <div class="armory-toolbar">
+        <div class="armory-toolbar-left">
+          <button type="button" class="btn btn-ghost btn-sm times-back" id="armory-back">← Back</button>
+        </div>
+        <nav class="armory-tabs" role="tablist" aria-label="Armory shelves">
+          <button type="button" role="tab" data-armory-tab="turrets" class="${tab === 'turrets' ? 'is-active' : ''}" aria-selected="${tab === 'turrets'}">TURRETS</button>
+          <button type="button" role="tab" data-armory-tab="gear" class="${tab === 'gear' ? 'is-active' : ''}" aria-selected="${tab === 'gear'}">GRANNY’S GEAR</button>
+        </nav>
+        <div class="armory-toolbar-right" aria-label="Armory balances">
+          <span class="armory-cores"><span class="core-gem" aria-hidden="true"></span><strong>${cores}</strong> ${cores === 1 ? 'crystal' : 'crystals'}</span>
+          <span class="armory-xp-chip">
+            <span class="armory-xp-label">${ECONOMY.forgeXpLabel}</span>
+            <strong class="armory-xp-val">${xp.toLocaleString()}</strong>
+          </span>
+        </div>
       </div>
       ${tab === 'gear' ? renderGearShelf(gearOwned, cores) : `
       <div id="armory-feature-host">${renderArmoryFeature(featuredId, xp, cores, unlocked)}</div>

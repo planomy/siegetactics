@@ -2,7 +2,7 @@ import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=
 import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261114v1';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261116b1';
-import { renderArmory } from './armory.js?v=20261117e2';
+import { renderArmory } from './armory.js?v=20261118a2';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel, crystalsSpentOnLevels } from './turret-upgrades.js?v=20261117e2';
 import { createTDEngine } from './td-engine.js?v=20261115y50';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';

@@ -356,6 +356,7 @@
    Show the chooser first; the big preview follows once you scroll. */
 @media (max-height: 820px) {
   .armory-panel { display: flex; flex-direction: column; }
+  .armory-toolbar { order: 1; }
   .armory-grid-intro { order: 3; margin-top: 4px; }
   .armory-grid { order: 4; }
   #armory-feature-host { order: 5; }
@@ -749,21 +750,84 @@
   filter: drop-shadow(0 0 4px rgba(80, 255, 170, .7));
 }
 
+/* One header row: Back | Turrets / Gear | crystals + XP. */
+.armory-toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.armory-toolbar-left {
+  justify-self: start;
+  min-width: 0;
+}
+
+.armory-toolbar-left .times-back {
+  margin-bottom: 0;
+}
+
+.armory-toolbar-right {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  gap: 10px 14px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.armory-toolbar-right .armory-cores {
+  margin-left: 0;
+  font-size: .92rem;
+  white-space: nowrap;
+}
+
+.armory-xp-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 162, 39, .45);
+  background: rgba(0, 0, 0, .3);
+  white-space: nowrap;
+}
+
+.armory-xp-chip .armory-xp-label {
+  margin: 0;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted, #bfb4cd);
+}
+
+.armory-xp-chip .armory-xp-val {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold, #ffe27a);
+}
+
 /* Armory tabs: turrets and Granny's Gear. */
 .armory-tabs {
   display: flex;
   gap: 8px;
-  margin: 4px 0 10px;
+  justify-self: center;
+  margin: 0;
 }
 
 .armory-tabs button {
-  padding: 9px 18px;
+  padding: 8px 16px;
   border: 2px solid rgba(255, 210, 120, .35);
   border-radius: 12px;
   background: rgba(0, 0, 0, .25);
   color: #e8d9bd;
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   letter-spacing: .05em;
   cursor: pointer;
 }
@@ -773,6 +837,19 @@
   background: linear-gradient(180deg, #ffe27a, #f3a512);
   color: #2a1700;
   box-shadow: 0 0 14px rgba(255, 200, 60, .4);
+}
+
+@media (max-width: 700px) {
+  .armory-toolbar {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "back stats"
+      "tabs tabs";
+  }
+
+  .armory-toolbar-left { grid-area: back; }
+  .armory-tabs { grid-area: tabs; justify-self: center; }
+  .armory-toolbar-right { grid-area: stats; }
 }
 
 /* Granny's Gear shelf */
