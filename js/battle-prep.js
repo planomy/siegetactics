@@ -308,7 +308,7 @@ export function initBattlePrep(host, callbacks) {
     }
     if (callbacks.isCharged && !callbacks.isCharged()) {
       const more = Math.max(1, Math.floor(callbacks.remainingNeeded?.() ?? callbacks.questionsNeeded ?? 10));
-      const againLabel = `Give me ${more} more question${more === 1 ? '' : 's'}`;
+      const againLabel = `GIVE ME ${more} MORE OF THESE`;
       host.innerHTML = `
         <div class="panel times-panel times-done prep-panel prep-done">
           <button type="button" class="btn btn-ghost btn-sm times-back times-done-home" id="prep-home-done">← Home</button>

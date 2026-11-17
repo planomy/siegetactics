@@ -324,7 +324,7 @@ export function initTimesTables(host, callbacks) {
     // Charged: no "again" — the red radar Defend is the next move. Uncharged: more questions to fill the bar.
     const againLabel = charged
       ? null
-      : `Give me ${more} more question${more === 1 ? '' : 's'}`;
+      : `GIVE ME ${more} MORE OF THESE`;
     host.innerHTML = `
       <div class="panel times-panel times-done">
         <p class="mission-tag">Session complete</p>

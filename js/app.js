@@ -35,13 +35,13 @@ import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './en
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261117d1';
 import { initHowToPlay } from './how-to-play.js?v=20261117f3';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
-import { initTimesTables } from './times-tables.js?v=20261116xp27';
+import { initTimesTables } from './times-tables.js?v=20261118a4';
 import { initMeasurementLength } from './measurement-length.js?v=20261118a1';
 import { initFractions } from './fractions.js?v=20261116xp1';
 import { initAnglesShapes } from './angles-shapes.js?v=20261116xp1';
 import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261118a1';
 import { initExpandedMath } from './expanded-maths.js?v=20261116xp1';
-import { initBattlePrep } from './battle-prep.js?v=20261116xp27';
+import { initBattlePrep } from './battle-prep.js?v=20261118a4';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js?v=20261114k1';
 import {
   normalizeLevelMastery,
