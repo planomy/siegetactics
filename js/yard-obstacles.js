@@ -11,6 +11,7 @@ import {
   computeFlowField,
   bestEntryCell,
   MAZE_GATES,
+  traceRoute,
 } from './maze-field.js?v=20261113m7';
 
 /**
@@ -56,7 +57,9 @@ export const YARD_PROPS = {
     w: 2,
     h: 2,
     label: 'BBQ',
-    // Art is centred on the 2×2 place footprint — block all four.
+    // Extra path skirt so mid-lawn BBQs force a real bend, not a one-cell nudge.
+    blockW: 3,
+    blockH: 3,
     scale: 1.1,
     grounding: 'none',
     smoke: true,
@@ -90,7 +93,19 @@ export const YARD_PROPS = {
     ],
   },
   // Round water feature — no contact shadow; waterfall/ripples drawn in the engine.
-  'duck-pond': { id: 'duck-pond', src: 'assets/obstacles/duck-pond.png?v=20261115d1', w: 3, h: 3, label: 'Duck pond', scale: 1.2, noShadow: true, water: true },
+  // Path skirt is wider than the place rect so the west run cannot cheaply slip beside it.
+  'duck-pond': {
+    id: 'duck-pond',
+    src: 'assets/obstacles/duck-pond.png?v=20261115d1',
+    w: 3,
+    h: 3,
+    label: 'Duck pond',
+    scale: 1.2,
+    blockW: 4,
+    blockH: 4,
+    noShadow: true,
+    water: true,
+  },
   'pool-under-construction': {
     id: 'pool-under-construction',
     src: 'assets/obstacles/pool-under-construction.png?v=20261115d1',
@@ -126,6 +141,8 @@ export const YARD_PROPS = {
     h: 2,
     label: "Uncle Bob's ute",
     scale: 1.85,
+    blockW: 3,
+    blockH: 3,
     grounding: 'none',
     // Front row under the cab / door — turret nests behind the ute art.
     buildSlots: [
@@ -136,8 +153,9 @@ export const YARD_PROPS = {
 };
 
 /**
- * Hand-authored mix-and-match yards. Top-left cell of each prop; leave a walk
- * from the portal and side gates through to Granny.
+ * Hand-authored mix-and-match yards. Top-left cell of each prop.
+ * Every layout must choke the west mid-run so the dotted path lengthens or
+ * zigzags hard — decorative corner props alone are not enough.
  * @type {YardLayout[]}
  */
 export const YARD_LAYOUTS = [
@@ -145,40 +163,43 @@ export const YARD_LAYOUTS = [
     id: 'bbq-sunday',
     label: 'BBQ Sunday',
     items: [
-      // Herb bed sits on the default mid-row run → forces a detour.
-      { id: 'bed-square', col: 5, row: 4 },
-      { id: 'bbq-kettle', col: 2, row: 1 },
-      { id: 'laundry-trolley', col: 11, row: 6 },
-      { id: 'wheelbarrow', col: 1, row: 7 },
+      // Dig site seals the mid band; BBQ sits on the lower bypass.
+      { id: 'pool-under-construction', col: 3, row: 2 },
+      { id: 'bbq-kettle', col: 11, row: 6 },
+      { id: 'laundry-trolley', col: 1, row: 7 },
     ],
   },
   {
     id: 'veggie-maze',
     label: 'Veggie Maze',
     items: [
-      { id: 'bed-square', col: 4, row: 3 },
-      { id: 'bed-long', col: 7, row: 4 },
-      { id: 'bed-square', col: 12, row: 2 },
+      // Staggered beds + long planter so a one-row slip still hits another bed.
+      { id: 'bed-square', col: 3, row: 2 },
+      { id: 'bed-square', col: 3, row: 4 },
+      { id: 'bed-long', col: 6, row: 3 },
+      { id: 'bed-square', col: 10, row: 4 },
       { id: 'wheelbarrow', col: 1, row: 7 },
+      { id: 'bbq-kettle', col: 12, row: 7 },
     ],
   },
   {
     id: 'wedding-day',
     label: 'Wedding Day',
     items: [
-      { id: 'wedding-arbor', col: 5, row: 3 },
-      { id: 'laundry-trolley', col: 2, row: 7 },
-      { id: 'bbq-kettle', col: 12, row: 7 },
+      { id: 'wedding-arbor', col: 3, row: 2 },
+      { id: 'bed-long', col: 8, row: 4 },
+      { id: 'bbq-kettle', col: 11, row: 6 },
+      { id: 'laundry-trolley', col: 1, row: 7 },
     ],
   },
   {
     id: 'uncle-bob',
     label: "Uncle Bob's Visit",
     items: [
-      // Ute on the mid run + veggie bed on the bypass → forces a jog.
-      { id: 'uncle-bobs-ute', col: 3, row: 3 },
-      { id: 'bed-long', col: 8, row: 5 },
-      { id: 'bbq-kettle', col: 12, row: 1 },
+      { id: 'uncle-bobs-ute', col: 2, row: 3 },
+      { id: 'duck-pond', col: 5, row: 2 },
+      { id: 'bed-long', col: 9, row: 4 },
+      { id: 'bbq-kettle', col: 12, row: 7 },
       { id: 'laundry-trolley', col: 1, row: 7 },
     ],
   },
@@ -186,30 +207,32 @@ export const YARD_LAYOUTS = [
     id: 'pool-dig',
     label: 'Pool Dig',
     items: [
-      { id: 'pool-under-construction', col: 5, row: 3 },
-      { id: 'wheelbarrow', col: 1, row: 7 },
+      { id: 'pool-under-construction', col: 3, row: 2 },
+      { id: 'wheelbarrow', col: 12, row: 8 },
       { id: 'bed-square', col: 12, row: 1 },
+      { id: 'laundry-trolley', col: 1, row: 7 },
     ],
   },
   {
     id: 'duck-pond',
     label: 'Duck Pond',
     items: [
-      { id: 'duck-pond', col: 6, row: 3 },
-      { id: 'bbq-kettle', col: 12, row: 7 },
+      // Dig + pond together: west must climb or dive several rows.
+      { id: 'pool-under-construction', col: 4, row: 2 },
+      { id: 'duck-pond', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
+      { id: 'wheelbarrow', col: 13, row: 1 },
     ],
   },
   {
     id: 'full-backyard',
     label: 'Full Backyard',
     items: [
-      { id: 'uncle-bobs-ute', col: 1, row: 2 },
-      { id: 'duck-pond', col: 6, row: 3 },
-      { id: 'bbq-kettle', col: 12, row: 1 },
-      // Sit on the mid-run so the route bends without an invisible pad of cells.
-      { id: 'bed-long', col: 10, row: 6 },
-      { id: 'wheelbarrow', col: 1, row: 7 },
+      { id: 'pool-under-construction', col: 2, row: 2 },
+      { id: 'bbq-kettle', col: 11, row: 6 },
+      { id: 'bed-square', col: 12, row: 1 },
+      { id: 'laundry-trolley', col: 1, row: 7 },
+      { id: 'wheelbarrow', col: 10, row: 8 },
     ],
   },
 ];
@@ -275,6 +298,62 @@ export function validateYardItems(items) {
   return { ok: true, blocked };
 }
 
+/** @param {{ col: number, row: number }[]} route */
+function routeTurns(route) {
+  let turns = 0;
+  for (let i = 2; i < route.length; i++) {
+    const dx1 = route[i - 1].col - route[i - 2].col;
+    const dy1 = route[i - 1].row - route[i - 2].row;
+    const dx2 = route[i].col - route[i - 1].col;
+    const dy2 = route[i].row - route[i - 1].row;
+    if (dx1 !== dx2 || dy1 !== dy2) turns += 1;
+  }
+  return turns;
+}
+
+/**
+ * How hard the yard pushes aliens off the empty lawn routes.
+ * A layout “forces a detour” when the west walk lengthens by 2+ cells, or it
+ * zigzags across 3+ rows — corner decoration alone never passes.
+ * @param {YardPlacement[]} items
+ */
+export function yardDetourMetrics(items) {
+  const empty = new Uint8Array(CELL_COUNT);
+  const emptyDist = computeFlowField(empty);
+  const blocked = new Uint8Array(CELL_COUNT);
+  stampYardBlocked(blocked, items);
+  const dist = computeFlowField(blocked);
+  /** @type {Record<string, { delta: number, turns: number, span: number }>} */
+  const gates = {};
+  for (const gate of MAZE_GATES) {
+    const emptyRoute = traceRoute(emptyDist, empty, gate);
+    const route = traceRoute(dist, blocked, gate);
+    const rows = route.map((c) => c.row);
+    gates[gate.id] = {
+      delta: route.length - emptyRoute.length,
+      turns: routeTurns(route),
+      span: rows.length ? Math.max(...rows) - Math.min(...rows) : 0,
+    };
+  }
+  return gates;
+}
+
+/** @param {YardPlacement[]} items */
+export function layoutForcesDetour(items) {
+  const m = yardDetourMetrics(items);
+  const west = m.west;
+  if (!west) return false;
+  return west.delta >= 2 || (west.turns >= 4 && west.span >= 3) || (m.north?.delta ?? 0) >= 2 || (m.south?.delta ?? 0) >= 2;
+}
+
+/** Layouts that stay open and visibly bend the west (or side) routes. */
+export function detourYardLayouts() {
+  return YARD_LAYOUTS.filter((layout) => {
+    const check = validateYardItems(layout.items);
+    return check.ok && layoutForcesDetour(layout.items);
+  });
+}
+
 /** @param {string|number|null|undefined} want */
 export function resolveYardLayout(want) {
   if (want == null || want === '') return YARD_LAYOUTS[0];
@@ -292,14 +371,23 @@ export function resolveYardLayout(want) {
 
 /** @param {string|number|null|undefined} want */
 export function pickYardLayout(want) {
+  const forced = want != null && want !== '';
+  const pool = detourYardLayouts();
+  const fallbackPool = pool.length ? pool : YARD_LAYOUTS;
+
+  if (!forced) {
+    const pick = fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
+    return pick ?? YARD_LAYOUTS[0];
+  }
+
   const layout = resolveYardLayout(want);
   const check = validateYardItems(layout.items);
   if (!check.ok) {
     console.warn(`[yard] layout "${layout.id}" invalid (${check.reason}); falling back`);
-    for (const alt of YARD_LAYOUTS) {
-      if (alt.id === layout.id) continue;
-      if (validateYardItems(alt.items).ok) return alt;
-    }
+    return fallbackPool.find((alt) => alt.id !== layout.id) ?? fallbackPool[0] ?? layout;
+  }
+  if (!layoutForcesDetour(layout.items) && pool.length) {
+    console.warn(`[yard] layout "${layout.id}" barely bends routes; prefer a choke layout`);
   }
   return layout;
 }

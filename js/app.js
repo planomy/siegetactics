@@ -4,7 +4,7 @@ import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261116b1';
 import { renderArmory } from './armory.js?v=20261118a2';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel, crystalsSpentOnLevels } from './turret-upgrades.js?v=20261117e2';
-import { createTDEngine } from './td-engine.js?v=20261115y50';
+import { createTDEngine } from './td-engine.js?v=20261118y1';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
 import { createAudio } from './audio.js?v=20261114s1';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
@@ -19,7 +19,6 @@ import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=2026
 import { STORY_BEATS } from './story.js?v=20261113a1';
 import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261114h1';
 import { DEV } from './dev.js?v=20261115y1';
-import { YARD_LAYOUTS } from './yard-obstacles.js?v=20261115y50';
 import { HEDGE } from './maze-field.js?v=20261113m7';
 import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261117f3';
 import { keepFullscreen } from './fullscreen.js?v=20261116h';
@@ -422,7 +421,7 @@ function refreshSoundButton() {
   }
 }
 
-/** Hide the ON FIRE badge a few seconds after the last bump (streak music can keep going). */
+/** Hide the ON FIRE badge 1s after the last bump (streak music can keep going). */
 let onFireFadeTimer = 0;
 
 /** Right answers in a row drive the hot-streak music and the ON FIRE badge; a wrong answer resets it. @param {boolean} right */
@@ -447,7 +446,7 @@ function trackAnswerStreak(right) {
     badge.classList.add('is-bump');
     onFireFadeTimer = window.setTimeout(() => {
       badge.classList.add('is-fade');
-    }, 3000);
+    }, 1000);
   }
 }
 

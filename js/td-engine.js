@@ -38,13 +38,12 @@ import {
 import { createGardenLife, LAWN_SCENE, LANE_SCENE } from './garden-life.js?v=20261115y4';
 import {
   YARD_PROPS,
-  YARD_LAYOUTS,
   pickYardLayout,
   loadYardSprites,
   stampYardBlocked,
   yardOccupies,
   yardNestProp,
-} from './yard-obstacles.js?v=20261115y50';
+} from './yard-obstacles.js?v=20261118y1';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
 export function buildTimeForPlacementCost(cost) {
@@ -260,11 +259,8 @@ export function createTDEngine(canvas, opts) {
   const yardWant = opts.yardLayout;
   const yardLayout =
     maze && yardWant !== 'none' && yardWant !== 'off'
-      ? pickYardLayout(
-          yardWant == null || yardWant === ''
-            ? Math.floor(Math.random() * YARD_LAYOUTS.length)
-            : yardWant,
-        )
+      // null → random among layouts that force a real path bend (not corner decoration).
+      ? pickYardLayout(yardWant == null || yardWant === '' ? null : yardWant)
       : null;
   const yardItems = yardLayout?.items ?? [];
   /** @type {Record<string, HTMLImageElement>} */
