@@ -1550,8 +1550,10 @@ function refreshMissionControl() {
     title: forgeTitle,
   });
   renderSiegeStats(powerHost, state);
-  const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'))?.[0];
-  syncMissionControlAction(active || 'home');
+  const active = Object.entries(screens).find(([, el]) => el?.classList.contains('active'))?.[0] || 'home';
+  syncMissionControlAction(active);
+  // Keep the under-quiz "INVASION IN" strip live as answers charge the gate.
+  syncInvasionStrip(active, LEARNING_SCREENS.has(active));
 }
 
 /** @param {{ reroll?: boolean }} [opts] Changing level redraws Maths HQ but must keep the mission the player is looking at. */
