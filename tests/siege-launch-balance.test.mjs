@@ -25,10 +25,10 @@ test('first siege is forgiving but later sieges retain a challenge', () => {
   assert.equal(mission.maxLeaks, 5, 'original definition must not be mutated');
 });
 
-test('new players get 20 slightly slower first-wave enemies', () => {
+test('new players get 18 slightly slower first-wave enemies', () => {
   const intro = waveConfigFor(1, { firstSiege: true });
   const usual = waveConfigFor(1);
-  assert.equal(intro.totalSpawns, 20);
+  assert.equal(intro.totalSpawns, 18);
   assert.ok(usual.totalSpawns > intro.totalSpawns);
   assert.ok(intro.speedMul < usual.speedMul);
   assert.ok(intro.hpScale < usual.hpScale);
@@ -37,11 +37,11 @@ test('new players get 20 slightly slower first-wave enemies', () => {
 
 test('the horde grows with siege rank, gently, and never on the first siege', () => {
   const totals = [0, 1, 2, 3, 4, 5].map((rank) => openingHorde({ rank }).total);
-  assert.deepEqual(totals.slice(0, 2), [30, 30], 'no rank and Recruit face the usual opening');
+  assert.deepEqual(totals.slice(0, 2), [24, 24], 'no rank and Recruit face the usual opening');
   for (let i = 2; i < totals.length; i++) assert.ok(totals[i] > totals[i - 1], `rank ${i} is bigger than rank ${i - 1}`);
   assert.ok(totals[5] <= 60, 'even Marshal faces at most double the usual opening');
   assert.equal(openingHorde({ rank: 3 }).troops.length, 3, 'higher ranks add tougher troop types');
-  assert.equal(openingHorde({ firstSiege: true, rank: 5 }).total, 20);
+  assert.equal(openingHorde({ firstSiege: true, rank: 5 }).total, 18);
   assert.equal(waveConfigFor(3, { rank: 1 }).totalSpawns, waveConfigFor(3).totalSpawns);
 });
 
