@@ -864,19 +864,22 @@ function renderHomelandTrack(mapProgress) {
     const passes = getMapPasses(mapProgress, id, season);
     const frac = mapPassFraction(mapProgress, id, season);
     const done = passes >= MAP_PASSES_REQUIRED;
+    const inProgress = passes > 0 && !done;
     const title = getTopic(id)?.title || id;
     const tipBody = done
       ? `Sector charted · Season ${season}`
       : `${passes} / ${MAP_PASSES_REQUIRED} good sets · need ${bar}+`;
+    // Inline width so one pass (10% of a slot ≈ 1% of the bar) still paints reliably.
+    const fillPct = `${(frac * 100).toFixed(1)}%`;
     return `
-      <button type="button" class="homeland-track-slot${done ? ' is-done' : ''}${home ? ' is-home' : ''}"
+      <button type="button" class="homeland-track-slot${done ? ' is-done' : ''}${inProgress ? ' is-progress' : ''}${home ? ' is-home' : ''}"
         data-homeland-slot="${id}"
         style="--fill:${frac}"
         data-tip-title="${title}"
         data-tip="${tipBody}"
         aria-label="${title}: ${tipBody}">
-        <span class="homeland-track-slot-fill" aria-hidden="true"></span>
-        <span class="homeland-track-node${home ? ' homeland-track-home' : ''}${done ? ' is-reached' : ''}" aria-hidden="true">${home ? '🪐' : n}</span>
+        <span class="homeland-track-slot-fill" style="width:${fillPct}" aria-hidden="true"></span>
+        <span class="homeland-track-node${home ? ' homeland-track-home' : ''}${done ? ' is-reached' : ''}${inProgress ? ' is-progress' : ''}" aria-hidden="true">${home ? '🪐' : n}</span>
       </button>`;
   }).join('');
   const levelHint = maxLevel ? ` · L${maxLevel} open` : '';

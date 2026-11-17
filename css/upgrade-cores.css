@@ -611,10 +611,10 @@
 .homeland-track-rail {
   position: relative;
   flex: 1 1 auto;
-  height: 5px;
+  height: 8px;
   margin-left: 6px;
-  border-radius: 3px;
-  background: rgba(120, 80, 200, .3);
+  border-radius: 4px;
+  background: rgba(120, 80, 200, .28);
 }
 
 /* One slot per topic card — each good set fills a tenth of that slot. */
@@ -654,15 +654,22 @@
   left: 0;
   top: 0;
   bottom: 0;
-  width: calc(var(--fill, 0) * 100%);
-  border-radius: 3px;
-  background: linear-gradient(90deg, #7a3cff, #c04bff 55%, #5dff9a);
-  box-shadow: 0 0 8px rgba(170, 90, 255, .55);
+  width: 0;
+  min-width: 0;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #9a55ff, #e060ff 55%, #6dffb0);
+  box-shadow: 0 0 10px rgba(190, 110, 255, .85);
   pointer-events: none;
+}
+
+/* Any progress: keep a readable blip so one pass isn’t a 1%-of-bar speck. */
+.homeland-track-slot.is-progress .homeland-track-slot-fill {
+  min-width: 12px;
 }
 
 .homeland-track-slot.is-done .homeland-track-slot-fill {
   width: 100%;
+  min-width: 0;
   background: linear-gradient(90deg, #4eb465, #b6ff86);
   box-shadow: 0 0 8px rgba(90, 255, 160, .55);
 }
@@ -685,6 +692,13 @@
   line-height: 1;
   transform: translate(-50%, -50%);
   pointer-events: none;
+}
+
+/* Topic has started charting this season — light that bubble so the slot is obvious. */
+.homeland-track-node.is-progress {
+  border-color: #d080ff;
+  color: #f2e6ff;
+  box-shadow: 0 0 12px rgba(200, 100, 255, .9);
 }
 
 .homeland-track-node.is-reached {

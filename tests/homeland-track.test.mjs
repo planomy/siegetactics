@@ -20,6 +20,8 @@ test('AHPB uses one slot per topic card and fills by mapPassFraction, not closes
   assert.match(home, /mapPassFraction/);
   assert.match(home, /data-homeland-slot/);
   assert.match(home, /showTipPill/);
+  assert.match(home, /is-progress/);
+  assert.match(home, /fillPct/);
   assert.doesNotMatch(home, /closest \/ MAP_PASSES_REQUIRED/);
   assert.doesNotMatch(home, /homeland-track-fill/);
 });
