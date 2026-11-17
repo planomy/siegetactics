@@ -1,4 +1,4 @@
-import { MATH_TOPICS, getTopic } from './topics-data.js?v=20261113h1';
+import { MATH_TOPICS, getTopic } from './topics-data.js?v=20261118f2';
 import { attackStatus, answersForCharge, answersProgress } from './training-gate.js?v=20261115p1';
 import { badgeSrc } from './stars.js';
 import { SIEGE_RANKS, siegeRankLevel, rankProgressText } from './siege-ranks.js?v=20261112a2';
