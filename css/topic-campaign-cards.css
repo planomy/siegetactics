@@ -293,51 +293,12 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-flame-emoji {
   line-height: 1;
   transform: translateX(-50%);
   transform-origin: 50% 85%;
-  filter: drop-shadow(0 0 4px rgba(255, 90, 0, 0.85));
+  /* Soft heat glow + a crisp offset shadow so the flame sits off the pill. */
+  filter:
+    drop-shadow(0 0 3px rgba(255, 100, 0, 0.75))
+    drop-shadow(1px 2px 0 rgba(40, 10, 0, 0.55))
+    drop-shadow(0 3px 2px rgba(0, 0, 0, 0.45));
   animation: hot-flame-wobble 0.55s ease-in-out infinite alternate;
-}
-
-/* Dense spark spray: birth in the flame core, shoot up, then arc out. */
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-sparks {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: visible;
-  z-index: 4;
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-sparks i {
-  position: absolute;
-  left: 50%;
-  top: 48%;
-  width: 0.11em;
-  height: 0.11em;
-  margin: 0;
-  border-radius: 50%;
-  background: #fff8c8;
-  box-shadow: 0 0 3px 0.5px rgba(255, 210, 90, 0.95);
-  animation: hot-spark-arc var(--dur, 1s) cubic-bezier(0.15, 0.7, 0.25, 1) infinite;
-  animation-delay: calc(var(--delay, 0s) * -1);
-  opacity: 0;
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-sparks i:nth-child(3n) {
-  width: 0.08em;
-  height: 0.08em;
-  background: #ffe27a;
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-sparks i:nth-child(4n) {
-  width: 0.07em;
-  height: 0.07em;
-  background: #ff9a3a;
-  box-shadow: 0 0 2px rgba(255, 140, 40, 0.9);
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-sparks i:nth-child(5n) {
-  width: 0.13em;
-  height: 0.13em;
-  background: #ffffff;
 }
 
 /* Soft smoke wisps drifting up from the tip. */
@@ -406,30 +367,6 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
   100% { transform: translateX(-50%) scale(1.06, 0.96) rotate(5deg); }
 }
 
-/* Spurt up from the core, then peel sideways into an arc. */
-@keyframes hot-spark-arc {
-  0% {
-    transform: translate(-50%, 0.15em) scale(0.35);
-    opacity: 0;
-  }
-  8% {
-    transform: translate(-50%, -0.05em) scale(1);
-    opacity: 1;
-  }
-  35% {
-    transform: translate(calc(-50% + (var(--dx) * 0.35)), calc(var(--rise) * -0.55)) scale(0.85);
-    opacity: 1;
-  }
-  70% {
-    transform: translate(calc(-50% + (var(--dx) * 0.85)), calc(var(--rise) * -0.9)) scale(0.45);
-    opacity: 0.75;
-  }
-  100% {
-    transform: translate(calc(-50% + var(--dx)), calc(var(--rise) * -1)) scale(0.1);
-    opacity: 0;
-  }
-}
-
 @keyframes hot-smoke-a {
   0% { transform: translate(0, 0.15em) scale(0.6); opacity: 0; }
   20% { opacity: 0.55; }
@@ -492,7 +429,6 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
   body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card,
   body.mission-mode #screen-home .mission-all-topics .gb-topic-hot,
   body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-flame-emoji,
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-sparks i,
   body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke,
   body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::before,
   body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::after {
