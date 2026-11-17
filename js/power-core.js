@@ -65,14 +65,14 @@ export const FULLY_ARMED_LINES = [
 export function powerParticleCount(done) {
   // Deliberately capped: dozens of CSS particles, not hundreds of canvas draws.
   const progress = Math.max(0, Math.min(10, Math.floor(Number(done) || 0)));
-  return 2 + Math.round(progress * 3.6);
+  return 5 + Math.round(progress * 3.5);
 }
 
 /** @returns {string} Deterministic particles never jump positions on re-render. */
 function renderEnergyParticles() {
   return Array.from({ length: 40 }, (_, i) => {
     // Flat ellipses around the hat tip: wider than tall, staggered sizes.
-    const rx = 52 + ((i * 19) % 68);
+    const rx = Math.round((52 + ((i * 19) % 68)) * 1.4); // 40% wider path
     const ry = 9 + ((i * 13) % 12);
     const duration = (6.8 + (i % 7) * 0.9).toFixed(2);
     const delay = ((i * 0.43) % 8.5).toFixed(2);
