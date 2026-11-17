@@ -1,4 +1,4 @@
-import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20261114v1';
+import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20261118f4';
 import { makePlaceValueQuestion } from './place-value.js?v=20261118f1';
 import { makeLengthQuestion } from './measurement-length.js?v=20261114v1';
 import { makeFractionQuestion } from './fractions.js?v=20261114v1';

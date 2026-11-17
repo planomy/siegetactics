@@ -22,6 +22,8 @@ export const TIMES_TABLES = {
 };
 
 /**
+ * Focus tables only — easier tables drop out as the level rises so kids
+ * cannot farm ×2 / ×3 on higher years.
  * @param {DifficultyLevel} level
  * @returns {{ tables: number[], multMin: number, multMax: number, showMixed: boolean }}
  */
@@ -30,31 +32,32 @@ export function timesConfigForLevel(level) {
     return { tables: [2, 5, 10], multMin: 1, multMax: 10, showMixed: false };
   }
   if (level === 2) {
-    return { tables: [2, 3, 4, 5, 10], multMin: 1, multMax: 10, showMixed: false };
+    return { tables: [3, 4, 5, 10], multMin: 1, multMax: 10, showMixed: false };
   }
   if (level === 3) {
-    return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10], multMin: 1, multMax: 10, showMixed: true };
+    return { tables: [6, 7, 8, 9], multMin: 1, multMax: 10, showMixed: true };
   }
   if (level === 4) {
-    return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], multMin: 1, multMax: 12, showMixed: true };
+    return { tables: [6, 7, 8, 9, 10, 11, 12], multMin: 2, multMax: 12, showMixed: true };
   }
   if (level === 5) {
-    // The tricky facts: no ×1 or ×10 freebies.
-    return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], multMin: 2, multMax: 12, showMixed: true };
+    return { tables: [7, 8, 9, 10, 11, 12], multMin: 2, multMax: 12, showMixed: true };
   }
-  return { tables: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], multMin: 2, multMax: 15, showMixed: true };
+  return { tables: [8, 9, 10, 11, 12, 13, 14, 15], multMin: 2, multMax: 15, showMixed: true };
 }
 
 /**
- * @param {number} table 2–12, or 0 for mixed
+ * @param {number} table Focus table, or 0 for mixed within the level's focus set
  * @param {DifficultyLevel} level
  * @returns {{ a: number, b: number, answer: number, type: string, skill: string }}
  */
 export function makeTimesQuestion(table, level = 3) {
   const cfg = timesConfigForLevel(level);
-  const pick = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
-  const a = table > 0 ? table : pick(cfg.tables[0], cfg.tables[cfg.tables.length - 1]);
-  const b = pick(cfg.multMin, cfg.multMax);
+  const randInt = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+  const a = table > 0 && cfg.tables.includes(table)
+    ? table
+    : cfg.tables[Math.floor(Math.random() * cfg.tables.length)];
+  const b = randInt(cfg.multMin, cfg.multMax);
   return labelQuestion({ a, b, answer: a * b }, 'times-tables', `table-${a}`);
 }
 

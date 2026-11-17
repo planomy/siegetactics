@@ -8,7 +8,7 @@ import { makeExpandedQuestion } from '../js/expanded-maths.js';
 import { makePrepQuestion, PREP_MODULES } from '../js/battle-prep.js';
 import { createQuestSet } from '../js/maths-quest-data.js';
 import { makePlaceValueVariant } from '../js/missions-data.js';
-import { timesConfigForLevel } from '../js/times-tables.js';
+import { makeTimesQuestion, timesConfigForLevel } from '../js/times-tables.js';
 import { valuesMatch, sanitizeQuestionOptions } from '../js/question-options.js';
 
 const RUNS = 300;
@@ -83,8 +83,24 @@ test('maths quest and place value build at every level', () => {
 
 test('Year 2 has picture questions and gentle times tables; Year 7 goes beyond 12', () => {
   assert.deepEqual(timesConfigForLevel(1).tables, [2, 5, 10]);
-  assert.ok(timesConfigForLevel(6).tables.includes(15));
+  assert.deepEqual(timesConfigForLevel(2).tables, [3, 4, 5, 10]);
+  assert.deepEqual(timesConfigForLevel(3).tables, [6, 7, 8, 9]);
+  assert.deepEqual(timesConfigForLevel(4).tables, [6, 7, 8, 9, 10, 11, 12]);
+  assert.deepEqual(timesConfigForLevel(5).tables, [7, 8, 9, 10, 11, 12]);
+  assert.deepEqual(timesConfigForLevel(6).tables, [8, 9, 10, 11, 12, 13, 14, 15]);
+  assert.ok(!timesConfigForLevel(5).tables.includes(2));
+  assert.ok(!timesConfigForLevel(6).tables.includes(3));
   assert.notDeepEqual(timesConfigForLevel(4), timesConfigForLevel(5));
   const visuals = Array.from({ length: 200 }, () => makeExpandedQuestion('time', 1)).filter((q) => q.visual);
   assert.ok(visuals.length > 0 && visuals.every((q) => q.visual.startsWith('<svg') && q.key));
+});
+
+test('times-tables Mixed only draws from the level focus set', () => {
+  for (const level of [1, 2, 3, 4, 5, 6]) {
+    const allowed = new Set(timesConfigForLevel(/** @type {any} */ (level)).tables);
+    for (let i = 0; i < 40; i++) {
+      const q = makeTimesQuestion(0, /** @type {any} */ (level));
+      assert.ok(allowed.has(q.a), `L${level} mixed drew ×${q.a}`);
+    }
+  }
 });
