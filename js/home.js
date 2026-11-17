@@ -12,7 +12,7 @@ import {
 import { getQualifiedLevels, renderModuleLevelPips } from './level-mastery.js?v=20261116xp34';
 import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel, xpMultiplierFor, DIFFICULTY, isDifficultyLevel } from './difficulty.js?v=20261114k1';
-import { renderArmoryPromo } from './armory-promo.js?v=20261113m8';
+import { renderArmoryPromo } from './armory-promo.js?v=20261117e2';
 import { animateTally } from './tally.js';
 import { ENEMY_SPRITE_SRC, GRUNT_STATS, BOSS_STATS } from './enemies-data.js';
 

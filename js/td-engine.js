@@ -1,5 +1,5 @@
 import { TURRETS, TURRET_ORDER, TURRET_MAX_HP, loadTurretSprites, loadWreckedTurretSprites } from './turrets-data.js';
-import { effectiveTurret, turretLevel } from './turret-upgrades.js?v=20261117c1';
+import { effectiveTurret, turretLevel } from './turret-upgrades.js?v=20261117e2';
 import { AMMO, loadAmmoSprites } from './ammo-data.js?v=20261112a1';
 import { FIELD_LAYOUT, targetPathsForRow } from './field-layout.js?v=20261112a1';
 import { drawAlienPortalVfx } from './portal-vfx.js';

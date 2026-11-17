@@ -1,7 +1,7 @@
 import { TURRETS, TURRET_ORDER } from './turrets-data.js';
 import { ECONOMY } from './economy.js';
 import { formatUnlockXp, turretStatLine } from './shop.js';
-import { TURRET_MAX_LEVEL, effectiveTurret, nextUpgrade, turretLevel } from './turret-upgrades.js?v=20261117c1';
+import { TURRET_MAX_LEVEL, effectiveTurret, nextUpgrade, turretLevel } from './turret-upgrades.js?v=20261117e2';
 import { AMMO } from './ammo-data.js?v=20261112a1';
 import { GEAR, gearArt, gearStatus } from './gear.js?v=20261113a3';
 
@@ -96,22 +96,32 @@ function levelStars(id) {
 
 const coreText = (n) => `${n} alien crystal${n === 1 ? '' : 's'}`;
 
+/** Crystal price chip used on cards and upgrade buttons. @param {number} n */
+function crystalPriceChip(n) {
+  return `<span class="armory-upgrade-cost"><span class="core-gem" aria-hidden="true"></span>${n}</span>`;
+}
+
 /** @param {import('./turrets-data.js').TurretDef} t @param {number} xp @param {number} cores @param {boolean} isUnlocked */
 function armoryCardStatus(t, xp, cores, isUnlocked) {
   if (isUnlocked) {
     const up = nextUpgrade(t.id, cores, true);
-    if (up?.ready) return { tone: 'upgrade', label: `Upgrade to Lv ${up.level}`, detail: `Costs ${coreText(up.cost)}` };
-    if (up) return { tone: 'owned', label: `Lv ${turretLevel(t.id)}`, detail: `Lv ${up.level} costs ${coreText(up.cost)}` };
-    return { tone: 'owned', label: 'Max level', detail: `${t.placementCost} ${ECONOMY.siegeCoinsLabel} to deploy` };
+    if (up?.ready) {
+      return { tone: 'upgrade', label: `Upgrade to Lv ${up.level}`, detail: `Costs ${coreText(up.cost)}`, cost: up.cost };
+    }
+    if (up) {
+      return { tone: 'owned', label: `Lv ${turretLevel(t.id)}`, detail: `Lv ${up.level} costs ${coreText(up.cost)}`, cost: up.cost };
+    }
+    return { tone: 'owned', label: 'Max level', detail: `${t.placementCost} ${ECONOMY.siegeCoinsLabel} to deploy`, cost: null };
   }
   if (xp >= t.unlockXp) {
-    return { tone: 'unlock', label: 'Unlock now', detail: 'Permanent upgrade ready' };
+    return { tone: 'unlock', label: 'Unlock now', detail: 'Permanent upgrade ready', cost: null };
   }
   const need = t.unlockXp - xp;
   return {
     tone: 'locked',
     label: 'Locked',
     detail: `${need.toLocaleString()} more ${ECONOMY.forgeXpLabel}`,
+    cost: null,
   };
 }
 
@@ -146,12 +156,15 @@ function renderArmoryFeature(id, xp, cores, unlocked) {
     ? up?.ready ? `LEVEL ${up.level} READY!` : `LEVEL ${level}${level === TURRET_MAX_LEVEL ? ' · MAX POWER' : ''}`
     : ready ? 'READY TO UNLOCK' : `${(turret.unlockXp - xp).toLocaleString()} XP TO GO`;
   const role = turret.role ?? (turret.aoe ? 'splash' : 'attack');
-  const upgradeButton = up?.ready
-    ? `<button type="button" class="armory-upgrade-btn" data-upgrade-id="${id}">⚡ UPGRADE TO LEVEL ${up.level} <span class="armory-upgrade-cost"><span class="core-gem" aria-hidden="true"></span>${up.cost}</span></button>`
+  // Always show the crystal price — same pattern as Granny's Gear (BUY / NEED MORE).
+  const upgradeButton = up
+    ? `<button type="button" class="armory-upgrade-btn" data-upgrade-id="${id}" ${up.ready ? '' : 'disabled'}>
+        ${up.ready ? `⚡ UPGRADE TO LEVEL ${up.level}` : 'NEED MORE'} ${crystalPriceChip(up.cost)}
+      </button>`
     : '';
   const explain = owned
     ? up?.ready ? 'More damage, more range, faster shots. Power it up!'
-      : up ? `Level ${up.level} costs ${coreText(up.cost)}. Collect crystals by finishing 10-question missions and ranking up topics.`
+      : up ? `Level ${up.level} costs ${coreText(up.cost)}. You have ${coreText(cores)}. Collect crystals by finishing 10-question missions and ranking up topics.`
       : 'Fully upgraded. This turret is at maximum power.'
     : ready ? 'Select this weapon in the grid below to unlock it permanently.' : 'Keep doing maths and earning Forge XP to unlock this weapon.';
   return `
@@ -237,7 +250,9 @@ export function renderArmory(host, callbacks) {
         <span class="armory-card-name">${mystery ? '???' : t.name}</span>
         ${isUnlocked ? levelStars(id) : ''}
         <span class="armory-card-stat">${mystery ? 'Mystery weapon' : turretStatLine(isUnlocked ? effectiveTurret(id) : t)}</span>
-        <span class="armory-card-price">${isUnlocked ? 'Owned' : formatUnlockXp(t.unlockXp)}</span>
+        <span class="armory-card-price">${mystery ? '???' : isUnlocked
+          ? (status.cost != null ? crystalPriceChip(status.cost) : 'MAX')
+          : formatUnlockXp(t.unlockXp)}</span>
         <span class="armory-card-detail">${status.detail}</span>
       </button>
     `;
@@ -273,16 +288,18 @@ export function renderArmory(host, callbacks) {
     if (id) callbacks.onBuyGear?.(id);
   }));
 
-  const bindUpgrade = () => {
-    host.querySelector('.armory-upgrade-btn')?.addEventListener('click', (event) => {
-      const id = event.currentTarget.getAttribute('data-upgrade-id');
-      if (!id) return;
-      armoryPreviewId = id;
-      const level = turretLevel(id) + 1;
-      if (onUpgrade(id)) showToast(`${TURRETS[id].name} upgraded to level ${level}!`, { variant: 'success' });
-    });
-  };
-  bindUpgrade();
+  // One delegated listener — choose() used to re-bind on every preview and stack handlers.
+  host.addEventListener('click', (event) => {
+    const btn = /** @type {HTMLElement|null} */ (event.target instanceof Element
+      ? event.target.closest('[data-upgrade-id]')
+      : null);
+    if (!btn || btn.disabled || !host.contains(btn)) return;
+    const id = btn.getAttribute('data-upgrade-id');
+    if (!id) return;
+    armoryPreviewId = id;
+    const level = turretLevel(id) + 1;
+    if (onUpgrade(id)) showToast(`${TURRETS[id].name} upgraded to level ${level}!`, { variant: 'success' });
+  });
 
   host.querySelectorAll('.armory-card').forEach((btn) => {
     // iPad delivers the tap to the turret art and often drops the click, especially
@@ -296,12 +313,26 @@ export function renderArmory(host, callbacks) {
       armoryPreviewId = id;
       const preview = host.querySelector('#armory-feature-host');
       if (preview) preview.innerHTML = renderArmoryFeature(id, xp, cores, unlocked);
-      bindUpgrade();
       host.querySelectorAll('.armory-card').forEach((card) => {
         card.classList.toggle('armory-card--previewing', card === btn);
       });
-      if (unlocked.has(id) || xp < TURRETS[id].unlockXp) return;
-      if (onUnlock(id)) showToast(`${TURRETS[id].name} unlocked permanently!`, { variant: 'success' });
+      // Unlock-on-tap for new weapons. Owned turrets: upgrade-on-tap when affordable,
+      // otherwise say how many crystals short — so a tap never feels dead.
+      if (!unlocked.has(id)) {
+        if (xp < TURRETS[id].unlockXp) return;
+        if (onUnlock(id)) showToast(`${TURRETS[id].name} unlocked permanently!`, { variant: 'success' });
+        return;
+      }
+      const up = nextUpgrade(id, cores, true);
+      if (!up) return;
+      if (up.ready) {
+        if (onUpgrade(id)) showToast(`${TURRETS[id].name} upgraded to level ${up.level}!`, { variant: 'success' });
+        return;
+      }
+      showToast(
+        `Need ${up.short} more crystal${up.short === 1 ? '' : 's'} for ${TURRETS[id].name} level ${up.level} (${up.cost} total)`,
+        { variant: 'info' },
+      );
     };
     btn.addEventListener('pointerdown', (event) => {
       origin = { x: event.clientX, y: event.clientY, id: event.pointerId, type: event.pointerType };

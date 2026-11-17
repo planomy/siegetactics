@@ -60,6 +60,15 @@ export function anyUpgradeReady(cores, unlocked) {
   return [...unlocked].some((id) => nextUpgrade(id, cores, true)?.ready);
 }
 
+/** Crystals already spent to reach the saved levels (uses current price table). */
+export function crystalsSpentOnLevels(levels) {
+  return Object.values(levels || {}).reduce((sum, level) => {
+    if (level >= 3) return sum + UPGRADE_CORE_COST[2] + UPGRADE_CORE_COST[3];
+    if (level >= 2) return sum + UPGRADE_CORE_COST[2];
+    return sum;
+  }, 0);
+}
+
 /** @param {unknown} value */
 export function normalizeCores(value) {
   return Math.max(0, Math.floor(Number(value) || 0));

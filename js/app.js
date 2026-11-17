@@ -2,8 +2,8 @@ import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=
 import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261114v1';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261116b1';
-import { renderArmory } from './armory.js?v=20261117a1';
-import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel } from './turret-upgrades.js?v=20261117c1';
+import { renderArmory } from './armory.js?v=20261117e2';
+import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel, crystalsSpentOnLevels } from './turret-upgrades.js?v=20261117e2';
 import { createTDEngine } from './td-engine.js?v=20261115y50';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
 import { createAudio } from './audio.js?v=20261114s1';
@@ -31,7 +31,7 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261117e3';
+import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261117e4';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261117c9';
 import { initHowToPlay } from './how-to-play.js?v=20261117c1';
@@ -278,8 +278,10 @@ function loadSave() {
     data.turretLevels = normalizeTurretLevels(data.turretLevels);
     data.upgradeCores = normalizeCores(data.upgradeCores);
     // All-time crystals: what the player holds plus what they have already spent on upgrades.
-    const spent = Object.values(data.turretLevels).reduce((sum, level) => sum + (level >= 3 ? 3 : level >= 2 ? 1 : 0), 0);
-    data.crystalsCollected = Math.max(normalizeCores(data.crystalsCollected), data.upgradeCores + spent);
+    data.crystalsCollected = Math.max(
+      normalizeCores(data.crystalsCollected),
+      data.upgradeCores + crystalsSpentOnLevels(data.turretLevels),
+    );
     data.pausedSets = data.pausedSets && typeof data.pausedSets === 'object' && !Array.isArray(data.pausedSets) ? data.pausedSets : {};
     data.tips = {
       off: Boolean(data.tips?.off),

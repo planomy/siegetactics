@@ -418,9 +418,22 @@
   animation: upgrade-ready 1.4s ease-in-out infinite;
 }
 
-.armory-upgrade-btn:hover {
+.armory-upgrade-btn:hover:not(:disabled) {
   filter: brightness(1.1);
   transform: translateY(-1px) scale(1.02);
+}
+
+.armory-upgrade-btn:disabled {
+  animation: none;
+  cursor: not-allowed;
+  filter: grayscale(0.55) brightness(0.88);
+  background: linear-gradient(180deg, #8a8a92, #5a5a62);
+  color: #f2f2f4;
+  transform: none;
+}
+
+.armory-card-price .armory-upgrade-cost {
+  margin-left: 0;
 }
 
 @keyframes upgrade-ready {
