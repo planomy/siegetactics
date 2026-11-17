@@ -536,8 +536,7 @@ body.mission-mode .crystal-vault-sum b {
   color: #9dff7a;
 }
 
-/* Random Mission: the alien button art is the button. It bobs and glows instead of a box pulse,
-   because the alien pokes out above the pill. */
+/* Random Mission: alien button art — glow only, no grow/shrink. */
 body.mission-mode #screen-home #mission-start-mixed.mission-start-art {
   display: block;
   width: 100%;
@@ -547,7 +546,7 @@ body.mission-mode #screen-home #mission-start-mixed.mission-start-art {
   background: none;
   box-shadow: none;
   cursor: pointer;
-  animation: mission-art-pulse 1.8s ease-in-out infinite;
+  animation: mission-art-glow 1.8s ease-in-out infinite;
 }
 
 body.mission-mode #screen-home #mission-start-mixed.mission-start-art img {
@@ -561,17 +560,18 @@ body.mission-mode #screen-home #mission-start-mixed.mission-start-art img {
 
 body.mission-mode #screen-home #mission-start-mixed.mission-start-art:hover {
   animation-play-state: paused;
-  transform: translateY(-3px) scale(1.03);
+  transform: translateY(-3px);
   filter: brightness(1.12) drop-shadow(0 0 16px rgba(255, 180, 40, .8));
 }
 
 body.mission-mode #screen-home #mission-start-mixed.mission-start-art:active {
-  transform: scale(.97);
+  transform: translateY(0);
+  filter: brightness(0.98) drop-shadow(0 2px 8px rgba(255, 140, 0, .4));
 }
 
-@keyframes mission-art-pulse {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 4px 10px rgba(255, 140, 0, .35)); }
-  50% { transform: scale(1.025); filter: drop-shadow(0 0 18px rgba(255, 175, 40, .75)); }
+@keyframes mission-art-glow {
+  0%, 100% { filter: drop-shadow(0 4px 10px rgba(255, 140, 0, .35)); }
+  50% { filter: drop-shadow(0 0 18px rgba(255, 175, 40, .75)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -581,12 +581,12 @@ body.mission-mode #screen-home #mission-start-mixed.mission-start-art:active {
 
 /* The rare green Special Mission glows green so it stands out from the gold ones. */
 body.mission-mode #screen-home #mission-start-mixed.mission-start-art.is-special {
-  animation-name: mission-art-special;
+  animation-name: mission-art-special-glow;
 }
 
-@keyframes mission-art-special {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 4px 12px rgba(120, 255, 80, .45)); }
-  50% { transform: scale(1.035); filter: drop-shadow(0 0 24px rgba(140, 255, 90, .95)); }
+@keyframes mission-art-special-glow {
+  0%, 100% { filter: drop-shadow(0 4px 12px rgba(120, 255, 80, .45)); }
+  50% { filter: drop-shadow(0 0 24px rgba(140, 255, 90, .95)); }
 }
 
 body.mission-mode #screen-home #mission-start-mixed.mission-start-art.is-special {

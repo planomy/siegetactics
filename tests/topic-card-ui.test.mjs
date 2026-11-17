@@ -19,27 +19,22 @@ test('all ten cards are artwork-led without grey squircle borders or Done labels
   assert.match(home, /TOPIC_DISPLAY_ORDER/);
 });
 
-test('the hot-topic pill sits on the art and scales with the card, not the browser width', () => {
+test('the hot-topic mark is a big corner flame with bold 2× XP, scaled to the card', () => {
   assert.match(home, /\$\{art\}\$\{hotPill\}/);
-  assert.match(home, /gb-topic-hot-full/);
-  assert.match(home, /gb-topic-hot-short/);
   assert.match(home, /gb-topic-hot-flame/);
-  assert.match(home, /gb-topic-hot-smoke/);
-  assert.doesNotMatch(home, /gb-topic-hot-sparks/);
+  assert.match(home, /gb-topic-hot-label/);
+  assert.match(home, /2× XP/);
+  assert.doesNotMatch(home, /gb-topic-hot-full/);
+  assert.doesNotMatch(home, /gb-topic-hot-short/);
+  assert.doesNotMatch(home, /gb-topic-hot-smoke/);
   assert.match(css, /\.gb-story-art\s*\{[\s\S]*?container-type:\s*inline-size;/);
-  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?max-width:\s*78%;/);
-  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?11cqi/);
-  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?top:\s*10px;/);
-  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?background:\s*linear-gradient\(180deg, #4a4a4e, #2a2a2e\)/);
-  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?color:\s*#fff;/);
-  assert.match(css, /\.gb-topic-hot-full\s*\{\s*display:\s*none;/);
-  assert.match(css, /@container \(min-width: 200px\)/);
-  assert.match(css, /drop-shadow\(1px 2px 0/);
-  assert.match(css, /\.gb-topic-hot-flame\s*\{[\s\S]*?margin:\s*-1\.05em/);
-  assert.match(css, /\.gb-topic-hot-flame-emoji\s*\{[\s\S]*?font-size:\s*2\.15em/);
-  assert.match(css, /@keyframes hot-smoke-a/);
-  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?border:\s*2px solid #fff;/);
-  assert.doesNotMatch(css, /\.gb-topic-hot\s*\{[^}]*text-overflow:\s*ellipsis/);
+  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?top:\s*-4%;/);
+  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?right:\s*-6%;/);
+  assert.match(css, /\.gb-topic-hot\s*\{[\s\S]*?48cqi/);
+  assert.match(css, /\.gb-topic-hot-flame\s*\{[\s\S]*?44cqi/);
+  assert.match(css, /\.gb-topic-hot-label\s*\{[\s\S]*?font-family:\s*var\(--font-display\)/);
+  assert.match(css, /\.gb-topic-hot-label\s*\{[\s\S]*?12cqi/);
+  assert.doesNotMatch(css, /\.gb-topic-hot\s*\{[^}]*border:\s*2px solid #fff;/);
   assert.doesNotMatch(css, /\.gb-topic-hot\s*\{[^}]*\.76vw/);
 });
 

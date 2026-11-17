@@ -50,7 +50,7 @@ export const HOW_TO_QUESTIONS = [
     icon: '⬆️',
     q: 'What do crystals do?',
     a: [
-      'Spend them in the Armory to upgrade a turret. 1 crystal takes it to level 2, then 2 more take it to level 3.',
+      'Spend them in the Armory to upgrade a turret. Level 2 costs 3 crystals, and level 3 costs 6 — dearer as you climb.',
       'Upgraded turrets hit harder, reach further, fire faster and glow so everyone can see them.',
       'Your crystals sit in your Crystal Vault until you spend them. Collecting more upgrades the vault to Bronze, Silver, Gold and Legendary, and spending never downgrades it.',
     ],

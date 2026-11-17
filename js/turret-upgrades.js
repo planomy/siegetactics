@@ -8,8 +8,8 @@ import { TURRETS } from './turrets-data.js';
 
 export const TURRET_MAX_LEVEL = 3;
 
-/** Upgrade cores each level costs. */
-export const UPGRADE_CORE_COST = { 2: 1, 3: 2 };
+/** Alien crystals each star costs — dearer at higher levels. */
+export const UPGRADE_CORE_COST = { 2: 3, 3: 6 };
 
 /** Stat multipliers per level: power (damage and support effects), reach (range and splash), speed (time between shots). */
 const BOOST = {

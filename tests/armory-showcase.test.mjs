@@ -6,7 +6,7 @@ import { TURRET_ORDER, TURRETS, STARTER_TURRETS } from '../js/turrets-data.js';
 import { powerParticleCount } from '../js/power-core.js';
 
 test('a new player keeps level 1 turret stats and a single earned star', async () => {
-  const { setTurretLevels, turretLevel, effectiveTurret } = await import('../js/turret-upgrades.js?v=20261112a2');
+  const { setTurretLevels, turretLevel, effectiveTurret } = await import('../js/turret-upgrades.js?v=20261117c1');
   setTurretLevels(null);
   assert.equal(turretLevel('granny-blaster'), 1);
   assert.equal(turretLevel('boom-gnome'), 1);
@@ -49,7 +49,7 @@ test('after owning a weapon, the advert advances to the next locked turret', () 
 });
 
 test('the Armory promotion celebrates a complete collection once every turret is maxed', async () => {
-  const { setTurretLevels } = await import('../js/turret-upgrades.js?v=20261112a2');
+  const { setTurretLevels } = await import('../js/turret-upgrades.js?v=20261117c1');
   const result = armoryPromoState(99999, new Set(TURRET_ORDER));
   assert.equal(result.complete, true);
   setTurretLevels(Object.fromEntries(TURRET_ORDER.map((id) => [id, 3])));

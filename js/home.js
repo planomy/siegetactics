@@ -44,7 +44,7 @@ function renderTrainingCards(gate, attack, levelMastery, mapProgress, selectedTo
         ? `<img class="gb-story-art-img" src="${topic.moduleArt}" alt="" width="400" height="400" loading="lazy" />`
         : `<span class="gb-story-art-emoji">${topic.emoji}</span>`;
       const hotPill = hot
-        ? '<span class="gb-topic-hot" aria-hidden="true"><span class="gb-topic-hot-flame"><span class="gb-topic-hot-flame-emoji">🔥</span><span class="gb-topic-hot-smoke"></span></span><span class="gb-topic-hot-full">HOT TOPIC · 2× XP</span><span class="gb-topic-hot-short">2× XP</span></span>'
+        ? '<span class="gb-topic-hot" aria-hidden="true"><span class="gb-topic-hot-flame">🔥</span><strong class="gb-topic-hot-label">2× XP</strong></span>'
         : '';
       const shieldNote = earned
         ? `${earned} of 6 level shields earned`

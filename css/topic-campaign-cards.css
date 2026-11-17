@@ -232,157 +232,89 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card .gb-l
   filter: drop-shadow(0 0 4px rgba(255, 200, 80, 0.75));
 }
 
-/* Today's hot topic: a flame banner across the top of the art and a warm glow. */
+/* Today's hot topic: big corner flame with bold 2× XP in the fire. */
 body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card.is-hot .gb-story-art-img {
   filter: drop-shadow(0 0 10px rgba(255, 140, 40, .75));
 }
 
 body.mission-mode #screen-home .mission-all-topics .gb-topic-hot {
   position: absolute;
-  /* Sit on the grey metal / hazard stripe rim at the top of the card art. */
-  top: 10px;
-  left: 50%;
+  top: -4%;
+  right: -6%;
   z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.12em;
-  box-sizing: border-box;
-  max-width: 78%;
-  padding: 0.28em 0.72em 0.28em 0.28em;
-  border: 2px solid #fff;
-  border-radius: 999px;
-  overflow: visible;
-  background: linear-gradient(180deg, #4a4a4e, #2a2a2e);
-  color: #fff;
-  /* Scale with the card art (cqi), not the browser width (vw). */
-  font-size: clamp(0.62rem, 11cqi, 1.05rem);
-  font-weight: 900;
-  letter-spacing: 0.02em;
-  line-height: 1.15;
-  white-space: nowrap;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.45),
-    0 2px 8px rgba(0, 0, 0, 0.55);
-  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  width: clamp(3.4rem, 48cqi, 5.8rem);
+  height: clamp(3.4rem, 48cqi, 5.8rem);
   pointer-events: none;
-  animation: hot-flicker 1.6s ease-in-out infinite;
+  transform-origin: 50% 70%;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55));
+  animation: hot-flame-pulse 1.1s ease-in-out infinite alternate;
 }
 
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::before,
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::after {
-  content: none;
-}
-
-/* Real emoji flame + rising smoke — tip clears the pill’s top border. */
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-flame {
-  position: relative;
-  flex: 0 0 auto;
-  width: 1.85em;
-  height: 2.35em;
-  margin: -1.05em 0.06em -0.4em -0.28em;
-  overflow: visible;
-  z-index: 3;
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-flame-emoji {
-  position: absolute;
-  left: 50%;
-  bottom: -0.1em;
-  display: block;
-  font-size: 2.15em;
+/* Flame-shaped glow: blurred twin of the emoji, orange/red pulse behind. */
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::before {
+  content: '🔥';
+  grid-area: 1 / 1;
+  font-size: clamp(3rem, 44cqi, 5.2rem);
   line-height: 1;
-  transform: translateX(-50%);
+  transform: scale(1.22);
   transform-origin: 50% 85%;
-  /* Soft heat glow + a crisp offset shadow so the flame sits off the pill. */
   filter:
-    drop-shadow(0 0 3px rgba(255, 100, 0, 0.75))
-    drop-shadow(1px 2px 0 rgba(40, 10, 0, 0.55))
-    drop-shadow(0 3px 2px rgba(0, 0, 0, 0.45));
-  animation: hot-flame-wobble 0.55s ease-in-out infinite alternate;
-}
-
-/* Soft smoke wisps drifting up from the tip. */
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke,
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::before,
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::after {
-  content: '';
-  position: absolute;
-  left: 42%;
-  top: -0.35em;
-  width: 0.55em;
-  height: 0.7em;
-  border-radius: 60% 40% 55% 45%;
-  background: radial-gradient(ellipse at 50% 70%, rgba(220, 220, 230, 0.45) 0%, rgba(180, 180, 190, 0.18) 45%, transparent 72%);
-  filter: blur(1.5px);
+    blur(10px)
+    saturate(2.4)
+    brightness(1.15);
+  opacity: 0.55;
+  z-index: 0;
   pointer-events: none;
+  animation: hot-glow-pulse 1.15s ease-in-out infinite alternate;
 }
 
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke {
-  animation: hot-smoke-a 2.4s ease-out infinite;
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-flame {
+  grid-area: 1 / 1;
+  z-index: 1;
+  display: block;
+  font-size: clamp(3rem, 44cqi, 5.2rem);
+  line-height: 1;
 }
 
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::before {
-  left: 0.1em;
-  top: 0.05em;
-  width: 0.45em;
-  height: 0.55em;
-  animation: hot-smoke-b 2.8s ease-out infinite 0.6s;
+body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-label {
+  grid-area: 1 / 1;
+  z-index: 2;
+  margin: 0;
+  padding-top: 0.55em;
+  font-family: var(--font-display);
+  font-size: clamp(0.72rem, 12cqi, 1.15rem);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow:
+    0 0 2px #3a0a00,
+    0 1px 0 #5a1000,
+    1px 1px 0 #5a1000,
+    -1px 1px 0 #5a1000,
+    1px -1px 0 #5a1000,
+    -1px -1px 0 #5a1000,
+    0 0 10px rgba(255, 200, 80, 0.9);
 }
 
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::after {
-  left: -0.15em;
-  top: 0.1em;
-  width: 0.4em;
-  height: 0.5em;
-  animation: hot-smoke-c 2.2s ease-out infinite 1.1s;
+@keyframes hot-flame-pulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
 }
 
-/* Default to the short label so Chrome on a windowed laptop never shows "HOT TOPI…". */
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-full {
-  display: none;
-}
-
-body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
-  display: inline;
-}
-
-/* Fullscreen / big cards only: room for the full wording. */
-@container (min-width: 200px) {
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-full {
-    display: inline;
+@keyframes hot-glow-pulse {
+  0% {
+    opacity: 0.4;
+    filter: blur(9px) saturate(2.2) brightness(1.05);
   }
-
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
-    display: none;
+  100% {
+    opacity: 0.95;
+    filter: blur(14px) saturate(2.8) brightness(1.35);
   }
-}
-
-@keyframes hot-flicker {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.5); }
-  50% { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 2px 12px rgba(0, 0, 0, 0.7), 0 0 10px rgba(255, 255, 255, 0.12); }
-}
-
-@keyframes hot-flame-wobble {
-  0% { transform: translateX(-50%) scale(1) rotate(-4deg); }
-  100% { transform: translateX(-50%) scale(1.06, 0.96) rotate(5deg); }
-}
-
-@keyframes hot-smoke-a {
-  0% { transform: translate(0, 0.15em) scale(0.6); opacity: 0; }
-  20% { opacity: 0.55; }
-  100% { transform: translate(0.35em, -1.35em) scale(1.35); opacity: 0; }
-}
-
-@keyframes hot-smoke-b {
-  0% { transform: translate(0, 0.1em) scale(0.5); opacity: 0; }
-  25% { opacity: 0.4; }
-  100% { transform: translate(-0.4em, -1.5em) scale(1.5); opacity: 0; }
-}
-
-@keyframes hot-smoke-c {
-  0% { transform: translate(0, 0.2em) scale(0.55); opacity: 0; }
-  22% { opacity: 0.35; }
-  100% { transform: translate(0.15em, -1.2em) scale(1.25); opacity: 0; }
 }
 
 /* Desktop dashboard: two rows of five share the height Maths HQ has left (see
@@ -428,10 +360,7 @@ body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-short {
 @media (prefers-reduced-motion: reduce) {
   body.mission-mode #screen-home .mission-all-topics .gb-topic-campaign-card,
   body.mission-mode #screen-home .mission-all-topics .gb-topic-hot,
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-flame-emoji,
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke,
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::before,
-  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot-smoke::after {
+  body.mission-mode #screen-home .mission-all-topics .gb-topic-hot::before {
     transition: none;
     animation: none;
   }

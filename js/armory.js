@@ -1,9 +1,12 @@
 import { TURRETS, TURRET_ORDER } from './turrets-data.js';
 import { ECONOMY } from './economy.js';
 import { formatUnlockXp, turretStatLine } from './shop.js';
-import { TURRET_MAX_LEVEL, effectiveTurret, nextUpgrade, turretLevel } from './turret-upgrades.js?v=20261112a2';
+import { TURRET_MAX_LEVEL, effectiveTurret, nextUpgrade, turretLevel } from './turret-upgrades.js?v=20261117c1';
 import { AMMO } from './ammo-data.js?v=20261112a1';
 import { GEAR, gearArt, gearStatus } from './gear.js?v=20261113a3';
+
+/** Which turret the player last previewed — kept across upgrade re-renders. */
+let armoryPreviewId = /** @type {string|null} */ (null);
 
 /** @param {number} n */
 function crystalText(n) {
@@ -192,7 +195,12 @@ export function renderArmory(host, callbacks) {
   const nextT = next ? TURRETS[next] : null;
   const canUnlockNow = nextUnlockableTurret(xp, unlocked);
   const upgradeReady = TURRET_ORDER.find((id) => nextUpgrade(id, cores, unlocked.has(id))?.ready) ?? null;
-  const featuredId = upgradeReady ?? canUnlockNow ?? next ?? TURRET_ORDER[TURRET_ORDER.length - 1];
+  const featuredId =
+    (armoryPreviewId && TURRETS[armoryPreviewId] ? armoryPreviewId : null)
+    ?? upgradeReady
+    ?? canUnlockNow
+    ?? next
+    ?? TURRET_ORDER[TURRET_ORDER.length - 1];
 
   let headline = `${owned} / ${TURRET_ORDER.length} turrets in your arsenal`;
   if (upgradeReady) {
@@ -217,7 +225,7 @@ export function renderArmory(host, callbacks) {
     return `
       <button
         type="button"
-        class="armory-card armory-card--${status.tone}${canUnlock || status.tone === 'upgrade' ? ' armory-card--ready' : ''} armory-level-${level}"
+        class="armory-card armory-card--${status.tone}${canUnlock || status.tone === 'upgrade' ? ' armory-card--ready' : ''}${id === featuredId ? ' armory-card--previewing' : ''} armory-level-${level}"
         data-turret-id="${id}"
         style="--turret-color: ${t.color}"
         aria-label="View ${mystery ? 'mystery turret' : t.name}${canUnlock ? ', ready to unlock' : ''}${status.tone === 'upgrade' ? ', upgrade ready' : ''}"
@@ -269,6 +277,7 @@ export function renderArmory(host, callbacks) {
     host.querySelector('.armory-upgrade-btn')?.addEventListener('click', (event) => {
       const id = event.currentTarget.getAttribute('data-upgrade-id');
       if (!id) return;
+      armoryPreviewId = id;
       const level = turretLevel(id) + 1;
       if (onUpgrade(id)) showToast(`${TURRETS[id].name} upgraded to level ${level}!`, { variant: 'success' });
     });
@@ -284,6 +293,7 @@ export function renderArmory(host, callbacks) {
     const choose = () => {
       const id = btn.getAttribute('data-turret-id');
       if (!id || !TURRETS[id]) return;
+      armoryPreviewId = id;
       const preview = host.querySelector('#armory-feature-host');
       if (preview) preview.innerHTML = renderArmoryFeature(id, xp, cores, unlocked);
       bindUpgrade();
