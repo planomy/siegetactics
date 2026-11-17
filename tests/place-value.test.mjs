@@ -5,7 +5,7 @@ import { PLACE_VALUE_LAB, makePlaceValueQuestion, initPlaceValue } from '../js/p
 import { sanitizeQuestionOptions, valuesMatch } from '../js/question-options.js';
 import { MATH_TOPICS } from '../js/topics-data.js';
 
-test('Place Value Patrol is a 10-question drill, not a one-puzzle forge', () => {
+test('Place Value is a 10-question drill, not a one-puzzle forge', () => {
   assert.equal(PLACE_VALUE_LAB.questionsPerSession, 10);
   const topic = MATH_TOPICS.find((t) => t.id === 'place-value-siege');
   assert.equal(topic?.trainingMode, 'drill');

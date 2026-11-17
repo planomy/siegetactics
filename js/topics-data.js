@@ -36,8 +36,8 @@ export const MATH_TOPICS = [
   },
   {
     id: 'place-value-siege',
-    title: 'Place Value Patrol',
-    subtitle: 'Forge digits into place',
+    title: 'Place Value',
+    subtitle: 'Digits, places & totals',
     emoji: '🔢',
     strand: 'Number',
     available: true,

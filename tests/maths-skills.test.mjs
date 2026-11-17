@@ -70,7 +70,7 @@ test('Battle Prep questions from every module are labelled', () => {
   }
 });
 
-test('Place Value Patrol slots and totals are labelled', () => {
+test('Place Value slots and totals are labelled', () => {
   for (const level of LEVELS) {
     const mission = makePlaceValueVariant(level);
     for (const slot of mission.slots) assert.equal(slot.skill, 'number.place-value');

@@ -291,7 +291,7 @@ export const QUESTION_TYPES = {
   'times-tables:square-number': 'number.indices',
   'times-tables:square-root': 'number.indices',
 
-  // Place Value Patrol
+  // Place Value
   'place-value-siege:digit-value': 'number.place-value',
   'place-value-siege:total': 'number.place-value',
 };

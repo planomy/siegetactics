@@ -13,7 +13,7 @@ export const MISSIONS = [
   {
     id: 'number-place-value-patrol',
     strand: 'number',
-    title: 'Place Value Patrol',
+    title: 'Place Value',
     level: 1,
     acCodes: ['AC9M5N01'],
     proficiency: ['problem-solving', 'fluency'],
@@ -68,7 +68,7 @@ export function getMission(id) {
 }
 
 /**
- * Place Value Patrol rewards by the original three tiers; the digits come from PLACE_VALUE_ROLES (Years 2–7).
+ * Place Value rewards by the original three tiers; the digits come from PLACE_VALUE_ROLES (Years 2–7).
  * @type {Record<DifficultyLevel, Pick<Mission, 'opener'|'slots'|'lockIn'|'grannyHints'|'rewards'>>}
  */
 export const PLACE_VALUE_BY_DIFFICULTY = {

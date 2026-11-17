@@ -1,5 +1,5 @@
 /**
- * Place Value Patrol — ten multiple-choice questions, same pattern as Length Lab
+ * Place Value — ten multiple-choice questions, same pattern as Length Lab
  * and Fractions (not the old one-puzzle forge).
  */
 
@@ -114,7 +114,7 @@ export function makePlaceValueQuestion(level) {
  */
 export function initPlaceValue(host, callbacks) {
   return initDrillSession(host, {
-    title: 'Place Value Patrol',
+    title: 'Place Value',
     missionTag: 'Number · Place value',
     quizTag: 'Digits, places & totals',
     difficultyLevel: callbacks.difficultyLevel,

@@ -39,7 +39,7 @@ import { initTimesTables } from './times-tables.js?v=20261118a4';
 import { initMeasurementLength } from './measurement-length.js?v=20261118e5';
 import { initFractions } from './fractions.js?v=20261116xp1';
 import { initAnglesShapes } from './angles-shapes.js?v=20261116xp1';
-import { initPlaceValue } from './place-value.js?v=20261118f1';
+import { initPlaceValue } from './place-value.js?v=20261118f2';
 import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261118a1';
 import { initExpandedMath } from './expanded-maths.js?v=20261116xp1';
 import { initBattlePrep } from './battle-prep.js?v=20261118f1';
@@ -55,7 +55,7 @@ import {
   defaultMapProgress, normalizeMapProgress, allMapPiecesEarned, mapPiecesEarned,
   TRAINING_MODULE_IDS, fillMapSeason, homelandMaxLevel,
 } from './map-progress.js?v=20261117f1';
-import { getTopic } from './topics-data.js?v=20261113h1';
+import { getTopic } from './topics-data.js?v=20261118f2';
 import { normalizeTopicProgress, recordTopicAnswer, recordTopicSession, getTopicRecord, topicRankProgress } from './topic-progression.js?v=20261114k1';
 import {
   defaultTrainingGate,
