@@ -39,9 +39,10 @@ import { initTimesTables } from './times-tables.js?v=20261118a4';
 import { initMeasurementLength } from './measurement-length.js?v=20261118e5';
 import { initFractions } from './fractions.js?v=20261116xp1';
 import { initAnglesShapes } from './angles-shapes.js?v=20261116xp1';
+import { initPlaceValue } from './place-value.js?v=20261118f1';
 import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261118a1';
 import { initExpandedMath } from './expanded-maths.js?v=20261116xp1';
-import { initBattlePrep } from './battle-prep.js?v=20261118a4';
+import { initBattlePrep } from './battle-prep.js?v=20261118f1';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js?v=20261114k1';
 import {
   normalizeLevelMastery,
@@ -193,6 +194,7 @@ const screens = {
   timesTables: document.getElementById('screen-times-tables'),
   measurement: document.getElementById('screen-measurement'),
   fractions: document.getElementById('screen-fractions'),
+  placeValue: document.getElementById('screen-place-value'),
   angles: document.getElementById('screen-angles'),
   mathsQuest: document.getElementById('screen-maths-quest'),
   expanded: document.getElementById('screen-expanded'),
@@ -1191,9 +1193,7 @@ function completeTrainingSession(moduleId, level, accuracy) {
   save.mapProgress = result.mapProgress;
   creditTopicSession(moduleId, accuracy);
 
-  // Topic drills were credited live by their answer callbacks.
-  // Place Value is a one-puzzle forge, so it earns three answers' worth on success.
-  if (moduleId === 'place-value-siege') creditTrainingAnswer(true, level, 3);
+  // Topic drills (including Place Value) credit answers live via onAnswer.
   if (accuracy >= GATE.passAccuracy) noteMissionMix('topic');
   persistSave();
   refreshMissionControl();
@@ -1302,7 +1302,7 @@ function noteMissionMix(kind) {
   }
 }
 
-const TOPIC_SCREENS = new Set(['timesTables', 'measurement', 'fractions', 'angles', 'mathsQuest', 'expanded']);
+const TOPIC_SCREENS = new Set(['timesTables', 'measurement', 'fractions', 'placeValue', 'angles', 'mathsQuest', 'expanded']);
 
 /** The might builder just filled during a topic set: the battle comes once the set is finished. */
 function showChargedBanner() {
@@ -1495,12 +1495,9 @@ function makeDashboardState() {
         showMathsQuest();
         return;
       }
-      if (topic.trainingMode === 'forge' && topic.unitId) {
-        showForgeTraining(topic);
-        return;
-      }
       if (topic.trainingMode === 'drill') {
-        if (topicId === 'measurement-length') showMeasurementLength();
+        if (topicId === 'place-value-siege') showPlaceValue();
+        else if (topicId === 'measurement-length') showMeasurementLength();
         else if (topicId === 'fractions') showFractions();
         else if (topicId === 'angles') showAnglesShapes();
         else if (['operations', 'decimals-percent', 'time', 'mass-capacity'].includes(topicId)) showExpandedMath(topicId);
@@ -1944,38 +1941,28 @@ function creditTopicTraining(topic) {
   return creditGateModule(topic.id, 1);
 }
 
-/** @param {import('./topics-data.js').MathTopic} topic */
-function showForgeTraining(topic) {
-  // This one-puzzle forge has a larger XP reward; credit it only once per siege.
-  if (isTopicDone(save.trainingGate, topic.id)) {
-    showToast('Place Value already rewarded this siege. Try another maths mission or defend Granny!');
-    return;
-  }
-  const forgeHost = document.getElementById('forge-host');
-  if (!forgeHost) return;
-  const mission = getActiveMission();
-  if (!mission) return;
-  initForge(forgeHost, {
-    mission,
-    difficultyLevel: getDifficultyLevel(),
-    trainingMode: true,
-    onBack: showHome,
-    showToast,
-    onSuccess(rewards) {
-      const level = getDifficultyLevel();
-      const scaled = scaleTrainingXp(rewards.forgeXp, level);
-      if (scaled > 0) {
-        awardForgeXp(scaled, `Place Value · ${xpMultiplierLabel(level)}`);
-      }
-      creditTopicAnswer('place-value-siege', level, true);
-      completeTrainingSession('place-value-siege', level, 1);
-      if (!creditTopicTraining(topic) && !isTopicDone(save.trainingGate, topic.id)) {
-        showToast('Training finished, but it did not count toward the gate — try again.', { variant: 'shop' });
-      }
-      showHome();
+function showPlaceValue() {
+  const host = document.getElementById('place-value-host');
+  if (!host) return;
+  disposeActiveTraining?.();
+  disposeActiveTraining = null;
+  const training = createTrainingHandlers('place-value-siege');
+  disposeActiveTraining = initPlaceValue(host, {
+    difficultyLevel: training.difficultyLevel,
+    onAwardXp: training.onAwardXp,
+    onAnswer: training.onAnswer,
+    onSessionComplete({ accuracy }) {
+      training.onSessionComplete(accuracy);
+      creditGateModule('place-value-siege', accuracy);
     },
+    onHome: () => disposeTrainingAndGoHome(training.onHome),
+    siegeReady: training.siegeReady,
+    onAction: training.onAction,
+    showToast: training.showToast,
+    resume: training.resume,
+    onProgress: training.onProgress,
   });
-  showScreen('forge');
+  showScreen('placeValue');
 }
 
 function startWelcome() {

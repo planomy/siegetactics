@@ -1,5 +1,5 @@
 import { makeTimesQuestion, timesConfigForLevel } from './times-tables.js?v=20261114v1';
-import { makePlaceValueVariant } from './missions-data.js?v=20261114v1';
+import { makePlaceValueQuestion } from './place-value.js?v=20261118f1';
 import { makeLengthQuestion } from './measurement-length.js?v=20261114v1';
 import { makeFractionQuestion } from './fractions.js?v=20261114v1';
 import { makeAnglesQuestion } from './angles-shapes.js?v=20261115p1';
@@ -85,23 +85,11 @@ function timesQuestion(level, cycle) {
   };
 }
 
-/** @param {number} level */
-function placeValueQuestion(level) {
-  const mission = makePlaceValueVariant(level);
-  const slot = mission.slots[Math.floor(Math.random() * mission.slots.length)];
-  const answer = Number(slot.options[slot.correctIndex]);
-  return labelQuestion({
-    prompt: `In ${mission.lockIn.value.toLocaleString()}, what is the value of the ${slot.role.toLowerCase()} digit?`,
-    answer,
-    options: shuffle(slot.options.map((value) => ({ label: Number(value).toLocaleString(), value: Number(value) }))),
-  }, 'place-value-siege', 'digit-value');
-}
-
 /** @param {string} moduleId @param {number} level @param {number} cycle */
 export function makePrepQuestion(moduleId, level, cycle = 0) {
   let question;
   if (moduleId === 'times-tables') question = timesQuestion(level, cycle);
-  else if (moduleId === 'place-value-siege') question = placeValueQuestion(level);
+  else if (moduleId === 'place-value-siege') question = makePlaceValueQuestion(level);
   else if (moduleId === 'measurement-length') question = makeLengthQuestion(level);
   else if (moduleId === 'fractions') question = makeFractionQuestion(level);
   else if (moduleId === 'angles') question = makeAnglesQuestion(level);

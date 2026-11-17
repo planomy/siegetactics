@@ -44,7 +44,7 @@ export const MATH_TOPICS = [
     earnsXp: true,
     gateEligible: true,
     unitId: 'number-place-value-patrol',
-    trainingMode: 'forge',
+    trainingMode: 'drill',
     moduleArt: 'assets/topics/cards/place-value-siege.png?v=1',
   },
   {

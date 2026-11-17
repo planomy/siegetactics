@@ -61,11 +61,13 @@ test('topic stats persist separately from Forge XP and existing level mastery', 
   assert.match(app, /creditForgeXp\(result\.bonusForgeXp\)/);
 });
 
-test('standalone questions, mixed questions, and forge successes all advance the right topic', () => {
+test('standalone questions, mixed questions, and place-value drills all advance the right topic', () => {
   assert.match(app, /creditTopicAnswer\(moduleId, level, right\)/);
   assert.match(mixed, /callbacks\.onAnswer\?\.\(right, item\.moduleId\)/);
   assert.match(app, /onAnswer: \(right, moduleId\) => creditMixedAnswer\(right, moduleId, level\)/);
-  assert.match(app, /creditTopicAnswer\(\'place-value-siege\', level, true\)/);
+  assert.match(app, /initPlaceValue/);
+  assert.match(app, /showPlaceValue/);
+  assert.match(app, /creditGateModule\('place-value-siege'/);
 });
 
 test('fresh CSS and script modules are loaded for the shield board', () => {
