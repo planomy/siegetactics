@@ -420,7 +420,7 @@ export function initMeasurementLength(host, callbacks) {
     const opts = q.options
       .map(
         (o) =>
-          `<button type="button" class="times-answer-btn length-opt" data-value="${o.value}">${o.label}</button>`
+          `<button type="button" class="times-answer-btn length-opt" data-value="${escapeAttr(String(o.value))}">${escapeHtml(String(o.label))}</button>`
       )
       .join('');
 
@@ -536,4 +536,18 @@ export function initMeasurementLength(host, callbacks) {
     disposed = true;
     clearAnswerTimer();
   };
+}
+
+/** @param {string} s */
+function escapeAttr(s) {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** @param {string} s */
+function escapeHtml(s) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
