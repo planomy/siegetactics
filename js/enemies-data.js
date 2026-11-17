@@ -18,16 +18,16 @@ export const ENEMY_SPRITE_SRC = {
 
 /** Per-alien combat stats — each ship class has its own HP and pace. */
 export const GRUNT_STATS = {
-  monster1: { hp: 22, speed: 0.052, codename: 'Scout Skiff' },
-  monster2: { hp: 38, speed: 0.047, codename: 'Skirmisher' },
-  monster3: { hp: 58, speed: 0.043, codename: 'Raider' },
-  monster4: { hp: 88, speed: 0.038, codename: 'Bruiser' },
-  monster5: { hp: 128, speed: 0.033, codename: 'Heavy Cruiser' },
+  monster1: { hp: 30, speed: 0.052, codename: 'Scout Skiff' },
+  monster2: { hp: 51, speed: 0.047, codename: 'Skirmisher' },
+  monster3: { hp: 78, speed: 0.043, codename: 'Raider' },
+  monster4: { hp: 119, speed: 0.038, codename: 'Bruiser' },
+  monster5: { hp: 173, speed: 0.033, codename: 'Heavy Cruiser' },
 };
 
 export const BOSS_STATS = {
-  mothership: { hp: 420, speed: 0.028, codename: 'Mothership' },
-  granddaddy: { hp: 720, speed: 0.025, codename: 'Granddaddy' },
+  mothership: { hp: 567, speed: 0.028, codename: 'Mothership' },
+  granddaddy: { hp: 972, speed: 0.025, codename: 'Granddaddy' },
 };
 
 /**

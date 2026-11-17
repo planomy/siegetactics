@@ -7,7 +7,7 @@ import { buildPlacementCells, pickPlacementCell } from './placement-grid.js?v=20
 import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed } from './enemies-data.js';
 import { getFieldImage, preloadField } from './preload.js?v=20261114t1';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
-import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261115w1';
+import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261118w1';
 import { ECONOMY } from './economy.js';
 import {
   MAZE_LAYOUT,

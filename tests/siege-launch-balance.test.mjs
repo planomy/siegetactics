@@ -35,6 +35,23 @@ test('new players get 18 slightly slower first-wave enemies', () => {
   assert.equal(waveConfigFor(2, { firstSiege: true }).totalSpawns, waveConfigFor(2).totalSpawns);
 });
 
+test('later waves get tougher and denser, and drop scout fillers', () => {
+  const w1 = waveConfigFor(1);
+  const w3 = waveConfigFor(3);
+  const w5 = waveConfigFor(5);
+  const w6 = waveConfigFor(6);
+  assert.ok(w3.hpScale > w1.hpScale);
+  assert.ok(w5.hpScale > w3.hpScale);
+  assert.ok(w6.hpScale >= 2, 'wave 6 is at least double base HP scale');
+  assert.ok(w5.totalSpawns > w1.totalSpawns, 'mid siege sends more aliens');
+  assert.ok(w6.totalSpawns > w5.totalSpawns, 'full assault grows further');
+  assert.ok(w5.hpRamp >= 0.04);
+  for (const wave of [4, 5, 6, 7]) {
+    const cfg = waveConfigFor(wave);
+    assert.ok(!cfg.spawnQueue.some((slot) => slot.unit === 'monster1'), `wave ${wave} has no scouts`);
+  }
+});
+
 test('the horde grows with siege rank, gently, and never on the first siege', () => {
   const totals = [0, 1, 2, 3, 4, 5].map((rank) => openingHorde({ rank }).total);
   assert.deepEqual(totals.slice(0, 2), [24, 24], 'no rank and Recruit face the usual opening');

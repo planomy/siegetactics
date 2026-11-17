@@ -64,7 +64,7 @@ const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
     burstSize: 5,
     burstGap: 1.55,
     speedMul: 1.0,
-    hpRamp: 0.015,
+    hpRamp: 0.04,
   },
   {
     codename: 'Skirmish Line',
@@ -78,7 +78,7 @@ const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
     burstSize: 5,
     burstGap: 1.45,
     speedMul: 1.03,
-    hpRamp: 0.018,
+    hpRamp: 0.04,
   },
   {
     codename: 'Twin Pincer',
@@ -93,9 +93,10 @@ const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
     burstSize: 5,
     burstGap: 1.35,
     speedMul: 1.06,
-    hpRamp: 0.02,
+    hpRamp: 0.04,
   },
   {
+    // Wave 4+ — no Scout Skiffs; kids must face real armour.
     codename: 'Heavy Push',
     squads: [
       { unit: 'monster2', count: 7 },
@@ -108,7 +109,7 @@ const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
     burstSize: 5,
     burstGap: 1.25,
     speedMul: 1.09,
-    hpRamp: 0.022,
+    hpRamp: 0.04,
   },
   {
     codename: 'Combined Arms',
@@ -124,16 +125,16 @@ const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
     burstSize: 6,
     burstGap: 1.15,
     speedMul: 1.12,
-    hpRamp: 0.024,
+    hpRamp: 0.04,
   },
   {
+    // Recycled late waves keep heavies only — no scout fillers.
     codename: 'Full Assault',
     squads: [
-      { unit: 'monster1', count: 5 },
-      { unit: 'monster2', count: 7 },
-      { unit: 'monster3', count: 7 },
-      { unit: 'monster4', count: 7 },
-      { unit: 'monster5', count: 6 },
+      { unit: 'monster2', count: 9 },
+      { unit: 'monster3', count: 9 },
+      { unit: 'monster4', count: 8 },
+      { unit: 'monster5', count: 7 },
     ],
     command: ['mothership', 'mothership'],
     spawnIntervalSec: 0.4,
@@ -141,7 +142,7 @@ const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
     burstSize: 6,
     burstGap: 1.05,
     speedMul: 1.15,
-    hpRamp: 0.026,
+    hpRamp: 0.04,
   },
 ]);
 
@@ -218,22 +219,24 @@ export function waveConfigFor(waveNum, opts = {}) {
   const rank = opts.firstSiege ? 0 : Math.max(0, opts.rank ?? 0);
   const squads = waveNum === 1 ? [...bp.squads, ...rankReinforcements(rank)] : bp.squads;
 
-  const spawnQueue = buildSpawnQueue(squads, (1 + extraTier * 0.2) * rankCountMul(rank), {
+  // Grow the horde each wave (~12%), then again when Full Assault recycles.
+  const countMul = (1 + tier * 0.12 + extraTier * 0.2) * rankCountMul(rank);
+  const spawnQueue = buildSpawnQueue(squads, countMul, {
     spawnGranddaddy: Boolean(opts.spawnGranddaddy && waveNum >= 5),
   }, bp.command);
 
   const firstWaveTutorial = Boolean(opts.firstSiege && waveNum === 1);
   const fullQueue = firstWaveTutorial ? spawnQueue.slice(0, 18) : spawnQueue;
   const openingQueue = waveNum === 1 ? zapScouts(fullQueue, opts.zapped ?? 0) : fullQueue;
-  // ~10% more HP per wave, plus a bit more once we recycle Full Assault.
-  const hpScale = firstWaveTutorial ? 0.88 : 1 + tier * 0.1 + extraTier * 0.08;
+  // ~20% more HP per wave, plus more once we recycle Full Assault.
+  const hpScale = firstWaveTutorial ? 0.88 : 1 + tier * 0.2 + extraTier * 0.12;
 
   return {
     codename: extraTier > 0 ? `${bp.codename} +${extraTier}` : bp.codename,
     spawnQueue: openingQueue,
     totalSpawns: openingQueue.length,
     hpScale,
-    hpRamp: bp.hpRamp ?? 0.02,
+    hpRamp: bp.hpRamp ?? 0.04,
     spawnIntervalSec: Math.max(0.3, bp.spawnIntervalSec - extraTier * 0.03),
     clumpAt: bp.clumpAt + extraTier * 3,
     burstSize: bp.burstSize + Math.min(extraTier, 2),
