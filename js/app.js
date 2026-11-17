@@ -230,7 +230,7 @@ let forgeSquad = null;
 /** The forge's title for this visit to Maths HQ. */
 let forgeTitle = '';
 const LEARNING_SCREENS = new Set([
-  'home', 'timesTables', 'measurement', 'fractions', 'angles',
+  'home', 'timesTables', 'measurement', 'fractions', 'placeValue', 'angles',
   'mathsQuest', 'expanded', 'battlePrep', 'forge',
 ]);
 

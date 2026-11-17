@@ -14,6 +14,7 @@ test('Place Value is a 10-question drill, not a one-puzzle forge', () => {
   assert.equal(typeof initPlaceValue, 'function');
   const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
   assert.match(app, /function showPlaceValue\(/);
+  assert.match(app, /LEARNING_SCREENS[\s\S]*'placeValue'/);
   assert.doesNotMatch(app, /function showForgeTraining\(/);
   assert.doesNotMatch(app, /Place Value is a one-puzzle forge/);
 });
