@@ -497,7 +497,7 @@ function renderHordeFaceoff(horde, chest) {
   const zap = chest.extraLeft <= 0
     ? '<p class="faceoff-tip">Maths maxed out — hit Defend Granny on the radar!</p>'
     : `<button type="button" class="faceoff-zap">
-        <strong>${canZap ? `ZAP ${zapsLeft} SCOUT${zapsLeft === 1 ? '' : 'S'}` : 'MORE COINS'}</strong>
+        <strong>${canZap ? `ZAP ${zapsLeft} ALIEN${zapsLeft === 1 ? '' : 'S'} BEFORE THE BATTLE` : 'MORE COINS'}</strong>
         <span>Answer ${n} more question${n === 1 ? '' : 's'} — Earn +${chest.coinsPerAnswer} coins each</span>
       </button>`;
   return `
