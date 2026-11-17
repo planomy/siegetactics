@@ -56,6 +56,12 @@ export const COACH_TIPS = {
     text: 'Spend it in the Armory to make one of your turrets hit harder.',
     targets: ['.crystal-vault'],
   },
+  homeland: {
+    title: 'ALIEN HOMELAND',
+    text: 'Each bubble on the bar is one topic card. Ten good sets on that topic charts its sector. Tap a bubble to see which.',
+    punch: 'Random missions don’t count — topic drills and Maths Quest do!',
+    targets: ['.homeland-track'],
+  },
 };
 
 const SVG_NS = 'http://www.w3.org/2000/svg';

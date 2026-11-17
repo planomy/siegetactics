@@ -21,9 +21,9 @@ import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, sho
 import { DEV } from './dev.js?v=20261115y1';
 import { YARD_LAYOUTS } from './yard-obstacles.js?v=20261115y50';
 import { HEDGE } from './maze-field.js?v=20261113m7';
-import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261117a1';
+import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261117f1';
 import { keepFullscreen } from './fullscreen.js?v=20261116h';
-import { bindTipPills } from './tip-pills.js?v=20261115t1';
+import { bindTipPills } from './tip-pills.js?v=20261117f1';
 import { normalizeMetaSave, shouldSpawnGranddaddy, onGranddaddySpawned } from './meta.js?v=20261112a1';
 import { GRANNY_CACHE, cacheFillPercent } from './granny-cache.js';
 import { ECONOMY, bankBonusForgeXp } from './economy.js';
@@ -31,10 +31,10 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261117e4';
+import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261117f1';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261117c9';
-import { initHowToPlay } from './how-to-play.js?v=20261117c1';
+import { initHowToPlay } from './how-to-play.js?v=20261117f1';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261116xp27';
 import { initMeasurementLength } from './measurement-length.js?v=20261116xp1';
@@ -54,7 +54,7 @@ import {
 import {
   defaultMapProgress, normalizeMapProgress, allMapPiecesEarned, mapPiecesEarned,
   TRAINING_MODULE_IDS, fillMapSeason, homelandMaxLevel,
-} from './map-progress.js?v=20261115h3';
+} from './map-progress.js?v=20261117f1';
 import { getTopic } from './topics-data.js?v=20261113h1';
 import { normalizeTopicProgress, recordTopicAnswer, recordTopicSession, getTopicRecord, topicRankProgress } from './topic-progression.js?v=20261114k1';
 import {
@@ -1584,6 +1584,7 @@ function tipsFor(where) {
   // Only when Defend Granny is actually on-screen (hidden during drills).
   if (!seen.has('contact') && tipTargetsPresent('contact')) return ['contact'];
   if (!seen.has('crystal') && save.upgradeCores > 0) return ['crystal'];
+  if (!seen.has('homeland') && tipTargetsPresent('homeland')) return ['homeland'];
   return [];
 }
 

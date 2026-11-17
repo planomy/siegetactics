@@ -1,4 +1,4 @@
-import { MAP_PASSES_REQUIRED, MAP_SEASONS } from './map-progress.js?v=20261115h3';
+import { MAP_PASSES_REQUIRED, MAP_SEASONS } from './map-progress.js?v=20261117f1';
 import { SIEGE_RANKS } from './siege-ranks.js?v=20261112a2';
 
 /**
@@ -160,10 +160,11 @@ export const HOW_TO_QUESTIONS = [
     q: 'What is the Alien Homeland map?',
     a: [
       'Tap ALIEN HOMELAND under your Crystal Vault to see it. Every topic is one sector on the nav chart.',
+      'The bar at the bottom of Maths HQ has one bubble per topic card (same order). Each good set fills a tenth of that topic’s bubble; ten sets charts the sector. Tap a bubble to see which topic it is.',
       `There are three HQ seasons. Season 1 needs ${MAP_PASSES_REQUIRED} passes per topic at ${MAP_SEASONS[0].label}+ to unlock Warp and Doompickle Level 1.`,
       `Come home for Season 2 (${MAP_SEASONS[1].label}+) to open Level 2, then Season 3 (${MAP_SEASONS[2].label}) for Level 3. A miss just means try that drill again — only clean passes count.`,
       'Doompickle runs are forced Level 1 → 2 → 3 — you can’t pick an easier completed level again once you’ve moved on.',
-      'Random missions don’t count towards the map. Level shields on the topic cards are separate — see “What are the shields on the topic cards?”',
+      'Random missions don’t count towards the map or the bar. Level shields on the topic cards are separate — see “What are the shields on the topic cards?”',
     ],
   },
 ];

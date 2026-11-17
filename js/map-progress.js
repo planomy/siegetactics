@@ -129,6 +129,11 @@ export function getMapPasses(progress, moduleId, season) {
   return getSeasonPasses(progress, s)[/** @type {TrainingModuleId} */ (moduleId)] ?? 0;
 }
 
+/** 0–1 fill for one topic’s bar slot this season. @param {MapProgressSave} progress @param {string} moduleId @param {MapSeason} [season] */
+export function mapPassFraction(progress, moduleId, season) {
+  return Math.min(1, getMapPasses(progress, moduleId, season) / MAP_PASSES_REQUIRED);
+}
+
 /** @param {MapProgressSave} progress @param {MapSeason} season */
 export function seasonPiecesEarned(progress, season) {
   const bag = getSeasonPasses(progress, season);

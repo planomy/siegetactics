@@ -104,6 +104,16 @@ function show(el) {
   place(el);
 }
 
+/** Show a tip for an element that carries data-tip-title / data-tip (touch or mouse). */
+export function showTipPill(el) {
+  show(el);
+}
+
+/** @param {boolean} [immediate] */
+export function hideTipPill(immediate = false) {
+  hide(immediate);
+}
+
 /**
  * @param {ParentNode} [root]
  */

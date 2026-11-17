@@ -1,4 +1,4 @@
-import { MATH_TOPICS } from './topics-data.js?v=20261113h1';
+import { MATH_TOPICS, getTopic } from './topics-data.js?v=20261113h1';
 import { attackStatus, answersForCharge, answersProgress } from './training-gate.js?v=20261115p1';
 import { badgeSrc } from './stars.js';
 import { SIEGE_RANKS, siegeRankLevel, rankProgressText } from './siege-ranks.js?v=20261112a2';
@@ -6,15 +6,16 @@ import { hotTopicId } from './hot-topic.js?v=20261112a1';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261114t1';
 import { rareDossiers } from './rare-ships.js?v=20261114t1';
 import {
-  renderInterstellarMap, mapPiecesEarned, getMapPasses, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS, MAP_SECTORS,
+  renderInterstellarMap, mapPiecesEarned, getMapPasses, mapPassFraction, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS, MAP_SECTORS,
   currentMapSeason, seasonLabel, seasonPiecesEarned, canWarpToDoompickle, homelandMaxLevel, seasonComplete,
-} from './map-progress.js?v=20261115h3';
+} from './map-progress.js?v=20261117f1';
 import { getQualifiedLevels, renderModuleLevelPips } from './level-mastery.js?v=20261116xp34';
 import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel, xpMultiplierFor, DIFFICULTY, isDifficultyLevel } from './difficulty.js?v=20261114k1';
 import { renderArmoryPromo } from './armory-promo.js?v=20261117e2';
 import { animateTally } from './tally.js';
 import { ENEMY_SPRITE_SRC, GRUNT_STATS, BOSS_STATS } from './enemies-data.js';
+import { showTipPill } from './tip-pills.js?v=20261117f1';
 
 /** The Alien Homeland, a page of its own. */
 const HOMELAND_URL = 'homeland.html';
@@ -843,45 +844,71 @@ function renderCrystalVault(collected, toSpend) {
 }
 
 /**
- * The long-term goal along the bottom of Maths HQ: one checkpoint per map piece, the last being the
- * Alien Homeland itself. The fill also creeps towards the next checkpoint as the closest topic charts.
+ * Long-term HQ goal: one bar slot per topic card (same order). Each qualifying set
+ * fills a tenth of that topic’s slot; ten sets charts the sector. Last slot = Maths Quest / planet.
  * @param {import('./map-progress.js').MapProgressSave} mapProgress
  */
 function renderHomelandTrack(mapProgress) {
-  const total = TRAINING_MODULE_IDS.length;
+  const order = TOPIC_DISPLAY_ORDER;
+  const total = order.length;
   const season = currentMapSeason(mapProgress);
   const bar = seasonLabel(season);
   const earned = seasonPiecesEarned(mapProgress, season);
   const maxLevel = homelandMaxLevel(mapProgress);
-  const closest = Math.max(
-    0,
-    ...TRAINING_MODULE_IDS
-      .filter((id) => getMapPasses(mapProgress, id, season) < MAP_PASSES_REQUIRED)
-      .map((id) => getMapPasses(mapProgress, id, season))
-  );
   const seasonDone = seasonComplete(mapProgress, season) || (season === 3 && maxLevel >= 3);
-  const pct = seasonDone ? 100 : ((earned + closest / MAP_PASSES_REQUIRED) / total) * 100;
-  const nodes = Array.from({ length: total }, (_, i) => {
+  const passSum = order.reduce((sum, id) => sum + getMapPasses(mapProgress, id, season), 0);
+  const shipPct = seasonDone ? 100 : (passSum / (total * MAP_PASSES_REQUIRED)) * 100;
+  const slots = order.map((id, i) => {
     const n = i + 1;
     const home = n === total;
-    return `<span class="homeland-track-node${home ? ' homeland-track-home' : ''}${n <= earned ? ' is-reached' : ''}" style="left:${(n / total) * 100}%">${home ? '🪐' : n}</span>`;
+    const passes = getMapPasses(mapProgress, id, season);
+    const frac = mapPassFraction(mapProgress, id, season);
+    const done = passes >= MAP_PASSES_REQUIRED;
+    const title = getTopic(id)?.title || id;
+    const tipBody = done
+      ? `Sector charted · Season ${season}`
+      : `${passes} / ${MAP_PASSES_REQUIRED} good sets · need ${bar}+`;
+    return `
+      <button type="button" class="homeland-track-slot${done ? ' is-done' : ''}${home ? ' is-home' : ''}"
+        data-homeland-slot="${id}"
+        style="--fill:${frac}"
+        data-tip-title="${title}"
+        data-tip="${tipBody}"
+        aria-label="${title}: ${tipBody}">
+        <span class="homeland-track-slot-fill" aria-hidden="true"></span>
+        <span class="homeland-track-node${home ? ' homeland-track-home' : ''}${done ? ' is-reached' : ''}" aria-hidden="true">${home ? '🪐' : n}</span>
+      </button>`;
   }).join('');
   const levelHint = maxLevel ? ` · L${maxLevel} open` : '';
   return `
     <div class="homeland-row">
-    <button type="button" class="homeland-track" aria-label="Alien Homeland season ${season}: ${earned} of ${total} sectors at ${bar}. Show the map.">
-      <span class="homeland-track-title">
+    <div class="homeland-track" role="group" aria-label="Alien Homeland season ${season}: ${earned} of ${total} sectors at ${bar}">
+      <button type="button" class="homeland-track-title" data-homeland-map
+        aria-label="Show Alien Homeland map. Season ${season}: ${earned} of ${total} sectors.">
         <strong>ALIEN HOMELAND</strong>
         <small>Season ${season} · ${bar} · ${earned}/${total}${levelHint}</small>
-      </span>
-      <span class="homeland-track-rail" aria-hidden="true">
-        <span class="homeland-track-fill" style="width:${pct.toFixed(1)}%"></span>
-        ${nodes}
-        <span class="homeland-track-ship"><span>🛸</span></span>
-      </span>
-    </button>
+      </button>
+      <div class="homeland-track-rail">
+        <div class="homeland-track-slots">${slots}</div>
+        <span class="homeland-track-ship" style="left:${shipPct.toFixed(1)}%" aria-hidden="true"><span>🛸</span></span>
+      </div>
+    </div>
     ${canWarpToDoompickle(mapProgress) ? renderHomelandLaunch() : ''}
     </div>`;
+}
+
+/** Tap or hover a bar slot to name the topic (touch-first; hover is a desktop bonus). @param {ParentNode} host */
+function bindHomelandTrackSlots(host) {
+  const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
+  host.querySelectorAll('[data-homeland-slot]').forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      showTipPill(btn);
+    });
+    btn.addEventListener('pointerenter', () => {
+      if (fine.matches) showTipPill(btn);
+    });
+  });
 }
 
 const WARP_ARROW_KEY = 'grannyboom.warp-arrow-seen';
@@ -1076,7 +1103,8 @@ export function renderHome(host, state) {
   host.querySelector('#mission-start-mixed')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-defend')?.addEventListener('click', state.onHoldTheLine);
   host.querySelector('#mission-armory-open')?.addEventListener('click', state.onArmory);
-  host.querySelector('.homeland-track')?.addEventListener('click', () => showHomelandMap(state.mapProgress));
+  host.querySelector('[data-homeland-map]')?.addEventListener('click', () => showHomelandMap(state.mapProgress));
+  bindHomelandTrackSlots(host);
   bindHomelandLaunch(host);
   host.querySelectorAll('[data-topic]').forEach((btn) => {
     btn.addEventListener('click', () => {

@@ -573,20 +573,25 @@
   color: #e9ddff;
   font: inherit;
   text-align: left;
-  cursor: pointer;
   box-shadow: 0 0 14px rgba(150, 90, 255, .2);
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-
-.homeland-track:hover {
-  border-color: rgba(195, 155, 255, .85);
-  box-shadow: 0 0 20px rgba(170, 110, 255, .45);
 }
 
 .homeland-track-title {
   display: grid;
   flex: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   line-height: 1.05;
+  cursor: pointer;
+}
+
+.homeland-track-title:hover strong {
+  color: #f0e6ff;
 }
 
 .homeland-track-title strong {
@@ -612,17 +617,61 @@
   background: rgba(120, 80, 200, .3);
 }
 
-.homeland-track-fill {
+/* One slot per topic card — each good set fills a tenth of that slot. */
+.homeland-track-slots {
   position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #7a3cff, #c04bff 60%, #5dff9a);
-  box-shadow: 0 0 8px rgba(170, 90, 255, .7);
+  inset: 0;
+  display: flex;
+  z-index: 2;
+}
+
+.homeland-track-slot {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  /* Tall hit target for iPad thumbs without growing the chrome. */
+  touch-action: manipulation;
+}
+
+.homeland-track-slot::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
+}
+
+.homeland-track-slot-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: calc(var(--fill, 0) * 100%);
+  border-radius: 3px;
+  background: linear-gradient(90deg, #7a3cff, #c04bff 55%, #5dff9a);
+  box-shadow: 0 0 8px rgba(170, 90, 255, .55);
+  pointer-events: none;
+}
+
+.homeland-track-slot.is-done .homeland-track-slot-fill {
+  width: 100%;
+  background: linear-gradient(90deg, #4eb465, #b6ff86);
+  box-shadow: 0 0 8px rgba(90, 255, 160, .55);
 }
 
 .homeland-track-node {
   position: absolute;
+  left: 100%;
   top: 50%;
+  z-index: 3;
   display: grid;
   place-items: center;
   width: 20px;
@@ -635,6 +684,7 @@
   font-weight: 900;
   line-height: 1;
   transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .homeland-track-node.is-reached {
@@ -659,7 +709,7 @@
   box-shadow: 0 0 20px rgba(255, 210, 90, .9);
 }
 
-/* The ship patrols the whole route and back, bobbing as it goes, with its glow on the bar beneath it. */
+/* Ship sits at overall pass progress across all ten topic slots. */
 .homeland-track-ship {
   position: absolute;
   top: 50%;
@@ -669,7 +719,7 @@
   line-height: 1;
   transform: translate(-50%, -120%);
   pointer-events: none;
-  animation: homeland-patrol 7s ease-in-out infinite alternate;
+  transition: left .45s ease-out;
 }
 
 .homeland-track-ship > span {
@@ -893,12 +943,11 @@
   50% { opacity: .3; transform: translateX(-50%) scale(.55); }
 }
 
-@keyframes homeland-patrol {
-  from { left: 0; }
-  to { left: 100%; }
-}
-
 @media (prefers-reduced-motion: reduce) {
+  .homeland-track-ship {
+    transition: none;
+  }
+
   .homeland-track-ship,
   .homeland-track-ship > span,
   .homeland-track-ship::after,
