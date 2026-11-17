@@ -426,18 +426,20 @@ export function initMeasurementLength(host, callbacks) {
 
     host.innerHTML = `
       <div class="panel times-panel length-panel">
-        <div class="prep-top">
-          <button type="button" class="btn btn-ghost btn-sm times-back" id="length-home">← Home</button>
-          <p class="mission-tag">Measurement · Length · ${difficultyTrainingTag(callbacks.difficultyLevel)}</p>
-          <div class="session-xp-badge" aria-label="Session XP ${sessionXp}">
-            <span class="session-xp-badge-label">XP</span>
-            <strong class="session-xp-badge-num" id="length-session-xp">${sessionXp}</strong>
+        <div class="times-quiz-header times-quiz-toolbar">
+          <div class="times-toolbar-left">
+            <button type="button" class="btn btn-ghost btn-sm times-back" id="length-home">← Home</button>
+            <span class="times-quiz-tag">Length Lab</span>
           </div>
-        </div>
-        <h2 class="panel-title">Length Lab</h2>
-        <div class="times-quiz-header">
-          <span class="times-quiz-tag">Compare & convert</span>
-          <span class="times-quiz-progress">${index + 1} / ${deck.length}</span>
+          <div class="times-toolbar-centre">
+            <div class="session-xp-badge" aria-label="Session XP ${sessionXp}">
+              <span class="session-xp-badge-label">XP</span>
+              <strong class="session-xp-badge-num" id="length-session-xp">${sessionXp}</strong>
+            </div>
+          </div>
+          <div class="times-toolbar-right">
+            <span class="times-quiz-progress">${difficultyTrainingTag(callbacks.difficultyLevel)} · ${index + 1} / ${deck.length}</span>
+          </div>
         </div>
         <div class="times-question-wrap">
           <p class="times-question length-question">${q.prompt}</p>

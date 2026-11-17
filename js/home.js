@@ -6,9 +6,9 @@ import { hotTopicId } from './hot-topic.js?v=20261112a1';
 import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261114t1';
 import { rareDossiers } from './rare-ships.js?v=20261114t1';
 import {
-  renderInterstellarMap, mapPiecesEarned, getMapPasses, mapPassFraction, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS, MAP_SECTORS,
+  renderInterstellarMap, mapPiecesEarned, getMapPasses, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS, MAP_SECTORS,
   currentMapSeason, seasonLabel, seasonPiecesEarned, canWarpToDoompickle, homelandMaxLevel, seasonComplete,
-} from './map-progress.js?v=20261117f1';
+} from './map-progress.js?v=20261117f2';
 import { getQualifiedLevels, renderModuleLevelPips } from './level-mastery.js?v=20261116xp34';
 import { ECONOMY } from './economy.js';
 import { xpMultiplierLabel, xpMultiplierFor, DIFFICULTY, isDifficultyLevel } from './difficulty.js?v=20261114k1';
@@ -857,28 +857,36 @@ function renderHomelandTrack(mapProgress) {
   const earned = seasonPiecesEarned(mapProgress, season);
   const maxLevel = homelandMaxLevel(mapProgress);
   const seasonDone = seasonComplete(mapProgress, season) || (season === 3 && maxLevel >= 3);
-  const passSum = order.reduce((sum, id) => sum + getMapPasses(mapProgress, id, season), 0);
-  const shipPct = seasonDone ? 100 : (passSum / (total * MAP_PASSES_REQUIRED)) * 100;
+  // Park the ship on the rightmost topic that has passes (not at overall %, which
+  // looked like “progress stuck on bubble 1” when Time was filling near the planet).
+  let shipSlot = -1;
+  let shipFrac = 0;
+  order.forEach((id, i) => {
+    const passes = getMapPasses(mapProgress, id, season);
+    if (passes > 0) {
+      shipSlot = i;
+      shipFrac = passes / MAP_PASSES_REQUIRED;
+    }
+  });
+  const shipPct = seasonDone ? 100 : shipSlot < 0 ? 0 : ((shipSlot + shipFrac) / total) * 100;
   const slots = order.map((id, i) => {
     const n = i + 1;
     const passes = getMapPasses(mapProgress, id, season);
-    const frac = mapPassFraction(mapProgress, id, season);
     const done = passes >= MAP_PASSES_REQUIRED;
     const inProgress = passes > 0 && !done;
     const title = getTopic(id)?.title || id;
     const tipBody = done
       ? `Sector charted · Season ${season}`
       : `${passes} / ${MAP_PASSES_REQUIRED} good sets · need ${bar}+`;
-    // Inline width so one pass (10% of a slot ≈ 1% of the bar) still paints reliably.
-    const fillPct = `${(frac * 100).toFixed(1)}%`;
+    const pips = Array.from({ length: MAP_PASSES_REQUIRED }, (_, k) =>
+      `<i class="homeland-track-pip${k < passes ? ' is-on' : ''}"></i>`).join('');
     return `
       <button type="button" class="homeland-track-slot${done ? ' is-done' : ''}${inProgress ? ' is-progress' : ''}"
         data-homeland-slot="${id}"
-        style="--fill:${frac}"
         data-tip-title="${title}"
         data-tip="${tipBody}"
         aria-label="${title}: ${tipBody}">
-        <span class="homeland-track-slot-fill" style="width:${fillPct}" aria-hidden="true"></span>
+        <span class="homeland-track-pips" aria-hidden="true">${pips}</span>
         <span class="homeland-track-node${done ? ' is-reached' : ''}${inProgress ? ' is-progress' : ''}" aria-hidden="true">${n}</span>
       </button>`;
   }).join('');

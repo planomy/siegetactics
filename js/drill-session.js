@@ -110,18 +110,20 @@ export function initDrillSession(host, config) {
 
     host.innerHTML = `
       <div class="panel times-panel drill-panel">
-        <div class="prep-top">
-          <button type="button" class="btn btn-ghost btn-sm times-back" id="drill-home">← Home</button>
-          <p class="mission-tag">${config.missionTag} · ${difficultyTrainingTag(config.difficultyLevel)}</p>
-          <div class="session-xp-badge" aria-label="Session XP ${sessionXp}">
-            <span class="session-xp-badge-label">XP</span>
-            <strong class="session-xp-badge-num" id="drill-session-xp">${sessionXp}</strong>
+        <div class="times-quiz-header times-quiz-toolbar">
+          <div class="times-toolbar-left">
+            <button type="button" class="btn btn-ghost btn-sm times-back" id="drill-home">← Home</button>
+            <span class="times-quiz-tag">${config.title}</span>
           </div>
-        </div>
-        <h2 class="panel-title">${config.title}</h2>
-        <div class="times-quiz-header">
-          <span class="times-quiz-tag">${config.quizTag}</span>
-          <span class="times-quiz-progress">${index + 1} / ${deck.length}</span>
+          <div class="times-toolbar-centre">
+            <div class="session-xp-badge" aria-label="Session XP ${sessionXp}">
+              <span class="session-xp-badge-label">XP</span>
+              <strong class="session-xp-badge-num" id="drill-session-xp">${sessionXp}</strong>
+            </div>
+          </div>
+          <div class="times-toolbar-right">
+            <span class="times-quiz-progress">${difficultyTrainingTag(config.difficultyLevel)} · ${index + 1} / ${deck.length}</span>
+          </div>
         </div>
         <div class="times-question-wrap">
           ${q.visual ? `<div class="question-visual">${q.visual}</div>` : ''}

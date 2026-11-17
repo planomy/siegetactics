@@ -625,6 +625,7 @@
   position: absolute;
   inset: 0 18px 0 10px;
   display: flex;
+  gap: 3px;
   z-index: 2;
 }
 
@@ -636,7 +637,8 @@
   margin: 0;
   padding: 0;
   border: 0;
-  background: transparent;
+  border-radius: 4px;
+  background: rgba(20, 10, 40, .35);
   cursor: pointer;
   /* Tall hit target for iPad thumbs without growing the chrome. */
   touch-action: manipulation;
@@ -652,29 +654,34 @@
   transform: translateY(-50%);
 }
 
-.homeland-track-slot-fill {
+/* Ten pips per topic slot — 2/10 on Time lights two pips by bubble 9, not a speck by 1. */
+.homeland-track-pips {
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 0;
-  min-width: 0;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #9a55ff, #e060ff 55%, #6dffb0);
-  box-shadow: 0 0 10px rgba(190, 110, 255, .85);
+  inset: 1px 2px;
+  display: flex;
+  gap: 1px;
   pointer-events: none;
 }
 
-/* Any progress: keep a readable blip so one pass isn’t a 1%-of-bar speck. */
-.homeland-track-slot.is-progress .homeland-track-slot-fill {
-  min-width: 12px;
+.homeland-track-pip {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.07);
 }
 
-.homeland-track-slot.is-done .homeland-track-slot-fill {
-  width: 100%;
-  min-width: 0;
-  background: linear-gradient(90deg, #4eb465, #b6ff86);
-  box-shadow: 0 0 8px rgba(90, 255, 160, .55);
+.homeland-track-pip.is-on {
+  background: linear-gradient(180deg, #ff9aef, #b24bff 40%, #7dffb0);
+  box-shadow: 0 0 6px rgba(255, 120, 220, .85);
+}
+
+.homeland-track-slot.is-done .homeland-track-pip.is-on {
+  background: linear-gradient(180deg, #b6ff86, #3ecf7a);
+  box-shadow: 0 0 6px rgba(90, 255, 160, .85);
+}
+
+.homeland-track-slot.is-progress {
+  box-shadow: inset 0 0 0 1px rgba(255, 150, 230, .45);
 }
 
 .homeland-track-node {
@@ -737,7 +744,7 @@
   box-shadow: 0 0 20px rgba(255, 210, 90, .9);
 }
 
-/* Ship sits at overall pass progress across all ten topic slots. */
+/* Ship parks on the rightmost topic slot that has passes. */
 .homeland-track-ship {
   position: absolute;
   top: 50%;

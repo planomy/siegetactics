@@ -14,16 +14,17 @@ const coach = readFileSync(new URL('../js/coach-tips.js', import.meta.url), 'utf
 const howto = readFileSync(new URL('../js/how-to-play.js', import.meta.url), 'utf8');
 const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 
-test('AHPB uses one slot per topic card and fills by mapPassFraction, not closest-only creep', () => {
+test('AHPB uses one slot per topic card with ten lit pips, not closest-only creep', () => {
   assert.match(home, /TOPIC_DISPLAY_ORDER/);
   assert.match(home, /homeland-track-slot/);
-  assert.match(home, /mapPassFraction/);
+  assert.match(home, /homeland-track-pip/);
   assert.match(home, /data-homeland-slot/);
   assert.match(home, /showTipPill/);
   assert.match(home, /is-progress/);
-  assert.match(home, /fillPct/);
+  assert.match(home, /shipSlot/);
   assert.doesNotMatch(home, /closest \/ MAP_PASSES_REQUIRED/);
   assert.doesNotMatch(home, /homeland-track-fill/);
+  assert.doesNotMatch(home, /homeland-track-slot-fill/);
 });
 
 test('tapping a slot shows a tip; the title opens the map', () => {
