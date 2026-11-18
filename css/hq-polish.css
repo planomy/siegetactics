@@ -646,13 +646,13 @@ body.mission-mode .invasion-briefing.is-open .faceoff-vs {
 }
 
 body.mission-mode .invasion-briefing.is-open .faceoff-troop img {
-  width: clamp(72px, 12vw, 104px);
-  height: clamp(72px, 12vw, 104px);
+  width: clamp(54px, 9vw, 78px);
+  height: clamp(54px, 9vw, 78px);
   filter: drop-shadow(0 0 12px rgba(255, 80, 60, 0.75));
 }
 
 body.mission-mode .invasion-briefing.is-open .faceoff-troop b {
-  font-size: clamp(2.1rem, 4.5vw, 2.8rem);
+  font-size: clamp(1.575rem, 3.375vw, 2.1rem);
 }
 
 body.mission-mode .invasion-briefing.is-open .faceoff-vs {
