@@ -17,6 +17,73 @@
   background-image: url('../assets/ui/alien-crystal.png');
 }
 
+/* Rare upgrade crystals: same art, different colour / glow / value badge. */
+.core-gem--spark {
+  filter: hue-rotate(-18deg) saturate(1.25) brightness(1.08)
+    drop-shadow(0 0 10px rgba(80, 220, 255, 0.85));
+}
+
+.core-gem--pulse {
+  filter: hue-rotate(255deg) saturate(1.45) brightness(1.05)
+    drop-shadow(0 0 12px rgba(210, 90, 255, 0.9));
+}
+
+.core-gem--nova {
+  filter: hue-rotate(40deg) saturate(1.55) brightness(1.12)
+    drop-shadow(0 0 14px rgba(255, 200, 60, 0.95))
+    drop-shadow(0 0 28px rgba(255, 120, 40, 0.55));
+}
+
+.core-gem-value {
+  position: absolute;
+  right: -0.15em;
+  bottom: -0.1em;
+  min-width: 1.35em;
+  padding: 0.05em 0.28em;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff6c8, #f0b020);
+  color: #3a2200;
+  font-family: var(--font-display, Impact, sans-serif);
+  font-size: 0.55em;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  box-shadow: 0 2px 0 #8a5a10, 0 0 10px rgba(255, 200, 60, 0.55);
+  pointer-events: none;
+}
+
+.crystal-drop-gem {
+  position: relative;
+}
+
+.core-gem-value--reward {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  margin-top: -0.35rem;
+  font-size: clamp(1.1rem, 2.6vw, 1.45rem);
+}
+
+.core-reward--spark .core-reward-rays {
+  background: repeating-conic-gradient(rgba(90, 220, 255, 0.4) 0 8deg, transparent 8deg 22deg);
+}
+
+.core-reward--pulse .core-reward-rays {
+  background: repeating-conic-gradient(rgba(210, 100, 255, 0.42) 0 8deg, transparent 8deg 22deg);
+}
+
+.core-reward--nova .core-reward-rays {
+  background: repeating-conic-gradient(rgba(255, 200, 70, 0.45) 0 8deg, transparent 8deg 22deg);
+}
+
+.core-reward--spark .core-reward-title { color: #d8f8ff; text-shadow: 0 0 18px rgba(80, 220, 255, 0.9), 0 4px 0 #0a3550; }
+.core-reward--pulse .core-reward-title { color: #f3e0ff; text-shadow: 0 0 18px rgba(210, 90, 255, 0.9), 0 4px 0 #3a0a55; }
+.core-reward--nova .core-reward-title { color: #fff3c8; text-shadow: 0 0 18px rgba(255, 200, 60, 0.95), 0 4px 0 #6a3a00; }
+
+.crystal-drop--spark .crystal-drop-title { color: #d8f8ff; }
+.crystal-drop--pulse .crystal-drop-title { color: #f3e0ff; }
+.crystal-drop--nova .crystal-drop-title { color: #fff3c8; }
+
 /* Header counter: tap it to open the Armory. Pulses when an upgrade can be bought. */
 .core-pill {
   display: inline-flex;
@@ -110,6 +177,24 @@
   position: relative;
   filter: drop-shadow(0 0 22px rgba(80, 255, 170, .95)) drop-shadow(0 0 46px rgba(40, 200, 255, .6));
   animation: core-gem-float 1.4s ease-in-out infinite;
+}
+
+.core-gem--big.core-gem--spark {
+  filter: hue-rotate(-18deg) saturate(1.25) brightness(1.08)
+    drop-shadow(0 0 22px rgba(80, 220, 255, 0.95))
+    drop-shadow(0 0 46px rgba(40, 180, 255, 0.55));
+}
+
+.core-gem--big.core-gem--pulse {
+  filter: hue-rotate(255deg) saturate(1.45) brightness(1.05)
+    drop-shadow(0 0 22px rgba(210, 90, 255, 0.95))
+    drop-shadow(0 0 46px rgba(160, 40, 255, 0.55));
+}
+
+.core-gem--big.core-gem--nova {
+  filter: hue-rotate(40deg) saturate(1.55) brightness(1.12)
+    drop-shadow(0 0 22px rgba(255, 210, 70, 0.98))
+    drop-shadow(0 0 48px rgba(255, 120, 40, 0.65));
 }
 
 .core-reward-title {

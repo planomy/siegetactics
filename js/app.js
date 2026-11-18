@@ -78,6 +78,10 @@ import {
 } from './training-gate.js?v=20261115p1';
 import { setGateRemainingProvider } from './gate-status.js?v=20261116xp21';
 import { normalizeRareSave, rollRareShip, rareShipById, recordRareSighted, recordRareCaught, rareCrystalReward } from './rare-ships.js?v=20261114t1';
+import {
+  normalizeRareCrystalRound,
+  drawRareCrystal,
+} from './rare-crystals.js?v=20261118r1';
 import { REGIONS as HOMELAND_REGIONS, loadProgress as loadHomelandProgress, regionCrystals } from './homeland/regions.js?v=30';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
@@ -123,6 +127,7 @@ const defaultSave = {
   gear: [],
   stretchCoins: 0,
   rares: normalizeRareSave(null),
+  rareCrystalRound: normalizeRareCrystalRound(null),
   homelandClaimed: [],
   settings: { sound: true, music: true, difficultyLevel: 2 },
 };
@@ -306,6 +311,7 @@ function loadSave() {
     data.gear = normalizeGear(data.gear);
     data.stretchCoins = Math.max(0, Math.floor(Number(data.stretchCoins) || 0));
     data.rares = normalizeRareSave(data.rares);
+    data.rareCrystalRound = normalizeRareCrystalRound(data.rareCrystalRound);
     data.homelandClaimed = Array.isArray(data.homelandClaimed) ? data.homelandClaimed.filter((k) => typeof k === 'string') : [];
     // Preserve old players' real mastered levels and map passes as a one-time rank baseline.
     data.topicProgress = normalizeTopicProgress(data.topicProgress, data.levelMastery, data.mapProgress);
@@ -579,16 +585,20 @@ function tryUnlockTurret(id) {
  * One alien crystal, with a big reward moment: the crystal bursts onto the screen, then flies into
  * the header counter. Tapping it opens the Armory to spend it.
  * @param {string} reason
+ * @param {{ x?: number, y?: number }|null} [from]
+ * @param {number} [amount]
+ * @param {{ tierId?: string, title?: string }} [opts]
  */
-function awardUpgradeCore(reason, from, amount = 1) {
+function awardUpgradeCore(reason, from, amount = 1, opts = {}) {
   const tierBefore = vaultTierFor(save.crystalsCollected).id;
   save.upgradeCores += amount;
   save.crystalsCollected += amount;
   persistSave();
   refreshTopbar();
   refreshMissionControl();
-  if (from?.x != null && from?.y != null) showCrystalDrop(from.x, from.y);
-  else showCoreReward(reason);
+  const look = { amount, tierId: opts.tierId, title: opts.title };
+  if (from?.x != null && from?.y != null) showCrystalDrop(from.x, from.y, look);
+  else showCoreReward(reason, look);
   if (vaultTierFor(save.crystalsCollected).id !== tierBefore) {
     const collected = save.crystalsCollected;
     window.setTimeout(() => {
@@ -596,6 +606,16 @@ function awardUpgradeCore(reason, from, amount = 1) {
       audio.playTurretUpgrade();
     }, 3400);
   }
+}
+
+/** Passed maths set: pull one rare from this 10-set bag (ten ×3, five ×5, two ×10). */
+function awardRareCrystalFromSet(reason) {
+  const draw = drawRareCrystal(save.rareCrystalRound);
+  save.rareCrystalRound = draw.round;
+  awardUpgradeCore(reason, screenCentre(), draw.value, {
+    tierId: draw.tier.id,
+    title: draw.tier.title,
+  });
 }
 
 /** Decides, as a battle starts, whether a rare mothership leads the opening assault. */
@@ -830,18 +850,25 @@ function showPendingStory() {
  * In battle: the crystal bursts out of the defeated boss where it died, hangs there glowing,
  * then arcs up into the header counter. Never blocks the fight.
  * @param {number} x @param {number} y
+ * @param {{ amount?: number, tierId?: string, title?: string }} [look]
  */
-function showCrystalDrop(x, y) {
+function showCrystalDrop(x, y, look = {}) {
+  const amount = Math.max(1, Math.floor(Number(look.amount) || 1));
+  const tierId = look.tierId || '';
+  const title = look.title || (amount > 1 ? `ALIEN CRYSTAL ×${amount}!` : 'ALIEN CRYSTAL!');
   const el = document.createElement('div');
-  el.className = 'crystal-drop';
+  el.className = `crystal-drop${tierId ? ` crystal-drop--${tierId}` : ''}`;
   el.setAttribute('aria-hidden', 'true');
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
   el.innerHTML = `
     <span class="crystal-drop-flash"></span>
     <span class="core-reward-rays crystal-drop-rays"></span>
-    <span class="crystal-drop-gem"><span class="core-gem core-gem--big"></span></span>
-    <strong class="crystal-drop-title">ALIEN CRYSTAL!</strong>`;
+    <span class="crystal-drop-gem">
+      <span class="core-gem core-gem--big${tierId ? ` core-gem--${tierId}` : ''}"></span>
+      ${amount > 1 ? `<span class="core-gem-value">×${amount}</span>` : ''}
+    </span>
+    <strong class="crystal-drop-title">${title}</strong>`;
   document.body.append(el);
   audio.playCoreEarned();
   window.setTimeout(() => {
@@ -866,19 +893,28 @@ function showCrystalDrop(x, y) {
 
 let coreRewardTimer = 0;
 
-/** @param {string} reason */
-function showCoreReward(reason) {
+/** @param {string} reason @param {{ amount?: number, tierId?: string, title?: string }} [look] */
+function showCoreReward(reason, look = {}) {
   document.querySelector('.core-reward')?.remove();
   clearTimeout(coreRewardTimer);
+  const amount = Math.max(1, Math.floor(Number(look.amount) || 1));
+  const tierId = look.tierId || '';
+  const title = look.title || (amount > 1 ? `ALIEN CRYSTAL ×${amount}!` : 'ALIEN CRYSTAL!');
   const el = document.createElement('button');
   el.type = 'button';
-  el.className = 'core-reward';
-  el.setAttribute('aria-label', 'Alien crystal collected. Open the Armory to spend it.');
+  el.className = `core-reward${tierId ? ` core-reward--${tierId}` : ''}`;
+  el.setAttribute(
+    'aria-label',
+    amount > 1
+      ? `Alien crystal worth ${amount} collected. Open the Armory to spend it.`
+      : 'Alien crystal collected. Open the Armory to spend it.',
+  );
   el.innerHTML = `
     <span class="core-reward-inner">
       <span class="core-reward-rays" aria-hidden="true"></span>
-      <span class="core-gem core-gem--big" aria-hidden="true"></span>
-      <strong class="core-reward-title">ALIEN CRYSTAL!</strong>
+      <span class="core-gem core-gem--big${tierId ? ` core-gem--${tierId}` : ''}" aria-hidden="true"></span>
+      ${amount > 1 ? `<span class="core-gem-value core-gem-value--reward">×${amount}</span>` : ''}
+      <strong class="core-reward-title">${title}</strong>
       <span class="core-reward-reason">${reason}</span>
       <span class="core-reward-cta">TAP TO POWER UP A TURRET</span>
     </span>`;
@@ -1197,7 +1233,11 @@ function completeTrainingSession(moduleId, level, accuracy) {
   creditTopicSession(moduleId, accuracy);
 
   // Topic drills (including Place Value) credit answers live via onAnswer.
-  if (accuracy >= GATE.passAccuracy) noteMissionMix('topic');
+  if (accuracy >= GATE.passAccuracy) {
+    noteMissionMix('topic');
+    // One rare crystal per passed set, drawn from the 10-set bag (×3 / ×5 / ×10).
+    window.setTimeout(() => awardRareCrystalFromSet('SET CLEARED'), result.shieldEarned ? 1600 : 400);
+  }
   persistSave();
   refreshMissionControl();
 
