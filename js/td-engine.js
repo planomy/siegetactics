@@ -44,7 +44,7 @@ import {
   stampYardBlocked,
   yardOccupies,
   yardNestProp,
-} from './yard-obstacles.js?v=20261119r1';
+} from './yard-obstacles.js?v=20261119r2';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
 export function buildTimeForPlacementCost(cost) {
@@ -2708,7 +2708,7 @@ export function createTDEngine(canvas, opts) {
   function drawYardBbqSmoke(drawW, drawH, t) {
     // Coals / spit sit in the open tray — centre of the grill body.
     const bedX = drawW * 0.02;
-    const bedY = -drawH * 0.52;
+    const bedY = -drawH * 0.52 - 10;
     const bedRx = drawW * 0.2;
     const bedRy = drawH * 0.06;
 

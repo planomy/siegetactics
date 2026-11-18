@@ -88,7 +88,7 @@ export const YARD_PROPS = {
     label: 'Pool dig',
     // Solid dig is 4×3; footprintCells adds one column on the right so a vertical
     // route cannot clip the painted fence. Grass under the dig stays open.
-    scale: 1.15,
+    scale: 1.495,
     noShadow: true,
     grounding: 'none',
   },
