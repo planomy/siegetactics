@@ -89,7 +89,11 @@ export const YARD_PROPS = {
     w: 4,
     h: 3,
     label: 'Pool dig',
-    // Art stays large (scale); path + placement use the 4×3 dig only.
+    // Art is oversized (scale 1.61). Path uses a 5×5 skirt so the west run cannot
+    // slip through the painted pit / under-fence row; place stays 4×3 and pad cells
+    // outside that rect stay buildable via isYardBuildSlot.
+    blockW: 5,
+    blockH: 5,
     scale: 1.61,
     noShadow: true,
     grounding: 'none',

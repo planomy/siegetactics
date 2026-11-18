@@ -34,8 +34,14 @@ test('every authored yard layout stays open and forces a real detour', () => {
   assert.equal(detourYardLayouts().length, YARD_LAYOUTS.length);
 });
 
-test('yard path blocks match place footprints — no invisible skirts', () => {
+test('yard path blocks match place footprints — pool dig keeps a path-only skirt', () => {
   for (const prop of Object.values(YARD_PROPS)) {
+    if (prop.id === 'pool-under-construction') {
+      assert.equal(prop.blockW, 5, 'pool dig path skirt width');
+      assert.equal(prop.blockH, 5, 'pool dig path skirt height');
+      assert.equal(footprintCells(prop, 2, 2).length, 25, 'pool dig path footprint');
+      continue;
+    }
     assert.equal(prop.blockW, undefined, `${prop.id} should not set blockW`);
     assert.equal(prop.blockH, undefined, `${prop.id} should not set blockH`);
     assert.equal(footprintCells(prop, 2, 2).length, prop.w * prop.h, `${prop.id} footprint`);
@@ -47,17 +53,24 @@ test('yard path blocks match place footprints — no invisible skirts', () => {
   const blocked = new Uint8Array(CELL_COUNT);
   stampYardBlocked(blocked, layout.items);
   assert.equal(blocked[cellIndex(item.col, item.row)], 1);
-  // Grass one cell outside the dig stays walkable.
+  // Under-fence row is part of the path skirt (art hangs below the 4×3 place).
+  assert.equal(blocked[cellIndex(item.col + 1, item.row + 3)], 1);
+  // Grass just left of the skirt stays walkable.
   assert.equal(blocked[cellIndex(item.col - 1, item.row + 1)], 0);
-  assert.equal(blocked[cellIndex(item.col, item.row - 1)], 0);
 
-  const route = traceRoute(computeFlowField(blocked), blocked, MAZE_GATES[0]);
-  assert.ok(route.length > 0, 'west gate still reaches the porch');
-  assert.equal(
-    route.some((c) => c.col >= item.col && c.col < item.col + pool.w && c.row >= item.row && c.row < item.row + pool.h),
-    false,
-    'west route must not walk through the dig',
-  );
+  for (const yard of YARD_LAYOUTS.filter((l) => l.items.some((i) => i.id === 'pool-under-construction'))) {
+    const dig = yard.items.find((i) => i.id === 'pool-under-construction');
+    const map = new Uint8Array(CELL_COUNT);
+    stampYardBlocked(map, yard.items);
+    const route = traceRoute(computeFlowField(map), map, MAZE_GATES[0]);
+    const foot = footprintCells(pool, dig.col, dig.row);
+    assert.ok(route.length > 0, `${yard.id}: west gate still reaches the porch`);
+    assert.equal(
+      route.some((c) => foot.some((f) => f.col === c.col && f.row === c.row)),
+      false,
+      `${yard.id}: west route must not walk through the dig skirt`,
+    );
+  }
 });
 
 test('random yard picks only come from the detour pool', () => {
