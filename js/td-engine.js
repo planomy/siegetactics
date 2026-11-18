@@ -2919,32 +2919,46 @@ export function createTDEngine(canvas, opts) {
   }
 
   /**
+   * Place-rect edges in screen px — props lock width to this and sit on the bottom.
+   * @param {{ col: number, row: number }} item
+   * @param {(typeof YARD_PROPS)[string]} prop
+   */
+  function yardPlaceRect(item, prop) {
+    const tl = cellCenter(item.col, item.row);
+    const br = cellCenter(item.col + prop.w - 1, item.row + prop.h - 1);
+    return {
+      left: tl.x * width - mazeCellW / 2,
+      right: br.x * width + mazeCellW / 2,
+      top: tl.y * height - mazeCellH / 2,
+      bottom: br.y * height + mazeCellH / 2,
+    };
+  }
+
+  /**
    * Foot Y (screen px) for a yard prop — larger = closer to camera / drawn later.
    * @param {{ col: number, row: number }} item
    * @param {(typeof YARD_PROPS)[string]} prop
    */
   function yardFootY(item, prop) {
-    const br = cellCenter(item.col + prop.w - 1, item.row + prop.h - 1);
-    return br.y * height + mazeCellH * 0.42;
+    return yardPlaceRect(item, prop).bottom;
   }
 
   /** @param {{ col: number, row: number }} item @param {(typeof YARD_PROPS)[string]} prop */
   function drawOneYardProp(item, prop) {
     const img = yardSprites[prop.id];
-    const scale = prop.scale ?? 1.25;
-    const footW = prop.w * mazeCellW;
-    const footH = prop.h * mazeCellH;
-    let drawW = footW * scale;
-    let drawH = footH * scale;
+    const scale = prop.scale ?? 1;
+    const box = yardPlaceRect(item, prop);
+    const footW = (box.right - box.left) * scale;
+    // Width locks to the place columns so the grass pad sits on the grid; height
+    // follows the art (tall bits overhang north for iso "behind").
+    let drawW = footW;
+    let drawH = box.bottom - box.top;
     if (img?.complete && img.naturalWidth > 0) {
       const aspect = img.naturalWidth / img.naturalHeight;
-      if (aspect > drawW / drawH) drawW = drawH * aspect;
-      else drawH = drawW / aspect;
+      drawH = drawW / aspect;
     }
-    const tl = cellCenter(item.col, item.row);
-    const br = cellCenter(item.col + prop.w - 1, item.row + prop.h - 1);
-    const cx = ((tl.x + br.x) / 2) * width;
-    const footY = br.y * height + mazeCellH * 0.42;
+    const cx = (box.left + box.right) / 2;
+    const footY = box.bottom;
     const seed = item.col * 17 + item.row * 31 + prop.w * 3;
     const t = portalAnimTime;
     ctx.save();

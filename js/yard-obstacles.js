@@ -22,8 +22,8 @@ import {
  */
 
 /**
- * Place footprint = path block = grass pad on the art (scale 1). Tall plants /
- * frames overhang north; buildSlots on the back row let turrets nest behind.
+ * Place footprint = path block. Art width locks to w cells and sits on the
+ * bottom row; tall bits overhang north. buildSlots nest turrets behind.
  * @type {Record<string, YardProp>}
  */
 export const YARD_PROPS = {
