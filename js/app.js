@@ -2370,9 +2370,10 @@ function finishRun(stats) {
     prevBestStars,
   });
 
+  const isScoreRecord = siegeScore > prevBestScore;
   if (starResult.stars > prevBestStars) save.bestStars[missionId] = starResult.stars;
   if (stats.kills > prevBestKills) save.bestKills[missionId] = stats.kills;
-  if (siegeScore > prevBestScore) save.bestScore[missionId] = siegeScore;
+  if (isScoreRecord) save.bestScore[missionId] = siegeScore;
   const prevBestBanked = save.bestBankedCoins[missionId] ?? 0;
   if (bankedCoins > prevBestBanked) save.bestBankedCoins[missionId] = bankedCoins;
   if (stats.won && !save.completedMissions.includes(missionId)) {
@@ -2405,6 +2406,21 @@ function finishRun(stats) {
 
   const maxLeaksEl = document.getElementById('results-max-leaks');
   if (maxLeaksEl) maxLeaksEl.textContent = '0';
+
+  const heroStat = document.getElementById('results-hero-stat');
+  const recordMsg = document.getElementById('results-record-msg');
+  if (heroStat) heroStat.classList.toggle('is-record', isScoreRecord);
+  if (recordMsg) {
+    if (isScoreRecord) {
+      recordMsg.hidden = false;
+      recordMsg.textContent = prevBestScore > 0
+        ? `NEW HIGH SCORE! Beat ${prevBestScore.toLocaleString()}`
+        : 'NEW HIGH SCORE!';
+    } else {
+      recordMsg.hidden = true;
+      recordMsg.textContent = 'NEW HIGH SCORE!';
+    }
+  }
 
   document.getElementById('results-score').textContent = '0';
   document.getElementById('results-kills').textContent = '0';

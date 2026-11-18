@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/main.css?v=20261118b3" />
+  <link rel="stylesheet" href="css/main.css?v=20261118b4" />
   <link rel="stylesheet" href="css/home-gb.css?v=20261114n2" />
   <link rel="stylesheet" href="css/how-to-play.css?v=20261114c1" />
   <link rel="stylesheet" href="css/popups.css?v=20261115p1" />
@@ -358,10 +358,18 @@
           <h2 class="brag-headline" id="results-headline">Minute survived!</h2>
           <p class="granny-line" id="results-subline">Granny counted every blast from the porch.</p>
 
-          <div class="brag-hero-stat">
-            <span class="stat-num" id="results-score">0</span>
-            <span class="stat-label">siege score</span>
-            <span class="stat-sublabel"><span id="results-kills">0</span> aliens blasted</span>
+          <div class="brag-hero-stat" id="results-hero-stat">
+            <div class="brag-hero-pair">
+              <div class="brag-hero-col">
+                <span class="stat-num" id="results-kills">0</span>
+                <span class="stat-label">aliens blasted</span>
+              </div>
+              <div class="brag-hero-col brag-hero-score">
+                <span class="stat-num" id="results-score">0</span>
+                <span class="stat-label">siege score</span>
+              </div>
+            </div>
+            <p class="brag-record-msg" id="results-record-msg" hidden>NEW HIGH SCORE!</p>
           </div>
 
           <div class="results-extras" id="results-extras"></div>
@@ -416,6 +424,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20261118b3"></script>
+  <script type="module" src="js/app.js?v=20261118b4"></script>
 </body>
 </html>
