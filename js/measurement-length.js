@@ -3,7 +3,6 @@ import { legacyLevel } from './difficulty.js?v=20261114k1';
 import { extraLevelQuestion } from './extra-levels.js?v=20261114v1';
 import { noteType, labelQuestion } from './maths-skills.js';
 import { GATE } from './training-gate.js?v=20261114n1';
-import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
 import { renderDoneActions, bindDoneActions } from './done-actions.js?v=20261116xp27';
@@ -343,6 +342,7 @@ function pick(arr) {
  *   onAnswer?: (right: boolean) => void,
  *   onSessionComplete: (result: { accuracy: number, passed: boolean }) => void,
  *   onHome: () => void,
+ *   gateNote?: () => string,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
  *   unitDone: boolean,
  * }} callbacks
@@ -514,12 +514,12 @@ export function initMeasurementLength(host, callbacks) {
   /** @param {number} accuracy @param {boolean} passed */
   function renderDone(accuracy, passed) {
     const pct = Math.round(accuracy * 100);
-    const gateNote = siegeGateNote();
+    const gateNote = callbacks.gateNote?.() ?? '';
     host.innerHTML = `
       <div class="panel times-panel times-done">
         <p class="mission-tag">Session complete</p>
         <h2 class="panel-title">${correct} / ${deck.length} correct</h2>
-        <p class="granny-line">${pct}% on Length Lab. ${gateNote}</p>
+        <p class="granny-line">${pct}% on Length Lab.${gateNote ? ` ${gateNote}` : ''}</p>
         <div class="times-done-xp">
           <span class="times-done-xp-num">+${sessionXp}</span>
           <span class="times-done-xp-label">${ECONOMY.forgeXpLabel}</span>

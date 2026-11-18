@@ -36,13 +36,13 @@ import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './en
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261117d1';
 import { initHowToPlay } from './how-to-play.js?v=20261117f3';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
-import { initTimesTables } from './times-tables.js?v=20261118f4';
-import { initMeasurementLength } from './measurement-length.js?v=20261118e5';
-import { initFractions } from './fractions.js?v=20261116xp1';
-import { initAnglesShapes } from './angles-shapes.js?v=20261116xp1';
-import { initPlaceValue } from './place-value.js?v=20261118f2';
+import { initTimesTables } from './times-tables.js?v=20261119c1';
+import { initMeasurementLength } from './measurement-length.js?v=20261119c1';
+import { initFractions } from './fractions.js?v=20261119c1';
+import { initAnglesShapes } from './angles-shapes.js?v=20261119c1';
+import { initPlaceValue } from './place-value.js?v=20261119c1';
 import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261118a1';
-import { initExpandedMath } from './expanded-maths.js?v=20261116xp1';
+import { initExpandedMath } from './expanded-maths.js?v=20261119c1';
 import { initBattlePrep } from './battle-prep.js?v=20261118f1';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js?v=20261114k1';
 import {
@@ -76,7 +76,7 @@ import {
   answersProgress,
   recordMissionMix,
 } from './training-gate.js?v=20261115p1';
-import { setGateRemainingProvider } from './gate-status.js?v=20261116xp21';
+import { setGateRemainingProvider, gateNote as siegeGateNote } from './gate-status.js?v=20261119c1';
 import { normalizeRareSave, rollRareShip, rareShipById, recordRareSighted, recordRareCaught, rareCrystalReward } from './rare-ships.js?v=20261114t1';
 import {
   normalizeRareCrystalRound,
@@ -1301,15 +1301,18 @@ function createTrainingHandlers(moduleId) {
       if (right) audio.playCorrect();
       else audio.playWrong();
       trackAnswerStreak(right);
+      // Charge the invasion bar first so a later topic/engagement hiccup can't skip it.
+      creditTrainingAnswer(right, level);
       if (right) creditEngagementAnswer(moduleId, level);
       creditTopicAnswer(moduleId, level, right);
-      creditTrainingAnswer(right, level);
     },
     onSessionComplete(accuracy) {
       return completeTrainingSession(moduleId, level, accuracy);
     },
     onHome: showHome,
     siegeReady: () => DEV.skipForge || isGateOpen(save.trainingGate),
+    /** Same live remaining as the invasion strip — never import gate-status from drills. */
+    gateNote: siegeGateNote,
     onAction: goToTheAction,
     showToast,
     resume: pausedSetFor(moduleId, level),
@@ -1905,6 +1908,7 @@ function showMeasurementLength() {
     },
     onHome: () => disposeTrainingAndGoHome(training.onHome),
     siegeReady: training.siegeReady,
+    gateNote: training.gateNote,
     onAction: training.onAction,
     showToast: training.showToast,
     resume: training.resume,
@@ -1929,6 +1933,7 @@ function showFractions() {
     },
     onHome: () => disposeTrainingAndGoHome(training.onHome),
     siegeReady: training.siegeReady,
+    gateNote: training.gateNote,
     onAction: training.onAction,
     showToast: training.showToast,
     resume: training.resume,
@@ -1953,6 +1958,7 @@ function showAnglesShapes() {
     },
     onHome: () => disposeTrainingAndGoHome(training.onHome),
     siegeReady: training.siegeReady,
+    gateNote: training.gateNote,
     onAction: training.onAction,
     showToast: training.showToast,
     resume: training.resume,
@@ -2006,6 +2012,7 @@ function showExpandedMath(topicId) {
     },
     onHome: () => disposeTrainingAndGoHome(training.onHome),
     siegeReady: training.siegeReady,
+    gateNote: training.gateNote,
     onAction: training.onAction,
     showToast: training.showToast,
     resume: training.resume,
@@ -2049,6 +2056,7 @@ function showPlaceValue() {
     },
     onHome: () => disposeTrainingAndGoHome(training.onHome),
     siegeReady: training.siegeReady,
+    gateNote: training.gateNote,
     onAction: training.onAction,
     showToast: training.showToast,
     resume: training.resume,

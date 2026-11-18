@@ -1,7 +1,7 @@
 import { ECONOMY } from './economy.js';
 import { labelQuestion } from './maths-skills.js';
 import { GATE, tableKey } from './training-gate.js?v=20261114n1';
-import { gateRemaining } from './gate-status.js?v=20261116xp21';
+import { gateRemaining } from './gate-status.js?v=20261119c1';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { renderDoneActions, bindDoneActions } from './done-actions.js?v=20261116xp27';
 import { isResumable } from './drill-session.js?v=20261114m1';

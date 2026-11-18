@@ -3,7 +3,7 @@
  * and Fractions (not the old one-puzzle forge).
  */
 
-import { initDrillSession } from './drill-session.js?v=20261118a1';
+import { initDrillSession } from './drill-session.js?v=20261119c1';
 import { makePlaceValueVariant } from './missions-data.js?v=20261114v1';
 import { sanitizeQuestionOptions } from './question-options.js?v=20260819b';
 import { labelQuestion } from './maths-skills.js';
@@ -128,6 +128,7 @@ export function initPlaceValue(host, callbacks) {
     },
     onHome: callbacks.onHome,
     siegeReady: callbacks.siegeReady,
+    gateNote: callbacks.gateNote,
     onAction: callbacks.onAction,
     showToast: callbacks.showToast,
     resume: callbacks.resume,

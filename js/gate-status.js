@@ -19,6 +19,6 @@ export function gateRemaining() {
 export function gateNote() {
   const remaining = gateRemaining();
   if (remaining === 0) return 'Defences fully charged. Your siege is ready at HQ!';
-  // Drill score (e.g. 10/10) is only this set — the invasion bar needs a full charge across all maths.
-  return `This drill is done — invasion still needs ${remaining} more right answer${remaining === 1 ? '' : 's'}.`;
+  // 10/10 is only this set. The invasion bar keeps charge across every maths round until the siege opens.
+  return `This set is done — invasion still needs ${remaining} more right answer${remaining === 1 ? '' : 's'} across your maths.`;
 }

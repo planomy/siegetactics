@@ -1,6 +1,5 @@
 import { ECONOMY } from './economy.js';
 import { GATE } from './training-gate.js?v=20261114n1';
-import { gateNote as siegeGateNote } from './gate-status.js?v=20261112a1';
 import { difficultyTrainingTag } from './difficulty.js?v=20261114k1';
 import { sanitizeQuestionOptions, valuesMatch } from './question-options.js?v=20260819b';
 import { renderDoneActions, bindDoneActions } from './done-actions.js?v=20261116xp27';
@@ -21,6 +20,7 @@ import { renderDoneActions, bindDoneActions } from './done-actions.js?v=20261116
  *   onSessionComplete?: (result: { accuracy: number, passed: boolean }) => void,
  *   onHome: () => void,
  *   siegeReady?: () => boolean,
+ *   gateNote?: () => string,
  *   onAction?: () => void,
  *   showToast: (msg: string, opts?: { variant?: string }) => void,
  *   unitDone?: boolean,
@@ -197,10 +197,9 @@ export function initDrillSession(host, config) {
   /** @param {number} accuracy @param {boolean} passed */
   function renderDone(accuracy, passed) {
     const pct = Math.round(accuracy * 100);
+    const siegeNote = config.gateNote?.() ?? '';
     let gateNote = `${pct}% on ${config.title}.`;
-    if (config.onSessionComplete) {
-      gateNote = `${pct}% on ${config.title}. ${siegeGateNote()}`;
-    }
+    if (siegeNote) gateNote = `${pct}% on ${config.title}. ${siegeNote}`;
     host.innerHTML = `
       <div class="panel times-panel times-done">
         <p class="mission-tag">Session complete</p>

@@ -1,4 +1,4 @@
-import { initDrillSession } from './drill-session.js?v=20261118a1';
+import { initDrillSession } from './drill-session.js?v=20261119c1';
 import { legacyLevel } from './difficulty.js?v=20261114k1';
 import { extraLevelQuestion } from './extra-levels.js?v=20261115p1';
 import { noteType, labelQuestion } from './maths-skills.js';
@@ -313,6 +313,7 @@ export function initAnglesShapes(host, callbacks) {
     },
     onHome: callbacks.onHome,
     siegeReady: callbacks.siegeReady,
+    gateNote: callbacks.gateNote,
     onAction: callbacks.onAction,
     showToast: callbacks.showToast,
     resume: callbacks.resume,
