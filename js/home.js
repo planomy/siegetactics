@@ -636,7 +636,7 @@ export function renderSiegeStats(host, state) {
   const prior = host.querySelector('.mission-battle-stats');
   const html = `
     <div class="mission-battle-stats">
-      ${renderCrystalVault(state.crystalsCollected ?? 0, state.crystalsToSpend ?? 0)}
+      ${renderCrystalVault(state.crystalsCollected ?? 0, state.crystalsToSpend ?? 0, state.crystalChips)}
     </div>
   `;
   const template = document.createElement('template');
@@ -648,11 +648,16 @@ export function renderSiegeStats(host, state) {
   lastVaultCount = state.crystalsToSpend ?? 0;
 }
 
+/**
+ * Vault tiers track all-time crystals collected (including rare ×3/×5/×10).
+ * With ~44 rare cores per topic map piece, silver lands around 75% of a full
+ * three-season maths career (~1000), not during the first topic.
+ */
 const VAULT_TIERS = [
-  { at: 150, id: 'legend', name: 'LEGENDARY VAULT', art: 'vault-legend' },
-  { at: 80, id: 'gold', name: 'GOLD VAULT', art: 'vault-gold' },
-  { at: 40, id: 'silver', name: 'SILVER VAULT', art: 'vault-silver' },
-  { at: 15, id: 'bronze', name: 'BRONZE VAULT', art: 'vault-bronze' },
+  { at: 1700, id: 'legend', name: 'LEGENDARY VAULT', art: 'vault-legend' },
+  { at: 1350, id: 'gold', name: 'GOLD VAULT', art: 'vault-gold' },
+  { at: 1000, id: 'silver', name: 'SILVER VAULT', art: 'vault-silver' },
+  { at: 100, id: 'bronze', name: 'BRONZE VAULT', art: 'vault-bronze' },
   { at: 0, id: 'starter', name: 'CRYSTAL VAULT', art: 'vault-green' },
 ];
 
@@ -805,25 +810,40 @@ function scheduleVaultShimmer() {
   next();
 }
 
-function renderCrystalVault(collected, toSpend) {
+/**
+ * @param {number} collected
+ * @param {number} toSpend
+ * @param {{ value: number, tierId: string }[]} [chips]
+ */
+function renderCrystalVault(collected, toSpend, chips = []) {
   scheduleVaultShimmer();
   const tier = vaultTierFor(collected);
   const next = [...VAULT_TIERS].reverse().find((t) => t.at > collected);
-  // The glass holds up to 20; beyond that the number keeps counting.
+  // The glass holds up to 20 chips; prefer showing rares, then fill with basics.
   const room = 20;
-  const shown = Math.min(room, Math.max(0, toSpend));
+  const list = Array.isArray(chips) ? chips.slice() : [];
+  const rares = list.filter((c) => (c.value ?? 1) > 1);
+  const basics = list.filter((c) => (c.value ?? 1) <= 1);
+  const display = rares.concat(basics).slice(0, room);
+  while (display.length < Math.min(room, Math.max(0, toSpend)) && display.length < room) {
+    display.push({ value: 1, tierId: 'basic' });
+  }
   const cols = 5;
   const rows = Math.ceil(room / cols);
   const cell = 100 / cols;
   const fresh = lastVaultCount != null && toSpend > lastVaultCount;
-  const crystals = Array.from({ length: shown }, (_, i) => {
+  const crystals = display.map((chip, i) => {
     const row = Math.floor(i / cols);
     const col = i % cols;
     const left = col * cell + (row % 2 ? cell * 0.25 : 0) - cell * 0.1;
     const bottom = (row * 100) / rows;
     const turn = ((i * 53) % 50) - 25;
-    const isNew = fresh && i === shown - 1;
-    return `<span class="crystal-vault-crystal${isNew ? ' is-new' : ''}" style="left:${left.toFixed(1)}%;bottom:${bottom.toFixed(1)}%;width:${(cell * 1.15).toFixed(1)}%;--turn:${turn}deg"></span>`;
+    const isNew = fresh && i === display.length - 1;
+    const tierId = chip.tierId && chip.tierId !== 'basic' ? chip.tierId : '';
+    const value = Math.max(1, Math.floor(Number(chip.value) || 1));
+    const rareClass = tierId ? ` crystal-vault-crystal--${tierId}` : '';
+    const valueMark = value > 1 ? `<span class="crystal-vault-chip-value">×${value}</span>` : '';
+    return `<span class="crystal-vault-crystal${rareClass}${isNew ? ' is-new' : ''}" style="left:${left.toFixed(1)}%;bottom:${bottom.toFixed(1)}%;width:${(cell * 1.15).toFixed(1)}%;--turn:${turn}deg">${valueMark}</span>`;
   }).join('');
   return `
     <section class="crystal-vault crystal-vault--${tier.id}" aria-label="Crystal vault: ${toSpend} alien crystals to spend">

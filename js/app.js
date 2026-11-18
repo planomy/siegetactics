@@ -31,7 +31,7 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261118w8';
+import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261118r2';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261117d1';
 import { initHowToPlay } from './how-to-play.js?v=20261117f3';
@@ -81,7 +81,10 @@ import { normalizeRareSave, rollRareShip, rareShipById, recordRareSighted, recor
 import {
   normalizeRareCrystalRound,
   drawRareCrystal,
-} from './rare-crystals.js?v=20261118r1';
+  normalizeCrystalChips,
+  addCrystalChip,
+  spendCrystalChips,
+} from './rare-crystals.js?v=20261118r2';
 import { REGIONS as HOMELAND_REGIONS, loadProgress as loadHomelandProgress, regionCrystals } from './homeland/regions.js?v=30';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
@@ -128,6 +131,7 @@ const defaultSave = {
   stretchCoins: 0,
   rares: normalizeRareSave(null),
   rareCrystalRound: normalizeRareCrystalRound(null),
+  crystalChips: [],
   homelandClaimed: [],
   settings: { sound: true, music: true, difficultyLevel: 2 },
 };
@@ -312,6 +316,7 @@ function loadSave() {
     data.stretchCoins = Math.max(0, Math.floor(Number(data.stretchCoins) || 0));
     data.rares = normalizeRareSave(data.rares);
     data.rareCrystalRound = normalizeRareCrystalRound(data.rareCrystalRound);
+    data.crystalChips = normalizeCrystalChips(data.crystalChips, data.upgradeCores);
     data.homelandClaimed = Array.isArray(data.homelandClaimed) ? data.homelandClaimed.filter((k) => typeof k === 'string') : [];
     // Preserve old players' real mastered levels and map passes as a one-time rank baseline.
     data.topicProgress = normalizeTopicProgress(data.topicProgress, data.levelMastery, data.mapProgress);
@@ -512,6 +517,7 @@ function renderArmoryScreen() {
       const st = gearStatus(id, save.gear, save.upgradeCores);
       if (!def || st.state !== 'ready') return;
       save.upgradeCores -= st.cost;
+      save.crystalChips = spendCrystalChips(save.crystalChips ?? [], st.cost);
       save.gear = [...save.gear, id];
       persistSave();
       audio.playTurretUpgrade();
@@ -591,12 +597,14 @@ function tryUnlockTurret(id) {
  */
 function awardUpgradeCore(reason, from, amount = 1, opts = {}) {
   const tierBefore = vaultTierFor(save.crystalsCollected).id;
-  save.upgradeCores += amount;
-  save.crystalsCollected += amount;
+  const value = Math.max(1, Math.floor(Number(amount) || 1));
+  save.upgradeCores += value;
+  save.crystalsCollected += value;
+  save.crystalChips = addCrystalChip(save.crystalChips ?? [], value, opts.tierId);
   persistSave();
   refreshTopbar();
   refreshMissionControl();
-  const look = { amount, tierId: opts.tierId, title: opts.title };
+  const look = { amount: value, tierId: opts.tierId, title: opts.title };
   if (from?.x != null && from?.y != null) showCrystalDrop(from.x, from.y, look);
   else showCoreReward(reason, look);
   if (vaultTierFor(save.crystalsCollected).id !== tierBefore) {
@@ -612,7 +620,7 @@ function awardUpgradeCore(reason, from, amount = 1, opts = {}) {
 function awardRareCrystalFromSet(reason) {
   const draw = drawRareCrystal(save.rareCrystalRound);
   save.rareCrystalRound = draw.round;
-  awardUpgradeCore(reason, screenCentre(), draw.value, {
+  awardUpgradeCore(`${reason} · ×${draw.value}`, screenCentre(), draw.value, {
     tierId: draw.tier.id,
     title: draw.tier.title,
   });
@@ -855,7 +863,7 @@ function showPendingStory() {
 function showCrystalDrop(x, y, look = {}) {
   const amount = Math.max(1, Math.floor(Number(look.amount) || 1));
   const tierId = look.tierId || '';
-  const title = look.title || (amount > 1 ? `ALIEN CRYSTAL ×${amount}!` : 'ALIEN CRYSTAL!');
+  const title = look.title || (amount > 1 ? `×${amount} ALIEN CRYSTAL!` : 'ALIEN CRYSTAL!');
   const el = document.createElement('div');
   el.className = `crystal-drop${tierId ? ` crystal-drop--${tierId}` : ''}`;
   el.setAttribute('aria-hidden', 'true');
@@ -868,7 +876,8 @@ function showCrystalDrop(x, y, look = {}) {
       <span class="core-gem core-gem--big${tierId ? ` core-gem--${tierId}` : ''}"></span>
       ${amount > 1 ? `<span class="core-gem-value">×${amount}</span>` : ''}
     </span>
-    <strong class="crystal-drop-title">${title}</strong>`;
+    <strong class="crystal-drop-title">${title}</strong>
+    ${amount > 1 ? `<span class="crystal-drop-worth">WORTH ${amount}</span>` : ''}`;
   document.body.append(el);
   audio.playCoreEarned();
   window.setTimeout(() => {
@@ -899,7 +908,7 @@ function showCoreReward(reason, look = {}) {
   clearTimeout(coreRewardTimer);
   const amount = Math.max(1, Math.floor(Number(look.amount) || 1));
   const tierId = look.tierId || '';
-  const title = look.title || (amount > 1 ? `ALIEN CRYSTAL ×${amount}!` : 'ALIEN CRYSTAL!');
+  const title = look.title || (amount > 1 ? `×${amount} ALIEN CRYSTAL!` : 'ALIEN CRYSTAL!');
   const el = document.createElement('button');
   el.type = 'button';
   el.className = `core-reward${tierId ? ` core-reward--${tierId}` : ''}`;
@@ -915,7 +924,7 @@ function showCoreReward(reason, look = {}) {
       <span class="core-gem core-gem--big${tierId ? ` core-gem--${tierId}` : ''}" aria-hidden="true"></span>
       ${amount > 1 ? `<span class="core-gem-value core-gem-value--reward">×${amount}</span>` : ''}
       <strong class="core-reward-title">${title}</strong>
-      <span class="core-reward-reason">${reason}</span>
+      <span class="core-reward-reason">${amount > 1 ? `${reason} · WORTH ${amount}` : reason}</span>
       <span class="core-reward-cta">TAP TO POWER UP A TURRET</span>
     </span>`;
   el.addEventListener('click', () => {
@@ -950,6 +959,7 @@ function tryUpgradeTurret(id) {
   const next = nextUpgrade(id, save.upgradeCores, isUnlocked(id));
   if (!next?.ready) return false;
   save.upgradeCores -= next.cost;
+  save.crystalChips = spendCrystalChips(save.crystalChips ?? [], next.cost);
   save.turretLevels = { ...save.turretLevels, [id]: next.level };
   audio.playTurretUpgrade();
   setTurretLevels(save.turretLevels);
@@ -1520,6 +1530,7 @@ function makeDashboardState() {
     siegesCompleted: save.siegesCompleted,
     crystalsCollected: save.crystalsCollected,
     crystalsToSpend: save.upgradeCores,
+    crystalChips: save.crystalChips,
     bestKills: save.bestKills[SLICE_MISSION_ID] ?? 0,
     bestBankedCoins: save.bestBankedCoins[SLICE_MISSION_ID] ?? 0,
     bestStars: save.bestStars,

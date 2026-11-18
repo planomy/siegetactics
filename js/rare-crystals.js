@@ -6,12 +6,13 @@
 
 /** @typedef {{ value: 3|5|10, id: string, label: string, title: string }} RareCrystalTier */
 /** @typedef {{ bag: number[], draws: number }} RareCrystalRound */
+/** @typedef {{ value: number, tierId: string }} CrystalChip */
 
 /** @type {readonly RareCrystalTier[]} */
 export const RARE_CRYSTAL_TIERS = Object.freeze([
-  { value: 3, id: 'spark', label: 'Spark', title: 'SPARK CRYSTAL!' },
-  { value: 5, id: 'pulse', label: 'Pulse', title: 'PULSE CRYSTAL!' },
-  { value: 10, id: 'nova', label: 'Nova', title: 'NOVA CRYSTAL!' },
+  { value: 3, id: 'spark', label: 'Spark', title: '×3 SPARK CRYSTAL!' },
+  { value: 5, id: 'pulse', label: 'Pulse', title: '×5 PULSE CRYSTAL!' },
+  { value: 10, id: 'nova', label: 'Nova', title: '×10 NOVA CRYSTAL!' },
 ]);
 
 /** How many of each value start in a fresh 10-set bag. */
@@ -83,4 +84,74 @@ export function drawRareCrystal(round, rand = Math.random) {
     tier,
     round: { bag, draws: state.draws + 1 },
   };
+}
+
+/** @param {any} raw */
+function chipValue(raw) {
+  const value = Math.max(1, Math.floor(Number(raw?.value) || 0));
+  const tierId = typeof raw?.tierId === 'string' && raw.tierId ? raw.tierId : value === 3 ? 'spark' : value === 5 ? 'pulse' : value === 10 ? 'nova' : 'basic';
+  return { value, tierId };
+}
+
+/**
+ * Unspent crystals in the vault glass. Sum of values must match upgradeCores.
+ * Older saves with only a core count become that many ×1 chips.
+ * @param {any} raw
+ * @param {number} upgradeCores
+ * @returns {CrystalChip[]}
+ */
+export function normalizeCrystalChips(raw, upgradeCores) {
+  const target = Math.max(0, Math.floor(Number(upgradeCores) || 0));
+  const chips = Array.isArray(raw) ? raw.map(chipValue).filter((c) => c.value > 0) : [];
+  let sum = chips.reduce((n, c) => n + c.value, 0);
+  if (sum === target) return chips;
+  if (sum < target) {
+    const out = chips.slice();
+    for (let i = sum; i < target; i++) out.push({ value: 1, tierId: 'basic' });
+    return out;
+  }
+  // Too many chip points (edited save / mismatch): keep rares, fill remainder with basics.
+  const rares = chips.filter((c) => c.value > 1);
+  let rareSum = rares.reduce((n, c) => n + c.value, 0);
+  while (rareSum > target && rares.length) {
+    const dropped = rares.pop();
+    rareSum -= dropped?.value ?? 0;
+  }
+  const out = rares.slice();
+  for (let i = rareSum; i < target; i++) out.push({ value: 1, tierId: 'basic' });
+  return out;
+}
+
+/** @param {CrystalChip[]} chips @param {number} value @param {string} [tierId] */
+export function addCrystalChip(chips, value, tierId) {
+  const amount = Math.max(1, Math.floor(Number(value) || 1));
+  const id = tierId || (amount === 3 ? 'spark' : amount === 5 ? 'pulse' : amount === 10 ? 'nova' : 'basic');
+  return chips.concat({ value: amount, tierId: id });
+}
+
+/**
+ * Spend cores by removing chips (small/basic first so rares stay visible longer).
+ * @param {CrystalChip[]} chips
+ * @param {number} cost
+ */
+export function spendCrystalChips(chips, cost) {
+  let need = Math.max(0, Math.floor(Number(cost) || 0));
+  if (need <= 0) return chips.slice();
+  const sorted = chips
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => a.c.value - b.c.value || a.i - b.i);
+  const kill = new Set();
+  for (const { c, i } of sorted) {
+    if (need <= 0) break;
+    kill.add(i);
+    need -= c.value;
+  }
+  /** @type {CrystalChip[]} */
+  const kept = chips.filter((_, i) => !kill.has(i));
+  // Overspend (removed a ×10 for a 6-cost): refund the spare as basics.
+  while (need < 0) {
+    kept.push({ value: 1, tierId: 'basic' });
+    need += 1;
+  }
+  return kept;
 }

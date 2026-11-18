@@ -60,8 +60,10 @@
   position: relative;
   right: auto;
   bottom: auto;
-  margin-top: -0.35rem;
-  font-size: clamp(1.1rem, 2.6vw, 1.45rem);
+  margin-top: -0.2rem;
+  min-width: 2.1em;
+  padding: 0.12em 0.45em;
+  font-size: clamp(1.35rem, 3.2vw, 1.85rem);
 }
 
 .core-reward--spark .core-reward-rays {
@@ -351,6 +353,21 @@
   filter: drop-shadow(0 0 18px rgba(80, 255, 170, .95)) drop-shadow(0 0 40px rgba(40, 200, 255, .55));
 }
 
+.crystal-drop-gem .core-gem--big.core-gem--spark {
+  filter: hue-rotate(-18deg) saturate(1.25) brightness(1.08)
+    drop-shadow(0 0 18px rgba(80, 220, 255, 0.95)) drop-shadow(0 0 40px rgba(40, 180, 255, 0.55));
+}
+
+.crystal-drop-gem .core-gem--big.core-gem--pulse {
+  filter: hue-rotate(255deg) saturate(1.45) brightness(1.05)
+    drop-shadow(0 0 18px rgba(210, 90, 255, 0.95)) drop-shadow(0 0 40px rgba(160, 40, 255, 0.55));
+}
+
+.crystal-drop-gem .core-gem--big.core-gem--nova {
+  filter: hue-rotate(40deg) saturate(1.55) brightness(1.12)
+    drop-shadow(0 0 18px rgba(255, 210, 70, 0.98)) drop-shadow(0 0 40px rgba(255, 120, 40, 0.6));
+}
+
 .crystal-drop-title {
   position: absolute;
   left: 50%;
@@ -365,11 +382,30 @@
   animation: crystal-title .7s cubic-bezier(.34, 1.56, .64, 1) .15s both;
 }
 
+.crystal-drop-worth {
+  position: absolute;
+  left: 50%;
+  top: -72px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff6c8, #f0b020);
+  color: #3a2200;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 #8a5a10, 0 0 12px rgba(255, 200, 60, 0.55);
+  transform: translateX(-50%);
+  animation: crystal-title .7s cubic-bezier(.34, 1.56, .64, 1) .22s both;
+}
+
 .crystal-drop.is-leaving .crystal-drop-gem {
   animation: crystal-fly .75s cubic-bezier(.55, 0, .85, .4) forwards;
 }
 
 .crystal-drop.is-leaving .crystal-drop-title,
+.crystal-drop.is-leaving .crystal-drop-worth,
 .crystal-drop.is-leaving .crystal-drop-rays {
   opacity: 0;
   transition: opacity .25s ease;
@@ -477,9 +513,56 @@
   filter: drop-shadow(0 0 3px rgba(80, 255, 170, .6));
 }
 
+.crystal-vault-crystal--spark {
+  filter: hue-rotate(-18deg) saturate(1.3) brightness(1.08)
+    drop-shadow(0 0 5px rgba(80, 220, 255, 0.85));
+}
+
+.crystal-vault-crystal--pulse {
+  filter: hue-rotate(255deg) saturate(1.45) brightness(1.05)
+    drop-shadow(0 0 6px rgba(210, 90, 255, 0.9));
+}
+
+.crystal-vault-crystal--nova {
+  filter: hue-rotate(40deg) saturate(1.55) brightness(1.12)
+    drop-shadow(0 0 7px rgba(255, 200, 60, 0.95));
+  z-index: 2;
+}
+
+.crystal-vault-chip-value {
+  position: absolute;
+  right: -8%;
+  bottom: -2%;
+  min-width: 1.15em;
+  padding: 0.05em 0.22em;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff6c8, #f0b020);
+  color: #3a2200;
+  font-family: var(--font-display, Impact, sans-serif);
+  font-size: clamp(0.55rem, 1.6vw, 0.72rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-align: center;
+  box-shadow: 0 1px 0 #8a5a10, 0 0 6px rgba(255, 200, 60, 0.45);
+  transform: rotate(calc(var(--turn, 0deg) * -1));
+}
+
 .crystal-vault-crystal.is-new {
   animation: vault-drop .9s cubic-bezier(.34, 1.56, .64, 1) both;
   filter: drop-shadow(0 0 10px rgba(160, 255, 210, 1));
+}
+
+.crystal-vault-crystal--spark.is-new {
+  filter: hue-rotate(-18deg) saturate(1.3) brightness(1.08) drop-shadow(0 0 12px rgba(80, 220, 255, 1));
+}
+
+.crystal-vault-crystal--pulse.is-new {
+  filter: hue-rotate(255deg) saturate(1.45) brightness(1.05) drop-shadow(0 0 12px rgba(210, 90, 255, 1));
+}
+
+.crystal-vault-crystal--nova.is-new {
+  filter: hue-rotate(40deg) saturate(1.55) brightness(1.12) drop-shadow(0 0 14px rgba(255, 200, 60, 1));
 }
 
 @keyframes vault-drop {
