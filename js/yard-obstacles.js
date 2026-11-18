@@ -31,15 +31,7 @@ export const YARD_PROPS = {
     h: 1,
     label: 'Laundry trolley',
     scale: 1.48,
-    // Path skirts a 2×2; three nest cells stay buildable with the trolley drawn in front.
-    blockW: 2,
-    blockH: 2,
     grounding: 'none',
-    buildSlots: [
-      { dc: 1, dr: 0 },
-      { dc: 0, dr: -1 },
-      { dc: 1, dr: -1 },
-    ],
   },
   // Copilot refresh — grass baked at wheel + stand feet.
   wheelbarrow: {
@@ -57,9 +49,6 @@ export const YARD_PROPS = {
     w: 2,
     h: 2,
     label: 'BBQ',
-    // Extra path skirt so mid-lawn BBQs force a real bend, not a one-cell nudge.
-    blockW: 3,
-    blockH: 3,
     scale: 1.1,
     grounding: 'none',
     smoke: true,
@@ -81,19 +70,9 @@ export const YARD_PROPS = {
     h: 2,
     label: 'Veggie bed',
     scale: 1.65,
-    // Path uses a 3-wide strip; front + right nests stay buildable under the art.
-    blockW: 3,
-    blockH: 2,
     grounding: 'none',
-    buildSlots: [
-      { dc: 0, dr: 1 }, // front-left corner (metal bracket)
-      { dc: 1, dr: 1 }, // front-right corner
-      { dc: 2, dr: 0 },
-      { dc: 2, dr: 1 },
-    ],
   },
   // Round water feature — no contact shadow; waterfall/ripples drawn in the engine.
-  // Path skirt is wider than the place rect so the west run cannot cheaply slip beside it.
   'duck-pond': {
     id: 'duck-pond',
     src: 'assets/obstacles/duck-pond.png?v=20261115d1',
@@ -101,8 +80,6 @@ export const YARD_PROPS = {
     h: 3,
     label: 'Duck pond',
     scale: 1.2,
-    blockW: 4,
-    blockH: 4,
     noShadow: true,
     water: true,
   },
@@ -112,11 +89,7 @@ export const YARD_PROPS = {
     w: 4,
     h: 3,
     label: 'Pool dig',
-    // Art is oversized (scale 1.61). Path skirt is wider so ground aliens walk the
-    // grass corridor around the fence (in turret range) instead of clipping the dig.
-    // Pad cells outside 4×3 stay buildable via isYardBuildSlot.
-    blockW: 5,
-    blockH: 4,
+    // Art stays large (scale); path + placement use the 4×3 dig only.
     scale: 1.61,
     noShadow: true,
     grounding: 'none',
@@ -143,8 +116,6 @@ export const YARD_PROPS = {
     h: 2,
     label: "Uncle Bob's ute",
     scale: 1.85,
-    blockW: 3,
-    blockH: 3,
     grounding: 'none',
     // Front row under the cab / door — turret nests behind the ute art.
     buildSlots: [
@@ -168,7 +139,6 @@ export const YARD_LAYOUTS = [
       // Dig on the mid run; herb beds seal the cheap slip under / beside it.
       { id: 'pool-under-construction', col: 4, row: 3 },
       { id: 'bed-square', col: 2, row: 2 },
-      // Clear of the dig's 5×4 path skirt (cols 4–8, rows 2–5).
       { id: 'bed-square', col: 9, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
@@ -178,11 +148,13 @@ export const YARD_LAYOUTS = [
     id: 'veggie-maze',
     label: 'Veggie Maze',
     items: [
-      // Staggered beds + long planter so a one-row slip still hits another bed.
-      { id: 'bed-square', col: 3, row: 2 },
-      { id: 'bed-square', col: 3, row: 4 },
-      { id: 'bed-long', col: 6, row: 3 },
-      { id: 'bed-square', col: 10, row: 4 },
+      // Staggered beds choke the west run without invisible path skirts.
+      { id: 'bed-square', col: 3, row: 1 },
+      { id: 'bed-square', col: 3, row: 3 },
+      { id: 'bed-square', col: 3, row: 5 },
+      { id: 'bed-long', col: 5, row: 2 },
+      { id: 'bed-square', col: 5, row: 4 },
+      { id: 'bed-square', col: 7, row: 3 },
       { id: 'wheelbarrow', col: 1, row: 7 },
       { id: 'bbq-kettle', col: 12, row: 7 },
     ],
@@ -192,7 +164,9 @@ export const YARD_LAYOUTS = [
     label: 'Wedding Day',
     items: [
       { id: 'wedding-arbor', col: 3, row: 2 },
-      { id: 'bed-long', col: 8, row: 4 },
+      { id: 'bed-square', col: 2, row: 5 },
+      { id: 'bed-long', col: 7, row: 3 },
+      { id: 'bed-square', col: 7, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
     ],
@@ -202,8 +176,10 @@ export const YARD_LAYOUTS = [
     label: "Uncle Bob's Visit",
     items: [
       { id: 'uncle-bobs-ute', col: 2, row: 3 },
+      { id: 'bed-square', col: 2, row: 5 },
       { id: 'duck-pond', col: 5, row: 2 },
-      { id: 'bed-long', col: 9, row: 4 },
+      { id: 'bed-square', col: 8, row: 2 },
+      { id: 'bed-long', col: 8, row: 4 },
       { id: 'bbq-kettle', col: 12, row: 7 },
       { id: 'laundry-trolley', col: 1, row: 7 },
     ],
@@ -238,7 +214,6 @@ export const YARD_LAYOUTS = [
     items: [
       { id: 'pool-under-construction', col: 3, row: 3 },
       { id: 'bed-square', col: 1, row: 2 },
-      // Clear of the dig's 5×4 path skirt (cols 3–7, rows 2–5).
       { id: 'bed-square', col: 8, row: 2 },
       { id: 'bed-long', col: 8, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
@@ -353,7 +328,14 @@ export function layoutForcesDetour(items) {
   const m = yardDetourMetrics(items);
   const west = m.west;
   if (!west) return false;
-  return west.delta >= 2 || (west.turns >= 4 && west.span >= 3) || (m.north?.delta ?? 0) >= 2 || (m.south?.delta ?? 0) >= 2;
+  // Without invisible path skirts, a zigzag (4+ turns) or a 2-cell lengthen counts.
+  return (
+    west.delta >= 2 ||
+    (west.turns >= 4 && west.span >= 2) ||
+    (west.delta >= 1 && west.turns >= 3) ||
+    (m.north?.delta ?? 0) >= 2 ||
+    (m.south?.delta ?? 0) >= 2
+  );
 }
 
 /** Layouts that stay open and visibly bend the west (or side) routes. */
