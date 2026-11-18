@@ -140,10 +140,10 @@ export const YARD_LAYOUTS = [
     id: 'bbq-sunday',
     label: 'BBQ Sunday',
     items: [
-      // Dig + left herb bed; the dig's path skirt seals the under-run so we
-      // don't plant a second bed on the open grass beside the fence.
+      // Dig on the mid run; herb beds seal the cheap slip under / beside it.
       { id: 'pool-under-construction', col: 4, row: 3 },
       { id: 'bed-square', col: 2, row: 2 },
+      { id: 'bed-square', col: 9, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
     ],
@@ -194,6 +194,7 @@ export const YARD_LAYOUTS = [
     items: [
       { id: 'pool-under-construction', col: 4, row: 3 },
       { id: 'bed-square', col: 2, row: 2 },
+      { id: 'bed-square', col: 9, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
       { id: 'wheelbarrow', col: 12, row: 8 },
@@ -218,6 +219,7 @@ export const YARD_LAYOUTS = [
       { id: 'pool-under-construction', col: 3, row: 3 },
       { id: 'bed-square', col: 1, row: 2 },
       { id: 'bed-square', col: 8, row: 2 },
+      { id: 'bed-long', col: 8, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
     ],
@@ -246,6 +248,21 @@ export function footprintCells(prop, col, row) {
   for (let dr = 0; dr < bh; dr++) {
     for (let dc = 0; dc < bw; dc++) {
       cells.push({ col: originCol + dc, row: originRow + dr });
+    }
+  }
+  // Pool dig: also seal two rows under the foot. Without this the west run hugs
+  // the pit lip and reads as walking through the painted hole; with it, aliens
+  // climb over the dig on clear grass.
+  if (prop.id === 'pool-under-construction') {
+    const footRow = row + prop.h - 1;
+    const seen = new Set(cells.map((c) => `${c.col},${c.row}`));
+    for (let er = footRow + 1; er <= footRow + 2; er++) {
+      for (let c = col - 1; c < col + prop.w + 1; c++) {
+        const key = `${c},${er}`;
+        if (seen.has(key)) continue;
+        cells.push({ col: c, row: er });
+        seen.add(key);
+      }
     }
   }
   return cells;

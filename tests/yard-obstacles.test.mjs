@@ -34,12 +34,12 @@ test('every authored yard layout stays open and forces a real detour', () => {
   assert.equal(detourYardLayouts().length, YARD_LAYOUTS.length);
 });
 
-test('yard path blocks match place footprints — pool dig keeps a path-only skirt', () => {
+test('yard path blocks match place footprints — pool dig skirts the pit and forces the over-route', () => {
   for (const prop of Object.values(YARD_PROPS)) {
     if (prop.id === 'pool-under-construction') {
       assert.equal(prop.blockW, 5, 'pool dig path skirt width');
       assert.equal(prop.blockH, 5, 'pool dig path skirt height');
-      assert.equal(footprintCells(prop, 2, 2).length, 25, 'pool dig path footprint');
+      assert.ok(footprintCells(prop, 2, 2).length > prop.w * prop.h, 'pool dig path footprint includes under-lip');
       continue;
     }
     assert.equal(prop.blockW, undefined, `${prop.id} should not set blockW`);
@@ -53,10 +53,9 @@ test('yard path blocks match place footprints — pool dig keeps a path-only ski
   const blocked = new Uint8Array(CELL_COUNT);
   stampYardBlocked(blocked, layout.items);
   assert.equal(blocked[cellIndex(item.col, item.row)], 1);
-  // Under-fence row is part of the path skirt (art hangs below the 4×3 place).
-  assert.equal(blocked[cellIndex(item.col + 1, item.row + 3)], 1);
-  // Grass just left of the skirt stays walkable.
-  assert.equal(blocked[cellIndex(item.col - 1, item.row + 1)], 0);
+  // Two rows under the dig foot are sealed so the west run cannot hug the pit lip.
+  assert.equal(blocked[cellIndex(item.col + 1, item.row + pool.h)], 1);
+  assert.equal(blocked[cellIndex(item.col + 1, item.row + pool.h + 1)], 1);
 
   for (const yard of YARD_LAYOUTS.filter((l) => l.items.some((i) => i.id === 'pool-under-construction'))) {
     const dig = yard.items.find((i) => i.id === 'pool-under-construction');
@@ -68,7 +67,22 @@ test('yard path blocks match place footprints — pool dig keeps a path-only ski
     assert.equal(
       route.some((c) => foot.some((f) => f.col === c.col && f.row === c.row)),
       false,
-      `${yard.id}: west route must not walk through the dig skirt`,
+      `${yard.id}: west route must not walk the dig skirt`,
+    );
+    assert.equal(
+      route.some((c) => c.col >= dig.col && c.col < dig.col + pool.w && c.row >= dig.row && c.row < dig.row + pool.h),
+      false,
+      `${yard.id}: west route must not walk the dig place`,
+    );
+    // Path climbs over the dig on clear grass — not under the painted pit.
+    assert.ok(
+      route.some((c) => c.row < dig.row),
+      `${yard.id}: west route should climb over the dig`,
+    );
+    assert.equal(
+      route.some((c) => c.row > dig.row + pool.h - 1 && c.col >= dig.col - 1 && c.col <= dig.col + pool.w),
+      false,
+      `${yard.id}: west route must not hug under the dig lip`,
     );
   }
 });
