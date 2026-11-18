@@ -112,10 +112,9 @@ export const YARD_PROPS = {
     w: 4,
     h: 3,
     label: 'Pool dig',
+    // Art stays large (scale); path + placement use the 4×3 dig only so the
+    // grass around the fence stays a real walk / build lane.
     scale: 1.61,
-    // Full fence/pit block for path + placement — overlay no longer paints all of this red.
-    blockW: 7,
-    blockH: 5,
     noShadow: true,
     grounding: 'none',
   },
@@ -163,8 +162,10 @@ export const YARD_LAYOUTS = [
     id: 'bbq-sunday',
     label: 'BBQ Sunday',
     items: [
-      // Dig site seals the mid band; BBQ sits on the lower bypass.
-      { id: 'pool-under-construction', col: 3, row: 2 },
+      // Dig on the mid run; herb beds seal the cheap slip under / beside it.
+      { id: 'pool-under-construction', col: 4, row: 3 },
+      { id: 'bed-square', col: 2, row: 2 },
+      { id: 'bed-square', col: 8, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
     ],
@@ -207,32 +208,34 @@ export const YARD_LAYOUTS = [
     id: 'pool-dig',
     label: 'Pool Dig',
     items: [
-      { id: 'pool-under-construction', col: 3, row: 2 },
-      { id: 'wheelbarrow', col: 12, row: 8 },
-      { id: 'bed-square', col: 12, row: 1 },
+      { id: 'pool-under-construction', col: 4, row: 3 },
+      { id: 'bed-square', col: 2, row: 2 },
+      { id: 'bed-square', col: 8, row: 5 },
+      { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
+      { id: 'wheelbarrow', col: 12, row: 8 },
     ],
   },
   {
     id: 'duck-pond',
     label: 'Duck Pond',
     items: [
-      // Dig + pond together: west must climb or dive several rows.
-      { id: 'pool-under-construction', col: 4, row: 2 },
-      { id: 'duck-pond', col: 11, row: 6 },
+      // Dig + pond + herb bed: west must climb several rows over clear grass.
+      { id: 'pool-under-construction', col: 3, row: 3 },
+      { id: 'duck-pond', col: 8, row: 5 },
+      { id: 'bed-square', col: 8, row: 2 },
       { id: 'laundry-trolley', col: 1, row: 7 },
-      { id: 'wheelbarrow', col: 13, row: 1 },
     ],
   },
   {
     id: 'full-backyard',
     label: 'Full Backyard',
     items: [
-      { id: 'pool-under-construction', col: 2, row: 2 },
+      { id: 'pool-under-construction', col: 3, row: 3 },
+      { id: 'bed-square', col: 7, row: 2 },
+      { id: 'bed-long', col: 7, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
-      { id: 'bed-square', col: 12, row: 1 },
       { id: 'laundry-trolley', col: 1, row: 7 },
-      { id: 'wheelbarrow', col: 10, row: 8 },
     ],
   },
 ];
@@ -424,7 +427,7 @@ export function stampYardBlocked(blocked, items) {
 /**
  * True if (col,row) is a carve-out where a turret may sit under the prop art.
  * Explicit buildSlots always nest; any path-block pad outside the place rect
- * also nests (pool fence ring, trolley 2×2 skirt, etc.) — same rules everywhere.
+ * also nests (trolley 2×2 skirt, ute pad, etc.) — same rules everywhere.
  */
 export function isYardBuildSlot(prop, itemCol, itemRow, col, row) {
   const slots = prop.buildSlots;
