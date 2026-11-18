@@ -87,9 +87,15 @@ const UNIT_GATES = {
   monster3: ['north', 'west', 'south'],
   monster4: ['west'],
   monster5: ['west', 'south'],
+  monster6: ['north', 'south', 'west'],
+  monster7: ['south', 'west'],
+  monster8: ['north', 'west'],
+  monster9: ['west', 'south'],
+  monster10: ['west'],
+  monster11: ['west', 'south'],
 };
 export const FLYING_UNITS = new Set(['monster3', 'mothership']);
-export const HEDGE_SMASHERS = new Set(['monster4']);
+export const HEDGE_SMASHERS = new Set(['monster4', 'monster10']);
 
 /**
  * Which open gate a spawn uses. Every other alien of a kind takes its

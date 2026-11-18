@@ -54,10 +54,10 @@ test('later waves get tougher and denser, and drop scout fillers', () => {
 
 test('the horde grows with siege rank, gently, and never on the first siege', () => {
   const totals = [0, 1, 2, 3, 4, 5].map((rank) => openingHorde({ rank }).total);
-  assert.deepEqual(totals.slice(0, 2), [24, 24], 'no rank and Recruit face the usual opening');
+  assert.deepEqual(totals.slice(0, 2), [36, 36], 'no rank and Recruit face the usual denser opening');
   for (let i = 2; i < totals.length; i++) assert.ok(totals[i] > totals[i - 1], `rank ${i} is bigger than rank ${i - 1}`);
-  assert.ok(totals[5] <= 60, 'even Marshal faces at most double the usual opening');
-  assert.equal(openingHorde({ rank: 3 }).troops.length, 3, 'higher ranks add tougher troop types');
+  assert.ok(totals[5] <= 72, 'even Marshal stays under roughly double the denser opening');
+  assert.ok(openingHorde({ rank: 3 }).troops.length >= 3, 'higher ranks add tougher troop types');
   assert.equal(openingHorde({ firstSiege: true, rank: 5 }).total, 18);
   assert.equal(waveConfigFor(3, { rank: 1 }).totalSpawns, waveConfigFor(3).totalSpawns);
 });

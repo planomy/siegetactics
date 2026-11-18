@@ -1,4 +1,4 @@
-/** @typedef {'monster1'|'monster2'|'monster3'|'monster4'|'monster5'|'mothership'|'mothership2'|'mothership3'|'mothership4'|'granddaddy'} EnemySpriteKey */
+/** @typedef {'monster1'|'monster2'|'monster3'|'monster4'|'monster5'|'monster6'|'monster7'|'monster8'|'monster9'|'monster10'|'monster11'|'mothership'|'mothership2'|'mothership3'|'mothership4'|'granddaddy'} EnemySpriteKey */
 
 /** @type {Record<EnemySpriteKey, string>} */
 export const ENEMY_SPRITE_SRC = {
@@ -7,6 +7,12 @@ export const ENEMY_SPRITE_SRC = {
   monster3: 'assets/enemies/monster3.png',
   monster4: 'assets/enemies/monster4.png',
   monster5: 'assets/enemies/monster5.png',
+  monster6: 'assets/enemies/monster6.png',
+  monster7: 'assets/enemies/monster7.png',
+  monster8: 'assets/enemies/monster8.png',
+  monster9: 'assets/enemies/monster9.png',
+  monster10: 'assets/enemies/monster10.png',
+  monster11: 'assets/enemies/monster11.png',
   mothership: 'assets/enemies/mothership.png',
   mothership2: 'assets/enemies/mothership2.png',
   mothership3: 'assets/enemies/mothership3.png',
@@ -14,7 +20,7 @@ export const ENEMY_SPRITE_SRC = {
   granddaddy: 'assets/enemies/granddaddy.png',
 };
 
-/** @typedef {'monster1'|'monster2'|'monster3'|'monster4'|'monster5'} GruntSpriteKey */
+/** @typedef {'monster1'|'monster2'|'monster3'|'monster4'|'monster5'|'monster6'|'monster7'|'monster8'|'monster9'|'monster10'|'monster11'} GruntSpriteKey */
 
 /** Per-alien combat stats — each ship class has its own HP and pace. */
 export const GRUNT_STATS = {
@@ -23,6 +29,13 @@ export const GRUNT_STATS = {
   monster3: { hp: 78, speed: 0.043, codename: 'Raider' },
   monster4: { hp: 119, speed: 0.038, codename: 'Bruiser' },
   monster5: { hp: 173, speed: 0.033, codename: 'Heavy Cruiser' },
+  // New machines — early / mid / late bands.
+  monster6: { hp: 48, speed: 0.05, codename: 'Lime Claw' },
+  monster7: { hp: 62, speed: 0.048, codename: 'Cyclops Crawler' },
+  monster8: { hp: 98, speed: 0.042, codename: 'Siege Beetle' },
+  monster9: { hp: 118, speed: 0.04, codename: 'Neon Rover' },
+  monster10: { hp: 168, speed: 0.035, codename: 'Neon Tank' },
+  monster11: { hp: 210, speed: 0.031, codename: 'Crown Saucer' },
 };
 
 export const BOSS_STATS = {
@@ -65,7 +78,12 @@ const PATH_SHIPS = /** @type {EnemySpriteKey[]} */ ([
   'monster3',
   'monster4',
   'monster5',
-  'monster5',
+  'monster6',
+  'monster7',
+  'monster8',
+  'monster9',
+  'monster10',
+  'monster11',
 ]);
 
 /** @returns {EnemySpriteKey} */
@@ -74,7 +92,7 @@ export function pickMothershipSprite() {
 }
 
 /**
- * @param {{ path: number, bossKind?: string|null, mothershipSprite?: EnemySpriteKey|null }} enemy
+ * @param {{ path: number, bossKind?: string|null, mothershipSprite?: EnemySpriteKey|null, spriteKey?: EnemySpriteKey|null }} enemy
  * @returns {EnemySpriteKey}
  */
 export function spriteKeyForEnemy(enemy) {
@@ -85,7 +103,7 @@ export function spriteKeyForEnemy(enemy) {
       ? enemy.mothershipSprite
       : 'mothership';
   }
-  return PATH_SHIPS[enemy.path] ?? 'monster1';
+  return PATH_SHIPS[enemy.path % PATH_SHIPS.length] ?? 'monster1';
 }
 
 /**
