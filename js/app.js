@@ -2599,7 +2599,6 @@ function bindUI() {
     }
     if (phase === 'announce' || phase === 'wave') {
       tdEngine?.pauseBattle();
-      showToast('Paused — place more turrets, then hit RESUME.', { variant: 'info' });
       return;
     }
     if (deploymentTurretsPlaced < 1) {
