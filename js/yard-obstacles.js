@@ -155,10 +155,11 @@ export const YARD_PROPS = {
   'uncle-bobs-ute': {
     id: 'uncle-bobs-ute',
     src: 'assets/obstacles/uncle-bobs-ute.png?v=20261119t1',
-    w: 4,
-    h: 2,
+    w: 5,
+    h: 3,
     label: "Uncle Bob's ute",
     scale: 1,
+    fit: 'cover',
     noShadow: true,
     grounding: 'none',
     buildSlots: [
@@ -166,14 +167,35 @@ export const YARD_PROPS = {
       { dc: 1, dr: 0 },
       { dc: 2, dr: 0 },
       { dc: 3, dr: 0 },
+      { dc: 4, dr: 0 },
     ],
   },
 };
 
+/** Big scene anchors — pool, pond, arbor, ute. Each layout picks 2–3. */
+export const YARD_BIG_IDS = new Set([
+  'pool-under-construction',
+  'duck-pond',
+  'wedding-arbor',
+  'uncle-bobs-ute',
+]);
+
+/** Small clutter — gardens, trolley, BBQ, barrow. Each layout picks 3–4. */
+export const YARD_SMALL_IDS = new Set([
+  'bed-square',
+  'bed-long',
+  'laundry-trolley',
+  'bbq-kettle',
+  'wheelbarrow',
+]);
+
+/** Hard cap per scene: 2–3 big + 3–4 small, never more than 6 props. */
+export const YARD_MAX_ITEMS = 6;
+
 /**
  * Hand-authored mix-and-match yards. Top-left cell of each prop.
- * Spread props with walkable grass between them so the path weaves through
- * the yard — never glue rects into one mega-blob the route can skate under.
+ * Every scene: 2–3 big + 3–4 small, ≤6 total. Spread with walkable grass
+ * between props — never glue rects into one mega-blob.
  * @type {YardLayout[]}
  */
 export const YARD_LAYOUTS = [
@@ -181,62 +203,60 @@ export const YARD_LAYOUTS = [
     id: 'bbq-sunday',
     label: 'BBQ Sunday',
     items: [
-      { id: 'pool-under-construction', col: 4, row: 1 },
-      { id: 'bed-square', col: 1, row: 2 },
-      { id: 'laundry-trolley', col: 1, row: 5 },
-      { id: 'bed-long', col: 4, row: 7 },
-      { id: 'bbq-kettle', col: 11, row: 2 },
-      { id: 'wheelbarrow', col: 12, row: 5 },
+      { id: 'pool-under-construction', col: 5, row: 1 },
+      { id: 'wedding-arbor', col: 1, row: 6 },
+      { id: 'bed-square', col: 1, row: 1 },
+      { id: 'bbq-kettle', col: 12, row: 1 },
+      { id: 'laundry-trolley', col: 13, row: 5 },
+      { id: 'wheelbarrow', col: 12, row: 7 },
     ],
   },
   {
     id: 'veggie-maze',
     label: 'Veggie Maze',
     items: [
-      { id: 'bed-square', col: 2, row: 3 },
-      { id: 'bed-long', col: 5, row: 1 },
-      { id: 'bed-square', col: 5, row: 5 },
-      { id: 'bed-long', col: 9, row: 3 },
-      { id: 'bed-square', col: 8, row: 6 },
-      { id: 'wheelbarrow', col: 1, row: 7 },
-      { id: 'bbq-kettle', col: 12, row: 6 },
+      { id: 'wedding-arbor', col: 6, row: 2 },
+      { id: 'uncle-bobs-ute', col: 1, row: 6 },
+      { id: 'bed-square', col: 1, row: 1 },
+      { id: 'bed-long', col: 11, row: 1 },
+      { id: 'bbq-kettle', col: 12, row: 4 },
+      { id: 'wheelbarrow', col: 12, row: 7 },
     ],
   },
   {
     id: 'wedding-day',
     label: 'Wedding Day',
     items: [
-      { id: 'bed-square', col: 1, row: 4 },
-      { id: 'wedding-arbor', col: 4, row: 1 },
-      { id: 'bed-long', col: 4, row: 5 },
-      { id: 'bbq-kettle', col: 1, row: 7 },
-      { id: 'wheelbarrow', col: 12, row: 1 },
-      { id: 'uncle-bobs-ute', col: 10, row: 6 },
+      { id: 'wedding-arbor', col: 5, row: 1 },
+      { id: 'uncle-bobs-ute', col: 10, row: 5 },
+      { id: 'duck-pond', col: 1, row: 1 },
+      { id: 'bed-long', col: 1, row: 5 },
+      { id: 'bbq-kettle', col: 1, row: 8 },
+      { id: 'bed-square', col: 5, row: 7 },
     ],
   },
   {
     id: 'uncle-bob',
     label: "Uncle Bob's Visit",
     items: [
-      { id: 'laundry-trolley', col: 1, row: 4 },
-      { id: 'uncle-bobs-ute', col: 3, row: 1 },
-      { id: 'duck-pond', col: 1, row: 6 },
-      { id: 'bed-long', col: 5, row: 4 },
-      { id: 'wheelbarrow', col: 9, row: 6 },
-      { id: 'bbq-kettle', col: 12, row: 3 },
+      { id: 'uncle-bobs-ute', col: 5, row: 1 },
+      { id: 'duck-pond', col: 1, row: 1 },
+      { id: 'bbq-kettle', col: 12, row: 1 },
+      { id: 'bed-long', col: 11, row: 5 },
+      { id: 'wheelbarrow', col: 1, row: 5 },
+      { id: 'laundry-trolley', col: 1, row: 8 },
     ],
   },
   {
     id: 'pool-dig',
     label: 'Pool Dig',
     items: [
-      { id: 'pool-under-construction', col: 4, row: 1 },
-      { id: 'bed-square', col: 1, row: 2 },
-      { id: 'duck-pond', col: 11, row: 1 },
-      { id: 'wheelbarrow', col: 1, row: 5 },
-      { id: 'bed-long', col: 4, row: 7 },
-      { id: 'bbq-kettle', col: 12, row: 5 },
-      { id: 'uncle-bobs-ute', col: 8, row: 7 },
+      { id: 'pool-under-construction', col: 5, row: 1 },
+      { id: 'duck-pond', col: 1, row: 1 },
+      { id: 'uncle-bobs-ute', col: 9, row: 7 },
+      { id: 'bed-square', col: 1, row: 5 },
+      { id: 'bbq-kettle', col: 12, row: 1 },
+      { id: 'wheelbarrow', col: 1, row: 8 },
     ],
   },
   {
@@ -245,24 +265,22 @@ export const YARD_LAYOUTS = [
     items: [
       { id: 'duck-pond', col: 1, row: 1 },
       { id: 'pool-under-construction', col: 5, row: 1 },
-      { id: 'bed-square', col: 1, row: 5 },
-      { id: 'wheelbarrow', col: 1, row: 8 },
-      { id: 'bed-long', col: 4, row: 7 },
-      { id: 'bbq-kettle', col: 12, row: 2 },
-      { id: 'uncle-bobs-ute', col: 11, row: 6 },
+      { id: 'bed-long', col: 12, row: 1 },
+      { id: 'bbq-kettle', col: 1, row: 5 },
+      { id: 'laundry-trolley', col: 1, row: 8 },
+      { id: 'wheelbarrow', col: 12, row: 5 },
     ],
   },
   {
     id: 'full-backyard',
     label: 'Full Backyard',
     items: [
-      { id: 'pool-under-construction', col: 4, row: 1 },
+      { id: 'pool-under-construction', col: 5, row: 1 },
+      { id: 'wedding-arbor', col: 1, row: 6 },
+      { id: 'duck-pond', col: 12, row: 6 },
       { id: 'bed-square', col: 1, row: 1 },
-      { id: 'duck-pond', col: 11, row: 1 },
-      { id: 'wedding-arbor', col: 11, row: 5 },
-      { id: 'wheelbarrow', col: 1, row: 4 },
-      { id: 'bed-long', col: 1, row: 7 },
-      { id: 'uncle-bobs-ute', col: 5, row: 7 },
+      { id: 'bbq-kettle', col: 12, row: 1 },
+      { id: 'laundry-trolley', col: 12, row: 4 },
     ],
   },
 ];

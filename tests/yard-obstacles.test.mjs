@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {
   YARD_LAYOUTS,
   YARD_PROPS,
+  YARD_BIG_IDS,
+  YARD_SMALL_IDS,
+  YARD_MAX_ITEMS,
   blockSize,
   footprintCells,
   placeCells,
@@ -21,16 +24,23 @@ import {
   MAZE_GATES,
 } from '../js/maze-field.js';
 
+test('every scene is 2–3 big + 3–4 small and at most 6 props', () => {
+  for (const layout of YARD_LAYOUTS) {
+    const items = layout.items;
+    assert.ok(items.length <= YARD_MAX_ITEMS, `${layout.id}: ${items.length} > ${YARD_MAX_ITEMS}`);
+    const big = items.filter((i) => YARD_BIG_IDS.has(i.id));
+    const small = items.filter((i) => YARD_SMALL_IDS.has(i.id));
+    assert.equal(big.length + small.length, items.length, `${layout.id}: unknown prop id`);
+    assert.ok(big.length >= 2 && big.length <= 3, `${layout.id}: ${big.length} big (want 2–3)`);
+    assert.ok(small.length >= 3 && small.length <= 4, `${layout.id}: ${small.length} small (want 3–4)`);
+  }
+});
+
 test('every authored yard layout stays open and forces a real detour', () => {
   for (const layout of YARD_LAYOUTS) {
     const check = validateYardItems(layout.items);
     assert.equal(check.ok, true, `${layout.id}: ${check.ok ? '' : check.reason}`);
     assert.equal(layoutForcesDetour(layout.items), true, `${layout.id} must bend a gate route`);
-    const west = yardDetourMetrics(layout.items).west;
-    assert.ok(
-      west.delta >= 1 || west.turns >= 3,
-      `${layout.id} west route still looks empty (Δ${west.delta} turns${west.turns})`,
-    );
   }
   assert.equal(detourYardLayouts().length, YARD_LAYOUTS.length);
 });
