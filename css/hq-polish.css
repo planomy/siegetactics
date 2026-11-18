@@ -899,9 +899,12 @@ body.mission-mode .faceoff-tip {
 /* 5. Header counters: the same gold-bevelled slate as the sound, how-to and GB buttons, the same
    height, and the same gold numbers. Colour comes only from the painted icon; a state that wants
    attention (an upgrade to buy, a streak or challenge still to do) glows rather than changing frame. */
+body .topbar-stats .score-pill,
 body .topbar-stats .core-pill,
 body .topbar-stats .streak-pill,
-body .topbar-stats .daily-pill {
+body .topbar-stats .daily-pill,
+body .topbar-actions-tray .streak-pill,
+body .topbar-actions-tray .daily-pill {
   --plate-glow: rgba(255, 200, 80, 0);
   display: inline-flex;
   align-items: center;
@@ -928,6 +931,23 @@ body .topbar-stats .daily-pill {
   transition: transform .15s ease, filter .15s ease;
 }
 
+body .topbar-stats .score-pill {
+  gap: 6px;
+  padding-right: 14px;
+}
+
+body .topbar-stats .score-pill-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  color: #ffe39a;
+  text-shadow: 0 1px 0 #4a2c00;
+}
+
+body .topbar-stats .score-pill strong {
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+}
+
 /* One gap between every header item, and the rank stands free as the header's emblem. */
 body .topbar-hud .topbar-stats,
 body .topbar-hud .topbar-actions {
@@ -943,9 +963,12 @@ body .topbar-hud .rank-badge-title {
   text-shadow: 0 2px 0 #3a2400, 0 0 6px #000, 0 0 10px #000;
 }
 
+body .topbar-stats .score-pill:hover,
 body .topbar-stats .core-pill:hover,
 body .topbar-stats .streak-pill:hover,
-body .topbar-stats .daily-pill:hover {
+body .topbar-stats .daily-pill:hover,
+body .topbar-actions-tray .streak-pill:hover,
+body .topbar-actions-tray .daily-pill:hover {
   transform: translateY(-1px);
   filter: brightness(1.1);
 }
@@ -1000,19 +1023,28 @@ body .topbar-stats .daily-pill.is-complete {
 }
 
 @media (max-width: 640px) {
+  body .topbar-stats .score-pill,
   body .topbar-stats .core-pill,
   body .topbar-stats .streak-pill,
-  body .topbar-stats .daily-pill {
+  body .topbar-stats .daily-pill,
+  body .topbar-actions-tray .streak-pill,
+  body .topbar-actions-tray .daily-pill {
     gap: 6px;
     height: 38px;
     padding: 0 12px 0 8px;
     font-size: 1.2rem;
   }
 
+  body .topbar-stats .score-pill-label {
+    font-size: 0.62rem;
+  }
+
   body .topbar-stats .core-pill .core-gem { --gem-size: 24px; }
 
   body .topbar-stats .streak-flame,
-  body .topbar-stats .daily-dart {
+  body .topbar-stats .daily-dart,
+  body .topbar-actions-tray .streak-flame,
+  body .topbar-actions-tray .daily-dart {
     width: 24px;
     height: 24px;
   }

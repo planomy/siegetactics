@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/main.css?v=20261118b4" />
+  <link rel="stylesheet" href="css/main.css?v=20261118s1" />
   <link rel="stylesheet" href="css/home-gb.css?v=20261114n2" />
   <link rel="stylesheet" href="css/how-to-play.css?v=20261114c1" />
   <link rel="stylesheet" href="css/popups.css?v=20261115p1" />
@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="css/engagement.css?v=20261116xp9" />
   <link rel="stylesheet" href="css/coach-tips.css?v=20261117f1" />
   <link rel="stylesheet" href="css/siege-debrief.css?v=20261113n1" />
-  <link rel="stylesheet" href="css/hq-polish.css?v=20261118b2" />
+  <link rel="stylesheet" href="css/hq-polish.css?v=20261118s1" />
   <link rel="stylesheet" href="css/rare-ships.css?v=20261114t2" />
   <link rel="stylesheet" href="css/readability.css?v=20261114q3" />
   <link rel="stylesheet" href="css/title-screen.css?v=20261116ax" />
@@ -191,34 +191,43 @@
     <div class="topbar-hud">
       <div class="topbar-badges" id="topbar-badges" aria-label="Military badges earned"></div>
       <div class="topbar-stats">
+        <button type="button" class="score-pill" id="topbar-score-pill" aria-label="Lifetime score" data-tip-title="Score" data-tip="Your lifetime siege score">
+          <span class="score-pill-label" aria-hidden="true">SCORE</span>
+          <strong id="topbar-score">0</strong>
+        </button>
         <button type="button" class="core-pill" id="topbar-cores-pill" aria-label="Alien crystals: spend them in the Armory" data-tip-title="Alien Crystals" data-tip="Spend them in the Armory">
           <span class="core-gem" aria-hidden="true"></span><span id="topbar-cores">0</span>
         </button>
         <button type="button" class="streak-pill" id="topbar-streak" aria-label="Daily streak" data-tip-title="Daily Streak" data-tip="Keep answering to light the flame"></button>
         <button type="button" class="daily-pill" id="topbar-daily" aria-label="Daily challenges" data-tip-title="Daily Challenges" data-tip="Three missions. One chest."></button>
       </div>
-      <div class="topbar-actions">
-        <button type="button" class="topbar-action-btn topbar-fullscreen-btn" id="btn-fullscreen" hidden aria-label="Enter fullscreen" aria-pressed="false" data-tip-title="Fullscreen" data-tip="Fill the screen">
-          <img class="topbar-action-icon fs-enter" src="assets/ui/topbar-fullscreen.png?v=1" width="270" height="276" alt="" />
-          <img class="topbar-action-icon fs-exit" src="assets/ui/topbar-fullscreen-exit.png?v=1" width="270" height="276" alt="" />
+      <div class="topbar-actions" id="topbar-actions">
+        <button type="button" class="topbar-overflow-btn" id="topbar-overflow" aria-label="More header tools" aria-expanded="false" aria-controls="topbar-actions-tray" data-tip-title="More" data-tip="Sound, guide and links">
+          <span aria-hidden="true">»</span>
         </button>
-        <button type="button" class="topbar-action-btn" id="btn-sound" aria-label="Mute sound" data-tip-title="Sound" data-tip="Mute the garden">
-          <img class="topbar-action-icon" src="assets/ui/topbar-sound.png" width="269" height="276" alt="" />
-        </button>
-        <button type="button" class="topbar-action-btn" id="btn-howto" aria-label="How to play" data-tip-title="How to Play" data-tip="Granny's quick guide">
-          <img class="topbar-action-icon" src="assets/ui/topbar-howto.png?v=2" width="270" height="277" alt="" />
-        </button>
-        <a
-          class="topbar-action-btn"
-          href="https://grannyboom.com"
-          target="_blank"
-          rel="noopener"
-          aria-label="Granny Boom main game"
-          data-tip-title="Granny Boom"
-          data-tip="The word game"
-        >
-          <img class="topbar-action-icon" src="assets/ui/topbar-gb.png" width="270" height="276" alt="" />
-        </a>
+        <div class="topbar-actions-tray" id="topbar-actions-tray">
+          <button type="button" class="topbar-action-btn topbar-fullscreen-btn" id="btn-fullscreen" hidden aria-label="Enter fullscreen" aria-pressed="false" data-tip-title="Fullscreen" data-tip="Fill the screen">
+            <img class="topbar-action-icon fs-enter" src="assets/ui/topbar-fullscreen.png?v=1" width="270" height="276" alt="" />
+            <img class="topbar-action-icon fs-exit" src="assets/ui/topbar-fullscreen-exit.png?v=1" width="270" height="276" alt="" />
+          </button>
+          <button type="button" class="topbar-action-btn" id="btn-sound" aria-label="Mute sound" data-tip-title="Sound" data-tip="Mute the garden">
+            <img class="topbar-action-icon" src="assets/ui/topbar-sound.png" width="269" height="276" alt="" />
+          </button>
+          <button type="button" class="topbar-action-btn" id="btn-howto" aria-label="How to play" data-tip-title="How to Play" data-tip="Granny's quick guide">
+            <img class="topbar-action-icon" src="assets/ui/topbar-howto.png?v=2" width="270" height="277" alt="" />
+          </button>
+          <a
+            class="topbar-action-btn"
+            href="https://grannyboom.com"
+            target="_blank"
+            rel="noopener"
+            aria-label="Granny Boom main game"
+            data-tip-title="Granny Boom"
+            data-tip="The word game"
+          >
+            <img class="topbar-action-icon" src="assets/ui/topbar-gb.png" width="270" height="276" alt="" />
+          </a>
+        </div>
       </div>
     </div>
   </header>
@@ -424,6 +433,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20261118r3"></script>
+  <script type="module" src="js/app.js?v=20261118s1"></script>
 </body>
 </html>

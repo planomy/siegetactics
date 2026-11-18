@@ -18,7 +18,7 @@ import { normalizeDaily, recordChallengeEvent, rollLuckyDrop, DAILY_CHEST_XP, DA
 import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20261114h1';
 import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261113a1';
 import { STORY_BEATS } from './story.js?v=20261113a1';
-import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261118d1';
+import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261118s1';
 import { DEV } from './dev.js?v=20261115y1';
 import { HEDGE } from './maze-field.js?v=20261118w8';
 import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261118e2';
@@ -106,6 +106,7 @@ const defaultSave = {
   bestScore: {},
   bestBankedCoins: {},
   bestStars: {},
+  totalScore: 0,
   siegesCompleted: 0,
   granddaddySiegeTarget: null,
   granddaddySeen: false,
@@ -279,6 +280,15 @@ function loadSave() {
     if (!data.bestStars) data.bestStars = {};
     if (!data.bestScore || typeof data.bestScore !== 'object') data.bestScore = {};
     if (!data.bestBankedCoins) data.bestBankedCoins = {};
+    // Lifetime arcade score. Older saves only kept per-mission bests — use that sum as a floor.
+    {
+      const savedTotal = Math.max(0, Math.floor(Number(data.totalScore) || 0));
+      const bestFloor = Object.values(data.bestScore).reduce(
+        (sum, n) => sum + Math.max(0, Math.floor(Number(n) || 0)),
+        0,
+      );
+      data.totalScore = Math.max(savedTotal, bestFloor);
+    }
     data.settings = {
       sound: data.settings?.sound !== false,
       music: data.settings?.music !== false,
@@ -477,6 +487,8 @@ function endAnswerStreak() {
 }
 
 function refreshTopbar() {
+  const scoreDisplay = document.getElementById('topbar-score');
+  if (scoreDisplay) scoreDisplay.textContent = Math.max(0, Math.floor(Number(save.totalScore) || 0)).toLocaleString();
   const coresDisplay = document.getElementById('topbar-cores');
   if (coresDisplay) coresDisplay.textContent = String(save.upgradeCores);
   document.getElementById('topbar-cores-pill')?.classList.toggle('core-pill--ready', anyUpgradeReady(save.upgradeCores, getUnlockedSet()));
@@ -796,6 +808,7 @@ function openProfile(tab) {
     records: save.records,
     streakBest: save.streak.best,
     crystals: save.crystalsCollected,
+    totalScore: save.totalScore,
     playerName: save.playerName,
     siegesPlayed: save.siegesCompleted,
     shields: countShieldsEarned(save.levelMastery),
@@ -2427,6 +2440,7 @@ function finishRun(stats) {
   if (starResult.stars > prevBestStars) save.bestStars[missionId] = starResult.stars;
   if (stats.kills > prevBestKills) save.bestKills[missionId] = stats.kills;
   if (isScoreRecord) save.bestScore[missionId] = siegeScore;
+  save.totalScore = Math.max(0, Math.floor(Number(save.totalScore) || 0)) + siegeScore;
   const prevBestBanked = save.bestBankedCoins[missionId] ?? 0;
   if (bankedCoins > prevBestBanked) save.bestBankedCoins[missionId] = bankedCoins;
   if (stats.won && !save.completedMissions.includes(missionId)) {
@@ -2437,6 +2451,7 @@ function finishRun(stats) {
   save.siegeRecord = recordSiege(save.siegeRecord, starResult.earned);
   save.trainingGate = resetTrainingGate(save.trainingGate);
   persistSave();
+  refreshTopbar();
 
   const headlineEl = document.getElementById('results-headline');
   const sublineEl = document.getElementById('results-subline');
@@ -2525,8 +2540,63 @@ function bindUI() {
     button: document.getElementById('btn-fullscreen'),
   });
 
+  document.getElementById('topbar-score-pill')?.addEventListener('click', () => openProfile('records'));
   document.getElementById('topbar-streak')?.addEventListener('click', () => showStreakPanel(streakStatus(save.streak)));
   document.getElementById('topbar-daily')?.addEventListener('click', () => showDailyPanel(dailyState()));
+
+  const actionsRoot = document.getElementById('topbar-actions');
+  const overflowBtn = document.getElementById('topbar-overflow');
+  const actionsTray = document.getElementById('topbar-actions-tray');
+  const streakPill = document.getElementById('topbar-streak');
+  const dailyPill = document.getElementById('topbar-daily');
+  const coresPill = document.getElementById('topbar-cores-pill');
+  const narrowTopbar = window.matchMedia('(max-width: 640px)');
+
+  const closeTopbarOverflow = () => {
+    actionsRoot?.classList.remove('is-open');
+    overflowBtn?.setAttribute('aria-expanded', 'false');
+  };
+
+  /** On phones, park streak/daily in the » tray so SCORE + crystals stay put. */
+  const syncTopbarOverflowLayout = () => {
+    if (!actionsTray || !streakPill || !dailyPill || !coresPill) return;
+    if (narrowTopbar.matches) {
+      actionsTray.prepend(dailyPill);
+      actionsTray.prepend(streakPill);
+    } else {
+      coresPill.after(streakPill);
+      streakPill.after(dailyPill);
+      closeTopbarOverflow();
+    }
+  };
+  overflowBtn?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const open = !actionsRoot?.classList.contains('is-open');
+    actionsRoot?.classList.toggle('is-open', open);
+    overflowBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  document.addEventListener('click', (event) => {
+    if (!actionsRoot || !actionsRoot.classList.contains('is-open')) return;
+    if (actionsRoot.contains(/** @type {Node} */ (event.target))) return;
+    closeTopbarOverflow();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeTopbarOverflow();
+  });
+  actionsRoot?.addEventListener('click', (event) => {
+    const target = /** @type {HTMLElement|null} */ (event.target instanceof Element ? event.target.closest('a, button') : null);
+    if (!target || target === overflowBtn) return;
+    // Keep the tray open for mute so kids can find it again.
+    if (target.id === 'btn-sound') return;
+    closeTopbarOverflow();
+  });
+  syncTopbarOverflowLayout();
+  if (typeof narrowTopbar.addEventListener === 'function') {
+    narrowTopbar.addEventListener('change', syncTopbarOverflowLayout);
+  } else {
+    // Safari < 14
+    narrowTopbar.addListener(syncTopbarOverflowLayout);
+  }
 
   document.getElementById('btn-launch-siege')?.addEventListener('click', () => {
     if (deploymentTurretsPlaced < 1) {

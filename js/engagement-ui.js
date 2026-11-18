@@ -210,6 +210,7 @@ export function showProfile(p) {
     },
     records: () => {
       const rows = [
+        ['🏆', 'Lifetime score', Math.max(0, Math.floor(Number(p.totalScore) || 0)).toLocaleString()],
         ['💥', 'Most aliens in one siege', p.records.bestKills.v, p.records.bestKills.d],
         ['🏰', 'Sieges played', p.siegesPlayed ?? 0],
         ['🔥', 'Longest streak', `${p.streakBest} days`],
