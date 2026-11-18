@@ -943,6 +943,23 @@
   display: block;
   filter: drop-shadow(0 0 6px rgba(150, 255, 200, .7));
   animation: homeland-bob 2.4s ease-in-out infinite;
+  /* Soften the emoji’s solid yellow tractor beam into fading light. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 46%,
+    rgba(0, 0, 0, 0.75) 58%,
+    rgba(0, 0, 0, 0.3) 78%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 46%,
+    rgba(0, 0, 0, 0.75) 58%,
+    rgba(0, 0, 0, 0.3) 78%,
+    transparent 100%
+  );
 }
 
 @media (max-width: 540px) {
