@@ -140,10 +140,10 @@ export const YARD_LAYOUTS = [
     id: 'bbq-sunday',
     label: 'BBQ Sunday',
     items: [
-      // Dig on the mid run; herb beds seal the cheap slip under / beside it.
+      // Dig + left herb bed; the dig's path skirt seals the under-run so we
+      // don't plant a second bed on the open grass beside the fence.
       { id: 'pool-under-construction', col: 4, row: 3 },
       { id: 'bed-square', col: 2, row: 2 },
-      { id: 'bed-square', col: 9, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
     ],
@@ -194,7 +194,6 @@ export const YARD_LAYOUTS = [
     items: [
       { id: 'pool-under-construction', col: 4, row: 3 },
       { id: 'bed-square', col: 2, row: 2 },
-      { id: 'bed-square', col: 9, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
       { id: 'wheelbarrow', col: 12, row: 8 },
@@ -219,7 +218,6 @@ export const YARD_LAYOUTS = [
       { id: 'pool-under-construction', col: 3, row: 3 },
       { id: 'bed-square', col: 1, row: 2 },
       { id: 'bed-square', col: 8, row: 2 },
-      { id: 'bed-long', col: 8, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
     ],
