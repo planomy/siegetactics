@@ -857,18 +857,9 @@ function renderHomelandTrack(mapProgress) {
   const earned = seasonPiecesEarned(mapProgress, season);
   const maxLevel = homelandMaxLevel(mapProgress);
   const seasonDone = seasonComplete(mapProgress, season) || (season === 3 && maxLevel >= 3);
-  // Park the ship on the rightmost topic that has passes (not at overall %, which
-  // looked like “progress stuck on bubble 1” when Time was filling near the planet).
-  let shipSlot = -1;
-  let shipFrac = 0;
-  order.forEach((id, i) => {
-    const passes = getMapPasses(mapProgress, id, season);
-    if (passes > 0) {
-      shipSlot = i;
-      shipFrac = passes / MAP_PASSES_REQUIRED;
-    }
-  });
-  const shipPct = seasonDone ? 100 : shipSlot < 0 ? 0 : ((shipSlot + shipFrac) / total) * 100;
+  // Eye-candy UFO creeps with overall season progress (every good set nudges it).
+  const passSum = order.reduce((sum, id) => sum + getMapPasses(mapProgress, id, season), 0);
+  const shipPct = seasonDone ? 100 : (passSum / (total * MAP_PASSES_REQUIRED)) * 100;
   const slots = order.map((id, i) => {
     const n = i + 1;
     const passes = getMapPasses(mapProgress, id, season);
@@ -902,7 +893,7 @@ function renderHomelandTrack(mapProgress) {
       <div class="homeland-track-rail">
         <div class="homeland-track-slots">${slots}</div>
         <span class="homeland-track-home${seasonDone ? ' is-reached' : ''}" aria-hidden="true">🪐</span>
-        <span class="homeland-track-ship" style="left:${shipPct.toFixed(1)}%" aria-hidden="true"><span>🛸</span></span>
+        <span class="homeland-track-ship" style="left:${Math.max(2, Math.min(98, shipPct)).toFixed(1)}%" aria-hidden="true"><span>🛸</span></span>
       </div>
     </div>
     ${canWarpToDoompickle(mapProgress) ? renderHomelandLaunch() : ''}

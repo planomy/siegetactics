@@ -744,12 +744,12 @@
   box-shadow: 0 0 20px rgba(255, 210, 90, .9);
 }
 
-/* Ship parks on the rightmost topic slot that has passes. */
+/* UFO rides above the pip slots and creeps with overall season progress. */
 .homeland-track-ship {
   position: absolute;
   top: 50%;
   left: 0;
-  z-index: 1;
+  z-index: 4;
   font-size: 1.25rem;
   line-height: 1;
   transform: translate(-50%, -120%);
@@ -761,20 +761,6 @@
   display: block;
   filter: drop-shadow(0 0 6px rgba(150, 255, 200, .7));
   animation: homeland-bob 2.4s ease-in-out infinite;
-}
-
-/* Sits on the rail (the ship is lifted 120% of its height above the rail's centre). */
-.homeland-track-ship::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: calc(120% - 4px);
-  width: 20px;
-  height: 9px;
-  border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(170, 255, 210, .95), rgba(120, 255, 180, .35) 45%, transparent 72%);
-  transform: translateX(-50%);
-  animation: homeland-beam 2.4s ease-in-out infinite;
 }
 
 @media (max-width: 540px) {
@@ -973,11 +959,6 @@
   50% { transform: translateY(-7px) rotate(-5deg); }
 }
 
-@keyframes homeland-beam {
-  0%, 100% { opacity: .95; transform: translateX(-50%) scale(1.15); }
-  50% { opacity: .3; transform: translateX(-50%) scale(.55); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .homeland-track-ship {
     transition: none;
@@ -985,7 +966,6 @@
 
   .homeland-track-ship,
   .homeland-track-ship > span,
-  .homeland-track-ship::after,
   .homeland-launch,
   .homeland-launch-arrow { animation: none; }
 }
