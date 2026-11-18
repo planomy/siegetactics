@@ -35,7 +35,7 @@ import {
   FLYING_UNITS,
   randomFlyerFlankPoint,
   HEDGE_SMASHERS,
-} from './maze-field.js?v=20261119d2';
+} from './maze-field.js?v=20261119d3';
 import { createGardenLife, LAWN_SCENE, LANE_SCENE } from './garden-life.js?v=20261115y4';
 import {
   YARD_PROPS,
@@ -44,7 +44,7 @@ import {
   stampYardBlocked,
   yardOccupies,
   yardNestProp,
-} from './yard-obstacles.js?v=20261119t16';
+} from './yard-obstacles.js?v=20261119t17';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
 export function buildTimeForPlacementCost(cost) {

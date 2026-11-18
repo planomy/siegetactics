@@ -13,7 +13,7 @@ import {
   bestEntryCell,
   MAZE_GATES,
   traceRoute,
-} from './maze-field.js?v=20261113m7';
+} from './maze-field.js?v=20261119d3';
 
 /**
  * @typedef {{ dc: number, dr: number }} YardBuildSlot

@@ -9,12 +9,13 @@ export const MAZE_FIELD_SRC = 'assets/field-lawn.jpg';
 /** Normalised (0–1) coordinates on assets/field-lawn.jpg. */
 export const MAZE_LAYOUT = {
   cols: 16,
-  rows: 10,
+  rows: 11,
   /** Open grass rectangle the grid covers. */
   left: 0.06,
   right: 0.86,
   top: 0.16,
-  bottom: 0.82,
+  // One extra row past the old 0.82 line so the grass above the clothesline / seat is on-grid.
+  bottom: 0.886,
   /** Right-edge cells that count as reaching the porch (path goals — buildable if a route remains). */
   goalRows: [3, 4, 5, 6],
   /** Left-edge cells covered by the portal ring art (walkable, never buildable). */
@@ -60,7 +61,7 @@ export const MAZE_GATES = [
     id: 'south',
     name: 'Back fence',
     spawn: { x: 0.36, y: 0.97 },
-    entries: [{ col: 5, row: 9 }, { col: 6, row: 9 }],
+    entries: [{ col: 5, row: 10 }, { col: 6, row: 10 }],
     opensAtWave: 4,
     announce: 'They smashed through the BACK FENCE!',
   },
