@@ -2702,15 +2702,15 @@ export function createTDEngine(canvas, opts) {
   }
 
   /**
-   * Rotisserie BBQ: pulsing ember bed in the open barrel + smoke drifting up
-   * from the coals / meat.
+   * Rotisserie BBQ: pulsing ember bed on the charcoal tray + smoke drifting up
+   * from the coals / meat (tuned for the 20261119 rectangular grill art).
    */
   function drawYardBbqSmoke(drawW, drawH, t) {
-    // Coals / meat sit in the open barrel tray (slightly left of centre).
-    const bedX = -drawW * 0.04;
-    const bedY = -drawH * 0.46 - 30;
-    const bedRx = drawW * 0.22;
-    const bedRy = drawH * 0.07;
+    // Coals / spit sit in the open tray — centre of the grill body.
+    const bedX = drawW * 0.02;
+    const bedY = -drawH * 0.52;
+    const bedRx = drawW * 0.2;
+    const bedRy = drawH * 0.06;
 
     // Soft heat wash over the charcoal.
     const pulse = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(t * 7.5));
@@ -2779,19 +2779,20 @@ export function createTDEngine(canvas, opts) {
   /**
    * Live waterfall + basin shimmer on top of the duck-pond sprite.
    * Falls are clipped to the painted water column (not the rocks).
+   * Tuned for the 20261119 pond: round basin + shelf fall on the upper right.
    */
   function drawYardPondWater(drawW, drawH, t) {
     const left = -drawW / 2;
     const top = -drawH + 1;
-    const basinX = left + drawW * 0.48;
-    const basinY = top + drawH * 0.52;
-    const basinRx = drawW * 0.26;
-    const basinRy = drawH * 0.16;
-    // Start inside the lip of water on the rock shelf — not on the stone.
-    const fallTopX = left + drawW * 0.64;
-    const fallTopY = top + drawH * 0.34;
-    const fallBotY = basinY - basinRy * 0.25;
-    const fallSpread = drawW * 0.018;
+    const basinX = left + drawW * 0.5;
+    const basinY = top + drawH * 0.54;
+    const basinRx = drawW * 0.24;
+    const basinRy = drawH * 0.18;
+    // Rock shelf waterfall — upper-right of the new art.
+    const fallTopX = left + drawW * 0.62;
+    const fallTopY = top + drawH * 0.3;
+    const fallBotY = basinY - basinRy * 0.2;
+    const fallSpread = drawW * 0.016;
 
     // Soft ripples in the pool only.
     for (let i = 0; i < 3; i++) {
