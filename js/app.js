@@ -1,10 +1,10 @@
 import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261114v1';
-import { balanceMission, startingSiegeCoins, nextBattleCry } from './battle-balance.js?v=20261114v1';
+import { balanceMission, startingSiegeCoins } from './battle-balance.js?v=20261114v1';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261116b1';
 import { renderArmory } from './armory.js?v=20261118b1';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel, crystalsSpentOnLevels } from './turret-upgrades.js?v=20261118b1';
-import { createTDEngine } from './td-engine.js?v=20261118b4';
+import { createTDEngine } from './td-engine.js?v=20261119b1';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js?v=20261118b1';
 import { createAudio } from './audio.js?v=20261118w8';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
@@ -155,7 +155,6 @@ let run = {
 
 let battlePrepCoinBonus = 0;
 let deploymentTurretsPlaced = 0;
-let previousBattleCry = '';
 let bonusChoiceFocus = null;
 let bonusBankProtected = 0;
 
@@ -1442,12 +1441,13 @@ function markLaunchArrowSeen() {
   document.getElementById('siege-launch-wrap')?.classList.remove('has-arrow');
 }
 
-/** First visit only: float the red arrow above the battle-cry button. */
+/** First visit only: float the red arrow above the GO button. */
 function syncLaunchArrow() {
   const wrap = document.getElementById('siege-launch-wrap');
   const panel = document.getElementById('siege-deploy-panel');
   if (!wrap) return;
-  if (!panel || panel.hidden || hasSeenLaunchArrow()) {
+  const phase = tdEngine?.getPhase?.() ?? 'deploy';
+  if (!panel || panel.hidden || phase !== 'deploy' || hasSeenLaunchArrow()) {
     wrap.querySelector('.siege-launch-arrow')?.remove();
     wrap.classList.remove('has-arrow');
     return;
@@ -1461,13 +1461,31 @@ function syncLaunchArrow() {
 function refreshDeploymentPanel() {
   const panel = document.getElementById('siege-deploy-panel');
   if (!panel || panel.hidden) return;
-  const summary = document.getElementById('siege-deploy-summary');
   const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('btn-launch-siege'));
-  if (summary) {
-    const count = deploymentTurretsPlaced;
-    summary.textContent = `${count} turret${count === 1 ? '' : 's'} deployed · ${run.waveBudget} coins left`;
+  if (!btn) {
+    syncLaunchArrow();
+    return;
   }
-  if (btn) btn.disabled = deploymentTurretsPlaced < 1;
+  const phase = tdEngine?.getPhase?.() ?? 'deploy';
+  const paused = Boolean(tdEngine?.isBattlePaused?.());
+  btn.classList.remove('is-pause', 'is-resume');
+  if (phase === 'deploy') {
+    btn.textContent = 'GO!';
+    btn.disabled = deploymentTurretsPlaced < 1;
+    btn.setAttribute('aria-label', 'Start the alien attack');
+  } else if (paused) {
+    btn.textContent = 'RESUME';
+    btn.disabled = false;
+    btn.classList.add('is-resume');
+    btn.setAttribute('aria-label', 'Resume the battle');
+  } else if (phase === 'announce' || phase === 'wave') {
+    btn.textContent = 'PAUSE';
+    btn.disabled = false;
+    btn.classList.add('is-pause');
+    btn.setAttribute('aria-label', 'Pause the battle to place turrets');
+  } else {
+    btn.disabled = true;
+  }
   syncLaunchArrow();
 }
 
@@ -2076,9 +2094,6 @@ function initSiegeScreen() {
   const bonusPanel = document.getElementById('siege-bonus-panel');
   if (bonusPanel) bonusPanel.hidden = true;
 
-  previousBattleCry = nextBattleCry(Math.random(), previousBattleCry);
-  const launch = document.getElementById('btn-launch-siege');
-  if (launch) launch.textContent = previousBattleCry;
   mountTDEngine(canvas, mission);
   selectTurret('granny-blaster');
   tdEngine?.setGoLive(false);
@@ -2369,7 +2384,15 @@ function mountTDEngine(canvas, mission) {
       } else {
         setShopActive(false);
       }
+      const deployPanel = document.getElementById('siege-deploy-panel');
+      if (deployPanel) {
+        deployPanel.hidden = !(phase === 'deploy' || phase === 'announce' || phase === 'wave');
+      }
+      refreshDeploymentPanel();
       updateNukeCachePanel();
+    },
+    onPauseChange() {
+      refreshDeploymentPanel();
     },
     showToast,
     audio,
@@ -2569,14 +2592,23 @@ function bindUI() {
   });
 
   document.getElementById('btn-launch-siege')?.addEventListener('click', () => {
+    const phase = tdEngine?.getPhase?.();
+    if (tdEngine?.isBattlePaused?.()) {
+      tdEngine.resumeBattle();
+      return;
+    }
+    if (phase === 'announce' || phase === 'wave') {
+      tdEngine?.pauseBattle();
+      showToast('Paused — place more turrets, then hit RESUME.', { variant: 'info' });
+      return;
+    }
     if (deploymentTurretsPlaced < 1) {
       showToast('Place at least one turret before challenging the aliens!');
       return;
     }
     if (!tdEngine?.startWave()) return;
     markLaunchArrowSeen();
-    const panel = document.getElementById('siege-deploy-panel');
-    if (panel) panel.hidden = true;
+    refreshDeploymentPanel();
     showToast('HERE THEY COME! Protect Granny!', { variant: 'success' });
   });
 
@@ -2636,8 +2668,8 @@ function bindUI() {
   /** Cupcake nukes: button, Space, or N — same as Doompickle. */
   function tryFireNukes({ quiet = false } = {}) {
     if (!document.body.classList.contains('siege-mode') || !tdEngine) return false;
-    const deploy = document.getElementById('siege-deploy-panel');
-    if (deploy && !deploy.hidden) return false;
+    // GO / PAUSE stays on screen during fights — only block nukes before the battle starts.
+    if (tdEngine.getPhase?.() === 'deploy') return false;
     audio.warmUp();
     if (run.cacheProgress < GRANNY_CACHE.cost) {
       if (!quiet) showToast('Nuke cache not full yet — keep blasting!');
@@ -2665,8 +2697,7 @@ function bindUI() {
     }
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     if (k !== ' ' && k !== 'n' && k !== 'N') return;
-    const deploy = document.getElementById('siege-deploy-panel');
-    if (deploy && !deploy.hidden) return;
+    if (tdEngine?.getPhase?.() === 'deploy') return;
     e.preventDefault();
     tryFireNukes({ quiet: true });
   });

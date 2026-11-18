@@ -173,6 +173,7 @@ const RARE_DRAW = { rare: 2.6, legendary: 5.5 };
  *   onWaveCleared?: (info: { wave: number, nextWave: number|null }) => void,
  *   onLeak?: (info: { leaks: number, maxLeaks: number, penalty: number }) => void,
  *   onPhaseChange?: (phase: 'deploy'|'announce'|'wave'|'bonus-offer'|'finale'|'done') => void,
+ *   onPauseChange?: (paused: boolean) => void,
  *   audio?: {
  *     playTurretFire: (type: string) => void,
  *     playNukeFire: () => void,
@@ -300,6 +301,8 @@ export function createTDEngine(canvas, opts) {
   }
 
   let phase = /** @type {'deploy'|'announce'|'wave'|'bonus-offer'|'finale'|'done'} */ ('deploy');
+  /** Freeze combat so kids can place turrets mid-fight (Fieldrunners-style). */
+  let battlePaused = false;
   /** @type {{ won: boolean, startedAt: number }|null} */
   let pendingMissionEnd = null;
   let waveTime = 0;
@@ -529,9 +532,37 @@ export function createTDEngine(canvas, opts) {
 
   function setPhase(next) {
     phase = next;
+    if (next !== 'announce' && next !== 'wave') battlePaused = false;
     if (!canPlaceTurrets()) clearRemoval();
     updateCanvasCursor();
     opts.onPhaseChange?.(next);
+  }
+
+  function pauseBattle() {
+    if (phase !== 'announce' && phase !== 'wave') return false;
+    if (battlePaused) return true;
+    battlePaused = true;
+    opts.audio?.pauseScuttling?.();
+    opts.onPauseChange?.(true);
+    render();
+    return true;
+  }
+
+  function resumeBattle() {
+    if (!battlePaused) return false;
+    battlePaused = false;
+    lastTs = 0;
+    opts.audio?.resumeScuttling?.();
+    opts.onPauseChange?.(false);
+    if (!rafId && shouldAnimate()) {
+      rafId = requestAnimationFrame(loop);
+    }
+    render();
+    return true;
+  }
+
+  function isBattlePaused() {
+    return battlePaused;
   }
 
   loadEnemySprites()
@@ -1596,6 +1627,14 @@ export function createTDEngine(canvas, opts) {
     }
 
     if (phase === 'deploy') {
+      tickBuildTimers(dt);
+      tickPortalAnim(dt);
+      tickGrannyRock(dt);
+      return;
+    }
+
+    // Paused mid-fight: clock and aliens freeze; build / place still works.
+    if (battlePaused && (phase === 'announce' || phase === 'wave')) {
       tickBuildTimers(dt);
       tickPortalAnim(dt);
       tickGrannyRock(dt);
@@ -3157,6 +3196,9 @@ export function createTDEngine(canvas, opts) {
       render();
     },
     startWave,
+    pauseBattle,
+    resumeBattle,
+    isBattlePaused,
     chooseBonusAssault,
     getWavesCompleted: () => wavesCompleted,
     setSpeed(mult) {

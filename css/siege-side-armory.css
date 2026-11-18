@@ -390,12 +390,12 @@ body.siege-mode .siege-battle-footer .siege-deploy-panel {
   grid-row: 1;
   width: 100%;
   min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(205px, .92fr);
+  display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1.5px solid rgba(129,231,109,.65);
+  justify-content: center;
+  gap: 0;
+  padding: 8px 10px;
+  border: 1.5px solid rgba(129,231,109,.55);
   border-radius: 12px;
   box-shadow: inset 0 0 15px rgba(120,239,95,.07), 0 5px 15px rgba(0,0,0,.2);
 }

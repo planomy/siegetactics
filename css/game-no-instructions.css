@@ -78,10 +78,9 @@ body.mission-mode .shop-hint {
   }
 }
 
-/* Compact deployment card: the battle cry, placed turrets and coin count
-   already convey readiness. No need for a paragraph of instructions. */
+/* Compact GO / PAUSE / RESUME control under the field. */
 body.siege-mode .siege-battle-footer .siege-deploy-panel {
-  padding-block: 10px;
+  padding-block: 8px;
 }
 
 body.siege-mode .siege-loadout-heading {

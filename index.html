@@ -18,12 +18,12 @@
   <link rel="stylesheet" href="css/mission-layout.css?v=20261116xp26" />
   <link rel="stylesheet" href="css/defence-forge.css?v=20261117c8" />
   <link rel="stylesheet" href="css/armory-showcase.css?v=20261118a2" />
-  <link rel="stylesheet" href="css/siege-deployment.css?v=20261115w2" />
+  <link rel="stylesheet" href="css/siege-deployment.css?v=20261119b1" />
   <link rel="stylesheet" href="css/sticky-header.css?v=20261112h" />
-  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261115w2" />
+  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261119b1" />
   <link rel="stylesheet" href="css/maths-hq-cockpit.css?v=20261112t" />
   <link rel="stylesheet" href="css/ten-topic-dashboard.css?v=20261112b3" />
-  <link rel="stylesheet" href="css/game-no-instructions.css?v=20261112m" />
+  <link rel="stylesheet" href="css/game-no-instructions.css?v=20261119b1" />
   <link rel="stylesheet" href="css/mission-blueprint-stats.css?v=20261112n" />
   <link rel="stylesheet" href="css/topic-campaign-cards.css?v=20261117e4" />
   <link rel="stylesheet" href="css/maths-hq-declutter.css?v=20261117a8" />
@@ -336,14 +336,10 @@
               <button type="button" class="btn btn-fire-nukes" id="btn-fire-nukes" hidden disabled aria-label="Fire nukes"><span class="btn-fire-nukes-icon" aria-hidden="true">☢</span><span class="btn-fire-nukes-label">NUKE</span></button>
             </div>
 
-            <section id="siege-deploy-panel" class="siege-deploy-panel" aria-label="Build your defences before the aliens arrive" hidden>
-              <div class="siege-deploy-copy">
-                <span class="siege-deploy-eyebrow">PHASE ONE · BUILD YOUR DEFENCES</span>
-                <div id="siege-deploy-summary" class="siege-deploy-summary" aria-live="polite"></div>
-              </div>
+            <section id="siege-deploy-panel" class="siege-deploy-panel" aria-label="Start or pause the siege" hidden>
               <span class="siege-launch-wrap" id="siege-launch-wrap">
-                <button type="button" class="siege-launch-button" id="btn-launch-siege" disabled aria-label="Launch the alien attack">
-                  BRING IT ON!
+                <button type="button" class="siege-launch-button" id="btn-launch-siege" disabled aria-label="Start the alien attack">
+                  GO!
                 </button>
               </span>
             </section>
@@ -433,6 +429,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20261119a1"></script>
+  <script type="module" src="js/app.js?v=20261119b1"></script>
 </body>
 </html>
