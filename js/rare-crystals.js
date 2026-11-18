@@ -10,9 +10,9 @@
 
 /** @type {readonly RareCrystalTier[]} */
 export const RARE_CRYSTAL_TIERS = Object.freeze([
-  { value: 3, id: 'spark', label: 'Spark', title: '×3 SPARK CRYSTAL!' },
-  { value: 5, id: 'pulse', label: 'Pulse', title: '×5 PULSE CRYSTAL!' },
-  { value: 10, id: 'nova', label: 'Nova', title: '×10 NOVA CRYSTAL!' },
+  { value: 3, id: 'spark', label: 'Spark', title: '×3' },
+  { value: 5, id: 'pulse', label: 'Pulse', title: '×5' },
+  { value: 10, id: 'nova', label: 'Nova', title: '×10' },
 ]);
 
 /** How many of each value start in a fresh 10-set bag. */

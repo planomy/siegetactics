@@ -209,6 +209,14 @@
   text-shadow: 0 0 18px rgba(80, 255, 170, .9), 0 4px 0 #0b3d2a;
 }
 
+/* Rare earn modal: the multiplier is the whole headline (×3 / ×5 / ×10). */
+.core-reward--rare .core-reward-title {
+  margin-top: 4px;
+  font-size: clamp(3.4rem, 12vw, 6rem);
+  letter-spacing: 0.08em;
+  line-height: 0.95;
+}
+
 .core-reward-reason {
   position: relative;
   font-weight: 900;

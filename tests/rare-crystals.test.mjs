@@ -51,9 +51,9 @@ test('tiers have distinct ids for styling', () => {
   assert.equal(rareCrystalTier(3)?.id, 'spark');
   assert.equal(rareCrystalTier(5)?.id, 'pulse');
   assert.equal(rareCrystalTier(10)?.id, 'nova');
-  assert.match(rareCrystalTier(3)?.title ?? '', /×3/);
-  assert.match(rareCrystalTier(5)?.title ?? '', /×5/);
-  assert.match(rareCrystalTier(10)?.title ?? '', /×10/);
+  assert.equal(rareCrystalTier(3)?.title, '×3');
+  assert.equal(rareCrystalTier(5)?.title, '×5');
+  assert.equal(rareCrystalTier(10)?.title, '×10');
 });
 
 test('vault chips track rare looks and refund spare on overspend', () => {

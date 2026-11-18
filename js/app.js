@@ -84,7 +84,7 @@ import {
   normalizeCrystalChips,
   addCrystalChip,
   spendCrystalChips,
-} from './rare-crystals.js?v=20261118r2';
+} from './rare-crystals.js?v=20261118r3';
 import { REGIONS as HOMELAND_REGIONS, loadProgress as loadHomelandProgress, regionCrystals } from './homeland/regions.js?v=30';
 
 const SAVE_KEY = 'grannyboom.siege.v1';
@@ -605,7 +605,9 @@ function awardUpgradeCore(reason, from, amount = 1, opts = {}) {
   refreshTopbar();
   refreshMissionControl();
   const look = { amount: value, tierId: opts.tierId, title: opts.title };
-  if (from?.x != null && from?.y != null) showCrystalDrop(from.x, from.y, look);
+  // Rares always use the full modal so ×3 / ×5 / ×10 is the headline kids see.
+  if (opts.tierId || value > 1) showCoreReward(reason, look);
+  else if (from?.x != null && from?.y != null) showCrystalDrop(from.x, from.y, look);
   else showCoreReward(reason, look);
   if (vaultTierFor(save.crystalsCollected).id !== tierBefore) {
     const collected = save.crystalsCollected;
@@ -620,7 +622,7 @@ function awardUpgradeCore(reason, from, amount = 1, opts = {}) {
 function awardRareCrystalFromSet(reason) {
   const draw = drawRareCrystal(save.rareCrystalRound);
   save.rareCrystalRound = draw.round;
-  awardUpgradeCore(`${reason} · ×${draw.value}`, screenCentre(), draw.value, {
+  awardUpgradeCore(`${draw.tier.label.toUpperCase()} CRYSTAL · ${reason}`, null, draw.value, {
     tierId: draw.tier.id,
     title: draw.tier.title,
   });
@@ -908,13 +910,14 @@ function showCoreReward(reason, look = {}) {
   clearTimeout(coreRewardTimer);
   const amount = Math.max(1, Math.floor(Number(look.amount) || 1));
   const tierId = look.tierId || '';
-  const title = look.title || (amount > 1 ? `×${amount} ALIEN CRYSTAL!` : 'ALIEN CRYSTAL!');
+  const rare = Boolean(tierId) || amount > 1;
+  const title = look.title || (rare ? `×${amount}` : 'ALIEN CRYSTAL!');
   const el = document.createElement('button');
   el.type = 'button';
-  el.className = `core-reward${tierId ? ` core-reward--${tierId}` : ''}`;
+  el.className = `core-reward${tierId ? ` core-reward--${tierId}` : ''}${rare ? ' core-reward--rare' : ''}`;
   el.setAttribute(
     'aria-label',
-    amount > 1
+    rare
       ? `Alien crystal worth ${amount} collected. Open the Armory to spend it.`
       : 'Alien crystal collected. Open the Armory to spend it.',
   );
@@ -922,9 +925,8 @@ function showCoreReward(reason, look = {}) {
     <span class="core-reward-inner">
       <span class="core-reward-rays" aria-hidden="true"></span>
       <span class="core-gem core-gem--big${tierId ? ` core-gem--${tierId}` : ''}" aria-hidden="true"></span>
-      ${amount > 1 ? `<span class="core-gem-value core-gem-value--reward">×${amount}</span>` : ''}
       <strong class="core-reward-title">${title}</strong>
-      <span class="core-reward-reason">${amount > 1 ? `${reason} · WORTH ${amount}` : reason}</span>
+      <span class="core-reward-reason">${reason}</span>
       <span class="core-reward-cta">TAP TO POWER UP A TURRET</span>
     </span>`;
   el.addEventListener('click', () => {
