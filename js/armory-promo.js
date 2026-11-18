@@ -1,6 +1,6 @@
 import { TURRETS, TURRET_ORDER } from './turrets-data.js';
 import { nextLockedTurret, nextUnlockableTurret } from './armory.js?v=20261112f';
-import { TURRET_MAX_LEVEL, nextUpgrade, turretLevel } from './turret-upgrades.js?v=20261117e2';
+import { TURRET_MAX_LEVEL, nextUpgrade, turretLevel } from './turret-upgrades.js?v=20261118b1';
 
 /**
  * Once every turret is owned, the promo features the next one worth upgrading:

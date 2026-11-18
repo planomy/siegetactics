@@ -78,7 +78,8 @@ const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
       { unit: 'monster6', count: 10 },
       { unit: 'monster7', count: 10 },
       { unit: 'monster2', count: 8 },
-      { unit: 'monster3', count: 4 },
+      { unit: 'monster3', count: 2 },
+      { unit: 'monster12', count: 2 },
     ],
     spawnIntervalSec: 0.42,
     clumpAt: 18,
@@ -88,14 +89,20 @@ const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
     hpRamp: 0.04,
   },
   {
-    // Mid — Siege Beetle + Neon Rover arrive with the first mothership.
+    // Mid — Siege Beetle + Neon Rover, plus a mixed flyer pulse (flanks above/below portal).
     codename: 'Twin Pincer',
     squads: [
       { unit: 'monster6', count: 6 },
       { unit: 'monster7', count: 6 },
       { unit: 'monster8', count: 8 },
       { unit: 'monster9', count: 8 },
-      { unit: 'monster3', count: 6 },
+      { unit: 'monster12', count: 2 },
+      { unit: 'monster13', count: 2 },
+      { unit: 'monster14', count: 2 },
+      { unit: 'monster15', count: 2 },
+      { unit: 'monster18', count: 2 },
+      { unit: 'monster19', count: 2 },
+      { unit: 'monster23', count: 2 },
     ],
     command: ['mothership'],
     spawnIntervalSec: 0.4,
@@ -106,12 +113,14 @@ const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
     hpRamp: 0.04,
   },
   {
-    // Wave 4+ — no Scout Skiffs; mid machines + bruisers.
+    // Wave 4+ — no Scout Skiffs; mid machines + bruisers + flyer mix.
     codename: 'Heavy Push',
     squads: [
       { unit: 'monster8', count: 10 },
       { unit: 'monster9', count: 10 },
-      { unit: 'monster3', count: 6 },
+      { unit: 'monster16', count: 2 },
+      { unit: 'monster17', count: 2 },
+      { unit: 'monster20', count: 2 },
       { unit: 'monster4', count: 8 },
     ],
     command: ['mothership'],
@@ -123,7 +132,7 @@ const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
     hpRamp: 0.04,
   },
   {
-    // Late — Neon Tank + Crown Saucer.
+    // Late — Neon Tank + Crown Saucer + elite flyers.
     codename: 'Combined Arms',
     squads: [
       { unit: 'monster8', count: 6 },
@@ -131,6 +140,9 @@ const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
       { unit: 'monster4', count: 6 },
       { unit: 'monster10', count: 8 },
       { unit: 'monster11', count: 6 },
+      { unit: 'monster18', count: 2 },
+      { unit: 'monster21', count: 2 },
+      { unit: 'monster22', count: 2 },
       { unit: 'monster5', count: 4 },
     ],
     command: ['mothership'],
@@ -142,13 +154,19 @@ const WAVE_BLUEPRINTS = /** @type {WaveBlueprint[]} */ ([
     hpRamp: 0.04,
   },
   {
-    // Recycled late waves — heavies and new elites only.
+    // Recycled late waves — heavies, elites, and full flyer roster.
     codename: 'Full Assault',
     squads: [
       { unit: 'monster8', count: 8 },
       { unit: 'monster9', count: 8 },
       { unit: 'monster10', count: 10 },
       { unit: 'monster11', count: 10 },
+      { unit: 'monster19', count: 2 },
+      { unit: 'monster20', count: 2 },
+      { unit: 'monster21', count: 2 },
+      { unit: 'monster22', count: 2 },
+      { unit: 'monster23', count: 2 },
+      { unit: 'monster17', count: 2 },
       { unit: 'monster4', count: 6 },
       { unit: 'monster5', count: 6 },
     ],

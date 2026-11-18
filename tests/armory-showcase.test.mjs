@@ -6,7 +6,7 @@ import { TURRET_ORDER, TURRETS, STARTER_TURRETS } from '../js/turrets-data.js';
 import { powerParticleCount } from '../js/power-core.js';
 
 test('a new player keeps level 1 turret stats and a single earned star', async () => {
-  const { setTurretLevels, turretLevel, effectiveTurret } = await import('../js/turret-upgrades.js?v=20261117e2');
+  const { setTurretLevels, turretLevel, effectiveTurret } = await import('../js/turret-upgrades.js?v=20261118b1');
   setTurretLevels(null);
   assert.equal(turretLevel('granny-blaster'), 1);
   assert.equal(turretLevel('boom-gnome'), 1);
@@ -71,7 +71,8 @@ test('after owning a weapon, the advert advances to the next locked turret', () 
 });
 
 test('the Armory promotion celebrates a complete collection once every turret is maxed', async () => {
-  const { setTurretLevels } = await import('../js/turret-upgrades.js?v=20261117e2');
+  // Same module instance armory-promo uses (query string must match).
+  const { setTurretLevels } = await import('../js/turret-upgrades.js?v=20261118b1');
   const result = armoryPromoState(99999, new Set(TURRET_ORDER));
   assert.equal(result.complete, true);
   setTurretLevels(Object.fromEntries(TURRET_ORDER.map((id) => [id, 3])));
@@ -102,24 +103,24 @@ test('with every turret owned, the promo features the next upgrade instead of an
   assert.ok(broke);
   assert.equal(broke.ready, false);
   assert.equal(broke.nextLevel, 2);
-  // Lv2 costs 3 crystals under the dearer Armory prices.
-  const html = renderArmoryPromo(999999, all, 3);
+  // Lv2 costs 6 crystals under the career Armory prices.
+  const html = renderArmoryPromo(999999, all, 6);
   assert.match(html, /UPGRADE READY!/);
   assert.match(html, /TURRETS AT MAX LEVEL/);
   assert.doesNotMatch(html, /armory-promo-complete/);
 });
 
-test('dearer Armory upgrades cost 3 then 6 crystals', async () => {
-  const { UPGRADE_CORE_COST, nextUpgrade, setTurretLevels } = await import('../js/turret-upgrades.js?v=20261117e2');
-  assert.deepEqual(UPGRADE_CORE_COST, { 2: 3, 3: 6 });
+test('Armory upgrades cost 6 then 14 crystals across a long maths career', async () => {
+  const { UPGRADE_CORE_COST, nextUpgrade, setTurretLevels } = await import('../js/turret-upgrades.js');
+  assert.deepEqual(UPGRADE_CORE_COST, { 2: 6, 3: 14 });
   setTurretLevels({});
-  const to2 = nextUpgrade('granny-blaster', 5, true);
-  assert.equal(to2?.cost, 3);
+  const to2 = nextUpgrade('granny-blaster', 8, true);
+  assert.equal(to2?.cost, 6);
   assert.equal(to2?.ready, true);
   setTurretLevels({ 'granny-blaster': 2 });
-  const to3 = nextUpgrade('granny-blaster', 5, true);
-  assert.equal(to3?.cost, 6);
+  const to3 = nextUpgrade('granny-blaster', 10, true);
+  assert.equal(to3?.cost, 14);
   assert.equal(to3?.ready, false);
-  assert.equal(to3?.short, 1);
+  assert.equal(to3?.short, 4);
   setTurretLevels({});
 });

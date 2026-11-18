@@ -93,9 +93,54 @@ const UNIT_GATES = {
   monster9: ['west', 'south'],
   monster10: ['west'],
   monster11: ['west', 'south'],
+  monster12: ['north', 'west', 'south'],
+  monster13: ['north', 'west', 'south'],
+  monster14: ['north', 'west', 'south'],
+  monster15: ['north', 'west', 'south'],
+  monster16: ['north', 'west', 'south'],
+  monster17: ['north', 'west', 'south'],
+  monster18: ['north', 'west', 'south'],
+  monster19: ['north', 'west', 'south'],
+  monster20: ['north', 'west', 'south'],
+  monster21: ['north', 'west', 'south'],
+  monster22: ['north', 'west', 'south'],
+  monster23: ['north', 'west', 'south'],
 };
-export const FLYING_UNITS = new Set(['monster3', 'mothership']);
+export const FLYING_UNITS = new Set([
+  'monster3',
+  'monster12',
+  'monster13',
+  'monster14',
+  'monster15',
+  'monster16',
+  'monster17',
+  'monster18',
+  'monster19',
+  'monster20',
+  'monster21',
+  'monster22',
+  'monster23',
+  'mothership',
+]);
 export const HEDGE_SMASHERS = new Set(['monster4', 'monster10']);
+
+/**
+ * Wave 3+ flyer flanks: random Y bands just above / below the west portal,
+ * so a second and third air line bypass a single choke on the grass.
+ */
+export const FLYER_FLANK_BANDS = {
+  above: { x: 0.044, yMin: 0.18, yMax: 0.34 },
+  below: { x: 0.044, yMin: 0.64, yMax: 0.80 },
+};
+
+/** @param {'above'|'below'} flank @param {() => number} [rand] */
+export function randomFlyerFlankPoint(flank, rand = Math.random) {
+  const band = FLYER_FLANK_BANDS[flank] ?? FLYER_FLANK_BANDS.above;
+  return {
+    x: band.x + (rand() - 0.5) * 0.03,
+    y: band.yMin + rand() * (band.yMax - band.yMin),
+  };
+}
 
 /**
  * Which open gate a spawn uses. Every other alien of a kind takes its

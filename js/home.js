@@ -3,7 +3,7 @@ import { attackStatus, answersForCharge, answersProgress } from './training-gate
 import { badgeSrc } from './stars.js';
 import { SIEGE_RANKS, siegeRankLevel, rankProgressText } from './siege-ranks.js?v=20261112a2';
 import { hotTopicId } from './hot-topic.js?v=20261112a1';
-import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261114t1';
+import { renderThreatDossier, initThreatDossier } from './threat-dossier.js?v=20261118w8';
 import { rareDossiers } from './rare-ships.js?v=20261114t1';
 import {
   renderInterstellarMap, mapPiecesEarned, getMapPasses, MAP_PASSES_REQUIRED, TRAINING_MODULE_IDS, MAP_SECTORS,

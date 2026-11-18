@@ -1,5 +1,5 @@
-import { TURRETS, TURRET_ORDER, TURRET_MAX_HP, loadTurretSprites, loadWreckedTurretSprites } from './turrets-data.js';
-import { effectiveTurret, turretLevel } from './turret-upgrades.js?v=20261117e2';
+import { TURRETS, TURRET_ORDER, TURRET_MAX_HP, loadTurretSprites, loadWreckedTurretSprites, damageVsEnemy } from './turrets-data.js?v=20261118b1';
+import { effectiveTurret, turretLevel } from './turret-upgrades.js?v=20261118b1';
 import { AMMO, loadAmmoSprites } from './ammo-data.js?v=20261112a1';
 import { FIELD_LAYOUT, targetPathsForRow } from './field-layout.js?v=20261112a1';
 import { drawAlienPortalVfx } from './portal-vfx.js';
@@ -7,7 +7,7 @@ import { buildPlacementCells, pickPlacementCell } from './placement-grid.js?v=20
 import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed } from './enemies-data.js';
 import { getFieldImage, preloadField } from './preload.js?v=20261114t1';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
-import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261118w5';
+import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261118w8';
 import { ECONOMY } from './economy.js';
 import {
   MAZE_LAYOUT,
@@ -33,8 +33,9 @@ import {
   gateOpeningAfter,
   gateForUnit,
   FLYING_UNITS,
+  randomFlyerFlankPoint,
   HEDGE_SMASHERS,
-} from './maze-field.js?v=20261118w5';
+} from './maze-field.js?v=20261118w8';
 import { createGardenLife, LAWN_SCENE, LANE_SCENE } from './garden-life.js?v=20261115y4';
 import {
   YARD_PROPS,
@@ -759,7 +760,7 @@ export function createTDEngine(canvas, opts) {
     });
     if (maze && !flyerWarned && enemies[enemies.length - 1]?.flying && bossKind !== 'mothership') {
       flyerWarned = true;
-      opts.showToast('Raiders FLY over hedges — only turrets can stop them!');
+      opts.showToast('Flyers FLY over hedges — watch the flanks above and below the portal!');
     }
     if (bossKind === 'mothership') opts.audio?.playBoss('mothership');
     if (bossKind === 'granddaddy') opts.audio?.playGranddaddyWarning();
@@ -835,16 +836,31 @@ export function createTDEngine(canvas, opts) {
   /** @param {string} unit @param {number} index */
   function lawnSpawnFor(unit, index) {
     const gate = unit === 'granddaddy' ? MAZE_GATES[0] : gateForUnit(unit, index, openGates(currentWaveNum()));
-    return { gate, flying: FLYING_UNITS.has(unit) };
+    const flying = FLYING_UNITS.has(unit);
+    // Wave 3+: flyer craft peel onto high / low flanks beside the portal (not motherships).
+    /** @type {'above'|'below'|null} */
+    let flyerFlank = null;
+    if (flying && unit !== 'mothership' && currentWaveNum() >= 3) {
+      flyerFlank = index % 2 === 0 ? 'above' : 'below';
+    }
+    return { gate, flying, flyerFlank };
   }
 
-  /** @param {{ gate: import('./maze-field.js').MazeGate, flying: boolean }} lawn */
+  /** @param {{ gate: import('./maze-field.js').MazeGate, flying: boolean, flyerFlank?: 'above'|'below'|null }} lawn */
   function spawnOnLawn(lawn) {
-    const { gate, flying } = lawn;
+    const { gate, flying, flyerFlank } = lawn;
     const entry = bestEntryCell(mazeDist, gate) ?? gate.entries[0];
-    const sideways = gate.id === 'west' ? 0 : (Math.random() - 0.5) * 0.03;
-    const nx = gate.spawn.x + sideways;
-    const ny = gate.spawn.y + (gate.id === 'west' ? (Math.random() - 0.5) * 0.04 : 0);
+    let nx;
+    let ny;
+    if (flyerFlank) {
+      const at = randomFlyerFlankPoint(flyerFlank);
+      nx = at.x;
+      ny = at.y;
+    } else {
+      const sideways = gate.id === 'west' ? 0 : (Math.random() - 0.5) * 0.03;
+      nx = gate.spawn.x + sideways;
+      ny = gate.spawn.y + (gate.id === 'west' ? (Math.random() - 0.5) * 0.04 : 0);
+    }
     return {
       nx,
       ny,
@@ -969,15 +985,23 @@ export function createTDEngine(canvas, opts) {
 
   function findTarget(tower) {
     const def = defOf(tower.type);
+    const bias = def.bias ?? 'any';
     let best = null;
-    let bestP = -1;
+    let bestScore = -Infinity;
     for (const e of enemies) {
       if (!rowCoversEnemy(tower.row, e)) continue;
       const pos = enemyWorldPos(e);
       const dist = Math.hypot(pos.x - tower.x, pos.y - tower.y);
       if (dist > def.range) continue;
-      if (e.progress > bestP) {
-        bestP = e.progress;
+      // Prefer the matching class when biased, then whoever is closest to the porch.
+      let classBonus = 0;
+      if (bias === 'air' && e.flying) classBonus = 1;
+      else if (bias === 'ground' && !e.flying) classBonus = 1;
+      else if (bias === 'air' && !e.flying) classBonus = -0.35;
+      else if (bias === 'ground' && e.flying) classBonus = -0.35;
+      const score = classBonus * 10 + e.progress;
+      if (score > bestScore) {
+        bestScore = score;
         best = e;
       }
     }
@@ -1506,16 +1530,17 @@ export function createTDEngine(canvas, opts) {
   }
 
   function applyDamage(x, y, damage, aoe, primaryId, sourceType) {
+    const def = sourceType ? defOf(sourceType) : null;
     if (aoe > 0) {
       enemies.forEach((e) => {
         const pos = enemyWorldPos(e);
         if (Math.hypot(pos.x - x, pos.y - y) <= aoe) {
-          e.hp -= damage;
+          e.hp -= damageVsEnemy(def, e, damage);
         }
       });
     } else {
       const e = enemies.find((en) => en.id === primaryId);
-      if (e) e.hp -= damage;
+      if (e) e.hp -= damageVsEnemy(def, e, damage);
     }
     if (sourceType) applyTurretStatus(sourceType, x, y, aoe, primaryId);
 

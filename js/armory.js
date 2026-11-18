@@ -1,7 +1,7 @@
 import { TURRETS, TURRET_ORDER } from './turrets-data.js';
 import { ECONOMY } from './economy.js';
 import { formatUnlockXp, turretStatLine } from './shop.js';
-import { TURRET_MAX_LEVEL, effectiveTurret, nextUpgrade, turretLevel } from './turret-upgrades.js?v=20261117e2';
+import { TURRET_MAX_LEVEL, effectiveTurret, nextUpgrade, turretLevel } from './turret-upgrades.js?v=20261118b1';
 import { AMMO } from './ammo-data.js?v=20261112a1';
 import { GEAR, gearArt, gearStatus } from './gear.js?v=20261113a3';
 

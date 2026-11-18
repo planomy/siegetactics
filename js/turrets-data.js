@@ -20,11 +20,32 @@
  * @property {number} [freezeDuration]
  * @property {boolean} [flipX] - Mirror sprite (face left toward aliens)
  * @property {'decoy'|'magnet'|'repair'|'glue'|'freeze'} [role]
+ * @property {'air'|'ground'|'any'} [bias] - Matchup lean (Armory power only — never wave-scaled)
  * @property {number} [magnetRadius]
  * @property {number} [magnetBonus]
  * @property {number} [repairRadius]
  * @property {number} [repairHpPerSec]
  */
+
+/** Damage multipliers by turret bias vs flying / walking aliens. */
+export const BIAS_DAMAGE = {
+  air: { air: 1.35, ground: 0.72 },
+  ground: { air: 0.5, ground: 1.22 },
+  any: { air: 1, ground: 1 },
+};
+
+/**
+ * @param {{ bias?: 'air'|'ground'|'any'|null, damage?: number }|null|undefined} def
+ * @param {{ flying?: boolean }|null|undefined} enemy
+ * @param {number} [baseDamage]
+ */
+export function damageVsEnemy(def, enemy, baseDamage) {
+  const raw = baseDamage ?? def?.damage ?? 0;
+  if (raw <= 0) return 0;
+  const bias = def?.bias && BIAS_DAMAGE[def.bias] ? def.bias : 'any';
+  const mul = BIAS_DAMAGE[bias][enemy?.flying ? 'air' : 'ground'];
+  return Math.max(1, Math.round(raw * mul));
+}
 
 /** @type {TurretType[]} */
 export const STARTER_TURRETS = ['granny-blaster', 'zap-sprinkler', 'boom-gnome', 'plasma-daisy'];
@@ -39,6 +60,7 @@ export const TURRETS = {
     placementCost: 15,
     color: '#7cfc00',
     desc: 'Basic rapid shots',
+    bias: 'any',
     damage: 11,
     range: 95,
     fireRate: 0.22,
@@ -52,7 +74,8 @@ export const TURRETS = {
     unlockXp: 0,
     placementCost: 18,
     color: '#5ce1ff',
-    desc: 'Electric spray bolts',
+    desc: 'Electric spray — strong vs flyers',
+    bias: 'air',
     damage: 15,
     range: 88,
     fireRate: 0.24,
@@ -68,6 +91,7 @@ export const TURRETS = {
     placementCost: 22,
     color: '#7cfc00',
     desc: 'Slows with slime',
+    bias: 'ground',
     damage: 8,
     range: 78,
     fireRate: 0.48,
@@ -82,8 +106,9 @@ export const TURRETS = {
     unlockXp: 0,
     placementCost: 25,
     color: '#ff6bcb',
-    desc: 'Plasma seed bursts',
-    damage: 24,
+    desc: 'Plasma seeds — anti-air pick',
+    bias: 'air',
+    damage: 18,
     range: 92,
     fireRate: 0.62,
     boltSize: 5,
@@ -96,7 +121,8 @@ export const TURRETS = {
     unlockXp: 0,
     placementCost: 28,
     color: '#ff6b35',
-    desc: 'Explosive pop shots',
+    desc: 'Explosive pops — shreds ground clumps',
+    bias: 'ground',
     damage: 30,
     range: 72,
     fireRate: 0.95,
@@ -111,7 +137,8 @@ export const TURRETS = {
     unlockXp: 1300,
     placementCost: 32,
     color: '#ffd166',
-    desc: 'Sound-wave blasts',
+    desc: 'Sound-wave blasts — ground lanes',
+    bias: 'ground',
     damage: 36,
     range: 82,
     fireRate: 1.05,
@@ -126,7 +153,8 @@ export const TURRETS = {
     unlockXp: 1800,
     placementCost: 36,
     color: '#4ecdc4',
-    desc: 'Lightning strikes',
+    desc: 'Lightning — best on path packs',
+    bias: 'ground',
     damage: 44,
     range: 90,
     fireRate: 1.2,
@@ -142,7 +170,8 @@ export const TURRETS = {
     unlockXp: 2500,
     placementCost: 42,
     color: '#ff4444',
-    desc: 'Mini rockets',
+    desc: 'Mini rockets — hunts flyers',
+    bias: 'air',
     damage: 44,
     range: 115,
     fireRate: 1.75,
@@ -156,7 +185,8 @@ export const TURRETS = {
     unlockXp: 3500,
     placementCost: 48,
     color: '#ffe566',
-    desc: 'Beam pulses',
+    desc: 'Beam pulses — long-range AA',
+    bias: 'air',
     damage: 66,
     range: 135,
     fireRate: 1.65,
@@ -170,7 +200,8 @@ export const TURRETS = {
     unlockXp: 5000,
     placementCost: 55,
     color: '#ff8c42',
-    desc: 'Lobs fireballs',
+    desc: 'Lobs fireballs — ground smash',
+    bias: 'ground',
     damage: 72,
     range: 105,
     fireRate: 1.9,
@@ -187,6 +218,7 @@ export const TURRETS = {
     color: '#b565ff',
     desc: 'Splashes goo — aliens crawl',
     role: 'glue',
+    bias: 'ground',
     damage: 0,
     range: 88,
     fireRate: 1.65,
@@ -203,6 +235,7 @@ export const TURRETS = {
     color: '#5ce1ff',
     desc: 'Icy blast — stop right there',
     role: 'freeze',
+    bias: 'ground',
     damage: 10,
     range: 72,
     fireRate: 2.65,

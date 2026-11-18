@@ -16,6 +16,8 @@ import {
   gateOpeningAfter,
   gateForUnit,
   FLYING_UNITS,
+  FLYER_FLANK_BANDS,
+  randomFlyerFlankPoint,
 } from '../js/maze-field.js';
 
 const { cols, rows } = MAZE_LAYOUT;
@@ -108,6 +110,19 @@ test('aliens split between their favourite gate and the portal', () => {
   assert.equal(gateForUnit('monster4', 1, later).id, 'west');
   assert.equal(gateForUnit('mothership', 0, later).id, 'west');
   assert.ok(FLYING_UNITS.has('monster3'));
+  assert.ok(FLYING_UNITS.has('monster12'));
+  assert.ok(FLYING_UNITS.has('monster17'));
+  assert.ok(FLYING_UNITS.has('monster23'));
+});
+
+test('flyer flank bands sit above and below the west portal', () => {
+  const portalY = MAZE_LAYOUT.spawn.y;
+  assert.ok(FLYER_FLANK_BANDS.above.yMax < portalY);
+  assert.ok(FLYER_FLANK_BANDS.below.yMin > portalY);
+  const above = randomFlyerFlankPoint('above', () => 0.5);
+  const below = randomFlyerFlankPoint('below', () => 0.5);
+  assert.ok(above.y < portalY && below.y > portalY);
+  assert.ok(Math.abs(above.x - MAZE_LAYOUT.spawn.x) < 0.05);
 });
 
 test('every gate can reach the porch on an empty lawn', () => {
