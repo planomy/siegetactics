@@ -260,10 +260,11 @@ export function footprintCells(prop, col, row) {
       cells.push({ col: originCol + dc, row: originRow + dr });
     }
   }
-  // Dig only: one column past the right edge. Stops a vertical run clipping the
-  // painted fence without sealing the grass under the dig.
+  // Dig only: one column past the right edge (not the bottom row). Stops a
+  // vertical run clipping the painted fence, while the bottom-right corner
+  // beside a garden bed stays a real grass gap.
   if (prop.id === 'pool-under-construction') {
-    for (let r = row; r < row + prop.h; r++) {
+    for (let r = row; r < row + prop.h - 1; r++) {
       cells.push({ col: col + prop.w, row: r });
     }
   }

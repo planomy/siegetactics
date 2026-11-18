@@ -42,7 +42,7 @@ test('path blocks match solid place footprints — dig adds a right-edge column 
     assert.deepEqual(blockSize(prop), { w: prop.w, h: prop.h }, `${prop.id} path size`);
     assert.equal(placeCells(prop, 2, 2).length, prop.w * prop.h, `${prop.id} place`);
     if (prop.id === 'pool-under-construction') {
-      assert.equal(footprintCells(prop, 2, 2).length, prop.w * prop.h + prop.h, `${prop.id} dig + right edge`);
+      assert.equal(footprintCells(prop, 2, 2).length, prop.w * prop.h + (prop.h - 1), `${prop.id} dig + right edge`);
     } else {
       assert.equal(footprintCells(prop, 2, 2).length, prop.w * prop.h, `${prop.id} path footprint`);
     }
@@ -60,8 +60,19 @@ test('pool dig and duck pond leave walkable grass; routes skip solids and the di
 
   // Grass under the dig stays open.
   assert.equal(map[cellIndex(dig.col + 1, dig.row + pool.h)], 0, 'grass under the dig is walkable');
-  // Right-edge column is sealed so a vertical run cannot clip the fence.
-  assert.equal(map[cellIndex(dig.col + pool.w, dig.row + 1)], 1, 'dig right-edge column is path-blocked');
+  // Right-edge column sealed on upper rows; bottom-right corner beside a bed stays open.
+  assert.equal(map[cellIndex(dig.col + pool.w, dig.row)], 1, 'dig right-edge column is path-blocked');
+  assert.equal(map[cellIndex(dig.col + pool.w, dig.row + pool.h - 1)], 0, 'bottom-right corner gap stays open');
+
+  const bbq = YARD_LAYOUTS.find((l) => l.id === 'bbq-sunday');
+  const bbqDig = bbq.items.find((i) => i.id === 'pool-under-construction');
+  const bbqMap = new Uint8Array(CELL_COUNT);
+  stampYardBlocked(bbqMap, bbq.items);
+  assert.equal(
+    bbqMap[cellIndex(bbqDig.col + pool.w, bbqDig.row + pool.h - 1)],
+    0,
+    'bbq-sunday: corner between dig and garden bed stays walkable',
+  );
 
   for (const layout of YARD_LAYOUTS.filter((l) => l.items.some((i) => i.id === 'pool-under-construction'))) {
     const hole = layout.items.find((i) => i.id === 'pool-under-construction');
@@ -75,7 +86,7 @@ test('pool dig and duck pond leave walkable grass; routes skip solids and the di
       `${layout.id}: west route must not walk the dig hole`,
     );
     assert.equal(
-      route.some((c) => c.col === hole.col + pool.w && c.row >= hole.row && c.row < hole.row + pool.h),
+      route.some((c) => c.col === hole.col + pool.w && c.row >= hole.row && c.row < hole.row + pool.h - 1),
       false,
       `${layout.id}: west route must not run the dig right edge`,
     );
