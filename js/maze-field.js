@@ -15,7 +15,7 @@ export const MAZE_LAYOUT = {
   right: 0.86,
   top: 0.16,
   bottom: 0.82,
-  /** Right-edge cells at the porch steps (kept clear of building). */
+  /** Right-edge cells that count as reaching the porch (path goals — buildable if a route remains). */
   goalRows: [3, 4, 5, 6],
   /** Left-edge cells covered by the portal ring art (walkable, never buildable). */
   portalRows: [3, 4, 5, 6],
@@ -202,9 +202,13 @@ export function isEntryCell(col, row) {
   return MAZE_GATES.some((g) => g.entries.some((e) => e.col === col && e.row === row));
 }
 
-/** Gate and porch-step cells can never be built on, so a route always has both ends. */
+/**
+ * Cells that can never be built on: gate entries + portal column under the ring art.
+ * Porch goal cells stay walk-targets but are buildable — kids can put a turret on the
+ * grass in front of Granny as long as blockingKeepsRoute still leaves a porch route.
+ */
 export function isReservedCell(col, row) {
-  return isGoalCell(col, row) || isEntryCell(col, row) || (col === 0 && MAZE_LAYOUT.portalRows.includes(row));
+  return isEntryCell(col, row) || (col === 0 && MAZE_LAYOUT.portalRows.includes(row));
 }
 
 /** Normalised centre of a cell. */

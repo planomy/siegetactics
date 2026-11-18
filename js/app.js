@@ -4,7 +4,7 @@ import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261116b1';
 import { renderArmory } from './armory.js?v=20261118b1';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel, crystalsSpentOnLevels } from './turret-upgrades.js?v=20261118b1';
-import { createTDEngine } from './td-engine.js?v=20261119d1';
+import { createTDEngine } from './td-engine.js?v=20261119d2';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js?v=20261118b1';
 import { createAudio } from './audio.js?v=20261118w8';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
@@ -20,7 +20,7 @@ import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=2026
 import { STORY_BEATS } from './story.js?v=20261113a1';
 import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261118s7';
 import { DEV } from './dev.js?v=20261115y1';
-import { HEDGE } from './maze-field.js?v=20261119d1';
+import { HEDGE } from './maze-field.js?v=20261119d2';
 import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261118e2';
 import { keepFullscreen } from './fullscreen.js?v=20261116h';
 import { bindTipPills } from './tip-pills.js?v=20261117f1';

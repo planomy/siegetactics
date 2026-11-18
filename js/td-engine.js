@@ -35,7 +35,7 @@ import {
   FLYING_UNITS,
   randomFlyerFlankPoint,
   HEDGE_SMASHERS,
-} from './maze-field.js?v=20261119d1';
+} from './maze-field.js?v=20261119d2';
 import { createGardenLife, LAWN_SCENE, LANE_SCENE } from './garden-life.js?v=20261115y4';
 import {
   YARD_PROPS,
@@ -3099,7 +3099,7 @@ export function createTDEngine(canvas, opts) {
         reason === 'blocks'
           ? "That would trap the aliens — leave them a path!"
           : reason === 'reserved'
-            ? 'Keep the gate and porch steps clear.'
+            ? 'Keep the gate clear.'
             : reason === 'yard'
               ? 'That square is under a yard obstacle.'
               : reason === 'alien'

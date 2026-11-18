@@ -91,11 +91,20 @@ test('an alien standing on a just-blocked cell can still step off toward the por
   assert.equal(blocked[cellIndex(next.col, next.row)], 0);
 });
 
-test('gate and porch-step cells are reserved', () => {
+test('gate entries stay reserved; porch grass in front of Granny is buildable', () => {
   MAZE_GATES.forEach((g) => g.entries.forEach(({ col, row }) => assert.ok(isReservedCell(col, row))));
-  MAZE_LAYOUT.goalRows.forEach((row) => assert.ok(isReservedCell(cols - 1, row)));
+  // Goal cells are still porch targets, but kids can turret the lawn in front of Granny.
+  MAZE_LAYOUT.goalRows.forEach((row) => assert.equal(isReservedCell(cols - 1, row), false));
   assert.equal(isReservedCell(5, 5), false);
   assert.ok(bestEntryCell(computeFlowField(new Uint8Array(CELL_COUNT))));
+});
+
+test('you can build on a porch-front cell while another porch goal stays open', () => {
+  const blocked = new Uint8Array(CELL_COUNT);
+  const [first, second] = MAZE_LAYOUT.goalRows;
+  assert.equal(blockingKeepsRoute(blocked, cols - 1, first).ok, true);
+  blocked[cellIndex(cols - 1, first)] = 1;
+  assert.equal(blockingKeepsRoute(blocked, cols - 1, second).ok, true);
 });
 
 test('cell lookup round-trips through cell centres', () => {
