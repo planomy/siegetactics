@@ -7,7 +7,7 @@ import { buildPlacementCells, pickPlacementCell } from './placement-grid.js?v=20
 import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed } from './enemies-data.js';
 import { getFieldImage, preloadField } from './preload.js?v=20261114t1';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
-import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261118w1';
+import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261118w2';
 import { ECONOMY } from './economy.js';
 import {
   MAZE_LAYOUT,
@@ -165,6 +165,7 @@ const RARE_DRAW = { rare: 2.6, legendary: 5.5 };
  *   bonusSiegeSec?: number,
  *   firstSiege?: boolean,
  *   hordeRank?: number,
+ *   pressure?: { hpMul?: number, countMul?: number },
  *   zapped?: number,
  *   onKillReward?: (info: { isBoss: boolean, rare: boolean, xp: number, screenX?: number, screenY?: number }) => void,
  *   onEnemyDestroyed?: (info: { key: import('./enemies-data.js').EnemySpriteKey }) => void,
@@ -710,6 +711,7 @@ export function createTDEngine(canvas, opts) {
       firstSiege: Boolean(opts.firstSiege),
       rank: opts.hordeRank ?? 0,
       zapped: opts.zapped ?? 0,
+      pressure: opts.pressure,
     });
     if (waveNum !== 1 || !rareShip) return cfg;
     const rareSlot = { unit: 'rare', isBoss: true };
@@ -2330,22 +2332,35 @@ export function createTDEngine(canvas, opts) {
   }
 
   function drawHUD() {
+    const hudH = 72;
+    const hudY = 48;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(0, 0, width, 36);
+    ctx.fillRect(0, 0, width, hudH);
     ctx.fillStyle = '#ffb347';
-    ctx.font = 'bold 14px Bangers, sans-serif';
+    ctx.font = 'bold 28px Bangers, sans-serif';
     ctx.textAlign = 'left';
     const budget = opts.getBudget();
     if (phase === 'wave' || phase === 'announce') {
       const waveNum = phase === 'announce' ? splash.waveNum : wavesCompleted + 1;
       const timeLabel = siegeArmed ? formatSiegeTime(siegeTimeLeft) : formatSiegeTime(siegeDuration);
-      ctx.fillText(`${bonusPlayed ? 'BONUS ' : ''}Time ${timeLabel}`, 12, 24);
-      ctx.fillText(`Wave ${waveNum}`, 118, 24);
-      ctx.fillText(`Blasted: ${totalKills}`, 200, 24);
-      ctx.fillText(`Coins: ${budget}`, width - 110, 24);
+      const gap = 28;
+      let x = 12;
+      const paint = (label) => {
+        ctx.fillText(label, x, hudY);
+        x += ctx.measureText(label).width + gap;
+      };
+      paint(`${bonusPlayed ? 'BONUS ' : ''}Time ${timeLabel}`);
+      paint(`Wave ${waveNum}`);
+      paint(`Blasted: ${totalKills}`);
+      paint(`Score: ${totalKills}`);
+      ctx.textAlign = 'right';
+      ctx.fillText(`Coins: ${budget}`, width - 12, hudY);
+      ctx.textAlign = 'left';
     } else if (phase === 'deploy') {
-      ctx.fillText('Build your defences — YOU start the wave!', 12, 24);
-      ctx.fillText(`Coins: ${budget}`, width - 110, 24);
+      ctx.fillText('Build your defences — YOU start the wave!', 12, hudY);
+      ctx.textAlign = 'right';
+      ctx.fillText(`Coins: ${budget}`, width - 12, hudY);
+      ctx.textAlign = 'left';
     }
   }
 

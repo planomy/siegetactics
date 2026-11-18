@@ -4,7 +4,7 @@ import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261116b1';
 import { renderArmory } from './armory.js?v=20261118a2';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel, crystalsSpentOnLevels } from './turret-upgrades.js?v=20261117e2';
-import { createTDEngine } from './td-engine.js?v=20261118w1';
+import { createTDEngine } from './td-engine.js?v=20261118w3';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js';
 import { createAudio } from './audio.js?v=20261114s1';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
@@ -12,7 +12,8 @@ import { topicXpMultiplier } from './hot-topic.js?v=20261112a1';
 import { normalizeSiegeRecord, recordSiege, siegeRankLevel, renderRankResult } from './siege-ranks.js?v=20261112a2';
 import { normalizeStreak, recordStreakAnswer, streakStatus, localDayKey } from './streak.js?v=20261113a1';
 import { GEAR, normalizeGear, gearStatus, gearEffects } from './gear.js?v=20261113a3';
-import { SIEGE_DURATION_SEC, openingHorde } from './waves-data.js?v=20261118w1';
+import { SIEGE_DURATION_SEC, openingHorde } from './waves-data.js?v=20261118w2';
+import { siegePressure } from './siege-pressure.js?v=20261118w3';
 import { normalizeDaily, recordChallengeEvent, rollLuckyDrop, DAILY_CHEST_XP, DAILY_CHEST_CRYSTALS } from './daily-challenges.js?v=20261118d1';
 import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20261114h1';
 import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261113a1';
@@ -1429,11 +1430,22 @@ function resolveBonusAssault(accept) {
   bonusChoiceFocus = null;
 }
 
+/** Soft-ceiling backyard pressure from owned turret levels + siege rank. */
+function currentSiegePressure() {
+  return siegePressure({
+    unlockedTurrets: save.unlockedTurrets,
+    turretLevels: save.turretLevels,
+    rank: siegeRankLevel(save.siegeRecord),
+    firstSiege: save.siegesCompleted === 0,
+  });
+}
+
 /** The next siege's opening assault, shrunk by any scouts that extra right answers have zapped. */
 function currentHorde() {
   return openingHorde({
     firstSiege: save.siegesCompleted === 0,
     rank: siegeRankLevel(save.siegeRecord),
+    pressure: currentSiegePressure(),
     extraRight: Math.max(0, (save.trainingGate.questionsDone || 0) - GATE.questionsRequired),
   });
 }
@@ -2178,6 +2190,7 @@ function mountTDEngine(canvas, mission) {
     nukeBoost: { damage: gearFx.nukeDamageMul, aoe: gearFx.nukeAoeMul, salvo: gearFx.nukeSalvoMul },
     firstSiege: save.siegesCompleted === 0,
     hordeRank: siegeRankLevel(save.siegeRecord),
+    pressure: currentSiegePressure(),
     zapped: currentHorde().zapped,
     bonusSiegeSec: bonusSiegeSeconds(save.trainingGate),
     onBonusOffer: showBonusAssaultOffer,

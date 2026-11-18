@@ -207,8 +207,15 @@ function buildSpawnQueue(squads, countMul, opts, command) {
 /**
  * Escalating wave config for timed sieges (wave 1, 2, 3… until the clock runs out).
  * @param {number} waveNum 1-based wave index
- * @param {{ spawnGranddaddy?: boolean, firstSiege?: boolean, rank?: number, zapped?: number }} [opts]
+ * @param {{
+ *   spawnGranddaddy?: boolean,
+ *   firstSiege?: boolean,
+ *   rank?: number,
+ *   zapped?: number,
+ *   pressure?: { hpMul?: number, countMul?: number },
+ * }} [opts]
  *   rank: siege rank level; zapped: Scout Skiffs already zapped out of the opening assault.
+ *   pressure: soft-ceiling mul from owned turret power (see siege-pressure.js).
  * @returns {WaveDef}
  */
 export function waveConfigFor(waveNum, opts = {}) {
@@ -218,9 +225,11 @@ export function waveConfigFor(waveNum, opts = {}) {
   const bp = WAVE_BLUEPRINTS[blueprintIdx];
   const rank = opts.firstSiege ? 0 : Math.max(0, opts.rank ?? 0);
   const squads = waveNum === 1 ? [...bp.squads, ...rankReinforcements(rank)] : bp.squads;
+  const pressureHp = opts.firstSiege ? 1 : Math.max(1, Number(opts.pressure?.hpMul) || 1);
+  const pressureCount = opts.firstSiege ? 1 : Math.max(1, Number(opts.pressure?.countMul) || 1);
 
   // Grow the horde each wave (~12%), then again when Full Assault recycles.
-  const countMul = (1 + tier * 0.12 + extraTier * 0.2) * rankCountMul(rank);
+  const countMul = (1 + tier * 0.12 + extraTier * 0.2) * rankCountMul(rank) * pressureCount;
   const spawnQueue = buildSpawnQueue(squads, countMul, {
     spawnGranddaddy: Boolean(opts.spawnGranddaddy && waveNum >= 5),
   }, bp.command);
@@ -228,8 +237,9 @@ export function waveConfigFor(waveNum, opts = {}) {
   const firstWaveTutorial = Boolean(opts.firstSiege && waveNum === 1);
   const fullQueue = firstWaveTutorial ? spawnQueue.slice(0, 18) : spawnQueue;
   const openingQueue = waveNum === 1 ? zapScouts(fullQueue, opts.zapped ?? 0) : fullQueue;
-  // ~20% more HP per wave, plus more once we recycle Full Assault.
-  const hpScale = firstWaveTutorial ? 0.88 : 1 + tier * 0.2 + extraTier * 0.12;
+  // ~20% more HP per wave, plus roster pressure, plus more once Full Assault recycles.
+  const baseHp = firstWaveTutorial ? 0.88 : 1 + tier * 0.2 + extraTier * 0.12;
+  const hpScale = firstWaveTutorial ? baseHp : baseHp * pressureHp;
 
   return {
     codename: extraTier > 0 ? `${bp.codename} +${extraTier}` : bp.codename,
@@ -262,13 +272,14 @@ function zapScouts(queue, zapped) {
  * What the opening assault will send, for the pre-battle intel: troops by type, the bosses, and how
  * many Scout Skiffs extra maths has zapped (and could still zap). Built from the same wave config the
  * siege uses, so the preview always matches the battle.
- * @param {{ firstSiege?: boolean, rank?: number, extraRight?: number }} opts
+ * @param {{ firstSiege?: boolean, rank?: number, extraRight?: number, pressure?: { hpMul?: number, countMul?: number } }} opts
  */
 export function openingHorde(opts = {}) {
-  const full = waveConfigFor(1, { firstSiege: opts.firstSiege, rank: opts.rank });
+  const pressure = opts.pressure;
+  const full = waveConfigFor(1, { firstSiege: opts.firstSiege, rank: opts.rank, pressure });
   const zapCap = Math.floor(full.spawnQueue.length * ZAP_CAP_SHARE);
   const zapped = Math.min(zapCap, Math.max(0, Math.floor(opts.extraRight ?? 0)));
-  const wave = waveConfigFor(1, { firstSiege: opts.firstSiege, rank: opts.rank, zapped });
+  const wave = waveConfigFor(1, { firstSiege: opts.firstSiege, rank: opts.rank, zapped, pressure });
   /** @type {Map<string, number>} */
   const counts = new Map();
   for (const slot of wave.spawnQueue) counts.set(slot.unit, (counts.get(slot.unit) ?? 0) + 1);
