@@ -2797,7 +2797,7 @@ export function createTDEngine(canvas, opts) {
     const basinRx = drawW * 0.24;
     const basinRy = drawH * 0.18;
     // Rock shelf waterfall — upper-right of the new art.
-    const fallTopX = left + drawW * 0.62;
+    const fallTopX = left + drawW * 0.68;
     const fallTopY = top + drawH * 0.3;
     const fallBotY = basinY - basinRy * 0.2;
     const fallSpread = drawW * 0.016;
