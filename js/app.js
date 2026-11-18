@@ -76,7 +76,7 @@ import {
   answersProgress,
   recordMissionMix,
 } from './training-gate.js?v=20261115p1';
-import { setGateRemainingProvider, gateNote as siegeGateNote } from './gate-status.js?v=20261119c1';
+import { setGateRemainingProvider, gateNote as siegeGateNote } from './gate-status.js?v=20261119c2';
 import { normalizeRareSave, rollRareShip, rareShipById, recordRareSighted, recordRareCaught, rareCrystalReward } from './rare-ships.js?v=20261114t1';
 import {
   normalizeRareCrystalRound,

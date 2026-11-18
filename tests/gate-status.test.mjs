@@ -3,10 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { setGateRemainingProvider, gateNote } from '../js/gate-status.js';
 
-test('gate note matches remaining answers — never claims charged while invasion still needs work', () => {
+test('gate note nudges another set of these — never claims charged while invasion still needs work', () => {
   setGateRemainingProvider(() => 13);
-  assert.match(gateNote(), /still needs 13 more right answers/i);
+  assert.equal(gateNote(), 'Answer 10 more of these.');
+  assert.equal(gateNote(10), 'Answer 10 more of these.');
   assert.doesNotMatch(gateNote(), /fully charged/i);
+
+  setGateRemainingProvider(() => 3);
+  assert.equal(gateNote(), 'Answer 3 more of these.');
 
   setGateRemainingProvider(() => 0);
   assert.match(gateNote(), /fully charged/i);
