@@ -89,10 +89,7 @@ export const YARD_PROPS = {
     w: 4,
     h: 3,
     label: 'Pool dig',
-    // Explicit 5×5 path skirt (+ under-lip in footprintCells). Place stays 4×3;
-    // pad cells outside that rect stay buildable via isYardBuildSlot.
-    blockW: 5,
-    blockH: 5,
+    // Path blocks the dig hole only (4×3). Fence/art may overhang walkable grass.
     scale: 1.61,
     noShadow: true,
     grounding: 'none',
@@ -226,22 +223,15 @@ export const YARD_LAYOUTS = [
 ];
 
 /**
- * Path collision size. Explicit blockW/H win; otherwise grow with painted scale so
- * aliens walk around the art, not through it. Place footprint stays prop.w×prop.h.
+ * Path collision size. Matches the solid place footprint (dig hole, water, bed…)
+ * so painted overhang can sit on grass that stays walkable. Optional blockW/H
+ * still overrides when a prop truly needs a wider solid.
  */
 export function blockSize(prop) {
-  if (prop.blockW != null && prop.blockH != null) {
-    return { w: prop.blockW, h: prop.blockH };
-  }
-  const scale = prop.scale ?? 1;
-  if (scale <= 1.1) return { w: prop.w, h: prop.h };
-  return {
-    w: Math.max(prop.w, Math.ceil(prop.w * scale - 0.15)),
-    h: Math.max(prop.h, Math.ceil(prop.h * scale - 0.15)),
-  };
+  return { w: prop.blockW ?? prop.w, h: prop.blockH ?? prop.h };
 }
 
-/** Place rect only — used so props can sit close without their path skirts fighting. */
+/** Place rect — same as the solid path block unless blockW/H widens path only. */
 export function placeCells(prop, col, row) {
   /** @type {{ col: number, row: number }[]} */
   const cells = [];
@@ -254,37 +244,19 @@ export function placeCells(prop, col, row) {
 }
 
 /**
- * Cells blocked for pathing. Extra block pad is centred horizontally but biased
- * upward — iso sprites grow up from the foot cell. Path skirts may overlap each
- * other; place rects must not (see validateYardItems).
+ * Cells blocked for pathing. Default = solid place rect. If blockW/H is wider,
+ * pad is centred horizontally and biased upward (iso art grows up from the foot).
  * @param {YardProp} prop @param {number} col @param {number} row
  */
 export function footprintCells(prop, col, row) {
   const { w: bw, h: bh } = blockSize(prop);
   const originCol = col - Math.floor((bw - prop.w) / 2);
-  // Prefer leftover pad on top (ceil) so a 3-tall block on a 2-tall place
-  // covers the row above the planter, not an empty row below.
   const originRow = row - Math.ceil((bh - prop.h) / 2);
   /** @type {{ col: number, row: number }[]} */
   const cells = [];
   for (let dr = 0; dr < bh; dr++) {
     for (let dc = 0; dc < bw; dc++) {
       cells.push({ col: originCol + dc, row: originRow + dr });
-    }
-  }
-  // Pool dig: also seal two rows under the foot. Without this the west run hugs
-  // the pit lip and reads as walking through the painted hole; with it, aliens
-  // climb over the dig on clear grass.
-  if (prop.id === 'pool-under-construction') {
-    const footRow = row + prop.h - 1;
-    const seen = new Set(cells.map((c) => `${c.col},${c.row}`));
-    for (let er = footRow + 1; er <= footRow + 2; er++) {
-      for (let c = col - 1; c < col + prop.w + 1; c++) {
-        const key = `${c},${er}`;
-        if (seen.has(key)) continue;
-        cells.push({ col: c, row: er });
-        seen.add(key);
-      }
     }
   }
   return cells;
