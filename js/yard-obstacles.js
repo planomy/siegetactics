@@ -89,7 +89,8 @@ export const YARD_PROPS = {
     w: 4,
     h: 3,
     label: 'Pool dig',
-    // Path blocks the dig hole only (4×3). Fence/art may overhang walkable grass.
+    // Solid dig is 4×3; footprintCells adds one column on the right so a vertical
+    // route cannot clip the painted fence. Grass under the dig stays open.
     scale: 1.61,
     noShadow: true,
     grounding: 'none',
@@ -257,6 +258,13 @@ export function footprintCells(prop, col, row) {
   for (let dr = 0; dr < bh; dr++) {
     for (let dc = 0; dc < bw; dc++) {
       cells.push({ col: originCol + dc, row: originRow + dr });
+    }
+  }
+  // Dig only: one column past the right edge. Stops a vertical run clipping the
+  // painted fence without sealing the grass under the dig.
+  if (prop.id === 'pool-under-construction') {
+    for (let r = row; r < row + prop.h; r++) {
+      cells.push({ col: col + prop.w, row: r });
     }
   }
   return cells;
