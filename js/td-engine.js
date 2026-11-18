@@ -44,7 +44,7 @@ import {
   stampYardBlocked,
   yardOccupies,
   yardNestProp,
-} from './yard-obstacles.js?v=20261119t3';
+} from './yard-obstacles.js?v=20261119t4';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
 export function buildTimeForPlacementCost(cost) {
