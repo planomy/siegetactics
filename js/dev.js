@@ -24,8 +24,8 @@ export const DEV = {
   /** Force a rare mothership into the next battle (`?dev=siege&rare=cousin-zorg`). */
   rare: params.has('dev') ? params.get('rare') : null,
   /**
-   * Omit `yard` → generate from rules. `yard=bbq-sunday` / `0…6` forces a
-   * preview scene; `yard=gen` forces a fresh generate; `yard=none` bare lawn.
+   * Omit `yard` → generate from rules (seed shared via challenge codes).
+   * `yard=bbq-sunday` / `0…6` forces a preview; `yard=gen` fresh generate; `yard=none` bare.
    */
   yard: yardParam,
 };

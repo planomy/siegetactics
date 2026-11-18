@@ -19,7 +19,7 @@ import {
  * @typedef {{ dc: number, dr: number }} YardBuildSlot
  * @typedef {{ id: string, src: string, w: number, h: number, label: string, scale?: number, fit?: 'width'|'cover', blockW?: number, blockH?: number, noShadow?: boolean, water?: boolean, smoke?: boolean, grounding?: 'feet'|'box'|'contacts'|'none', contacts?: number[], buildSlots?: YardBuildSlot[] }} YardProp
  * @typedef {{ id: string, col: number, row: number }} YardPlacement
- * @typedef {{ id: string, label: string, items: YardPlacement[] }} YardLayout
+ * @typedef {{ id: string, label: string, items: YardPlacement[], seed?: number }} YardLayout
  */
 
 /**
@@ -199,6 +199,26 @@ export const YARD_MAX_ITEMS = 6;
 
 /** How many generate attempts before falling back to an authored layout. */
 const YARD_GENERATE_TRIES = 80;
+
+/** Shareable seed space — matches challenge-code 3-char yard payload (31³). */
+export const YARD_SEED_MOD = 31 ** 3;
+
+/** @param {number} seed */
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** @returns {number} */
+export function randomYardSeed() {
+  return Math.floor(Math.random() * YARD_SEED_MOD);
+}
 
 /**
  * Hand-authored preview yards (`?yard=bbq-sunday`). Live sieges generate
@@ -468,11 +488,11 @@ export function detourYardLayouts() {
   });
 }
 
-/** @param {T[]} list @returns {T[]} */
-function shuffleCopy(list) {
+/** @param {T[]} list @param {() => number} rnd @returns {T[]} */
+function shuffleCopy(list, rnd = Math.random) {
   const out = list.slice();
   for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rnd() * (i + 1));
     const tmp = out[i];
     out[i] = out[j];
     out[j] = tmp;
@@ -480,9 +500,9 @@ function shuffleCopy(list) {
   return out;
 }
 
-/** @param {number} lo @param {number} hi inclusive */
-function randInt(lo, hi) {
-  return lo + Math.floor(Math.random() * (hi - lo + 1));
+/** @param {number} lo @param {number} hi inclusive @param {() => number} rnd */
+function randInt(lo, hi, rnd = Math.random) {
+  return lo + Math.floor(rnd() * (hi - lo + 1));
 }
 
 /**
@@ -521,15 +541,17 @@ function placementFits(placed, next) {
 
 /**
  * Build one yard from the composition + spacing rules.
- * Returns null if this attempt cannot seat the full mix with a real detour.
+ * Same seed → same props and seats (for friend challenges).
+ * @param {number} [seed]
  * @returns {YardLayout|null}
  */
-export function generateYardLayout() {
-  const bigCount = randInt(2, 3);
+export function generateYardLayout(seed = randomYardSeed()) {
+  const useSeed = ((Math.floor(seed) % YARD_SEED_MOD) + YARD_SEED_MOD) % YARD_SEED_MOD;
+  const rnd = mulberry32(useSeed);
+  const bigCount = randInt(2, 3, rnd);
   const smallCount = Math.min(4, Math.max(3, YARD_MAX_ITEMS - bigCount));
-  // Prefer 2 big + 4 small or 3 big + 3 small.
-  const bigIds = shuffleCopy([...YARD_BIG_IDS]).slice(0, bigCount);
-  const smallIds = shuffleCopy([...YARD_SMALL_IDS]).slice(0, smallCount);
+  const bigIds = shuffleCopy([...YARD_BIG_IDS], rnd).slice(0, bigCount);
+  const smallIds = shuffleCopy([...YARD_SMALL_IDS], rnd).slice(0, smallCount);
   // Place biggest footprints first so small clutter fills the leftovers.
   const ids = [...bigIds, ...smallIds].sort(
     (a, b) => YARD_PROPS[b].w * YARD_PROPS[b].h - YARD_PROPS[a].w * YARD_PROPS[a].h,
@@ -539,7 +561,7 @@ export function generateYardLayout() {
   const items = [];
   for (const id of ids) {
     const prop = YARD_PROPS[id];
-    const spots = shuffleCopy(candidateOrigins(prop));
+    const spots = shuffleCopy(candidateOrigins(prop), rnd);
     let seated = false;
     for (const spot of spots) {
       const next = { id, col: spot.col, row: spot.row };
@@ -557,20 +579,26 @@ export function generateYardLayout() {
 
   const bigLabel = bigIds.map((id) => YARD_PROPS[id].label).join(' + ');
   return {
-    id: `gen-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`,
+    id: `gen-${useSeed.toString(36)}`,
     label: bigLabel || 'Backyard',
     items,
+    seed: useSeed,
   };
 }
 
 /**
  * Keep trying until a legal yard appears, then fall back to an authored scene.
+ * When `startSeed` is set (friend challenge), walk seed, seed+1, … so both kids
+ * land on the same working seed that was baked into the code.
  * @param {number} [tries]
+ * @param {number} [startSeed]
  * @returns {YardLayout}
  */
-export function generateYardLayoutOrFallback(tries = YARD_GENERATE_TRIES) {
+export function generateYardLayoutOrFallback(tries = YARD_GENERATE_TRIES, startSeed = randomYardSeed()) {
+  const base = ((Math.floor(startSeed) % YARD_SEED_MOD) + YARD_SEED_MOD) % YARD_SEED_MOD;
   for (let i = 0; i < tries; i++) {
-    const layout = generateYardLayout();
+    const seed = (base + i) % YARD_SEED_MOD;
+    const layout = generateYardLayout(seed);
     if (layout) return layout;
   }
   const pool = detourYardLayouts();
@@ -597,28 +625,30 @@ export function resolveYardLayout(want) {
 
 /**
  * Live sieges (no `?yard=`) generate a fresh rule-based yard.
- * `?yard=bbq-sunday` / `?yard=0` still force an authored preview scene.
+ * Pass `yardSeed` to replay a friend’s lawn. Named `?yard=` still forces previews.
  * @param {string|number|null|undefined} want
+ * @param {{ seed?: number|null }} [opts]
  */
-export function pickYardLayout(want) {
+export function pickYardLayout(want, opts = {}) {
   const forced = want != null && want !== '';
   const pool = detourYardLayouts();
   const fallbackPool = pool.length ? pool : YARD_LAYOUTS;
+  const seed = opts.seed;
 
   if (!forced) {
-    return generateYardLayoutOrFallback();
+    return seed == null ? generateYardLayoutOrFallback() : generateYardLayoutOrFallback(YARD_GENERATE_TRIES, seed);
   }
 
   const key = String(want).toLowerCase();
   if (key === 'gen' || key === 'random') {
-    return generateYardLayoutOrFallback();
+    return seed == null ? generateYardLayoutOrFallback() : generateYardLayoutOrFallback(YARD_GENERATE_TRIES, seed);
   }
 
   const layout = resolveYardLayout(want);
   const check = validateYardItems(layout.items);
   if (!check.ok) {
     console.warn(`[yard] layout "${layout.id}" invalid (${check.reason}); generating instead`);
-    return generateYardLayoutOrFallback();
+    return seed == null ? generateYardLayoutOrFallback() : generateYardLayoutOrFallback(YARD_GENERATE_TRIES, seed);
   }
   if (!layoutForcesDetour(layout.items) && pool.length) {
     console.warn(`[yard] layout "${layout.id}" barely bends routes; prefer a choke layout`);

@@ -44,7 +44,7 @@ import {
   stampYardBlocked,
   yardOccupies,
   yardNestProp,
-} from './yard-obstacles.js?v=20261119t17';
+} from './yard-obstacles.js?v=20261119t18';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
 export function buildTimeForPlacementCost(cost) {
@@ -203,6 +203,7 @@ const RARE_DRAW = { rare: 2.6, legendary: 5.5 };
  *   onCupcakeFinished?: () => void,
  *   onNukeStateChange?: () => void,
  *   yardLayout?: string|number|null,
+ *   yardSeed?: number|null,
  * }} opts
  */
 export function createTDEngine(canvas, opts) {
@@ -260,10 +261,13 @@ export function createTDEngine(canvas, opts) {
 
   const maze = Boolean(opts.maze);
   const yardWant = opts.yardLayout;
+  const yardSeed = opts.yardSeed;
   const yardLayout =
     maze && yardWant !== 'none' && yardWant !== 'off'
-      // null → generate a fresh rule-based yard; ?yard=id forces an authored preview.
-      ? pickYardLayout(yardWant == null || yardWant === '' ? null : yardWant)
+      // null → generate (optionally from a friend-challenge seed); ?yard=id forces a preview.
+      ? pickYardLayout(yardWant == null || yardWant === '' ? null : yardWant, {
+          seed: Number.isFinite(yardSeed) ? Number(yardSeed) : null,
+        })
       : null;
   const yardItems = yardLayout?.items ?? [];
   /** @type {Record<string, HTMLImageElement>} */

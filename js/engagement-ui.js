@@ -167,7 +167,7 @@ export function showStory(beat) {
  *   level: number, record: import('./siege-ranks.js').SiegeRecord, title: string|null,
  *   earned: Record<string, string>, records: import('./trophies.js').RecordsSave,
  *   streakBest: number, crystals: number, playerName: string, siegesPlayed?: number, shields?: number,
- *   lastCode: string|null, activeChallenge: { score: number, from: string }|null,
+ *   lastCode: string|null, activeChallenge: { score: number, from: string, yardSeed?: number|null }|null,
  *   onSetTitle: (id: string|null) => void,
  *   onAcceptChallenge: (code: string, from: string) => string | { score: number, from: string },
  *   tab?: 'ranks'|'trophies'|'records'|'challenge',
@@ -232,13 +232,13 @@ export function showProfile(p) {
       <div class="challenge-block">
         <h3>SEND A CHALLENGE</h3>
         ${p.lastCode
-          ? `<p>Give this code to a friend. They play the same battle and try to beat your score.</p><div class="challenge-code">${p.lastCode}</div>`
+          ? `<p>Give this code to a friend. They get the <b>same backyard</b> and try to beat your score.</p><div class="challenge-code">${p.lastCode}</div>`
           : '<p>Finish a siege to get a challenge code for your score.</p>'}
       </div>
       <div class="challenge-block">
         <h3>ACCEPT A CHALLENGE</h3>
-        ${p.activeChallenge ? `<p class="challenge-active">Active: beat <b>${esc(p.activeChallenge.from || 'your friend')}</b>’s <b>${p.activeChallenge.score}</b> aliens in your next siege!</p>` : ''}
-        <label>Friend’s code <input type="text" class="challenge-input" maxlength="12" placeholder="GRAN-XXXX" autocomplete="off" /></label>
+        ${p.activeChallenge ? `<p class="challenge-active">Active: beat <b>${esc(p.activeChallenge.from || 'your friend')}</b>’s <b>${p.activeChallenge.score}</b> aliens${p.activeChallenge.yardSeed != null ? ' on their backyard' : ''} in your next siege!</p>` : ''}
+        <label>Friend’s code <input type="text" class="challenge-input" maxlength="14" placeholder="GRAN-XXXXXXX" autocomplete="off" /></label>
         <label>Their name (optional) <input type="text" class="challenge-from" maxlength="16" placeholder="Mia" autocomplete="off" /></label>
         <button type="button" class="gb-btn challenge-accept">ACCEPT CHALLENGE</button>
         <p class="challenge-msg" aria-live="polite"></p>
@@ -288,7 +288,7 @@ export function renderResultsExtras(host, r) {
       <span>${r.challenge.won ? `You beat ${esc(r.challenge.from || 'your friend')}’s ${r.challenge.score} aliens!` : `${esc(r.challenge.from || 'Your friend')} got ${r.challenge.score}. You got ${r.kills}. Try again next siege!`}</span>
     </div>` : ''}
     <div class="results-share">
-      <span>Challenge a friend to beat ${r.kills}:</span>
+      <span>Challenge a friend to beat ${r.kills} on this backyard:</span>
       <code class="challenge-code challenge-code--sm">${r.code}</code>
     </div>`;
 }

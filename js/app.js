@@ -4,7 +4,7 @@ import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261116b1';
 import { renderArmory } from './armory.js?v=20261118b1';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel, crystalsSpentOnLevels } from './turret-upgrades.js?v=20261118b1';
-import { createTDEngine } from './td-engine.js?v=20261119t17';
+import { createTDEngine } from './td-engine.js?v=20261119t18';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js?v=20261118b1';
 import { createAudio } from './audio.js?v=20261118w8';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
@@ -16,9 +16,9 @@ import { SIEGE_DURATION_SEC, openingHorde } from './waves-data.js?v=20261118w8';
 import { siegePressure } from './siege-pressure.js?v=20261118w3';
 import { normalizeDaily, recordChallengeEvent, rollLuckyDrop, DAILY_CHEST_XP, DAILY_CHEST_CRYSTALS } from './daily-challenges.js?v=20261118d1';
 import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20261114h1';
-import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261113a1';
+import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261119c1';
 import { STORY_BEATS } from './story.js?v=20261113a1';
-import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261118s7';
+import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261119c1';
 import { DEV } from './dev.js?v=20261115y1';
 import { HEDGE } from './maze-field.js?v=20261119d3';
 import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261118e2';
@@ -34,7 +34,7 @@ import { animateResultsStats, animateProgressFill, animateTallyPair } from './ta
 import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261118s5';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261117d1';
-import { initHowToPlay } from './how-to-play.js?v=20261117f3';
+import { initHowToPlay } from './how-to-play.js?v=20261119c1';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261119c1';
 import { initMeasurementLength } from './measurement-length.js?v=20261119c1';
@@ -319,7 +319,16 @@ function loadSave() {
     data.title = typeof data.title === 'string' && data.trophies[data.title] ? data.title : null;
     // Existing players see the story for the rank they already hold, once.
     data.storySeen = Number.isFinite(data.storySeen) ? data.storySeen : Math.max(0, siegeRankLevel(data.siegeRecord) - 1);
-    data.activeChallenge = data.activeChallenge && Number.isFinite(data.activeChallenge.score) ? data.activeChallenge : null;
+    if (data.activeChallenge && Number.isFinite(data.activeChallenge.score)) {
+      const ys = data.activeChallenge.yardSeed;
+      data.activeChallenge = {
+        score: data.activeChallenge.score,
+        from: typeof data.activeChallenge.from === 'string' ? data.activeChallenge.from : '',
+        yardSeed: Number.isFinite(ys) ? ys : null,
+      };
+    } else {
+      data.activeChallenge = null;
+    }
     data.lastChallengeCode = typeof data.lastChallengeCode === 'string' ? data.lastChallengeCode : null;
     data.gear = normalizeGear(data.gear);
     data.stretchCoins = Math.max(0, Math.floor(Number(data.stretchCoins) || 0));
@@ -820,11 +829,19 @@ function openProfile(tab) {
       refreshTopbar();
     },
     onAcceptChallenge(code, from) {
-      const score = readChallengeCode(code);
-      if (score == null) return 'That code doesn’t look right. Check the letters and try again.';
-      save.activeChallenge = { score, from: from.slice(0, 16) };
+      const payload = readChallengeCode(code);
+      if (payload == null) return 'That code doesn’t look right. Check the letters and try again.';
+      save.activeChallenge = {
+        score: payload.score,
+        yardSeed: payload.yardSeed,
+        from: from.slice(0, 16),
+      };
       persistSave();
-      showToast(`Challenge accepted! Beat ${from || 'your friend'}’s ${score} aliens in your next siege.`, { variant: 'success' });
+      const yardNote = payload.yardSeed != null ? ' Same backyard!' : '';
+      showToast(
+        `Challenge accepted! Beat ${from || 'your friend'}’s ${payload.score} aliens in your next siege.${yardNote}`,
+        { variant: 'success' },
+      );
       return save.activeChallenge;
     },
   });
@@ -851,7 +868,8 @@ function recordSiegeEngagement(stats, prevBestKills) {
       save.activeChallenge = null;
     }
   }
-  const code = makeChallengeCode(stats.kills);
+  const yardSeed = tdEngine?.getYardLayout?.()?.seed;
+  const code = makeChallengeCode(stats.kills, yardSeed ?? null);
   save.lastChallengeCode = code;
   persistSave();
   checkNewTrophies();
@@ -2217,8 +2235,12 @@ function launchTestSiege() {
   showScreen('siege');
   initSiegeScreen();
   if (save.activeChallenge) {
-    const { from, score } = save.activeChallenge;
-    window.setTimeout(() => showPop('🤝', 'CHALLENGE ON!', `Beat ${from || 'your friend'}’s ${score} aliens!`), 600);
+    const { from, score, yardSeed } = save.activeChallenge;
+    const sameYard = yardSeed != null ? ' Same backyard!' : '';
+    window.setTimeout(
+      () => showPop('🤝', 'CHALLENGE ON!', `Beat ${from || 'your friend'}’s ${score} aliens!${sameYard}`),
+      600,
+    );
   }
 }
 
@@ -2267,6 +2289,8 @@ function mountTDEngine(canvas, mission) {
   tdEngine = createTDEngine(canvas, {
     maze: !DEV.lanes,
     yardLayout: DEV.yard,
+    // Friend challenges replay the exact seeded backyard from the code.
+    yardSeed: DEV.yard ? null : save.activeChallenge?.yardSeed ?? null,
     mission: {
       ...mission,
       maxLeaks: (mission?.maxLeaks ?? 5) + gearFx.extraLeaks,

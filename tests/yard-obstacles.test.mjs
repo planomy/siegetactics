@@ -167,3 +167,20 @@ test('dev yard= id still resolves a named layout', () => {
   assert.equal(pickYardLayout('pool-dig').id, 'pool-dig');
   assert.equal(pickYardLayout(0).id, YARD_LAYOUTS[0].id);
 });
+
+test('the same yard seed rebuilds the exact same backyard', () => {
+  let seed = null;
+  let first = null;
+  for (let s = 0; s < 200 && !first; s++) {
+    first = generateYardLayout(s);
+    if (first) seed = first.seed;
+  }
+  assert.ok(first && seed != null, 'expected a working seed in the first 200');
+  const again = generateYardLayout(seed);
+  assert.ok(again);
+  assert.equal(again.seed, seed);
+  assert.deepEqual(again.items, first.items);
+  const viaPick = pickYardLayout(null, { seed });
+  assert.deepEqual(viaPick.items, first.items);
+  assert.equal(viaPick.seed, seed);
+});

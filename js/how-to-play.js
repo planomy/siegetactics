@@ -144,8 +144,8 @@ export const HOW_TO_QUESTIONS = [
     icon: '🤝',
     q: 'How do I challenge a friend?',
     a: [
-      'After a siege you get a code like GRAN-7Q4K. Give it to a friend.',
-      'They tap their rank badge, choose CHALLENGE and type it in. Their next siege is the same battle. Can they beat your score?',
+      'After a siege you get a code like GRAN-7Q4K2AB. Give it to a friend.',
+      'They tap their rank badge, choose CHALLENGE and type it in. Their next siege uses your backyard. Can they beat your score?',
     ],
   },
   {
