@@ -6,7 +6,7 @@ function devFlag(...values) {
   return params.has('dev') && values.some((v) => devParam === v || params.has(v));
 }
 
-/** Yard obstacle layout: `?yard=0` … `?yard=6` or `?yard=bbq-sunday` etc. */
+/** Yard: omit → generate; `?yard=bbq-sunday` / index → preview; `yard=none` → bare. */
 const yardParam = params.get('yard');
 
 export const DEV = {
@@ -24,8 +24,8 @@ export const DEV = {
   /** Force a rare mothership into the next battle (`?dev=siege&rare=cousin-zorg`). */
   rare: params.has('dev') ? params.get('rare') : null,
   /**
-   * Which backyard prop layout to load. Omit `yard` for a seeded pick;
-   * set `yard=none` for a bare lawn.
+   * Omit `yard` → generate from rules. `yard=bbq-sunday` / `0…6` forces a
+   * preview scene; `yard=gen` forces a fresh generate; `yard=none` bare lawn.
    */
   yard: yardParam,
 };

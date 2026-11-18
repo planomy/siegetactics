@@ -5,6 +5,7 @@ import {
   YARD_PROPS,
   YARD_BIG_IDS,
   YARD_SMALL_IDS,
+  YARD_GARDEN_IDS,
   YARD_MAX_ITEMS,
   blockSize,
   footprintCells,
@@ -14,6 +15,10 @@ import {
   yardDetourMetrics,
   detourYardLayouts,
   pickYardLayout,
+  generateYardLayout,
+  generateYardLayoutOrFallback,
+  yardPropsEdgeTouch,
+  yardPropsNeedPathGap,
   stampYardBlocked,
 } from '../js/yard-obstacles.js';
 import {
@@ -24,15 +29,39 @@ import {
   MAZE_GATES,
 } from '../js/maze-field.js';
 
-test('every scene is 2–3 big + 3–4 small and at most 6 props', () => {
+function assertComposition(items, label) {
+  assert.ok(items.length <= YARD_MAX_ITEMS, `${label}: ${items.length} > ${YARD_MAX_ITEMS}`);
+  const big = items.filter((i) => YARD_BIG_IDS.has(i.id));
+  const small = items.filter((i) => YARD_SMALL_IDS.has(i.id));
+  assert.equal(big.length + small.length, items.length, `${label}: unknown prop id`);
+  assert.ok(big.length >= 2 && big.length <= 3, `${label}: ${big.length} big (want 2–3)`);
+  assert.ok(small.length >= 3 && small.length <= 4, `${label}: ${small.length} small (want 3–4)`);
+}
+
+function assertPathGaps(items, label) {
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      const a = items[i];
+      const b = items[j];
+      if (!yardPropsNeedPathGap(a, b)) {
+        assert.ok(
+          YARD_GARDEN_IDS.has(a.id) && YARD_GARDEN_IDS.has(b.id),
+          `${label}: only garden beds may skip the path gap`,
+        );
+        continue;
+      }
+      assert.equal(
+        yardPropsEdgeTouch(a, b),
+        false,
+        `${label}: ${a.id}@${a.col},${a.row} touches ${b.id}@${b.col},${b.row}`,
+      );
+    }
+  }
+}
+
+test('every authored preview scene is 2–3 big + 3–4 small and at most 6 props', () => {
   for (const layout of YARD_LAYOUTS) {
-    const items = layout.items;
-    assert.ok(items.length <= YARD_MAX_ITEMS, `${layout.id}: ${items.length} > ${YARD_MAX_ITEMS}`);
-    const big = items.filter((i) => YARD_BIG_IDS.has(i.id));
-    const small = items.filter((i) => YARD_SMALL_IDS.has(i.id));
-    assert.equal(big.length + small.length, items.length, `${layout.id}: unknown prop id`);
-    assert.ok(big.length >= 2 && big.length <= 3, `${layout.id}: ${big.length} big (want 2–3)`);
-    assert.ok(small.length >= 3 && small.length <= 4, `${layout.id}: ${small.length} small (want 3–4)`);
+    assertComposition(layout.items, layout.id);
   }
 });
 
@@ -45,32 +74,19 @@ test('every authored yard layout stays open and forces a real detour', () => {
   assert.equal(detourYardLayouts().length, YARD_LAYOUTS.length);
 });
 
-test('yard props stay spaced — no shared edges that form one mega-blob', () => {
+test('props need a path gap except garden beds may touch', () => {
   for (const layout of YARD_LAYOUTS) {
-    const items = layout.items;
-    for (let i = 0; i < items.length; i++) {
-      for (let j = i + 1; j < items.length; j++) {
-        const a = items[i];
-        const b = items[j];
-        const pa = YARD_PROPS[a.id];
-        const pb = YARD_PROPS[b.id];
-        const ax2 = a.col + pa.w;
-        const ay2 = a.row + pa.h;
-        const bx2 = b.col + pb.w;
-        const by2 = b.row + pb.h;
-        const xOverlap = a.col < bx2 && b.col < ax2;
-        const yOverlap = a.row < by2 && b.row < ay2;
-        const xAdj = ax2 === b.col || bx2 === a.col;
-        const yAdj = ay2 === b.row || by2 === a.row;
-        const edgeTouch = (xOverlap && (yOverlap || yAdj)) || (yOverlap && xAdj);
-        assert.equal(
-          edgeTouch,
-          false,
-          `${layout.id}: ${a.id}@${a.col},${a.row} touches ${b.id}@${b.col},${b.row}`,
-        );
-      }
-    }
+    assertPathGaps(layout.items, layout.id);
   }
+  // Beds may abut; ute may not abut a bed.
+  assert.equal(
+    yardPropsNeedPathGap({ id: 'bed-square', col: 0, row: 0 }, { id: 'bed-long', col: 2, row: 0 }),
+    false,
+  );
+  assert.equal(
+    yardPropsNeedPathGap({ id: 'bed-square', col: 0, row: 0 }, { id: 'uncle-bobs-ute', col: 3, row: 0 }),
+    true,
+  );
 });
 
 test('path blocks match solid place footprints — no skirts', () => {
@@ -116,14 +132,35 @@ test('pool dig and duck pond block only their place rects; west routes go around
   );
 });
 
-test('random yard picks only come from the detour pool', () => {
-  const ids = new Set();
-  for (let i = 0; i < 40; i++) ids.add(pickYardLayout(null).id);
-  for (const id of ids) {
-    assert.ok(YARD_LAYOUTS.some((l) => l.id === id), id);
-    assert.equal(layoutForcesDetour(YARD_LAYOUTS.find((l) => l.id === id).items), true);
+test('live sieges generate rule-based yards (not a fixed random pick)', () => {
+  const layouts = [];
+  for (let i = 0; i < 12; i++) {
+    const layout = pickYardLayout(null);
+    layouts.push(layout);
+    assertComposition(layout.items, layout.id);
+    assertPathGaps(layout.items, layout.id);
+    const check = validateYardItems(layout.items);
+    assert.equal(check.ok, true, `${layout.id}: ${check.reason || ''}`);
+    assert.equal(layoutForcesDetour(layout.items), true, `${layout.id} must bend a gate route`);
   }
-  assert.ok(ids.size >= 3, 'random pick should visit several layouts');
+  // Fresh generation should not always repeat the exact same placement.
+  const signatures = new Set(layouts.map((l) => l.items.map((i) => `${i.id}@${i.col},${i.row}`).join('|')));
+  assert.ok(signatures.size >= 2, 'generated yards should vary across sieges');
+});
+
+test('generateYardLayoutOrFallback always returns a legal yard', () => {
+  for (let i = 0; i < 8; i++) {
+    const layout = generateYardLayoutOrFallback(40);
+    assert.ok(layout?.items?.length);
+    assert.equal(validateYardItems(layout.items).ok, true);
+    assert.equal(layoutForcesDetour(layout.items), true);
+  }
+  // Direct generate may miss, but should succeed often enough on this grid.
+  let hits = 0;
+  for (let i = 0; i < 30; i++) {
+    if (generateYardLayout()) hits += 1;
+  }
+  assert.ok(hits >= 5, `generateYardLayout succeeded ${hits}/30 times`);
 });
 
 test('dev yard= id still resolves a named layout', () => {

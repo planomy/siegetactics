@@ -44,7 +44,7 @@ import {
   stampYardBlocked,
   yardOccupies,
   yardNestProp,
-} from './yard-obstacles.js?v=20261119t12';
+} from './yard-obstacles.js?v=20261119t14';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
 export function buildTimeForPlacementCost(cost) {
@@ -262,7 +262,7 @@ export function createTDEngine(canvas, opts) {
   const yardWant = opts.yardLayout;
   const yardLayout =
     maze && yardWant !== 'none' && yardWant !== 'off'
-      // null → random among layouts that force a real path bend (not corner decoration).
+      // null → generate a fresh rule-based yard; ?yard=id forces an authored preview.
       ? pickYardLayout(yardWant == null || yardWant === '' ? null : yardWant)
       : null;
   const yardItems = yardLayout?.items ?? [];

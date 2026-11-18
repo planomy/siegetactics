@@ -1,6 +1,7 @@
 /**
- * Static backyard props that block ground aliens and turret/hedge placement.
- * Mix-and-match layouts keep every gate a path to the porch.
+ * Backyard props that block ground aliens and turret/hedge placement.
+ * Default sieges build a fresh yard from rules (2–3 big + 3–4 small, ≤6,
+ * path gaps except garden beds). Named YARD_LAYOUTS remain for ?yard= previews.
  */
 
 import {
@@ -33,8 +34,8 @@ export const YARD_PROPS = {
     w: 2,
     h: 1,
     label: 'Laundry trolley',
-    // Art is nearly square; width-lock at 1 would stand ~2 cells tall. Fit the 2×1 pad.
-    scale: 0.45,
+    // Art is nearly square; width-lock fills ~2 cells tall. Scale keeps it on the 2×1 pad.
+    scale: 0.9,
     noShadow: true,
     grounding: 'none',
     buildSlots: [
@@ -189,13 +190,18 @@ export const YARD_SMALL_IDS = new Set([
   'wheelbarrow',
 ]);
 
+/** Garden beds may share an edge; every other prop pair needs a grass path between. */
+export const YARD_GARDEN_IDS = new Set(['bed-square', 'bed-long']);
+
 /** Hard cap per scene: 2–3 big + 3–4 small, never more than 6 props. */
 export const YARD_MAX_ITEMS = 6;
 
+/** How many generate attempts before falling back to an authored layout. */
+const YARD_GENERATE_TRIES = 80;
+
 /**
- * Hand-authored mix-and-match yards. Top-left cell of each prop.
- * Every scene: 2–3 big + 3–4 small, ≤6 total. Spread with walkable grass
- * between props — never glue rects into one mega-blob.
+ * Hand-authored preview yards (`?yard=bbq-sunday`). Live sieges generate
+ * fresh layouts from the same composition + spacing rules.
  * @type {YardLayout[]}
  */
 export const YARD_LAYOUTS = [
@@ -326,6 +332,30 @@ export function footprintCells(prop, col, row) {
 }
 
 /**
+ * True when two place rects share an edge or overlap (no grass path between).
+ * @param {YardPlacement} a @param {YardPlacement} b
+ */
+export function yardPropsEdgeTouch(a, b) {
+  const pa = YARD_PROPS[a.id];
+  const pb = YARD_PROPS[b.id];
+  if (!pa || !pb) return false;
+  const ax2 = a.col + pa.w;
+  const ay2 = a.row + pa.h;
+  const bx2 = b.col + pb.w;
+  const by2 = b.row + pb.h;
+  const xOverlap = a.col < bx2 && b.col < ax2;
+  const yOverlap = a.row < by2 && b.row < ay2;
+  const xAdj = ax2 === b.col || bx2 === a.col;
+  const yAdj = ay2 === b.row || by2 === a.row;
+  return (xOverlap && (yOverlap || yAdj)) || (yOverlap && xAdj);
+}
+
+/** Garden beds may abut; every other pair needs at least one grass cell between. */
+export function yardPropsNeedPathGap(a, b) {
+  return !(YARD_GARDEN_IDS.has(a.id) && YARD_GARDEN_IDS.has(b.id));
+}
+
+/**
  * @param {YardPlacement[]} items
  * @returns {{ ok: true, blocked: Uint8Array } | { ok: false, reason: string }}
  */
@@ -353,6 +383,17 @@ export function validateYardItems(items) {
       }
       if (isReservedCell(cell.col, cell.row)) return { ok: false, reason: `${item.id} on reserved` };
       blocked[cellIndex(cell.col, cell.row)] = 1;
+    }
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      const a = items[i];
+      const b = items[j];
+      if (!yardPropsNeedPathGap(a, b)) continue;
+      if (yardPropsEdgeTouch(a, b)) {
+        return { ok: false, reason: `${a.id} touches ${b.id} — need a path between` };
+      }
     }
   }
 
@@ -426,6 +467,115 @@ export function detourYardLayouts() {
   });
 }
 
+/** @param {T[]} list @returns {T[]} */
+function shuffleCopy(list) {
+  const out = list.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = out[i];
+    out[i] = out[j];
+    out[j] = tmp;
+  }
+  return out;
+}
+
+/** @param {number} lo @param {number} hi inclusive */
+function randInt(lo, hi) {
+  return lo + Math.floor(Math.random() * (hi - lo + 1));
+}
+
+/**
+ * Candidate top-left cells for a prop that stay in-bounds and off reserved cells.
+ * @param {YardProp} prop
+ */
+function candidateOrigins(prop) {
+  const { cols, rows } = MAZE_LAYOUT;
+  /** @type {{ col: number, row: number }[]} */
+  const out = [];
+  for (let row = 0; row <= rows - prop.h; row++) {
+    for (let col = 0; col <= cols - prop.w; col++) {
+      let ok = true;
+      for (const cell of placeCells(prop, col, row)) {
+        if (isReservedCell(cell.col, cell.row)) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) out.push({ col, row });
+    }
+  }
+  return out;
+}
+
+/**
+ * True if `next` can sit with the items already placed (overlap + path-gap rules).
+ * @param {YardPlacement[]} placed @param {YardPlacement} next
+ */
+function placementFits(placed, next) {
+  const prop = YARD_PROPS[next.id];
+  if (!prop) return false;
+  const check = validateYardItems([...placed, next]);
+  return check.ok;
+}
+
+/**
+ * Build one yard from the composition + spacing rules.
+ * Returns null if this attempt cannot seat the full mix with a real detour.
+ * @returns {YardLayout|null}
+ */
+export function generateYardLayout() {
+  const bigCount = randInt(2, 3);
+  const smallCount = Math.min(4, Math.max(3, YARD_MAX_ITEMS - bigCount));
+  // Prefer 2 big + 4 small or 3 big + 3 small.
+  const bigIds = shuffleCopy([...YARD_BIG_IDS]).slice(0, bigCount);
+  const smallIds = shuffleCopy([...YARD_SMALL_IDS]).slice(0, smallCount);
+  // Place biggest footprints first so small clutter fills the leftovers.
+  const ids = [...bigIds, ...smallIds].sort(
+    (a, b) => YARD_PROPS[b].w * YARD_PROPS[b].h - YARD_PROPS[a].w * YARD_PROPS[a].h,
+  );
+
+  /** @type {YardPlacement[]} */
+  const items = [];
+  for (const id of ids) {
+    const prop = YARD_PROPS[id];
+    const spots = shuffleCopy(candidateOrigins(prop));
+    let seated = false;
+    for (const spot of spots) {
+      const next = { id, col: spot.col, row: spot.row };
+      if (!placementFits(items, next)) continue;
+      items.push(next);
+      seated = true;
+      break;
+    }
+    if (!seated) return null;
+  }
+
+  if (items.length > YARD_MAX_ITEMS) return null;
+  const check = validateYardItems(items);
+  if (!check.ok || !layoutForcesDetour(items)) return null;
+
+  const bigLabel = bigIds.map((id) => YARD_PROPS[id].label).join(' + ');
+  return {
+    id: `gen-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`,
+    label: bigLabel || 'Backyard',
+    items,
+  };
+}
+
+/**
+ * Keep trying until a legal yard appears, then fall back to an authored scene.
+ * @param {number} [tries]
+ * @returns {YardLayout}
+ */
+export function generateYardLayoutOrFallback(tries = YARD_GENERATE_TRIES) {
+  for (let i = 0; i < tries; i++) {
+    const layout = generateYardLayout();
+    if (layout) return layout;
+  }
+  const pool = detourYardLayouts();
+  return pool[0] ?? YARD_LAYOUTS[0];
+}
+
 /** @param {string|number|null|undefined} want */
 export function resolveYardLayout(want) {
   if (want == null || want === '') return YARD_LAYOUTS[0];
@@ -434,6 +584,9 @@ export function resolveYardLayout(want) {
     return YARD_LAYOUTS[i];
   }
   const key = String(want).toLowerCase();
+  if (key === 'gen' || key === 'random') {
+    return generateYardLayoutOrFallback();
+  }
   const byId = YARD_LAYOUTS.find((l) => l.id === key);
   if (byId) return byId;
   const n = Number(key);
@@ -441,27 +594,35 @@ export function resolveYardLayout(want) {
   return YARD_LAYOUTS[0];
 }
 
-/** @param {string|number|null|undefined} want */
+/**
+ * Live sieges (no `?yard=`) generate a fresh rule-based yard.
+ * `?yard=bbq-sunday` / `?yard=0` still force an authored preview scene.
+ * @param {string|number|null|undefined} want
+ */
 export function pickYardLayout(want) {
   const forced = want != null && want !== '';
   const pool = detourYardLayouts();
   const fallbackPool = pool.length ? pool : YARD_LAYOUTS;
 
   if (!forced) {
-    const pick = fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
-    return pick ?? YARD_LAYOUTS[0];
+    return generateYardLayoutOrFallback();
+  }
+
+  const key = String(want).toLowerCase();
+  if (key === 'gen' || key === 'random') {
+    return generateYardLayoutOrFallback();
   }
 
   const layout = resolveYardLayout(want);
   const check = validateYardItems(layout.items);
   if (!check.ok) {
-    console.warn(`[yard] layout "${layout.id}" invalid (${check.reason}); falling back`);
-    return fallbackPool.find((alt) => alt.id !== layout.id) ?? fallbackPool[0] ?? layout;
+    console.warn(`[yard] layout "${layout.id}" invalid (${check.reason}); generating instead`);
+    return generateYardLayoutOrFallback();
   }
   if (!layoutForcesDetour(layout.items) && pool.length) {
     console.warn(`[yard] layout "${layout.id}" barely bends routes; prefer a choke layout`);
   }
-  return layout;
+  return layout ?? fallbackPool[0];
 }
 
 /** @returns {Promise<Record<string, HTMLImageElement>>} */
