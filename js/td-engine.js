@@ -44,7 +44,7 @@ import {
   stampYardBlocked,
   yardOccupies,
   yardNestProp,
-} from './yard-obstacles.js?v=20261119t6';
+} from './yard-obstacles.js?v=20261119t8';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
 export function buildTimeForPlacementCost(cost) {
@@ -2948,14 +2948,26 @@ export function createTDEngine(canvas, opts) {
     const img = yardSprites[prop.id];
     const scale = prop.scale ?? 1;
     const box = yardPlaceRect(item, prop);
-    const footW = (box.right - box.left) * scale;
-    // Width locks to the place columns so the grass pad sits on the grid; height
-    // follows the art (tall bits overhang north for iso "behind").
-    let drawW = footW;
-    let drawH = box.bottom - box.top;
+    const boxW = (box.right - box.left) * scale;
+    const boxH = (box.bottom - box.top) * scale;
+    // Default: width locks to place columns; height follows art (iso overhang).
+    // cover: grow until the place rect is fully filled (wide pads like the pond).
+    let drawW = boxW;
+    let drawH = boxH;
     if (img?.complete && img.naturalWidth > 0) {
       const aspect = img.naturalWidth / img.naturalHeight;
-      drawH = drawW / aspect;
+      if (prop.fit === 'cover') {
+        const boxAspect = boxW / boxH;
+        if (aspect > boxAspect) {
+          drawH = boxH;
+          drawW = drawH * aspect;
+        } else {
+          drawW = boxW;
+          drawH = drawW / aspect;
+        }
+      } else {
+        drawH = drawW / aspect;
+      }
     }
     const cx = (box.left + box.right) / 2;
     const footY = box.bottom;

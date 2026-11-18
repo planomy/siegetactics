@@ -16,7 +16,7 @@ import {
 
 /**
  * @typedef {{ dc: number, dr: number }} YardBuildSlot
- * @typedef {{ id: string, src: string, w: number, h: number, label: string, scale?: number, blockW?: number, blockH?: number, noShadow?: boolean, water?: boolean, smoke?: boolean, grounding?: 'feet'|'box'|'contacts'|'none', contacts?: number[], buildSlots?: YardBuildSlot[] }} YardProp
+ * @typedef {{ id: string, src: string, w: number, h: number, label: string, scale?: number, fit?: 'width'|'cover', blockW?: number, blockH?: number, noShadow?: boolean, water?: boolean, smoke?: boolean, grounding?: 'feet'|'box'|'contacts'|'none', contacts?: number[], buildSlots?: YardBuildSlot[] }} YardProp
  * @typedef {{ id: string, col: number, row: number }} YardPlacement
  * @typedef {{ id: string, label: string, items: YardPlacement[] }} YardLayout
  */
@@ -107,6 +107,8 @@ export const YARD_PROPS = {
     h: 2,
     label: 'Duck pond',
     scale: 1,
+    // Wide art under-fills 3×2 on width-lock; cover so the pad reads full size.
+    fit: 'cover',
     noShadow: true,
     grounding: 'none',
     water: true,
@@ -184,6 +186,7 @@ export const YARD_LAYOUTS = [
       { id: 'laundry-trolley', col: 1, row: 7 },
       { id: 'bed-long', col: 5, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 3 },
+      { id: 'wheelbarrow', col: 12, row: 6 },
     ],
   },
   {
@@ -206,8 +209,9 @@ export const YARD_LAYOUTS = [
       { id: 'bed-square', col: 1, row: 4 },
       { id: 'wedding-arbor', col: 4, row: 1 },
       { id: 'bed-long', col: 4, row: 5 },
-      { id: 'bbq-kettle', col: 10, row: 3 },
-      { id: 'laundry-trolley', col: 12, row: 6 },
+      { id: 'bbq-kettle', col: 1, row: 7 },
+      { id: 'wheelbarrow', col: 12, row: 1 },
+      { id: 'uncle-bobs-ute', col: 10, row: 6 },
     ],
   },
   {
@@ -227,10 +231,11 @@ export const YARD_LAYOUTS = [
     items: [
       { id: 'bed-square', col: 1, row: 3 },
       { id: 'pool-under-construction', col: 4, row: 1 },
-      { id: 'bed-long', col: 3, row: 5 },
+      { id: 'bed-long', col: 5, row: 5 },
       { id: 'duck-pond', col: 11, row: 1 },
-      { id: 'laundry-trolley', col: 11, row: 4 },
-      { id: 'bbq-kettle', col: 8, row: 6 },
+      { id: 'wheelbarrow', col: 11, row: 4 },
+      { id: 'bbq-kettle', col: 1, row: 6 },
+      { id: 'uncle-bobs-ute', col: 8, row: 7 },
     ],
   },
   {
@@ -240,9 +245,10 @@ export const YARD_LAYOUTS = [
       { id: 'bed-square', col: 1, row: 4 },
       { id: 'duck-pond', col: 1, row: 1 },
       { id: 'pool-under-construction', col: 5, row: 2 },
-      { id: 'laundry-trolley', col: 1, row: 7 },
+      { id: 'wheelbarrow', col: 1, row: 7 },
       { id: 'bed-long', col: 4, row: 6 },
-      { id: 'bbq-kettle', col: 12, row: 5 },
+      { id: 'bbq-kettle', col: 12, row: 3 },
+      { id: 'uncle-bobs-ute', col: 10, row: 7 },
     ],
   },
   {
@@ -254,8 +260,8 @@ export const YARD_LAYOUTS = [
       { id: 'bed-long', col: 4, row: 5 },
       { id: 'duck-pond', col: 8, row: 5 },
       { id: 'wedding-arbor', col: 11, row: 1 },
-      { id: 'laundry-trolley', col: 1, row: 6 },
-      { id: 'bbq-kettle', col: 12, row: 6 },
+      { id: 'wheelbarrow', col: 1, row: 7 },
+      { id: 'uncle-bobs-ute', col: 11, row: 7 },
     ],
   },
 ];
