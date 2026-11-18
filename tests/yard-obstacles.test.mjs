@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   YARD_LAYOUTS,
   YARD_PROPS,
+  blockSize,
   footprintCells,
+  placeCells,
   validateYardItems,
   layoutForcesDetour,
   yardDetourMetrics,
@@ -15,7 +17,6 @@ import {
   CELL_COUNT,
   cellIndex,
   computeFlowField,
-  blockingKeepsRoute,
   traceRoute,
   MAZE_GATES,
 } from '../js/maze-field.js';
@@ -34,28 +35,32 @@ test('every authored yard layout stays open and forces a real detour', () => {
   assert.equal(detourYardLayouts().length, YARD_LAYOUTS.length);
 });
 
-test('yard path blocks match place footprints — pool dig skirts the pit and forces the over-route', () => {
+test('scaled yard art gets a path skirt; place rect stays the build footprint', () => {
   for (const prop of Object.values(YARD_PROPS)) {
-    if (prop.id === 'pool-under-construction') {
-      assert.equal(prop.blockW, 5, 'pool dig path skirt width');
-      assert.equal(prop.blockH, 5, 'pool dig path skirt height');
-      assert.ok(footprintCells(prop, 2, 2).length > prop.w * prop.h, 'pool dig path footprint includes under-lip');
-      continue;
+    const place = placeCells(prop, 2, 2);
+    assert.equal(place.length, prop.w * prop.h, `${prop.id} place size`);
+    const { w: bw, h: bh } = blockSize(prop);
+    if ((prop.scale ?? 1) > 1.1 || (prop.blockW != null && prop.blockH != null)) {
+      assert.ok(bw >= prop.w && bh >= prop.h, `${prop.id} path block covers place`);
+      assert.ok(footprintCells(prop, 2, 2).length >= place.length, `${prop.id} path footprint`);
+    } else {
+      assert.equal(bw, prop.w, `${prop.id} unscaled path width`);
+      assert.equal(bh, prop.h, `${prop.id} unscaled path height`);
     }
-    assert.equal(prop.blockW, undefined, `${prop.id} should not set blockW`);
-    assert.equal(prop.blockH, undefined, `${prop.id} should not set blockH`);
-    assert.equal(footprintCells(prop, 2, 2).length, prop.w * prop.h, `${prop.id} footprint`);
   }
 
+  const pond = YARD_PROPS['duck-pond'];
+  assert.deepEqual(blockSize(pond), { w: 4, h: 4 }, 'duck pond path matches painted water');
+
   const pool = YARD_PROPS['pool-under-construction'];
-  const layout = YARD_LAYOUTS.find((l) => l.id === 'bbq-sunday');
-  const item = layout.items.find((i) => i.id === 'pool-under-construction');
-  const blocked = new Uint8Array(CELL_COUNT);
-  stampYardBlocked(blocked, layout.items);
-  assert.equal(blocked[cellIndex(item.col, item.row)], 1);
-  // Two rows under the dig foot are sealed so the west run cannot hug the pit lip.
-  assert.equal(blocked[cellIndex(item.col + 1, item.row + pool.h)], 1);
-  assert.equal(blocked[cellIndex(item.col + 1, item.row + pool.h + 1)], 1);
+  assert.equal(pool.blockW, 5, 'pool dig path skirt width');
+  assert.equal(pool.blockH, 5, 'pool dig path skirt height');
+  assert.ok(footprintCells(pool, 2, 2).length > 25, 'pool dig path footprint includes under-lip');
+});
+
+test('pool dig forces the over-route; pond west routes stay off the water', () => {
+  const pool = YARD_PROPS['pool-under-construction'];
+  const pond = YARD_PROPS['duck-pond'];
 
   for (const yard of YARD_LAYOUTS.filter((l) => l.items.some((i) => i.id === 'pool-under-construction'))) {
     const dig = yard.items.find((i) => i.id === 'pool-under-construction');
@@ -74,16 +79,21 @@ test('yard path blocks match place footprints — pool dig skirts the pit and fo
       false,
       `${yard.id}: west route must not walk the dig place`,
     );
-    // Path climbs over the dig on clear grass — not under the painted pit.
-    assert.ok(
-      route.some((c) => c.row < dig.row),
-      `${yard.id}: west route should climb over the dig`,
-    );
+  }
+
+  for (const yard of YARD_LAYOUTS.filter((l) => l.items.some((i) => i.id === 'duck-pond'))) {
+    const water = yard.items.find((i) => i.id === 'duck-pond');
+    const map = new Uint8Array(CELL_COUNT);
+    stampYardBlocked(map, yard.items);
+    const route = traceRoute(computeFlowField(map), map, MAZE_GATES[0]);
+    const foot = footprintCells(pond, water.col, water.row);
+    assert.ok(route.length > 0, `${yard.id}: west gate still reaches the porch`);
     assert.equal(
-      route.some((c) => c.row > dig.row + pool.h - 1 && c.col >= dig.col - 1 && c.col <= dig.col + pool.w),
+      route.some((c) => foot.some((f) => f.col === c.col && f.row === c.row)),
       false,
-      `${yard.id}: west route must not hug under the dig lip`,
+      `${yard.id}: west route must not walk the pond`,
     );
+    assert.equal(map[cellIndex(water.col, water.row)], 1, `${yard.id}: pond place is path-blocked`);
   }
 });
 

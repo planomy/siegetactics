@@ -89,9 +89,8 @@ export const YARD_PROPS = {
     w: 4,
     h: 3,
     label: 'Pool dig',
-    // Art is oversized (scale 1.61). Path uses a 5×5 skirt so the west run cannot
-    // slip through the painted pit / under-fence row; place stays 4×3 and pad cells
-    // outside that rect stay buildable via isYardBuildSlot.
+    // Explicit 5×5 path skirt (+ under-lip in footprintCells). Place stays 4×3;
+    // pad cells outside that rect stay buildable via isYardBuildSlot.
     blockW: 5,
     blockH: 5,
     scale: 1.61,
@@ -226,15 +225,38 @@ export const YARD_LAYOUTS = [
   },
 ];
 
-/** Collision size — may be wider/taller than the place footprint when art is scaled up. */
+/**
+ * Path collision size. Explicit blockW/H win; otherwise grow with painted scale so
+ * aliens walk around the art, not through it. Place footprint stays prop.w×prop.h.
+ */
 export function blockSize(prop) {
-  return { w: prop.blockW ?? prop.w, h: prop.blockH ?? prop.h };
+  if (prop.blockW != null && prop.blockH != null) {
+    return { w: prop.blockW, h: prop.blockH };
+  }
+  const scale = prop.scale ?? 1;
+  if (scale <= 1.1) return { w: prop.w, h: prop.h };
+  return {
+    w: Math.max(prop.w, Math.ceil(prop.w * scale - 0.15)),
+    h: Math.max(prop.h, Math.ceil(prop.h * scale - 0.15)),
+  };
+}
+
+/** Place rect only — used so props can sit close without their path skirts fighting. */
+export function placeCells(prop, col, row) {
+  /** @type {{ col: number, row: number }[]} */
+  const cells = [];
+  for (let dr = 0; dr < prop.h; dr++) {
+    for (let dc = 0; dc < prop.w; dc++) {
+      cells.push({ col: col + dc, row: row + dr });
+    }
+  }
+  return cells;
 }
 
 /**
- * Cells blocked for pathing / placement. Extra block pad is centred horizontally
- * but biased upward — iso sprites grow up from the foot cell, so the dotted
- * route used to sneak under the planter through the row above.
+ * Cells blocked for pathing. Extra block pad is centred horizontally but biased
+ * upward — iso sprites grow up from the foot cell. Path skirts may overlap each
+ * other; place rects must not (see validateYardItems).
  * @param {YardProp} prop @param {number} col @param {number} row
  */
 export function footprintCells(prop, col, row) {
@@ -275,7 +297,7 @@ export function footprintCells(prop, col, row) {
 export function validateYardItems(items) {
   const { cols, rows } = MAZE_LAYOUT;
   const blocked = new Uint8Array(CELL_COUNT);
-  const used = new Set();
+  const placeUsed = new Set();
 
   for (const item of items) {
     const prop = YARD_PROPS[item.id];
@@ -283,15 +305,19 @@ export function validateYardItems(items) {
     if (item.col < 0 || item.row < 0 || item.col + prop.w > cols || item.row + prop.h > rows) {
       return { ok: false, reason: `${item.id} out of bounds` };
     }
+    // Place rects must not overlap. Path skirts may share cells — stamping ORs them.
+    for (const cell of placeCells(prop, item.col, item.row)) {
+      if (isReservedCell(cell.col, cell.row)) return { ok: false, reason: `${item.id} on reserved` };
+      const idx = cellIndex(cell.col, cell.row);
+      if (placeUsed.has(idx)) return { ok: false, reason: `${item.id} overlap` };
+      placeUsed.add(idx);
+    }
     for (const cell of footprintCells(prop, item.col, item.row)) {
       if (cell.col < 0 || cell.row < 0 || cell.col >= cols || cell.row >= rows) {
         return { ok: false, reason: `${item.id} block out of bounds` };
       }
       if (isReservedCell(cell.col, cell.row)) return { ok: false, reason: `${item.id} on reserved` };
-      const idx = cellIndex(cell.col, cell.row);
-      if (used.has(idx)) return { ok: false, reason: `${item.id} overlap` };
-      used.add(idx);
-      blocked[idx] = 1;
+      blocked[cellIndex(cell.col, cell.row)] = 1;
     }
   }
 
