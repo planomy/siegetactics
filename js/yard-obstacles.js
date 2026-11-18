@@ -33,7 +33,8 @@ export const YARD_PROPS = {
     w: 2,
     h: 1,
     label: 'Laundry trolley',
-    scale: 1,
+    // Art is nearly square; width-lock at 1 would stand ~2 cells tall. Fit the 2×1 pad.
+    scale: 0.45,
     noShadow: true,
     grounding: 'none',
     buildSlots: [

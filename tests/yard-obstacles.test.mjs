@@ -70,7 +70,7 @@ test('path blocks match solid place footprints — no skirts', () => {
     assert.deepEqual(blockSize(prop), { w: prop.w, h: prop.h }, `${prop.id} path size`);
     assert.equal(placeCells(prop, 2, 2).length, prop.w * prop.h, `${prop.id} place`);
     assert.equal(footprintCells(prop, 2, 2).length, prop.w * prop.h, `${prop.id} path footprint`);
-    assert.equal(prop.scale, 1, `${prop.id} fills its place rect`);
+    assert.ok(prop.scale > 0 && prop.scale <= 1, `${prop.id} scale within place`);
   }
 });
 
