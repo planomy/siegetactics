@@ -34,25 +34,30 @@ test('every authored yard layout stays open and forces a real detour', () => {
   assert.equal(detourYardLayouts().length, YARD_LAYOUTS.length);
 });
 
-test('pool dig path-blocks only its 4×3 place rect — grass around the fence stays clear', () => {
+test('pool dig uses a 5×4 path skirt so aliens walk the grass corridor around the fence', () => {
   const pool = YARD_PROPS['pool-under-construction'];
   assert.equal(pool.w, 4);
   assert.equal(pool.h, 3);
-  assert.equal(pool.blockW, undefined);
-  assert.equal(pool.blockH, undefined);
-  assert.equal(footprintCells(pool, 4, 3).length, 12);
+  assert.equal(pool.blockW, 5);
+  assert.equal(pool.blockH, 4);
+  assert.equal(footprintCells(pool, 4, 3).length, 20);
 
   const layout = YARD_LAYOUTS.find((l) => l.id === 'bbq-sunday');
   const item = layout.items.find((i) => i.id === 'pool-under-construction');
   const blocked = new Uint8Array(CELL_COUNT);
   stampYardBlocked(blocked, layout.items);
-  // One cell outside the dig (old invisible skirt) must stay walkable.
-  assert.equal(blocked[cellIndex(item.col - 1, item.row + 1)], 0);
-  assert.equal(blocked[cellIndex(item.col + pool.w, item.row + 1)], 0);
+  // Place rect stays walk-blocked; path skirt also covers the row above the dig.
+  assert.equal(blocked[cellIndex(item.col, item.row)], 1);
+  assert.equal(blocked[cellIndex(item.col, item.row - 1)], 1);
 
   const route = traceRoute(computeFlowField(blocked), blocked, MAZE_GATES[0]);
   assert.ok(route.length > 0, 'west gate still reaches the porch');
-  // Placing a hedge on the dotted route must leave a bypass through that clear grass.
+  // Route should bend around the dig, not clip through the place rect.
+  assert.equal(
+    route.some((c) => c.col >= item.col && c.col < item.col + pool.w && c.row >= item.row && c.row < item.row + pool.h),
+    false,
+    'west route must not walk through the dig',
+  );
   const bend = route.find((c) => c.col > 0 && c.col < 14);
   assert.ok(bend);
   assert.equal(blockingKeepsRoute(blocked, bend.col, bend.row, []).ok, true);

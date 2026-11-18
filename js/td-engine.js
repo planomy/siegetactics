@@ -35,7 +35,7 @@ import {
   FLYING_UNITS,
   randomFlyerFlankPoint,
   HEDGE_SMASHERS,
-} from './maze-field.js?v=20261118w8';
+} from './maze-field.js?v=20261119d1';
 import { createGardenLife, LAWN_SCENE, LANE_SCENE } from './garden-life.js?v=20261115y4';
 import {
   YARD_PROPS,
@@ -44,7 +44,7 @@ import {
   stampYardBlocked,
   yardOccupies,
   yardNestProp,
-} from './yard-obstacles.js?v=20261118y2';
+} from './yard-obstacles.js?v=20261119d1';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
 export function buildTimeForPlacementCost(cost) {
@@ -387,7 +387,9 @@ export function createTDEngine(canvas, opts) {
   function rebuildMaze() {
     mazeBlocked = new Uint8Array(CELL_COUNT);
     if (yardItems.length) stampYardBlocked(mazeBlocked, yardItems);
+    // Wrecks stop blocking immediately so the breach opens — kids can plug it again.
     towers.forEach((t) => {
+      if (t.wrecked) return;
       mazeBlocked[cellIndex(t.col, t.row)] = 1;
     });
     mazeDist = computeFlowField(mazeBlocked);
@@ -429,13 +431,24 @@ export function createTDEngine(canvas, opts) {
     if (yardItems.length && yardOccupies(yardItems, hit.col, hit.row)) {
       return { ...base, valid: false, reason: 'yard' };
     }
-    if (towers.some((t) => t.row === hit.row && t.col === hit.col)) {
+    // Live turret/hedge blocks the square; a wreck can be rebuilt over.
+    if (towers.some((t) => !t.wrecked && t.row === hit.row && t.col === hit.col)) {
       return { ...base, valid: false, reason: 'taken' };
     }
     if (isReservedCell(hit.col, hit.row)) return { ...base, valid: false, reason: 'reserved' };
+    const placeIdx = cellIndex(hit.col, hit.row);
     const underfoot = mazeCellsUnderfoot();
-    if (underfoot.has(cellIndex(hit.col, hit.row))) return { ...base, valid: false, reason: 'alien' };
-    const check = blockingKeepsRoute(mazeBlocked, hit.col, hit.row, [...underfoot]);
+    // Plug breaches while aliens pour through: ignore underfoot on this cell, and only
+    // keep routes for open (+ next) gates so a mid-fight rebuild isn't blocked by a flank
+    // that hasn't opened yet.
+    const mustReach = [...underfoot].filter((idx) => idx !== placeIdx);
+    const check = blockingKeepsRoute(
+      mazeBlocked,
+      hit.col,
+      hit.row,
+      mustReach,
+      openGates(currentWaveNum() + 1)
+    );
     if (!check.ok || !check.trial) return { ...base, valid: false, reason: 'blocks' };
     return { ...base, valid: true, routes: routesFor(check.dist, check.trial) };
   }
@@ -681,7 +694,7 @@ export function createTDEngine(canvas, opts) {
 
   function isCellOccupied(row, col) {
     if (yardItems.length && yardOccupies(yardItems, col, row)) return true;
-    return towers.some((t) => t.row === row && t.col === col);
+    return towers.some((t) => !t.wrecked && t.row === row && t.col === col);
   }
 
   function updatePlacementPreview(px, py) {
@@ -1202,6 +1215,7 @@ export function createTDEngine(canvas, opts) {
     if (tower.hp <= 0) {
       tower.wrecked = true;
       tower.wreckAge = 0;
+      if (maze) rebuildMaze();
       const name = defOf(tower.type)?.name ?? 'Turret';
       if (waveTime - wreckToastAt > 2.2) {
         wreckToastAt = waveTime;
@@ -3101,6 +3115,8 @@ export function createTDEngine(canvas, opts) {
         ? HEDGE_MAX_HP
         : TURRET_MAX_HP[/** @type {keyof typeof TURRET_MAX_HP} */ (selectedType)] ?? 80;
     const buildTotal = selectedType === 'hedge' ? 0 : buildTimeForPlacementCost(def?.placementCost ?? 15);
+    // Rebuilding on a wreck clears the crumpled turret so the square is free.
+    towers = towers.filter((t) => !(t.wrecked && t.row === pick.cell.row && t.col === pick.cell.col));
     towers.push({
       type: selectedType,
       row: pick.cell.row,

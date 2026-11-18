@@ -278,17 +278,22 @@ export function computeFlowField(blocked) {
 
 /**
  * Best neighbouring cell to walk to next, or null if already at the porch / stuck.
+ * If this cell was just walled in (rebuild on a breach), step onto any free neighbour
+ * that still reaches the porch — don't freeze mid-swarm.
  * @param {Float64Array} dist @param {Uint8Array} blocked
  */
 export function nextCell(dist, blocked, col, row) {
   if (isGoalCell(col, row)) return null;
   let best = null;
   let bestScore = Infinity;
-  const here = dist[cellIndex(col, row)];
+  const hereIdx = cellIndex(col, row);
+  const here = dist[hereIdx];
+  const stranded = Boolean(blocked[hereIdx]) || !Number.isFinite(here);
   for (const [dc, dr, cost] of NEIGHBOURS) {
     if (!canStep(blocked, col, row, dc, dr)) continue;
     const there = dist[cellIndex(col + dc, row + dr)];
-    if (!(there < here)) continue;
+    if (!Number.isFinite(there)) continue;
+    if (!stranded && !(there < here)) continue;
     const score = there + cost;
     if (score < bestScore - 1e-9) {
       bestScore = score;
@@ -334,17 +339,18 @@ export function traceRoute(dist, blocked, gate = MAZE_GATES[0]) {
 }
 
 /**
- * Would blocking this cell still leave every gate (open or not yet open),
- * and every alien already on the lawn, a way to the porch?
+ * Would blocking this cell still leave the given gates (default: all),
+ * and every listed alien cell, a way to the porch?
  * @param {Uint8Array} blocked
  * @param {number} col @param {number} row
  * @param {number[]} mustReach - cell indices aliens currently stand in
+ * @param {MazeGate[]} [gates] - gates that must stay reachable (open + next flank)
  */
-export function blockingKeepsRoute(blocked, col, row, mustReach = []) {
+export function blockingKeepsRoute(blocked, col, row, mustReach = [], gates = MAZE_GATES) {
   const trial = blocked.slice();
   trial[cellIndex(col, row)] = 1;
   const dist = computeFlowField(trial);
-  if (MAZE_GATES.some((g) => !bestEntryCell(dist, g))) return { ok: false, dist };
+  if (gates.some((g) => !bestEntryCell(dist, g))) return { ok: false, dist };
   for (const idx of mustReach) {
     if (!Number.isFinite(dist[idx])) return { ok: false, dist };
   }

@@ -6,6 +6,7 @@ import {
   cellIndex,
   computeFlowField,
   traceRoute,
+  nextCell,
   bestEntryCell,
   blockingKeepsRoute,
   isReservedCell,
@@ -69,6 +70,25 @@ test('building may not seal off an alien already on the lawn', () => {
   const pocket = cellIndex(2, 1);
   assert.equal(blockingKeepsRoute(blocked, 1, 1).ok, true);
   assert.equal(blockingKeepsRoute(blocked, 1, 1, [pocket]).ok, false);
+});
+
+test('mid-fight rebuild only needs open (+ next) gates — not every flank yet', () => {
+  const blocked = new Uint8Array(CELL_COUNT);
+  // Seal the south fence entries while only west (+ next north) matter.
+  MAZE_GATES.find((g) => g.id === 'south').entries.forEach(({ col, row }) => {
+    blocked[cellIndex(col, row)] = 1;
+  });
+  assert.equal(blockingKeepsRoute(blocked, 5, 5, [], openGates(2)).ok, true);
+  assert.equal(blockingKeepsRoute(blocked, 5, 5, [], MAZE_GATES).ok, false);
+});
+
+test('an alien standing on a just-blocked cell can still step off toward the porch', () => {
+  const blocked = new Uint8Array(CELL_COUNT);
+  blocked[cellIndex(4, 4)] = 1;
+  const dist = computeFlowField(blocked);
+  const next = nextCell(dist, blocked, 4, 4);
+  assert.ok(next, 'must escape the walled cell');
+  assert.equal(blocked[cellIndex(next.col, next.row)], 0);
 });
 
 test('gate and porch-step cells are reserved', () => {

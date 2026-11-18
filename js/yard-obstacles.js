@@ -112,8 +112,11 @@ export const YARD_PROPS = {
     w: 4,
     h: 3,
     label: 'Pool dig',
-    // Art stays large (scale); path + placement use the 4×3 dig only so the
-    // grass around the fence stays a real walk / build lane.
+    // Art is oversized (scale 1.61). Path skirt is wider so ground aliens walk the
+    // grass corridor around the fence (in turret range) instead of clipping the dig.
+    // Pad cells outside 4×3 stay buildable via isYardBuildSlot.
+    blockW: 5,
+    blockH: 4,
     scale: 1.61,
     noShadow: true,
     grounding: 'none',
@@ -165,7 +168,8 @@ export const YARD_LAYOUTS = [
       // Dig on the mid run; herb beds seal the cheap slip under / beside it.
       { id: 'pool-under-construction', col: 4, row: 3 },
       { id: 'bed-square', col: 2, row: 2 },
-      { id: 'bed-square', col: 8, row: 5 },
+      // Clear of the dig's 5×4 path skirt (cols 4–8, rows 2–5).
+      { id: 'bed-square', col: 9, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
     ],
@@ -210,7 +214,7 @@ export const YARD_LAYOUTS = [
     items: [
       { id: 'pool-under-construction', col: 4, row: 3 },
       { id: 'bed-square', col: 2, row: 2 },
-      { id: 'bed-square', col: 8, row: 5 },
+      { id: 'bed-square', col: 9, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
       { id: 'wheelbarrow', col: 12, row: 8 },
@@ -220,8 +224,9 @@ export const YARD_LAYOUTS = [
     id: 'duck-pond',
     label: 'Duck Pond',
     items: [
-      // Dig + pond + herb bed: west must climb several rows over clear grass.
+      // Dig + pond + herb beds: west must climb several rows over clear grass.
       { id: 'pool-under-construction', col: 3, row: 3 },
+      { id: 'bed-square', col: 1, row: 2 },
       { id: 'duck-pond', col: 8, row: 5 },
       { id: 'bed-square', col: 8, row: 2 },
       { id: 'laundry-trolley', col: 1, row: 7 },
@@ -232,8 +237,10 @@ export const YARD_LAYOUTS = [
     label: 'Full Backyard',
     items: [
       { id: 'pool-under-construction', col: 3, row: 3 },
-      { id: 'bed-square', col: 7, row: 2 },
-      { id: 'bed-long', col: 7, row: 5 },
+      { id: 'bed-square', col: 1, row: 2 },
+      // Clear of the dig's 5×4 path skirt (cols 3–7, rows 2–5).
+      { id: 'bed-square', col: 8, row: 2 },
+      { id: 'bed-long', col: 8, row: 5 },
       { id: 'bbq-kettle', col: 11, row: 6 },
       { id: 'laundry-trolley', col: 1, row: 7 },
     ],
