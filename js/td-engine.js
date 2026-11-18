@@ -44,7 +44,7 @@ import {
   stampYardBlocked,
   yardOccupies,
   yardNestProp,
-} from './yard-obstacles.js?v=20261119r2';
+} from './yard-obstacles.js?v=20261119t2';
 
 /** Build time in seconds — cost ÷ 10, minimum 1s. */
 export function buildTimeForPlacementCost(cost) {
@@ -2277,41 +2277,49 @@ export function createTDEngine(canvas, opts) {
     drawOrder.forEach(drawOneTower);
   }
 
-  function drawEnemies() {
+  /** @param {(typeof enemies)[number]} e */
+  function drawOneEnemy(e) {
     const baseSize = Math.max(32, height * 0.082);
-    enemies.forEach((e) => {
-      const pos = enemyDrawPos(e);
-      const key = spriteKeyForEnemy(e);
-      const img = e.rare ? rareSprite : enemySprites[key];
-      const size = e.rare ? baseSize * (e.rare.tier === 'legendary' ? RARE_DRAW.legendary : RARE_DRAW.rare) : spriteSizeForEnemy(e, baseSize);
+    const pos = enemyDrawPos(e);
+    const key = spriteKeyForEnemy(e);
+    const img = e.rare ? rareSprite : enemySprites[key];
+    const size = e.rare ? baseSize * (e.rare.tier === 'legendary' ? RARE_DRAW.legendary : RARE_DRAW.rare) : spriteSizeForEnemy(e, baseSize);
 
-      const drawH = e.rare && img?.naturalWidth ? size * (img.naturalHeight / img.naturalWidth) : size;
-      if (e.flying) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
-        ctx.beginPath();
-        ctx.ellipse(pos.x, pos.y + drawH * 0.75, size * 0.36, Math.max(drawH, size * 0.33) * 0.12, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
+    const drawH = e.rare && img?.naturalWidth ? size * (img.naturalHeight / img.naturalWidth) : size;
+    if (e.flying) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+      ctx.beginPath();
+      ctx.ellipse(pos.x, pos.y + drawH * 0.75, size * 0.36, Math.max(drawH, size * 0.33) * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-      if (e.rare && img?.naturalWidth) {
-        drawRareAura(pos, size, drawH, e.rare.tier === 'legendary');
-        ctx.drawImage(img, pos.x - size / 2, pos.y - drawH / 2, size, drawH);
-      } else if (img && !e.rare) {
-        ctx.drawImage(img, pos.x - size / 2, pos.y - size / 2, size, size);
-      } else {
-        ctx.fillStyle = e.bossKind === 'granddaddy' ? '#ff6b35' : e.bossKind === 'mothership' ? '#7cfc00' : '#9d4edd';
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, size / 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
+    if (e.rare && img?.naturalWidth) {
+      drawRareAura(pos, size, drawH, e.rare.tier === 'legendary');
+      ctx.drawImage(img, pos.x - size / 2, pos.y - drawH / 2, size, drawH);
+    } else if (img && !e.rare) {
+      ctx.drawImage(img, pos.x - size / 2, pos.y - size / 2, size, size);
+    } else {
+      ctx.fillStyle = e.bossKind === 'granddaddy' ? '#ff6b35' : e.bossKind === 'mothership' ? '#7cfc00' : '#9d4edd';
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-      const barW = e.rare ? size * 0.6 : size * 0.9;
-      const barY = pos.y - drawH / 2 - 6;
-      ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      ctx.fillRect(pos.x - barW / 2, barY, barW, 4);
-      ctx.fillStyle = '#7cfc00';
-      ctx.fillRect(pos.x - barW / 2, barY, barW * (e.hp / e.maxHp), 4);
-    });
+    const barW = e.rare ? size * 0.6 : size * 0.9;
+    const barY = pos.y - drawH / 2 - 6;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(pos.x - barW / 2, barY, barW, 4);
+    ctx.fillStyle = '#7cfc00';
+    ctx.fillRect(pos.x - barW / 2, barY, barW * (e.hp / e.maxHp), 4);
+  }
+
+  function drawEnemies() {
+    enemies.forEach(drawOneEnemy);
+  }
+
+  /** Ground aliens only — flyers stay above the yard stack. */
+  function drawFlyingEnemies() {
+    enemies.filter((e) => e.flying).forEach(drawOneEnemy);
   }
 
   /** A pulsing glow under a rare ship so it stands out from the horde. */
@@ -2986,9 +2994,9 @@ export function createTDEngine(canvas, opts) {
   }
 
   /**
-   * Painter's algorithm: turrets + yard props by foot Y so nest turrets sit
-   * behind the trolley / BBQ / arbor / ute / bed while those props stay in front.
-   * Nest turrets keep normal draw size — only their depth is adjusted.
+   * Painter's algorithm: yard + nest turrets + ground aliens by foot Y so units
+   * north of a prop sit behind the art (iso overhang), while front-row units
+   * and the prop itself stay in front.
    */
   function drawYardAndTowers() {
     if (!maze) {
@@ -2996,7 +3004,7 @@ export function createTDEngine(canvas, opts) {
       drawTowers();
       return;
     }
-    /** @type {{ depth: number, kind: 'yard'|'tower', item?: (typeof yardItems)[number], prop?: (typeof YARD_PROPS)[string], tower?: (typeof towers)[number] }[]} */
+    /** @type {{ depth: number, kind: 'yard'|'tower'|'enemy', item?: (typeof yardItems)[number], prop?: (typeof YARD_PROPS)[string], tower?: (typeof towers)[number], enemy?: (typeof enemies)[number] }[]} */
     const layers = [];
     for (const item of yardItems) {
       const prop = YARD_PROPS[item.id];
@@ -3012,11 +3020,16 @@ export function createTDEngine(canvas, opts) {
       }
       layers.push({ depth, kind: 'tower', tower });
     }
-    // Same depth: draw turret first so the yard prop stays in front.
-    layers.sort((a, b) => a.depth - b.depth || (a.kind === 'tower' ? -1 : 1));
+    for (const enemy of enemies) {
+      if (enemy.flying) continue;
+      layers.push({ depth: enemyDrawPos(enemy).y, kind: 'enemy', enemy });
+    }
+    // Same depth: turret/enemy first so the yard prop stays in front.
+    layers.sort((a, b) => a.depth - b.depth || (a.kind === 'yard' ? 1 : -1));
     for (const layer of layers) {
       if (layer.kind === 'yard' && layer.item && layer.prop) drawOneYardProp(layer.item, layer.prop);
       else if (layer.kind === 'tower' && layer.tower) drawOneTower(layer.tower);
+      else if (layer.kind === 'enemy' && layer.enemy) drawOneEnemy(layer.enemy);
     }
   }
 
@@ -3030,7 +3043,8 @@ export function createTDEngine(canvas, opts) {
       if (maze) drawGateMarkers();
       drawGranny();
       drawPlacementPreview();
-      drawEnemies();
+      if (maze) drawFlyingEnemies();
+      else drawEnemies();
       garden.draw(ctx, width, height, 'air');
       drawProjectiles();
       drawEnemyShots();

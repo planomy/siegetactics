@@ -21,111 +21,153 @@ import {
  * @typedef {{ id: string, label: string, items: YardPlacement[] }} YardLayout
  */
 
-/** @type {Record<string, YardProp>} */
+/**
+ * Place footprint = path block = grass pad on the art (scale 1). Tall plants /
+ * frames overhang north; buildSlots on the back row let turrets nest behind.
+ * @type {Record<string, YardProp>}
+ */
 export const YARD_PROPS = {
-  // Copilot refresh — grass already baked under the casters.
   'laundry-trolley': {
     id: 'laundry-trolley',
-    src: 'assets/obstacles/laundry-trolley.png?v=20261119r1',
-    w: 1,
-    h: 1,
+    src: 'assets/obstacles/laundry-trolley.png?v=20261119t1',
+    w: 2,
+    h: 2,
     label: 'Laundry trolley',
-    scale: 1.15,
+    scale: 1,
+    noShadow: true,
     grounding: 'none',
+    buildSlots: [
+      { dc: 0, dr: 0 },
+      { dc: 1, dr: 0 },
+    ],
   },
   wheelbarrow: {
     id: 'wheelbarrow',
-    src: 'assets/obstacles/wheelbarrow.png?v=20261119r1',
-    w: 1,
-    h: 1,
+    src: 'assets/obstacles/wheelbarrow.png?v=20261119t1',
+    w: 2,
+    h: 2,
     label: 'Wheelbarrow',
-    scale: 1.15,
+    scale: 1,
+    noShadow: true,
     grounding: 'none',
+    buildSlots: [
+      { dc: 0, dr: 0 },
+      { dc: 1, dr: 0 },
+    ],
   },
   'bbq-kettle': {
     id: 'bbq-kettle',
-    src: 'assets/obstacles/bbq-kettle.png?v=20261119r1',
+    src: 'assets/obstacles/bbq-kettle.png?v=20261119t1',
     w: 2,
     h: 2,
     label: 'BBQ',
-    scale: 1.05,
+    scale: 1,
+    noShadow: true,
     grounding: 'none',
     smoke: true,
+    buildSlots: [
+      { dc: 0, dr: 0 },
+      { dc: 1, dr: 0 },
+    ],
   },
   'bed-square': {
     id: 'bed-square',
-    src: 'assets/obstacles/bed-square.png?v=20261119r1',
+    src: 'assets/obstacles/bed-square.png?v=20261119t1',
     w: 2,
     h: 2,
     label: 'Herb bed',
-    scale: 1.1,
+    scale: 1,
+    noShadow: true,
     grounding: 'none',
+    buildSlots: [
+      { dc: 0, dr: 0 },
+      { dc: 1, dr: 0 },
+    ],
   },
   'bed-long': {
     id: 'bed-long',
-    src: 'assets/obstacles/bed-long.png?v=20261119r1',
-    w: 2,
+    src: 'assets/obstacles/bed-long.png?v=20261119t1',
+    w: 3,
     h: 2,
     label: 'Veggie bed',
-    scale: 1.15,
+    scale: 1,
+    noShadow: true,
     grounding: 'none',
+    buildSlots: [
+      { dc: 0, dr: 0 },
+      { dc: 1, dr: 0 },
+      { dc: 2, dr: 0 },
+    ],
   },
   'duck-pond': {
     id: 'duck-pond',
-    src: 'assets/obstacles/duck-pond.png?v=20261119r1',
+    src: 'assets/obstacles/duck-pond.png?v=20261119t1',
     w: 3,
-    h: 3,
+    h: 2,
     label: 'Duck pond',
-    scale: 1.05,
+    scale: 1,
     noShadow: true,
+    grounding: 'none',
     water: true,
+    buildSlots: [
+      { dc: 0, dr: 0 },
+      { dc: 1, dr: 0 },
+      { dc: 2, dr: 0 },
+    ],
   },
   'pool-under-construction': {
     id: 'pool-under-construction',
-    src: 'assets/obstacles/pool-under-construction.png?v=20261119r1',
+    src: 'assets/obstacles/pool-under-construction.png?v=20261119t1',
     w: 4,
-    h: 3,
+    h: 2,
     label: 'Pool dig',
-    // Solid dig is 4×3; footprintCells adds one column on the right so a vertical
-    // route cannot clip the painted fence. Grass under the dig stays open.
-    scale: 1.495,
+    scale: 1,
     noShadow: true,
     grounding: 'none',
+    buildSlots: [
+      { dc: 0, dr: 0 },
+      { dc: 1, dr: 0 },
+      { dc: 2, dr: 0 },
+      { dc: 3, dr: 0 },
+    ],
   },
   'wedding-arbor': {
     id: 'wedding-arbor',
-    src: 'assets/obstacles/wedding-arbor.png?v=20261119r1',
-    w: 4,
+    src: 'assets/obstacles/wedding-arbor.png?v=20261119t1',
+    w: 3,
     h: 3,
     label: 'Wedding arbor',
-    scale: 1.05,
+    scale: 1,
+    noShadow: true,
     grounding: 'none',
-    // Front-left corner + back-right of the aisle — turrets nest under the art.
     buildSlots: [
-      { dc: 0, dr: 2 },
-      { dc: 3, dr: 0 },
+      { dc: 0, dr: 0 },
+      { dc: 1, dr: 0 },
+      { dc: 2, dr: 0 },
     ],
   },
   'uncle-bobs-ute': {
     id: 'uncle-bobs-ute',
-    src: 'assets/obstacles/uncle-bobs-ute.png?v=20261119r1',
-    w: 2,
+    src: 'assets/obstacles/uncle-bobs-ute.png?v=20261119t1',
+    w: 4,
     h: 2,
     label: "Uncle Bob's ute",
-    scale: 1.2,
+    scale: 1,
+    noShadow: true,
     grounding: 'none',
-    // Front row under the cab / door — turret nests behind the ute art.
     buildSlots: [
-      { dc: 0, dr: 1 },
-      { dc: 1, dr: 1 },
+      { dc: 0, dr: 0 },
+      { dc: 1, dr: 0 },
+      { dc: 2, dr: 0 },
+      { dc: 3, dr: 0 },
     ],
   },
 };
 
 /**
  * Hand-authored mix-and-match yards. Top-left cell of each prop.
- * Every layout must choke the west mid-run so the dotted path lengthens or
- * zigzags hard — decorative corner props alone are not enough.
+ * Spread props with walkable grass between them so the path weaves through
+ * the yard — never glue rects into one mega-blob the route can skate under.
  * @type {YardLayout[]}
  */
 export const YARD_LAYOUTS = [
@@ -133,88 +175,83 @@ export const YARD_LAYOUTS = [
     id: 'bbq-sunday',
     label: 'BBQ Sunday',
     items: [
-      // Dig on the mid run; herb beds seal the cheap slip under / beside it.
-      { id: 'pool-under-construction', col: 4, row: 3 },
-      { id: 'bed-square', col: 2, row: 2 },
-      { id: 'bed-square', col: 9, row: 5 },
-      { id: 'bbq-kettle', col: 11, row: 6 },
-      { id: 'laundry-trolley', col: 1, row: 7 },
+      { id: 'bed-square', col: 2, row: 3 },
+      { id: 'pool-under-construction', col: 5, row: 2 },
+      { id: 'bed-long', col: 2, row: 6 },
+      { id: 'bbq-kettle', col: 10, row: 4 },
+      { id: 'laundry-trolley', col: 12, row: 6 },
     ],
   },
   {
     id: 'veggie-maze',
     label: 'Veggie Maze',
     items: [
-      // Staggered beds choke the west run without invisible path skirts.
-      { id: 'bed-square', col: 3, row: 1 },
-      { id: 'bed-square', col: 3, row: 3 },
-      { id: 'bed-square', col: 3, row: 5 },
-      { id: 'bed-long', col: 5, row: 2 },
-      { id: 'bed-square', col: 5, row: 4 },
-      { id: 'bed-square', col: 7, row: 3 },
+      { id: 'bed-square', col: 2, row: 3 },
+      { id: 'bed-long', col: 5, row: 1 },
+      { id: 'bed-square', col: 5, row: 5 },
+      { id: 'bed-long', col: 9, row: 3 },
+      { id: 'bed-square', col: 8, row: 6 },
       { id: 'wheelbarrow', col: 1, row: 7 },
-      { id: 'bbq-kettle', col: 12, row: 7 },
+      { id: 'bbq-kettle', col: 12, row: 6 },
     ],
   },
   {
     id: 'wedding-day',
     label: 'Wedding Day',
     items: [
-      { id: 'wedding-arbor', col: 3, row: 2 },
-      { id: 'bed-square', col: 2, row: 5 },
-      { id: 'bed-long', col: 7, row: 3 },
-      { id: 'bed-square', col: 7, row: 5 },
-      { id: 'bbq-kettle', col: 11, row: 6 },
-      { id: 'laundry-trolley', col: 1, row: 7 },
+      { id: 'bed-square', col: 2, row: 4 },
+      { id: 'wedding-arbor', col: 5, row: 1 },
+      { id: 'bed-long', col: 5, row: 5 },
+      { id: 'bbq-kettle', col: 10, row: 3 },
+      { id: 'laundry-trolley', col: 12, row: 6 },
     ],
   },
   {
     id: 'uncle-bob',
     label: "Uncle Bob's Visit",
     items: [
-      { id: 'uncle-bobs-ute', col: 2, row: 3 },
-      { id: 'bed-square', col: 2, row: 5 },
-      { id: 'duck-pond', col: 5, row: 2 },
-      { id: 'bed-square', col: 8, row: 2 },
-      { id: 'bed-long', col: 8, row: 4 },
-      { id: 'bbq-kettle', col: 12, row: 7 },
-      { id: 'laundry-trolley', col: 1, row: 7 },
+      { id: 'wheelbarrow', col: 1, row: 4 },
+      { id: 'uncle-bobs-ute', col: 4, row: 2 },
+      { id: 'duck-pond', col: 4, row: 5 },
+      { id: 'bed-long', col: 9, row: 3 },
+      { id: 'bbq-kettle', col: 12, row: 6 },
     ],
   },
   {
     id: 'pool-dig',
     label: 'Pool Dig',
     items: [
-      { id: 'pool-under-construction', col: 4, row: 3 },
-      { id: 'bed-square', col: 2, row: 2 },
-      { id: 'bed-square', col: 9, row: 5 },
-      { id: 'bbq-kettle', col: 11, row: 6 },
-      { id: 'laundry-trolley', col: 1, row: 7 },
-      { id: 'wheelbarrow', col: 12, row: 8 },
+      { id: 'bed-square', col: 2, row: 3 },
+      { id: 'pool-under-construction', col: 5, row: 1 },
+      { id: 'bed-long', col: 5, row: 4 },
+      { id: 'duck-pond', col: 10, row: 2 },
+      { id: 'laundry-trolley', col: 12, row: 5 },
+      { id: 'bbq-kettle', col: 1, row: 7 },
     ],
   },
   {
     id: 'duck-pond',
     label: 'Duck Pond',
     items: [
-      // Dig + pond + herb beds: west must climb several rows over clear grass.
-      { id: 'pool-under-construction', col: 3, row: 3 },
-      { id: 'bed-square', col: 1, row: 2 },
-      { id: 'duck-pond', col: 8, row: 5 },
-      { id: 'bed-square', col: 8, row: 2 },
-      { id: 'laundry-trolley', col: 1, row: 7 },
+      { id: 'laundry-trolley', col: 1, row: 4 },
+      { id: 'duck-pond', col: 4, row: 2 },
+      { id: 'bed-square', col: 4, row: 5 },
+      { id: 'pool-under-construction', col: 8, row: 3 },
+      { id: 'bed-long', col: 8, row: 6 },
+      { id: 'bbq-kettle', col: 13, row: 1 },
     ],
   },
   {
     id: 'full-backyard',
     label: 'Full Backyard',
     items: [
-      { id: 'pool-under-construction', col: 3, row: 3 },
-      { id: 'bed-square', col: 1, row: 2 },
-      { id: 'bed-square', col: 8, row: 2 },
-      { id: 'bed-long', col: 8, row: 5 },
-      { id: 'bbq-kettle', col: 11, row: 6 },
-      { id: 'laundry-trolley', col: 1, row: 7 },
+      { id: 'bed-square', col: 2, row: 3 },
+      { id: 'pool-under-construction', col: 5, row: 1 },
+      { id: 'laundry-trolley', col: 5, row: 4 },
+      { id: 'bed-long', col: 1, row: 6 },
+      { id: 'duck-pond', col: 8, row: 5 },
+      { id: 'wedding-arbor', col: 10, row: 1 },
+      { id: 'bbq-kettle', col: 12, row: 7 },
     ],
   },
 ];
@@ -254,14 +291,6 @@ export function footprintCells(prop, col, row) {
   for (let dr = 0; dr < bh; dr++) {
     for (let dc = 0; dc < bw; dc++) {
       cells.push({ col: originCol + dc, row: originRow + dr });
-    }
-  }
-  // Dig only: one column past the right edge (not the bottom row). Stops a
-  // vertical run clipping the painted fence, while the bottom-right corner
-  // beside a garden bed stays a real grass gap.
-  if (prop.id === 'pool-under-construction') {
-    for (let r = row; r < row + prop.h - 1; r++) {
-      cells.push({ col: col + prop.w, row: r });
     }
   }
   return cells;
