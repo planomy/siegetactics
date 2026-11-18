@@ -4,7 +4,7 @@ import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261116b1';
 import { renderArmory } from './armory.js?v=20261118b1';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel, crystalsSpentOnLevels } from './turret-upgrades.js?v=20261118b1';
-import { createTDEngine } from './td-engine.js?v=20261119t15';
+import { createTDEngine } from './td-engine.js?v=20261119t16';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js?v=20261118b1';
 import { createAudio } from './audio.js?v=20261118w8';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';

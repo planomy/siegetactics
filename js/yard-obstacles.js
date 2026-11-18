@@ -121,7 +121,7 @@ export const YARD_PROPS = {
   'pool-under-construction': {
     id: 'pool-under-construction',
     src: 'assets/obstacles/pool-under-construction.png?v=20261119t1',
-    w: 6,
+    w: 7,
     h: 5,
     label: 'Pool dig',
     scale: 1,
@@ -135,6 +135,7 @@ export const YARD_PROPS = {
       { dc: 3, dr: 0 },
       { dc: 4, dr: 0 },
       { dc: 5, dr: 0 },
+      { dc: 6, dr: 0 },
     ],
   },
   'wedding-arbor': {
@@ -212,9 +213,9 @@ export const YARD_LAYOUTS = [
       { id: 'pool-under-construction', col: 5, row: 1 },
       { id: 'wedding-arbor', col: 1, row: 6 },
       { id: 'bed-square', col: 1, row: 1 },
-      { id: 'bbq-kettle', col: 12, row: 1 },
-      { id: 'laundry-trolley', col: 13, row: 5 },
-      { id: 'wheelbarrow', col: 12, row: 7 },
+      { id: 'bbq-kettle', col: 13, row: 1 },
+      { id: 'laundry-trolley', col: 13, row: 6 },
+      { id: 'wheelbarrow', col: 12, row: 8 },
     ],
   },
   {
@@ -261,7 +262,7 @@ export const YARD_LAYOUTS = [
       { id: 'duck-pond', col: 1, row: 1 },
       { id: 'uncle-bobs-ute', col: 9, row: 7 },
       { id: 'bed-square', col: 1, row: 5 },
-      { id: 'bbq-kettle', col: 12, row: 1 },
+      { id: 'bbq-kettle', col: 13, row: 1 },
       { id: 'wheelbarrow', col: 1, row: 8 },
     ],
   },
@@ -271,10 +272,10 @@ export const YARD_LAYOUTS = [
     items: [
       { id: 'duck-pond', col: 1, row: 1 },
       { id: 'pool-under-construction', col: 5, row: 1 },
-      { id: 'bed-long', col: 12, row: 1 },
+      { id: 'bed-long', col: 13, row: 1 },
       { id: 'bbq-kettle', col: 1, row: 5 },
       { id: 'laundry-trolley', col: 1, row: 8 },
-      { id: 'wheelbarrow', col: 12, row: 5 },
+      { id: 'wheelbarrow', col: 13, row: 5 },
     ],
   },
   {
@@ -285,8 +286,8 @@ export const YARD_LAYOUTS = [
       { id: 'wedding-arbor', col: 1, row: 6 },
       { id: 'duck-pond', col: 12, row: 6 },
       { id: 'bed-square', col: 1, row: 1 },
-      { id: 'bbq-kettle', col: 12, row: 1 },
-      { id: 'laundry-trolley', col: 12, row: 4 },
+      { id: 'bbq-kettle', col: 13, row: 1 },
+      { id: 'laundry-trolley', col: 13, row: 4 },
     ],
   },
 ];
