@@ -121,6 +121,7 @@ export function animateProgressFill(fillEl, progress, opts = {}) {
 
 /**
  * @param {{
+ *   score: number,
  *   kills: number,
  *   leaks: number,
  *   forgeXp: number,
@@ -130,6 +131,7 @@ export function animateProgressFill(fillEl, progress, opts = {}) {
  * }} stats
  */
 export function animateResultsStats(stats) {
+  const scoreEl = document.getElementById('results-score');
   const killsEl = document.getElementById('results-kills');
   const leaksEl = document.getElementById('results-leaks');
   const forgeEl = document.getElementById('results-forge-xp');
@@ -139,7 +141,8 @@ export function animateResultsStats(stats) {
 
   const fmt = (n) => Math.round(n).toLocaleString();
 
-  animateTally(killsEl, stats.kills, { duration: 1400, delay: 120, format: fmt });
+  animateTally(scoreEl, stats.score, { duration: 1400, delay: 80, format: fmt });
+  animateTally(killsEl, stats.kills, { duration: 1100, delay: 220, format: fmt });
   animateTally(leaksEl, stats.leaks, { duration: 900, delay: 280, format: fmt });
   animateTally(forgeEl, stats.forgeXp, { duration: 1100, delay: 380, format: fmt });
   animateTally(coinsEl, stats.coins, { duration: 1000, delay: 480, format: fmt });

@@ -4,7 +4,7 @@ import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261116b1';
 import { renderArmory } from './armory.js?v=20261118b1';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel, crystalsSpentOnLevels } from './turret-upgrades.js?v=20261118b1';
-import { createTDEngine } from './td-engine.js?v=20261118b1';
+import { createTDEngine } from './td-engine.js?v=20261118b3';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js?v=20261118b1';
 import { createAudio } from './audio.js?v=20261118w8';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
@@ -84,7 +84,7 @@ const SAVE_KEY = 'grannyboom.siege.v1';
 /** Dev mode plays on a fresh copy of the real save each load, so testing never changes real progress. */
 const DEV_SAVE_KEY = `${SAVE_KEY}.dev`;
 
-/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js?v=20261114n1').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, rares: import('./rare-ships.js').RareSave, homelandClaimed: string[], levelScale?: number, pausedSets?: Record<string, any>, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestScore: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js?v=20261114n1').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, rares: import('./rare-ships.js').RareSave, homelandClaimed: string[], levelScale?: number, pausedSets?: Record<string, any>, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -96,6 +96,7 @@ const defaultSave = {
   unlockedMissions: [SLICE_MISSION_ID],
   completedMissions: [],
   bestKills: {},
+  bestScore: {},
   bestBankedCoins: {},
   bestStars: {},
   siegesCompleted: 0,
@@ -267,6 +268,7 @@ function loadSave() {
       }
     }
     if (!data.bestStars) data.bestStars = {};
+    if (!data.bestScore || typeof data.bestScore !== 'object') data.bestScore = {};
     if (!data.bestBankedCoins) data.bestBankedCoins = {};
     data.settings = {
       sound: data.settings?.sound !== false,
@@ -2358,6 +2360,8 @@ function finishRun(stats) {
   });
   const prevBestStars = save.bestStars[missionId] ?? 0;
   const prevBestKills = save.bestKills[missionId] ?? 0;
+  const prevBestScore = save.bestScore[missionId] ?? 0;
+  const siegeScore = Math.max(0, Math.floor(Number(stats.score) || 0));
 
   const brag = computeBragHeadline({
     stats,
@@ -2368,6 +2372,7 @@ function finishRun(stats) {
 
   if (starResult.stars > prevBestStars) save.bestStars[missionId] = starResult.stars;
   if (stats.kills > prevBestKills) save.bestKills[missionId] = stats.kills;
+  if (siegeScore > prevBestScore) save.bestScore[missionId] = siegeScore;
   const prevBestBanked = save.bestBankedCoins[missionId] ?? 0;
   if (bankedCoins > prevBestBanked) save.bestBankedCoins[missionId] = bankedCoins;
   if (stats.won && !save.completedMissions.includes(missionId)) {
@@ -2401,6 +2406,7 @@ function finishRun(stats) {
   const maxLeaksEl = document.getElementById('results-max-leaks');
   if (maxLeaksEl) maxLeaksEl.textContent = '0';
 
+  document.getElementById('results-score').textContent = '0';
   document.getElementById('results-kills').textContent = '0';
   document.getElementById('results-leaks').textContent = '0';
   document.getElementById('results-forge-xp').textContent = '0';
@@ -2417,11 +2423,12 @@ function finishRun(stats) {
   showScreen('results');
 
   animateResultsStats({
+    score: siegeScore,
     kills: stats.kills,
     leaks: stats.leaks,
     forgeXp: run.runForgeXpEarned,
     coins: bankedCoins,
-    best: save.bestKills[missionId],
+    best: save.bestScore[missionId] ?? siegeScore,
     maxLeaks: stats.maxLeaks,
   });
 

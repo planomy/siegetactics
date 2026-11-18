@@ -1909,6 +1909,14 @@ body.dev-mode .topbar::after {
   letter-spacing: 0.06em;
 }
 
+.brag-hero-stat .stat-sublabel {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: rgba(255, 230, 200, 0.85);
+}
+
 .results-stats-compact {
   margin: 16px 0 20px;
 }

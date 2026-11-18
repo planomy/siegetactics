@@ -4,7 +4,7 @@ import { AMMO, loadAmmoSprites } from './ammo-data.js?v=20261112a1';
 import { FIELD_LAYOUT, targetPathsForRow } from './field-layout.js?v=20261112a1';
 import { drawAlienPortalVfx } from './portal-vfx.js';
 import { buildPlacementCells, pickPlacementCell } from './placement-grid.js?v=20261112a1';
-import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed } from './enemies-data.js';
+import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed, scoreForEnemy } from './enemies-data.js?v=20261118b3';
 import { getFieldImage, preloadField } from './preload.js?v=20261114t1';
 import { CUPCAKE, pickCupcakeTarget, steerAngle } from './cupcakes.js';
 import { waveConfigFor, ANNOUNCE_SPLASH_SEC, SIEGE_DURATION_SEC, BONUS_TIME_SEC } from './waves-data.js?v=20261118w8';
@@ -161,7 +161,7 @@ const RARE_DRAW = { rare: 2.6, legendary: 5.5 };
  *   mission: import('./missions-data.js?v=20261114v1').Mission,
  *   getBudget: () => number,
  *   trySpend: (type: string) => boolean,
- *   onMissionEnd: (stats: { kills: number, leaks: number, won: boolean, maxLeaks: number, wavesCleared: number, bonusKills?: number, bonusPlayed?: boolean }) => void,
+ *   onMissionEnd: (stats: { kills: number, score: number, leaks: number, won: boolean, maxLeaks: number, wavesCleared: number, bonusKills?: number, bonusPlayed?: boolean }) => void,
  *   onBonusOffer?: (seconds: number) => void,
  *   bonusSiegeSec?: number,
  *   firstSiege?: boolean,
@@ -307,6 +307,8 @@ export function createTDEngine(canvas, opts) {
   let goLive = false;
   let waveKills = 0;
   let totalKills = 0;
+  /** Weighted arcade score (not kill count — friend challenges still use kills). */
+  let totalScore = 0;
   let totalLeaks = 0;
   let currentWaveIndex = 0;
   let wavesCompleted = 0;
@@ -969,6 +971,7 @@ export function createTDEngine(canvas, opts) {
     notifyEnemyKilled(enemy);
     waveKills += 1;
     totalKills += 1;
+    totalScore += scoreForEnemy(enemy);
     rewardKill(enemy.isBoss, pos.x, pos.y, Boolean(enemy.rare));
     if (enemy.rare) {
       const rect = canvas.getBoundingClientRect();
@@ -1796,6 +1799,7 @@ export function createTDEngine(canvas, opts) {
     if (phase !== 'deploy') return false;
     if (wavesCompleted === 0) {
       totalKills = 0;
+      totalScore = 0;
       totalLeaks = 0;
       defeated = false;
       siegeTimeLeft = siegeDuration;
@@ -1863,6 +1867,7 @@ export function createTDEngine(canvas, opts) {
     rafId = 0;
     opts.onMissionEnd({
       kills: totalKills,
+      score: totalScore,
       leaks: bonusPlayed ? baseLeaks : totalLeaks,
       won: bonusPlayed ? true : won,
       maxLeaks,
@@ -2377,7 +2382,7 @@ export function createTDEngine(canvas, opts) {
       paint(`${bonusPlayed ? 'BONUS ' : ''}Time ${timeLabel}`);
       paint(`Wave ${waveNum}`);
       paint(`Blasted: ${totalKills}`);
-      paint(`Score: ${totalKills}`);
+      paint(`Score: ${totalScore.toLocaleString()}`);
       ctx.textAlign = 'right';
       ctx.fillText(`Coins: ${budget}`, width - 12, hudY);
       ctx.textAlign = 'left';
