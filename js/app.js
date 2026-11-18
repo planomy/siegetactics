@@ -925,14 +925,12 @@ function showCoreReward(reason, look = {}) {
   const tierId = look.tierId || '';
   const rare = Boolean(tierId) || amount > 1;
   const title = look.title || (rare ? `×${amount}` : 'ALIEN CRYSTAL!');
-  const el = document.createElement('button');
-  el.type = 'button';
-  el.className = `core-reward${tierId ? ` core-reward--${tierId}` : ''}${rare ? ' core-reward--rare' : ''}`;
+  const el = document.createElement('div');
+  el.className = `core-reward core-reward--alert${tierId ? ` core-reward--${tierId}` : ''}${rare ? ' core-reward--rare' : ''}`;
+  el.setAttribute('role', 'status');
   el.setAttribute(
     'aria-label',
-    rare
-      ? `Alien crystal worth ${amount} collected. Open the Armory to spend it.`
-      : 'Alien crystal collected. Open the Armory to spend it.',
+    rare ? `Alien crystal worth ${amount} collected.` : 'Alien crystal collected.',
   );
   el.innerHTML = `
     <span class="core-reward-inner">
@@ -940,14 +938,10 @@ function showCoreReward(reason, look = {}) {
       <span class="core-gem core-gem--big${tierId ? ` core-gem--${tierId}` : ''}" aria-hidden="true"></span>
       <strong class="core-reward-title">${title}</strong>
       <span class="core-reward-reason">${reason}</span>
-      <span class="core-reward-cta">TAP TO POWER UP A TURRET</span>
     </span>`;
-  el.addEventListener('click', () => {
-    el.remove();
-    openArmory();
-  });
   document.body.append(el);
   audio.playCoreEarned();
+  // Hold 25% shorter than the old 2600ms alert, then fly into the header.
   coreRewardTimer = window.setTimeout(() => {
     const pill = document.getElementById('topbar-cores-pill');
     const gem = el.querySelector('.core-gem--big');
@@ -966,7 +960,7 @@ function showCoreReward(reason, look = {}) {
       void pill?.offsetWidth;
       pill?.classList.add('core-pill--bump');
     }, 650);
-  }, 2600);
+  }, 1950);
 }
 
 /** Claim a turret's next level once the player's Forge XP has passed its threshold. */

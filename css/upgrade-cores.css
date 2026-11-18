@@ -145,6 +145,12 @@
   animation: core-backdrop-in .3s ease-out both;
 }
 
+/* Crystal found: status flash only — no tap target, doesn't steal clicks. */
+.core-reward.core-reward--alert {
+  cursor: default;
+  pointer-events: none;
+}
+
 .core-reward-inner {
   position: relative;
   display: flex;
