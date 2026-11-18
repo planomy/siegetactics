@@ -45,7 +45,8 @@ export function renderStreakPill(el, status) {
   el.classList.toggle('is-lit', status.doneToday);
   el.classList.toggle('is-waiting', !status.doneToday && status.count > 0);
   el.classList.toggle('is-new', status.count === 0 && !status.doneToday);
-  el.innerHTML = `<img class="streak-flame" src="${ICONS.flame}" alt="" /><strong>${status.count === 0 && !status.doneToday ? 'START' : status.count}</strong>`;
+  // Header stays icon + number only — no START / word labels.
+  el.innerHTML = `<img class="streak-flame" src="${ICONS.flame}" alt="" /><strong>${status.count}</strong>`;
   el.setAttribute('aria-label', `${status.count} day streak. ${status.doneToday ? 'Today is done.' : `${status.toGo} more right answers today to keep it going.`}`);
   el.setAttribute('data-tip-title', 'Daily Streak');
   el.setAttribute(
@@ -64,7 +65,8 @@ export function renderDailyPill(el, daily) {
   const done = daily.done.length;
   el.classList.toggle('is-complete', daily.chest);
   el.classList.toggle('is-pending', !daily.chest);
-  el.innerHTML = `<img class="daily-dart" src="${daily.chest ? ICONS.chest : ICONS.target}" alt="" /><strong>${done}/3</strong>`;
+  // Header stays icon + done-count only — no "/3".
+  el.innerHTML = `<img class="daily-dart" src="${daily.chest ? ICONS.chest : ICONS.target}" alt="" /><strong>${done}</strong>`;
   el.setAttribute('aria-label', `Daily challenges: ${done} of 3 done`);
   el.setAttribute('data-tip-title', 'Daily Challenges');
   el.setAttribute('data-tip', daily.chest ? 'Chest claimed — come back tomorrow' : `${done} of 3 done`);

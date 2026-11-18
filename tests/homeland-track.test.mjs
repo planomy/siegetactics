@@ -21,8 +21,7 @@ test('AHPB uses one slot per topic card with ten lit pips, not closest-only cree
   assert.match(home, /data-homeland-slot/);
   assert.match(home, /showTipPill/);
   assert.match(home, /is-progress/);
-  assert.match(home, /passSum/);
-  assert.match(home, /shipPct/);
+  assert.match(home, /homeland-track-ship/);
   assert.doesNotMatch(home, /closest \/ MAP_PASSES_REQUIRED/);
   assert.doesNotMatch(home, /homeland-track-fill/);
   assert.doesNotMatch(home, /homeland-track-slot-fill/);

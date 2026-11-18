@@ -877,9 +877,6 @@ function renderHomelandTrack(mapProgress) {
   const earned = seasonPiecesEarned(mapProgress, season);
   const maxLevel = homelandMaxLevel(mapProgress);
   const seasonDone = seasonComplete(mapProgress, season) || (season === 3 && maxLevel >= 3);
-  // Eye-candy UFO creeps with overall season progress (every good set nudges it).
-  const passSum = order.reduce((sum, id) => sum + getMapPasses(mapProgress, id, season), 0);
-  const shipPct = seasonDone ? 100 : (passSum / (total * MAP_PASSES_REQUIRED)) * 100;
   const slots = order.map((id, i) => {
     const n = i + 1;
     const passes = getMapPasses(mapProgress, id, season);
@@ -913,7 +910,7 @@ function renderHomelandTrack(mapProgress) {
       <div class="homeland-track-rail">
         <div class="homeland-track-slots">${slots}</div>
         <span class="homeland-track-home${seasonDone ? ' is-reached' : ''}" aria-hidden="true">🪐</span>
-        <span class="homeland-track-ship" style="left:${Math.max(2, Math.min(98, shipPct)).toFixed(1)}%" aria-hidden="true"><span>🛸</span></span>
+        <span class="homeland-track-ship" aria-hidden="true"><span>🛸</span></span>
       </div>
     </div>
     ${canWarpToDoompickle(mapProgress) ? renderHomelandLaunch() : ''}

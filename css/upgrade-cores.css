@@ -920,7 +920,7 @@
   box-shadow: 0 0 20px rgba(255, 210, 90, .9);
 }
 
-/* UFO rides above the pip slots and creeps with overall season progress. */
+/* UFO rides the whole rail end-to-end so the progress bar keeps catching the eye. */
 .homeland-track-ship {
   position: absolute;
   top: 50%;
@@ -930,7 +930,7 @@
   line-height: 1;
   transform: translate(-50%, -120%);
   pointer-events: none;
-  transition: left .45s ease-out;
+  animation: homeland-patrol 7s ease-in-out infinite alternate;
 }
 
 .homeland-track-ship > span {
@@ -1135,11 +1135,12 @@
   50% { transform: translateY(-7px) rotate(-5deg); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .homeland-track-ship {
-    transition: none;
-  }
+@keyframes homeland-patrol {
+  from { left: 0%; }
+  to { left: 100%; }
+}
 
+@media (prefers-reduced-motion: reduce) {
   .homeland-track-ship,
   .homeland-track-ship > span,
   .homeland-launch,

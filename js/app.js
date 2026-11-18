@@ -18,7 +18,7 @@ import { normalizeDaily, recordChallengeEvent, rollLuckyDrop, DAILY_CHEST_XP, DA
 import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20261114h1';
 import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261113a1';
 import { STORY_BEATS } from './story.js?v=20261113a1';
-import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261118s1';
+import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261118s7';
 import { DEV } from './dev.js?v=20261115y1';
 import { HEDGE } from './maze-field.js?v=20261118w8';
 import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261118e2';
@@ -31,7 +31,7 @@ import { computeStars, badgeSrc } from './stars.js';
 import { computeBragHeadline, computeNextGoal, renderNextGoal } from './progression.js?v=20261112a1';
 import { preloadField, preloadDeployAssets, getFieldImage } from './preload.js?v=20261114t1';
 import { animateResultsStats, animateProgressFill, animateTallyPair } from './tally.js';
-import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261118r2';
+import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261118s5';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261117d1';
 import { initHowToPlay } from './how-to-play.js?v=20261117f3';
@@ -2546,29 +2546,12 @@ function bindUI() {
 
   const actionsRoot = document.getElementById('topbar-actions');
   const overflowBtn = document.getElementById('topbar-overflow');
-  const actionsTray = document.getElementById('topbar-actions-tray');
-  const streakPill = document.getElementById('topbar-streak');
-  const dailyPill = document.getElementById('topbar-daily');
-  const coresPill = document.getElementById('topbar-cores-pill');
-  const narrowTopbar = window.matchMedia('(max-width: 640px)');
 
   const closeTopbarOverflow = () => {
     actionsRoot?.classList.remove('is-open');
     overflowBtn?.setAttribute('aria-expanded', 'false');
   };
 
-  /** On phones, park streak/daily in the » tray so SCORE + crystals stay put. */
-  const syncTopbarOverflowLayout = () => {
-    if (!actionsTray || !streakPill || !dailyPill || !coresPill) return;
-    if (narrowTopbar.matches) {
-      actionsTray.prepend(dailyPill);
-      actionsTray.prepend(streakPill);
-    } else {
-      coresPill.after(streakPill);
-      streakPill.after(dailyPill);
-      closeTopbarOverflow();
-    }
-  };
   overflowBtn?.addEventListener('click', (event) => {
     event.stopPropagation();
     const open = !actionsRoot?.classList.contains('is-open');
@@ -2585,18 +2568,11 @@ function bindUI() {
   });
   actionsRoot?.addEventListener('click', (event) => {
     const target = /** @type {HTMLElement|null} */ (event.target instanceof Element ? event.target.closest('a, button') : null);
-    if (!target || target === overflowBtn) return;
+    if (!target || target === overflowBtn || target.id === 'topbar-daily') return;
     // Keep the tray open for mute so kids can find it again.
     if (target.id === 'btn-sound') return;
     closeTopbarOverflow();
   });
-  syncTopbarOverflowLayout();
-  if (typeof narrowTopbar.addEventListener === 'function') {
-    narrowTopbar.addEventListener('change', syncTopbarOverflowLayout);
-  } else {
-    // Safari < 14
-    narrowTopbar.addListener(syncTopbarOverflowLayout);
-  }
 
   document.getElementById('btn-launch-siege')?.addEventListener('click', () => {
     if (deploymentTurretsPlaced < 1) {
