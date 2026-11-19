@@ -36,7 +36,7 @@ export const ENEMY_SPRITE_SRC = {
 
 /**
  * Per-alien combat stats — each ship class has its own HP, pace, and arcade score.
- * Score is vanity HUD / debrief only; friend challenges still use raw kill counts.
+ * Arcade score for the HUD, debrief, and friend-challenge codes.
  */
 export const GRUNT_STATS = {
   monster1: { hp: 30, speed: 0.052, codename: 'Scout Skiff', score: 50 },
@@ -76,7 +76,7 @@ export const BOSS_STATS = {
 const RARE_SCORE_BONUS = { rare: 400, legendary: 900 };
 
 /**
- * Arcade points for blasting this alien. Friend-challenge codes still use kill count.
+ * Arcade points for blasting this alien.
  * @param {{ spriteKey?: string|null, bossKind?: string|null, rare?: { tier?: string }|null }} enemy
  */
 export function scoreForEnemy(enemy) {

@@ -314,7 +314,7 @@ export function createTDEngine(canvas, opts) {
   let goLive = false;
   let waveKills = 0;
   let totalKills = 0;
-  /** Weighted arcade score (not kill count — friend challenges still use kills). */
+  /** Weighted arcade score (also what friend challenges encode). */
   let totalScore = 0;
   let totalLeaks = 0;
   let currentWaveIndex = 0;

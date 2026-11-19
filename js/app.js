@@ -16,9 +16,9 @@ import { SIEGE_DURATION_SEC, openingHorde } from './waves-data.js?v=20261118w8';
 import { siegePressure } from './siege-pressure.js?v=20261118w3';
 import { normalizeDaily, recordChallengeEvent, rollLuckyDrop, DAILY_CHEST_XP, DAILY_CHEST_CRYSTALS } from './daily-challenges.js?v=20261118d1';
 import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20261114h1';
-import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261119c1';
+import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261119c2';
 import { STORY_BEATS } from './story.js?v=20261113a1';
-import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261119c1';
+import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261119c2';
 import { DEV } from './dev.js?v=20261115y1';
 import { HEDGE } from './maze-field.js?v=20261119d3';
 import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261118e2';
@@ -34,7 +34,7 @@ import { animateResultsStats, animateProgressFill, animateTallyPair } from './ta
 import { renderHome, renderMissionControl, renderInvasionBriefing, renderSiegeStats, stopMissionDossier, renderTopbarBadges, vaultTierFor, showVaultUpgrade, rerollMissionArt, countShieldsEarned, isSpecialMission, SPECIAL_MISSION_XP_MULTIPLIER, showMapPieceFound } from './home.js?v=20261118s5';
 import { normalizeEnemyDefeats, recordEnemyDefeat, enemyDefeatCount } from './enemy-tally.js?v=20261112n';
 import { renderPowerCore, pickForgeSquad, pickForgeTitle } from './power-core.js?v=20261117d1';
-import { initHowToPlay } from './how-to-play.js?v=20261119c1';
+import { initHowToPlay } from './how-to-play.js?v=20261119c2';
 import { showToast, initPopups, openModal, closeModal } from './popups.js';
 import { initTimesTables } from './times-tables.js?v=20261119c1';
 import { initMeasurementLength } from './measurement-length.js?v=20261119c1';
@@ -907,7 +907,7 @@ function openProfile(tab) {
       persistSave();
       const yardNote = payload.yardSeed != null ? ' Same backyard!' : '';
       showToast(
-        `Challenge accepted! Beat ${from || 'your friend'}’s ${payload.score} aliens in your next siege.${yardNote}`,
+        `Challenge accepted! Beat ${from || 'your friend'}’s score of ${payload.score.toLocaleString()} in your next siege.${yardNote}`,
         { variant: 'success' },
       );
       return save.activeChallenge;
@@ -927,10 +927,11 @@ function recordSiegeEngagement(stats, prevBestKills) {
     if (stats.leaks <= 3) challengeEvent('siege-won-3');
   }
   challengeEvent('siege-kills', { amount: stats.kills });
+  const siegeScore = Math.max(0, Math.floor(Number(stats.score) || 0));
   let challenge = null;
   if (save.activeChallenge) {
-    const won = stats.kills > save.activeChallenge.score;
-    challenge = { ...save.activeChallenge, won };
+    const won = siegeScore > save.activeChallenge.score;
+    challenge = { ...save.activeChallenge, won, yourScore: siegeScore };
     if (won) {
       save.records.challengesWon += 1;
       save.activeChallenge = null;
@@ -939,11 +940,11 @@ function recordSiegeEngagement(stats, prevBestKills) {
   const yardSeed = tdEngine?.getYardLayout?.()?.seed;
   lastSiegeYardSeed = Number.isFinite(yardSeed) ? yardSeed : null;
   replayYardSeed = null;
-  const code = makeChallengeCode(stats.kills, yardSeed ?? null);
+  const code = makeChallengeCode(siegeScore, yardSeed ?? null);
   save.lastChallengeCode = code;
   persistSave();
   checkNewTrophies();
-  return { newRecord, kills: stats.kills, prevBest: prevBestKills, code, challenge };
+  return { newRecord, kills: stats.kills, score: siegeScore, prevBest: prevBestKills, code, challenge };
 }
 
 /** Granny's Log for a newly earned rank, after the rank-up celebration has played. */
@@ -2363,7 +2364,12 @@ function launchTestSiege() {
     const { from, score, yardSeed } = save.activeChallenge;
     const sameYard = yardSeed != null ? ' Same backyard!' : '';
     window.setTimeout(
-      () => showPop('🤝', 'CHALLENGE ON!', `Beat ${from || 'your friend'}’s ${score} aliens!${sameYard}`),
+      () =>
+        showPop(
+          '🤝',
+          'CHALLENGE ON!',
+          `Beat ${from || 'your friend'}’s score of ${Number(score).toLocaleString()}!${sameYard}`,
+        ),
       600,
     );
   }

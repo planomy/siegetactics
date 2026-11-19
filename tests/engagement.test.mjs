@@ -102,19 +102,20 @@ test('daily challenges pay enough Forge XP and crystals to be worth chasing', ()
   }
 });
 
-test('challenge codes round-trip and reject made-up codes', () => {
-  for (const score of [0, 1, 42, 97, 512, 960]) {
-    const legacy = makeChallengeCode(score);
-    assert.match(legacy, /^GRAN-[2-9A-Z]{4}$/);
-    assert.deepEqual(readChallengeCode(legacy), { score, yardSeed: null });
-    assert.deepEqual(readChallengeCode(legacy.toLowerCase().replace('-', ' ')), { score, yardSeed: null });
+test('challenge codes round-trip arcade scores and reject made-up codes', () => {
+  for (const score of [0, 1, 42, 970, 12500, 88000]) {
+    const plain = makeChallengeCode(score);
+    assert.match(plain, /^GRAN-[2-9A-Z]{6}$/);
+    assert.deepEqual(readChallengeCode(plain), { score, yardSeed: null });
+    assert.deepEqual(readChallengeCode(plain.toLowerCase().replace('-', ' ')), { score, yardSeed: null });
 
     const seeded = makeChallengeCode(score, 12345);
-    assert.match(seeded, /^GRAN-[2-9A-Z]{7}$/);
+    assert.match(seeded, /^GRAN-[2-9A-Z]{9}$/);
     assert.deepEqual(readChallengeCode(seeded), { score, yardSeed: 12345 });
   }
   assert.equal(readChallengeCode('GRAN-ZZZZ'), null);
-  assert.equal(readChallengeCode('GRAN-ZZZZZZZ'), null);
+  assert.equal(readChallengeCode('GRAN-ZZZZZZ'), null);
+  assert.equal(readChallengeCode('GRAN-ZZZZZZZZZ'), null);
   assert.equal(readChallengeCode('hello'), null);
 });
 

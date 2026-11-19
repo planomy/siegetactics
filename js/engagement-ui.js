@@ -237,8 +237,8 @@ export function showProfile(p) {
       </div>
       <div class="challenge-block">
         <h3>ACCEPT A CHALLENGE</h3>
-        ${p.activeChallenge ? `<p class="challenge-active">Active: beat <b>${esc(p.activeChallenge.from || 'your friend')}</b>’s <b>${p.activeChallenge.score}</b> aliens${p.activeChallenge.yardSeed != null ? ' on their backyard' : ''} in your next siege!</p>` : ''}
-        <label>Friend’s code <input type="text" class="challenge-input" maxlength="14" placeholder="GRAN-XXXXXXX" autocomplete="off" /></label>
+        ${p.activeChallenge ? `<p class="challenge-active">Active: beat <b>${esc(p.activeChallenge.from || 'your friend')}</b>’s score of <b>${Number(p.activeChallenge.score).toLocaleString()}</b>${p.activeChallenge.yardSeed != null ? ' on their backyard' : ''} in your next siege!</p>` : ''}
+        <label>Friend’s code <input type="text" class="challenge-input" maxlength="16" placeholder="GRAN-XXXXXXXXX" autocomplete="off" /></label>
         <label>Their name (optional) <input type="text" class="challenge-from" maxlength="16" placeholder="Mia" autocomplete="off" /></label>
         <button type="button" class="gb-btn challenge-accept">ACCEPT CHALLENGE</button>
         <p class="challenge-msg" aria-live="polite"></p>
@@ -276,19 +276,23 @@ export function showProfile(p) {
 
 /**
  * @param {HTMLElement|null} host
- * @param {{ newRecord: boolean, kills: number, prevBest: number, code: string,
- *   challenge: { score: number, from: string, won: boolean }|null }} r
+ * @param {{ newRecord: boolean, kills: number, score?: number, prevBest: number, code: string,
+ *   challenge: { score: number, from: string, won: boolean, yourScore?: number }|null }} r
  */
 export function renderResultsExtras(host, r) {
   if (!host) return;
+  const score = Math.max(0, Math.floor(Number(r.score) || 0));
+  const yourChallengeScore = Math.max(0, Math.floor(Number(r.challenge?.yourScore ?? score) || 0));
   host.innerHTML = `
     ${r.newRecord ? `<div class="record-banner"><span class="record-confetti" aria-hidden="true">${'<i></i>'.repeat(18)}</span><strong>NEW RECORD!</strong><span>${r.kills} aliens · old best ${r.prevBest}</span></div>` : ''}
     ${r.challenge ? `<div class="challenge-result${r.challenge.won ? ' is-won' : ''}">
       <strong>${r.challenge.won ? 'CHALLENGE WON!' : 'SO CLOSE!'}</strong>
-      <span>${r.challenge.won ? `You beat ${esc(r.challenge.from || 'your friend')}’s ${r.challenge.score} aliens!` : `${esc(r.challenge.from || 'Your friend')} got ${r.challenge.score}. You got ${r.kills}. Try again next siege!`}</span>
+      <span>${r.challenge.won
+        ? `You beat ${esc(r.challenge.from || 'your friend')}’s score of ${Number(r.challenge.score).toLocaleString()}!`
+        : `${esc(r.challenge.from || 'Your friend')} scored ${Number(r.challenge.score).toLocaleString()}. You scored ${yourChallengeScore.toLocaleString()}. Try again!`}</span>
     </div>` : ''}
     <div class="results-share">
-      <span>Challenge a friend to beat ${r.kills} on this backyard:</span>
+      <span>Challenge a friend to beat your score of ${score.toLocaleString()} on this backyard:</span>
       <code class="challenge-code challenge-code--sm">${r.code}</code>
     </div>`;
 }
