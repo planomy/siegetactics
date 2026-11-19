@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/main.css?v=20261118s9" />
+  <link rel="stylesheet" href="css/main.css?v=20261119r1" />
   <link rel="stylesheet" href="css/home-gb.css?v=20261114n2" />
   <link rel="stylesheet" href="css/how-to-play.css?v=20261114c1" />
   <link rel="stylesheet" href="css/popups.css?v=20261115p1" />
@@ -19,8 +19,8 @@
   <link rel="stylesheet" href="css/defence-forge.css?v=20261117c8" />
   <link rel="stylesheet" href="css/armory-showcase.css?v=20261118a2" />
   <link rel="stylesheet" href="css/siege-deployment.css?v=20261119b1" />
-  <link rel="stylesheet" href="css/sticky-header.css?v=20261112h" />
-  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261119b1" />
+  <link rel="stylesheet" href="css/sticky-header.css?v=20261119h1" />
+  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261119h1" />
   <link rel="stylesheet" href="css/maths-hq-cockpit.css?v=20261112t" />
   <link rel="stylesheet" href="css/ten-topic-dashboard.css?v=20261112b3" />
   <link rel="stylesheet" href="css/game-no-instructions.css?v=20261119b1" />
@@ -31,7 +31,7 @@
   <link rel="stylesheet" href="css/rank-badge.css?v=20261113h3" />
   <link rel="stylesheet" href="css/engagement.css?v=20261116xp9" />
   <link rel="stylesheet" href="css/coach-tips.css?v=20261117f1" />
-  <link rel="stylesheet" href="css/siege-debrief.css?v=20261113n1" />
+  <link rel="stylesheet" href="css/siege-debrief.css?v=20261119r1" />
   <link rel="stylesheet" href="css/hq-polish.css?v=20261118s10" />
   <link rel="stylesheet" href="css/rare-ships.css?v=20261114t2" />
   <link rel="stylesheet" href="css/readability.css?v=20261114q3" />
@@ -178,7 +178,7 @@
   </div>
   <script src="js/title-screen.js?v=20261116ay"></script>
 
-  <header class="topbar gb-topbar">
+  <header class="topbar gb-topbar" id="site-topbar">
     <div class="topbar-brand">
       <img
         class="brand-logo"
@@ -231,6 +231,9 @@
       </div>
     </div>
   </header>
+  <button type="button" id="siege-header-peek" class="siege-header-peek" aria-controls="site-topbar" aria-expanded="false" aria-label="Show menu">
+    <span aria-hidden="true">▾</span> Menu
+  </button>
 
   <main id="app">
     <section id="screen-welcome" class="screen active">
@@ -379,7 +382,10 @@
 
           <div class="results-extras" id="results-extras"></div>
 
-          <button type="button" class="btn btn-primary btn-lg" id="btn-results-done"><img class="btn-house" src="assets/ui/granny-house.webp" alt="" width="192" height="182" />Back to HQ</button>
+          <div class="results-actions">
+            <button type="button" class="btn btn-primary btn-lg" id="btn-results-replay">Replay mission</button>
+            <button type="button" class="btn btn-ghost btn-lg" id="btn-results-done"><img class="btn-house" src="assets/ui/granny-house.webp" alt="" width="192" height="182" />Back to HQ</button>
+          </div>
         </div>
 
         <div class="results-col results-col-side">
@@ -429,6 +435,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20261119t18"></script>
+  <script type="module" src="js/app.js?v=20261119t20"></script>
 </body>
 </html>

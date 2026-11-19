@@ -43,7 +43,7 @@ import { initAnglesShapes } from './angles-shapes.js?v=20261119c1';
 import { initPlaceValue } from './place-value.js?v=20261119c1';
 import { initMathsQuest, MATHS_QUEST } from './maths-quest.js?v=20261118a1';
 import { initExpandedMath } from './expanded-maths.js?v=20261119c1';
-import { initBattlePrep } from './battle-prep.js?v=20261118f1';
+import { initBattlePrep } from './battle-prep.js?v=20261119r1';
 import { normalizeDifficultyLevel, scaleTrainingXp, xpMultiplierLabel } from './difficulty.js?v=20261114k1';
 import {
   normalizeLevelMastery,
@@ -157,6 +157,10 @@ let battlePrepCoinBonus = 0;
 let deploymentTurretsPlaced = 0;
 let bonusChoiceFocus = null;
 let bonusBankProtected = 0;
+/** Yard seed from the siege just finished — used when replaying the same backyard. */
+let lastSiegeYardSeed = null;
+/** When set, the next siege rebuilds this seeded yard (mission replay). */
+let replayYardSeed = null;
 
 /** Tracks nuke-cache edge so the ready siren only fires once per fill. */
 let nukeCacheWasReady = false;
@@ -221,8 +225,51 @@ const missionShell = document.getElementById('mission-shell');
 /* Keep all sticky panels in the correct position on desktop and mobile.
    The topbar's height changes when achievement badges wrap. */
 const topbarForOffset = document.querySelector('.topbar');
+const siegeHeaderPeekBtn = document.getElementById('siege-header-peek');
+let siegeHeaderHideTimer = 0;
+
+function siegeHeaderIsOpen() {
+  return document.body.classList.contains('siege-header-open');
+}
+
+/** @param {boolean} open @param {{ briefMs?: number, silent?: boolean }} [opts] */
+function setSiegeHeaderOpen(open, opts = {}) {
+  const inSiege = document.body.classList.contains('siege-mode');
+  if (!inSiege) {
+    document.body.classList.remove('siege-header-open');
+    clearTimeout(siegeHeaderHideTimer);
+    syncStickyHeaderOffset();
+    return;
+  }
+  document.body.classList.toggle('siege-header-open', open);
+  if (siegeHeaderPeekBtn) {
+    siegeHeaderPeekBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    siegeHeaderPeekBtn.setAttribute('aria-label', open ? 'Hide menu' : 'Show menu');
+    siegeHeaderPeekBtn.innerHTML = open
+      ? '<span aria-hidden="true">▾</span> Hide'
+      : '<span aria-hidden="true">▾</span> Menu';
+  }
+  // Wait a frame so transform/layout settle before measuring header height.
+  requestAnimationFrame(() => {
+    syncStickyHeaderOffset();
+    if (!opts.silent) tdEngine?.relayout?.();
+  });
+  clearTimeout(siegeHeaderHideTimer);
+  if (open) {
+    const ms = opts.briefMs != null ? opts.briefMs : 5000;
+    if (ms > 0) {
+      siegeHeaderHideTimer = window.setTimeout(() => setSiegeHeaderOpen(false), ms);
+    }
+  }
+}
+
 function syncStickyHeaderOffset() {
   if (!topbarForOffset) return;
+  // Siege keeps the field king: pretend the header is 0px tall while it is tucked away.
+  if (document.body.classList.contains('siege-mode') && !siegeHeaderIsOpen()) {
+    document.documentElement.style.setProperty('--gb-sticky-header-height', '0px');
+    return;
+  }
   const height = Math.ceil(topbarForOffset.getBoundingClientRect().height);
   if (height > 0) {
     document.documentElement.style.setProperty('--gb-sticky-header-height', `${height}px`);
@@ -235,6 +282,17 @@ if (topbarForOffset && typeof ResizeObserver !== 'undefined') {
 } else {
   window.addEventListener('resize', syncStickyHeaderOffset);
 }
+
+siegeHeaderPeekBtn?.addEventListener('click', () => {
+  setSiegeHeaderOpen(!siegeHeaderIsOpen());
+});
+document.getElementById('siege-canvas')?.addEventListener(
+  'pointerdown',
+  () => {
+    if (siegeHeaderIsOpen()) setSiegeHeaderOpen(false);
+  },
+  { passive: true },
+);
 let lastTrainingAnswerCorrect = null;
 /** The turrets shown in the forge; reshuffled each time the player returns to Maths HQ. @type {{ main: string, left: string, right: string }|null} */
 let forgeSquad = null;
@@ -406,6 +464,10 @@ function showScreen(id) {
   // Maths HQ keeps the radar, welcome and blueprint. The "INVASION IN" strip
   // under the quiz is for mission screens only.
   document.body.classList.toggle('hq-home', id === 'home');
+  if (id !== 'siege') {
+    document.body.classList.remove('siege-header-open');
+    clearTimeout(siegeHeaderHideTimer);
+  }
   Object.entries(screens).forEach(([key, el]) => {
     el?.classList.toggle('active', key === id);
   });
@@ -418,6 +480,12 @@ function showScreen(id) {
   syncInvasionStrip(id, inLearning);
   syncMissionControlAction(id);
   refreshTopbar();
+  syncStickyHeaderOffset();
+  if (id === 'siege') {
+    // Field-first: start tucked; Menu tab peeks the chrome when needed.
+    setSiegeHeaderOpen(false, { silent: true });
+    requestAnimationFrame(() => tdEngine?.relayout?.());
+  }
 }
 
 /** @param {string} id @param {boolean} inLearning */
@@ -869,6 +937,8 @@ function recordSiegeEngagement(stats, prevBestKills) {
     }
   }
   const yardSeed = tdEngine?.getYardLayout?.()?.seed;
+  lastSiegeYardSeed = Number.isFinite(yardSeed) ? yardSeed : null;
+  replayYardSeed = null;
   const code = makeChallengeCode(stats.kills, yardSeed ?? null);
   save.lastChallengeCode = code;
   persistSave();
@@ -913,6 +983,10 @@ function showCrystalDrop(x, y, look = {}) {
   document.body.append(el);
   audio.playCoreEarned();
   window.setTimeout(() => {
+    // Peek the header so the crystal can fly into a visible counter.
+    if (document.body.classList.contains('siege-mode')) {
+      setSiegeHeaderOpen(true, { briefMs: 2600, silent: true });
+    }
     const pill = document.getElementById('topbar-cores-pill');
     const gem = el.querySelector('.crystal-drop-gem');
     if (pill && gem) {
@@ -960,6 +1034,9 @@ function showCoreReward(reason, look = {}) {
   audio.playCoreEarned();
   // Hold 25% shorter than the old 2600ms alert, then fly into the header.
   coreRewardTimer = window.setTimeout(() => {
+    if (document.body.classList.contains('siege-mode')) {
+      setSiegeHeaderOpen(true, { briefMs: 2400, silent: true });
+    }
     const pill = document.getElementById('topbar-cores-pill');
     const gem = el.querySelector('.core-gem--big');
     if (pill && gem) {
@@ -1817,6 +1894,54 @@ function showBattlePrep(opts = {}) {
   showScreen('battlePrep');
 }
 
+/** After a siege: 10 mixed questions, 10/10 to fight the same backyard again. */
+function showReplayBattlePrep() {
+  const host = document.getElementById('battle-prep-host');
+  if (!host) return;
+  disposeActiveTraining?.();
+  disposeActiveTraining = null;
+  const level = getDifficultyLevel();
+  disposeActiveTraining = initBattlePrep(host, {
+    mode: 'replay',
+    banner: 'Score 10/10 to replay this mission',
+    level,
+    cycle: save.trainingGate.cycle,
+    questionsNeeded: 10,
+    remainingNeeded: () => 0,
+    isCharged: () => false,
+    onAgain: () => showReplayBattlePrep(),
+    onAwardXp: (baseAmount) => awardScaledTrainingXp(baseAmount, level),
+    onAnswer: (right, moduleId) => creditMixedAnswer(right, moduleId, level),
+    onFinished() {
+      persistSave();
+      refreshMissionControl();
+    },
+    onReady() {
+      disposeActiveTraining?.();
+      disposeActiveTraining = null;
+      // Open the gate for this one siege; results will reset it again afterward.
+      save.trainingGate = {
+        ...save.trainingGate,
+        questionsDone: Math.max(save.trainingGate.questionsDone || 0, GATE.questionsRequired),
+        battlePrepComplete: true,
+      };
+      persistSave();
+      beginMission();
+    },
+    onHome: () => {
+      replayYardSeed = null;
+      disposeTrainingAndGoHome(showHome);
+    },
+    showToast,
+  });
+  showScreen('battlePrep');
+}
+
+function startMissionReplay() {
+  replayYardSeed = lastSiegeYardSeed;
+  showReplayBattlePrep();
+}
+
 /** One answer from a mixed run (Battle Prep or a zap run), credited like any other maths answer. */
 function creditMixedAnswer(right, moduleId, level) {
   if (right) audio.playCorrect();
@@ -2286,11 +2411,13 @@ function mountTDEngine(canvas, mission) {
   const rareShip = rollRareShipForBattle();
   const gearFx = gearEffects(save.gear);
   renderLeakMeter(0, (mission?.maxLeaks ?? 5) + gearFx.extraLeaks);
+  const siegeYardSeed = DEV.yard ? null : (replayYardSeed ?? save.activeChallenge?.yardSeed ?? null);
+  replayYardSeed = null;
   tdEngine = createTDEngine(canvas, {
     maze: !DEV.lanes,
     yardLayout: DEV.yard,
-    // Friend challenges replay the exact seeded backyard from the code.
-    yardSeed: DEV.yard ? null : save.activeChallenge?.yardSeed ?? null,
+    // Friend challenges / mission replay rebuild the same seeded backyard.
+    yardSeed: siegeYardSeed,
     mission: {
       ...mission,
       maxLeaks: (mission?.maxLeaks ?? 5) + gearFx.extraLeaks,
@@ -2744,7 +2871,12 @@ function bindUI() {
   });
 
   document.getElementById('btn-results-done')?.addEventListener('click', () => {
+    replayYardSeed = null;
     showHome();
+  });
+
+  document.getElementById('btn-results-replay')?.addEventListener('click', () => {
+    startMissionReplay();
   });
 
   document.getElementById('btn-sound')?.addEventListener('click', () => {

@@ -138,7 +138,8 @@ function bonusQuestions(level, cycle, count) {
 /**
  * @param {HTMLElement} host
  * @param {{
- *   mode?: 'prep'|'zap',
+ *   mode?: 'prep'|'zap'|'replay',
+ *   banner?: string,
  *   doneTitle?: (right: number) => string,
  *   level: number,
  *   cycle: number,
@@ -158,7 +159,9 @@ function bonusQuestions(level, cycle, count) {
  */
 export function initBattlePrep(host, callbacks) {
   // Zap mode: after the siege is earned, a short mixed run where each right answer zaps a scout.
+  // Replay mode: fixed 10 mixed questions; 10/10 unlocks the same siege again.
   const zap = callbacks.mode === 'zap';
+  const replay = callbacks.mode === 'replay';
   let deck = zap
     ? bonusQuestions(callbacks.level, callbacks.cycle, Math.max(1, Math.floor(callbacks.questionsNeeded ?? 1)))
     : buildBattlePrepDeck(callbacks.level, callbacks.cycle, callbacks.questionsNeeded ?? 10);
@@ -197,8 +200,12 @@ export function initBattlePrep(host, callbacks) {
     const options = item.options.map((option) => `
       <button type="button" class="times-answer-btn prep-answer" data-value="${escapeAttr(String(option.value))}">${escapeHtml(String(option.label))}</button>
     `).join('');
+    const banner = callbacks.banner
+      ? `<p class="prep-replay-banner">${escapeHtml(callbacks.banner)}</p>`
+      : '';
     host.innerHTML = `
-      <div class="panel times-panel prep-panel">
+      <div class="panel times-panel prep-panel${replay ? ' prep-panel--replay' : ''}">
+        ${banner}
         <div class="times-quiz-header times-quiz-toolbar prep-toolbar">
           <div class="times-toolbar-left">
             <button type="button" class="btn btn-ghost btn-sm times-back" id="prep-home">← Home</button>
@@ -210,7 +217,7 @@ export function initBattlePrep(host, callbacks) {
             </div>
           </div>
           <div class="times-toolbar-right">
-            ${zap ? '' : `<div class="prep-module-rail" aria-label="Battle Prep module progress">${moduleRail}</div>`}
+            ${zap || replay ? `<span class="times-quiz-progress">${index + 1} / ${deck.length}</span>` : `<div class="prep-module-rail" aria-label="Battle Prep module progress">${moduleRail}</div>`}
           </div>
         </div>
         <div class="prep-track" role="progressbar" aria-valuenow="${index + 1}" aria-valuemin="1" aria-valuemax="${deck.length}" aria-label="${item.rescue ? 'Bonus question' : `Question ${index + 1} of ${deck.length}`}"><span style="width:${Math.round((index / deck.length) * 100)}%"></span></div>
@@ -264,9 +271,12 @@ export function initBattlePrep(host, callbacks) {
       index += 1;
       if (index >= deck.length) {
         // Wrong answers do not charge the defences, so top up — but only to this mission's own target.
-        const needed = Math.max(0, Math.floor(callbacks.remainingNeeded?.() ?? 0));
-        const more = zap ? needed : Math.min(needed, initialTotal - totalCorrect);
-        if (more > 0) deck.push(...bonusQuestions(callbacks.level, callbacks.cycle, more));
+        // Replay stays a fixed 10 — no rescue questions.
+        if (!replay) {
+          const needed = Math.max(0, Math.floor(callbacks.remainingNeeded?.() ?? 0));
+          const more = zap ? needed : Math.min(needed, initialTotal - totalCorrect);
+          if (more > 0) deck.push(...bonusQuestions(callbacks.level, callbacks.cycle, more));
+        }
       }
       if (index >= deck.length) finish();
       else {
@@ -284,6 +294,25 @@ export function initBattlePrep(host, callbacks) {
     }
     const overall = deck.length > 0 ? totalCorrect / deck.length : 0;
     callbacks.onFinished(results, overall);
+    if (replay) {
+      const perfect = totalCorrect >= 10 && totalCorrect >= initialTotal;
+      if (perfect) {
+        callbacks.onReady?.(1);
+        return;
+      }
+      host.innerHTML = `
+        <div class="panel times-panel times-done prep-panel prep-done">
+          <button type="button" class="btn btn-ghost btn-sm times-back times-done-home" id="prep-home-done">← Home</button>
+          <p class="prep-replay-banner">Score 10/10 to replay this mission</p>
+          <h2 class="panel-title">${totalCorrect}/10</h2>
+          <div class="times-done-actions is-again-only">
+            <button type="button" class="btn btn-primary times-done-again" id="prep-again">Try again</button>
+          </div>
+        </div>`;
+      host.querySelector('#prep-again')?.addEventListener('click', () => callbacks.onAgain?.());
+      host.querySelector('#prep-home-done')?.addEventListener('click', callbacks.onHome);
+      return;
+    }
     if (zap) {
       host.innerHTML = `
         <div class="panel times-panel times-done prep-panel prep-done">

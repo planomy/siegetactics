@@ -2,6 +2,9 @@
  * Granny Boom: the site header stays fixed at the top of the scrolling page.
  * Keep the sticky radar, defence forge, and deployment controls below it,
  * even as the header changes height when badges wrap or mobile layout switches.
+ *
+ * During siege the field is king: the topbar slides away and a thin Menu tab
+ * lets kids peek it back (sound / crystals / howto) without eating lawn space.
  */
 :root {
   --gb-sticky-header-height: 80px;
@@ -20,6 +23,80 @@ html {
   z-index: 80;
   background: #0c0a14;
   isolation: isolate;
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
+}
+
+/* Hidden by default in siege — field reclaimsthe header strip. */
+body.siege-mode:not(.siege-header-open) {
+  --gb-sticky-header-height: 0px;
+}
+
+body.siege-mode:not(.siege-header-open) .topbar.gb-topbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  transform: translateY(-105%);
+  pointer-events: none;
+  box-shadow: none;
+}
+
+body.siege-mode.siege-header-open .topbar.gb-topbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  transform: translateY(0);
+  pointer-events: auto;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.siege-header-peek {
+  display: none;
+}
+
+body.siege-mode .siege-header-peek {
+  display: inline-flex;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 85;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 4px 14px 7px;
+  border: 0;
+  border-radius: 0 0 12px 12px;
+  background: linear-gradient(180deg, #1a1528, #0f0c18);
+  color: #f0e6c8;
+  font: 700 0.72rem/1 Fredoka One, Bangers, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transform: translateX(-50%);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.siege-mode .siege-header-peek > span {
+  display: inline-block;
+  font-size: 0.85rem;
+  transition: transform 0.2s ease;
+}
+
+body.siege-mode.siege-header-open .siege-header-peek {
+  /* Sit just under the slid-down header so Hide stays reachable. */
+  top: var(--gb-sticky-header-height, 80px);
+}
+
+body.siege-mode.siege-header-open .siege-header-peek > span {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar.gb-topbar {
+    transition: none;
+  }
 }
 
 /* Keep existing pinned panels fully visible instead of letting them

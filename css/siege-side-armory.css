@@ -28,7 +28,8 @@ body.siege-mode .siege-canvas-wrap {
 }
 
 body.siege-mode #siege-canvas {
-  height: clamp(315px, calc(100dvh - var(--gb-sticky-header-height) - 150px), 680px);
+  /* Header tucks away in siege (--gb-sticky-header-height → 0), so the lawn grows. */
+  height: clamp(315px, calc(100dvh - var(--gb-sticky-header-height) - 150px), 760px);
 }
 
 /* The only scrollable shop on desktop is its own rail.

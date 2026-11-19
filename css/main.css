@@ -2296,6 +2296,18 @@ body.dev-mode .topbar::after {
   padding: 12px 16px 14px;
 }
 
+.prep-replay-banner {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(255, 180, 60, 0.22), rgba(255, 100, 80, 0.14));
+  border: 1px solid rgba(255, 200, 100, 0.35);
+  color: #ffe6a8;
+  font: 700 0.95rem/1.25 Fredoka One, Bangers, system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
 .prep-panel .times-back {
   margin-bottom: 0;
 }
