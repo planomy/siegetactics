@@ -18,7 +18,7 @@ export function drawAlienPortalVfx(ctx, opts) {
   const y = height * portal.cy;
   const r = Math.min(width, height) * portal.radius;
   const pulse = 0.55 + 0.45 * Math.sin(t * 2.4);
-  const spawnBoost = Math.max(0, 1 - spawnPulse) * 0.85;
+  const spawnBoost = Math.max(0, Math.min(1, spawnPulse));
 
   ctx.save();
   ctx.save();
@@ -37,6 +37,14 @@ export function drawAlienPortalVfx(ctx, opts) {
     ctx.beginPath();
     ctx.arc(x, y, r * (1.1 + spawnBoost * 0.5), 0, Math.PI * 2);
     ctx.fill();
+
+    // A fast expanding shock ring sells the moment an alien breaks through.
+    const burstAge = 1 - spawnBoost;
+    ctx.strokeStyle = `rgba(232, 191, 255, ${spawnBoost * 0.7})`;
+    ctx.lineWidth = 2.5 + spawnBoost * 2;
+    ctx.beginPath();
+    ctx.arc(x, y, r * (0.5 + burstAge * 1.35), 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   // Ambient ground glow
@@ -48,6 +56,33 @@ export function drawAlienPortalVfx(ctx, opts) {
   ctx.beginPath();
   ctx.arc(x, y, r * 1.55, 0, Math.PI * 2);
   ctx.fill();
+
+  // Three bright packets race around the outer rim in alternating directions.
+  // Their longer fading tails make the portal read as a powered machine.
+  ctx.shadowColor = '#c77dff';
+  ctx.shadowBlur = 9;
+  ctx.lineCap = 'round';
+  for (let packet = 0; packet < 3; packet++) {
+    const direction = packet === 1 ? -1 : 1;
+    const angle = t * (1.15 + packet * 0.18) * direction + packet * Math.PI * 0.73;
+    const radius = r * (0.9 + packet * 0.08);
+    const tail = 0.42 + packet * 0.09;
+    const packetGlow = ctx.createLinearGradient(
+      x + Math.cos(angle - tail) * radius,
+      y + Math.sin(angle - tail) * radius,
+      x + Math.cos(angle) * radius,
+      y + Math.sin(angle) * radius
+    );
+    packetGlow.addColorStop(0, 'rgba(153, 73, 255, 0)');
+    packetGlow.addColorStop(0.72, 'rgba(202, 137, 255, .42)');
+    packetGlow.addColorStop(1, 'rgba(255, 249, 255, .95)');
+    ctx.strokeStyle = packetGlow;
+    ctx.lineWidth = 2.2 + packet * 0.55;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, angle - tail, angle);
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
 
   // Ground crack veins (flicker)
   ctx.globalCompositeOperation = 'source-over';
@@ -102,6 +137,30 @@ export function drawAlienPortalVfx(ctx, opts) {
     else ctx.lineTo(px, py);
   }
   ctx.stroke();
+
+  if (spawnBoost > 0.08) {
+    // Short-lived lightning forks connect the core to the painted rim.
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.shadowColor = '#e8c7ff';
+    ctx.shadowBlur = 8;
+    for (let bolt = 0; bolt < 3; bolt++) {
+      const angle = bolt * Math.PI * 0.67 + t * 0.9;
+      ctx.strokeStyle = `rgba(241, 221, 255, ${spawnBoost * (0.45 + bolt * 0.12)})`;
+      ctx.lineWidth = 1.2 + spawnBoost;
+      ctx.beginPath();
+      for (let step = 0; step <= 6; step++) {
+        const distance = r * (0.16 + step * 0.12);
+        const jitter = Math.sin(t * 47 + bolt * 13 + step * 8.2) * r * 0.055;
+        const px = x + Math.cos(angle) * distance + Math.cos(angle + Math.PI / 2) * jitter;
+        const py = y + Math.sin(angle) * distance + Math.sin(angle + Math.PI / 2) * jitter;
+        if (step === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   // The new ring has its own painted socket lights.
   const socketCount = surfaceTilt === 1 ? (portal.socketCount ?? 8) : 0;

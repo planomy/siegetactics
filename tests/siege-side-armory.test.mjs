@@ -8,6 +8,8 @@ const layoutCSS = readFileSync(new URL('../css/siege-side-armory.css', import.me
 const mainCSS = readFileSync(new URL('../css/main.css', import.meta.url), 'utf8');
 const shopJS = readFileSync(new URL('../js/shop.js', import.meta.url), 'utf8');
 const appJS = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+const engineJS = readFileSync(new URL('../js/td-engine.js', import.meta.url), 'utf8');
+const portalVfxJS = readFileSync(new URL('../js/portal-vfx.js', import.meta.url), 'utf8');
 
 test('the battle cry is centred beneath the field, not inside the turret shop', () => {
   const siege = html.split('<section id="screen-siege"')[1]?.split('<section id="screen-results"')[0];
@@ -45,6 +47,24 @@ test('the command rail stays visible on desktop and becomes a compact mobile doc
   assert.match(layoutCSS, /\.shop-turrets\s*\{[\s\S]*display:\s*flex/);
   assert.match(layoutCSS, /overflow-x:\s*auto/);
   assert.match(appJS, /classList\.toggle\('siege-mode', id === 'siege'\)/);
+});
+
+test('the battle HUD locks its race timer to screen centre without growing the header', () => {
+  assert.match(html, /class="siege-scoreboard-bank siege-scoreboard-bank-left"/);
+  assert.match(html, /class="siege-scoreboard-bank siege-scoreboard-bank-right"/);
+  assert.match(html, /class="siege-race-timer-spark"/);
+  assert.match(layoutCSS, /body\.siege-mode \.topbar\s*\{[^}]*min-height:\s*64px/);
+  assert.match(layoutCSS, /\.siege-race-timer\s*\{[\s\S]*position:\s*absolute;[\s\S]*left:\s*50%;/);
+  assert.match(layoutCSS, /repeating-conic-gradient/);
+  assert.match(appJS, /--timer-angle/);
+});
+
+test('the west portal hugs the field edge and pulses when aliens emerge', () => {
+  assert.match(engineJS, /return 5 \+ MAZE_LAYOUT\.portalSprite\.anchorX \* mazePortalWidth\(gate\)/);
+  assert.match(engineJS, /mazePortalCenterX\(mainGate\) \/ width/);
+  assert.match(portalVfxJS, /const spawnBoost = Math\.max\(0, Math\.min\(1, spawnPulse\)\)/);
+  assert.match(portalVfxJS, /expanding shock ring/);
+  assert.match(portalVfxJS, /bright packets race around the outer rim/);
 });
 
 test('a finger tap can switch turrets without a hover tip stealing the click', () => {

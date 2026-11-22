@@ -5,7 +5,7 @@ import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261116b1';
 import { renderArmory } from './armory.js?v=20261118b1';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel, crystalsSpentOnLevels } from './turret-upgrades.js?v=20261118b1';
-import { createTDEngine } from './td-engine.js?v=20261122live1';
+import { createTDEngine } from './td-engine.js?v=20261122live13';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js?v=20261118b1';
 import { createAudio } from './audio.js?v=20261118w8';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
@@ -2497,16 +2497,34 @@ function mountTDEngine(canvas, mission) {
     },
     getBudget: () => run.waveBudget,
     onBattleHud(hud) {
+      const timer = headerStats.time;
+      timer?.style.setProperty('--timer-progress', String(hud.timeProgress));
+      timer?.style.setProperty('--timer-angle', `${hud.timeProgress * 360}deg`);
+      timer?.classList.toggle('is-urgent', hud.timeUrgent);
+      timer?.classList.toggle('is-critical', hud.timeCritical);
+
       for (const [key, text] of Object.entries(hud)) {
+        if (typeof text !== 'string') continue;
         const stat = headerStats[key];
         if (!stat) continue;
-        const total = stat.querySelector('.siege-header-total');
-        if (total) {
-          const value = text.slice(text.indexOf(':') + 1).trim();
-          if (total.textContent !== value) total.textContent = value;
-        } else if (stat.textContent !== text) {
-          stat.textContent = text;
+        const valueEl = stat.querySelector('.siege-scoreboard-value, .siege-race-timer-value');
+        const colon = text.indexOf(':');
+        const value = key === 'wave'
+          ? text.replace(/^Wave\s+/i, '')
+          : colon >= 0 ? text.slice(colon + 1).trim() : text;
+        if (valueEl && valueEl.textContent !== value) {
+          valueEl.textContent = value;
+          if (valueEl.classList.contains('siege-scoreboard-value')) {
+            valueEl.classList.remove('is-changing');
+            void valueEl.offsetWidth;
+            valueEl.classList.add('is-changing');
+          }
         }
+        if (key === 'time') {
+          const label = stat.querySelector('.siege-race-timer-label');
+          if (label) label.textContent = text.toLowerCase().startsWith('bonus') ? 'Bonus' : 'Time';
+        }
+        stat.setAttribute('aria-label', text);
       }
     },
     trySpend: (type) => {

@@ -4,15 +4,15 @@ import { backyardPreviewMap } from './backyard-preview-maps.js?v=20261122live1';
 import { CROW_WAR_FIELD_SRC, CROW_WAR_PREVIEW } from './crow-war-preview.js?v=20261122live1';
 import { BIRTHDAY_RUCKUS_FIELD_SRC, BIRTHDAY_RUCKUS_PREVIEW } from './birthday-ruckus-preview.js?v=20261122live1';
 import { FIVE_BRIDGES_FIELD_SRC, FIVE_BRIDGES_PREVIEW } from './five-bridges-preview.js?v=20261122live1';
-import { drawFloodWater } from './flood-water.js?v=20261122a7';
-import { FLOOD_FIELD_SRC, FLOOD_PREVIEW, FLOOD_ROUTES, createFloodRoutes, isFloodBuildCell } from './flood-preview.js?v=20261122live1';
+import { drawFloodWater } from './flood-water.js?v=20261122a9';
+import { FLOOD_FIELD_SRC, FLOOD_PREVIEW, FLOOD_ROUTES, FLOOD_WATER_ART_PREVIEW, createFloodRoutes, floodTowerBlockCell, isFloodBuildCell } from './flood-preview.js?v=20261122live9';
 import { SANDCASTLE_FIELD_SRC, SANDCASTLE_PREVIEW, SANDCASTLE_ROUTES, SANDCASTLE_PROPS, SANDCASTLE_PROPS_SRC, isSandcastleBuildCell, sandcastleBuildOffset } from './sandcastle-preview.js?v=20261122live1';
 import { BIRTHDAY_FIELD_SRC, BIRTHDAY_PREVIEW } from './birthday-preview.js?v=20261122live1';
 import { TURRETS, TURRET_ORDER, TURRET_MAX_HP, loadTurretSprites, loadWreckedTurretSprites, damageVsEnemy } from './turrets-data.js?v=20261118b1';
 import { effectiveTurret, turretLevel } from './turret-upgrades.js?v=20261118b1';
 import { AMMO, loadAmmoSprites } from './ammo-data.js?v=20261112a1';
 import { FIELD_LAYOUT, targetPathsForRow } from './field-layout.js?v=20261112a1';
-import { drawAlienPortalVfx } from './portal-vfx.js?v=20261122b4';
+import { drawAlienPortalVfx } from './portal-vfx.js?v=20261122b5';
 import { buildPlacementCells, pickPlacementCell } from './placement-grid.js?v=20261112a1';
 import { loadEnemySprites, pickMothershipSprite, spriteKeyForEnemy, spriteSizeForEnemy, scaledHp, scaledSpeed, scoreForEnemy } from './enemies-data.js?v=20261118b3';
 import { getFieldImage, preloadField } from './preload.js?v=20261114t1';
@@ -176,7 +176,7 @@ const RARE_DRAW = { rare: 2.6, legendary: 5.5 };
  * @param {{
  *   mission: import('./missions-data.js?v=20261114v1').Mission,
  *   getBudget: () => number,
- *   onBattleHud?: (hud: { wave: string, time: string, blasted: string, score: string, coins: string }) => void,
+ *   onBattleHud?: (hud: { wave: string, time: string, blasted: string, score: string, coins: string, timeProgress: number, timeUrgent: boolean, timeCritical: boolean }) => void,
  *   trySpend: (type: string) => boolean,
  *   onMissionEnd: (stats: { kills: number, score: number, leaks: number, won: boolean, maxLeaks: number, wavesCleared: number, bonusKills?: number, bonusPlayed?: boolean }) => void,
  *   onBonusOffer?: (seconds: number) => void,
@@ -413,7 +413,9 @@ export function createTDEngine(canvas, opts) {
   }
 
   function floodPlacementRoutes(extraCell) {
-    const blocked = new Set(towers.filter((tower) => !tower.wrecked).map(({ col, row }) => cellIndex(col, row)));
+    const blocked = new Set(towers
+      .filter((tower) => !tower.wrecked)
+      .map(({ type, col, row }) => floodTowerBlockCell(col, row, type === 'hedge')));
     if (extraCell != null) blocked.add(extraCell);
     const occupied = enemies.flatMap((enemy) => [
       enemy.trenchRoute?.[enemy.trenchIndex - 1]?.floodCell,
@@ -490,7 +492,7 @@ export function createTDEngine(canvas, opts) {
     if (fixedGroundRoutes) {
       if (!canBuildOnBank(hit.col, hit.row)) return { ...base, valid: false, reason: 'trench' };
       if (!FLOOD_PREVIEW) return { ...base, valid: true };
-      const previewRoutes = floodPlacementRoutes(cellIndex(hit.col, hit.row));
+      const previewRoutes = floodPlacementRoutes(floodTowerBlockCell(hit.col, hit.row, selectedType === 'hedge'));
       if (!previewRoutes) return { ...base, valid: false, reason: 'blocks' };
       return {
         ...base,
@@ -1015,13 +1017,14 @@ export function createTDEngine(canvas, opts) {
     let ny;
     if (trenchRoute) {
       ({ x: nx, y: ny } = trenchRoute[0]);
+      if (gate.id === 'west') nx = mazePortalCenterX(gate) / width;
     } else if (flyerFlank) {
       const at = randomFlyerFlankPoint(flyerFlank);
       nx = at.x;
       ny = at.y;
     } else {
       const sideways = gate.id === 'west' ? 0 : (Math.random() - 0.5) * 0.03;
-      nx = gate.spawn.x + sideways;
+      nx = (gate.id === 'west' ? mazePortalCenterX(gate) / width : gate.spawn.x) + sideways;
       ny = gate.spawn.y + (gate.id === 'west' ? (Math.random() - 0.5) * 0.04 : 0);
     }
     return {
@@ -2068,7 +2071,7 @@ export function createTDEngine(canvas, opts) {
   /** @param {GateRoute} gr */
   function traceRouteLine({ gate, route, points: previewPoints }) {
     ctx.beginPath();
-    ctx.moveTo(gate.spawn.x * width, gate.spawn.y * height);
+    ctx.moveTo(gate.id === 'west' ? mazePortalCenterX(gate) : gate.spawn.x * width, gate.spawn.y * height);
     const points = previewPoints ?? (fixedGroundRoutes
       ? (FLOOD_PREVIEW ? floodRoutes : fixedGroundRoutes)[gate.id]
       : route.map(({ col, row }) => cellCenter(col, row)));
@@ -2146,6 +2149,16 @@ export function createTDEngine(canvas, opts) {
     return Math.min(nominal, edgeRoom / (1.35 * Math.min(width, height)));
   }
 
+  /** Keep the west portal's painted rim exactly 5 CSS pixels inside the field. */
+  function mazePortalWidth(gate) {
+    return mazePortalRadius(gate) * Math.min(width, height) * 2.7;
+  }
+
+  function mazePortalCenterX(gate) {
+    if (gate.id !== 'west') return gate.spawn.x * width;
+    return 5 + MAZE_LAYOUT.portalSprite.anchorX * mazePortalWidth(gate);
+  }
+
   function drawGateMarkers() {
     const waveNum = currentWaveNum();
     MAZE_GATES.forEach((gate) => {
@@ -2195,7 +2208,7 @@ export function createTDEngine(canvas, opts) {
   function drawPortalVfx() {
     const mainGate = MAZE_GATES[0];
     const portal = maze
-      ? { cx: mainGate.spawn.x, cy: mainGate.spawn.y, radius: mazePortalRadius(mainGate) }
+      ? { cx: mazePortalCenterX(mainGate) / width, cy: mainGate.spawn.y, radius: mazePortalRadius(mainGate) }
       : FIELD_LAYOUT.alienPortal;
     if (!portal) return;
     drawAlienPortalVfx(ctx, {
@@ -2240,7 +2253,7 @@ export function createTDEngine(canvas, opts) {
           stripWidth * curatedField.width, (1 - top) * curatedField.height,
           left * width, top * height, stripWidth * width, (1 - top) * height
         );
-        if (floodLongPuddle) {
+        if (floodLongPuddle && !FLOOD_WATER_ART_PREVIEW) {
           // Keep the longer puddle from the later art while restoring the original streams.
           const x = 0.182, y = 0.719, w = 0.225, h = 0.077;
           ctx.drawImage(
@@ -2267,13 +2280,14 @@ export function createTDEngine(canvas, opts) {
       if (maze && mazePortalImg) {
         const { anchorX, anchorY } = MAZE_LAYOUT.portalSprite;
         for (const gate of MAZE_GATES) {
-          const pw = mazePortalRadius(gate) * Math.min(width, height) * 2.7;
+          const pw = mazePortalWidth(gate);
           const ph = pw * mazePortalImg.naturalHeight / mazePortalImg.naturalWidth;
+          const centerX = mazePortalCenterX(gate);
           ctx.save();
           if (gate.opensAtWave > currentWaveNum()) ctx.globalAlpha *= 0.55;
           ctx.drawImage(
             mazePortalImg,
-            gate.spawn.x * width - anchorX * pw, gate.spawn.y * height - anchorY * ph,
+            centerX - anchorX * pw, gate.spawn.y * height - anchorY * ph,
             pw, ph
           );
           ctx.restore();
@@ -2598,12 +2612,17 @@ export function createTDEngine(canvas, opts) {
     if (!opts.onBattleHud) return;
     const waveNumber = phase === 'announce' ? splash.waveNum : currentWaveNum();
     const suffix = phase === 'announce' ? (splash.codename ? ` · ${splash.codename}` : ' incoming') : '';
+    const displayedTime = siegeArmed ? siegeTimeLeft : siegeDuration;
+    const timerDuration = bonusPlayed ? bonusAvailable : siegeDuration;
     const hud = {
       wave: `Wave ${waveNumber}${suffix}`,
-      time: `${bonusPlayed ? 'Bonus t' : 'T'}ime: ${formatSiegeTime(siegeArmed ? siegeTimeLeft : siegeDuration)}`,
+      time: `${bonusPlayed ? 'Bonus t' : 'T'}ime: ${formatSiegeTime(displayedTime)}`,
       blasted: `Blasted: ${totalKills}`,
       score: `Score: ${totalScore.toLocaleString()}`,
       coins: `Coins: ${opts.getBudget()}`,
+      timeProgress: Math.max(0, Math.min(1, displayedTime / Math.max(1, timerDuration))),
+      timeUrgent: siegeArmed && displayedTime <= 15,
+      timeCritical: siegeArmed && displayedTime <= 5,
     };
     const signature = Object.values(hud).join('|');
     if (signature === previousBattleHud) return;
