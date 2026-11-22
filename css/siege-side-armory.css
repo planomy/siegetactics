@@ -567,6 +567,12 @@ body.siege-mode .siege-header-controls {
   font: clamp(1rem, 2vw, 1.55rem) var(--font-display);
 }
 
+.siege-header-stat {
+  color: #fff;
+  font: 800 clamp(0.95rem, 1.65vw, 1.3rem) var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+
 body.siege-mode:not(.siege-header-open) .topbar-hud {
   display: none;
 }
