@@ -70,16 +70,16 @@ test('placement fails only when the shared destination is genuinely cut off', ()
   assert.equal(createFloodRoutes(new Set([cell(17, 7), cell(18, 6), cell(18, 8), cell(19, 6), cell(19, 8)])), null);
 });
 
-test('a turret blocks the square occupied by its artwork, not the ground anchor below it', () => {
-  const visibleSquare = floodTowerBlockCell(10, 4);
-  assert.equal(visibleSquare, cell(10, 3));
-  assert.equal(floodTowerBlockCell(10, 4, true), cell(10, 4), 'hedges stay in their anchor square');
-  assert.ok(FLOOD_ROUTES.west.some((point) => point.floodCell === visibleSquare));
+test('every defence blocks exactly its selected grid square', () => {
+  const selectedSquare = floodTowerBlockCell(10, 3);
+  assert.equal(selectedSquare, cell(10, 3));
+  assert.equal(floodTowerBlockCell(10, 3, true), cell(10, 3));
+  assert.ok(FLOOD_ROUTES.west.some((point) => point.floodCell === selectedSquare));
 
-  const detour = createFloodRoutes(new Set([visibleSquare]));
+  const detour = createFloodRoutes(new Set([selectedSquare]));
   assert.ok(detour);
-  assert.ok(!detour.west.some((point) => point.floodCell === visibleSquare));
-  assert.ok(!detour.north.some((point) => point.floodCell === visibleSquare));
+  assert.ok(!detour.west.some((point) => point.floodCell === selectedSquare));
+  assert.ok(!detour.north.some((point) => point.floodCell === selectedSquare));
 });
 
 test('every legal turret square either reroutes cleanly or is rejected', () => {
@@ -94,7 +94,7 @@ test('every legal turret square either reroutes cleanly or is rejected', () => {
       for (const gate of ['west', 'north', 'south']) {
         assert.ok(
           !routes[gate].some((point) => point.floodCell === blocked),
-          `${gate} route crosses turret artwork at ${col},${row}`
+          `${gate} route crosses selected turret square at ${col},${row}`
         );
       }
     }

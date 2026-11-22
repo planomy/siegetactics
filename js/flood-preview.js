@@ -38,10 +38,10 @@ const cellKey = (col, row) => row * COLS + col;
 const cellCol = (cell) => cell % COLS;
 const cellRow = (cell) => Math.floor(cell / COLS);
 
-// Turrets are drawn one grid square above their ground anchor. Block that visible
-// square so route lines and aliens cannot pass through the turret artwork.
-export function floodTowerBlockCell(col, row, isHedge = false) {
-  return cellKey(col, Math.max(0, row - (isHedge ? 0 : 1)));
+// Placement and routing share one source of truth: a defence blocks exactly the
+// grid square selected by the player, regardless of sprite overhang.
+export function floodTowerBlockCell(col, row) {
+  return cellKey(col, row);
 }
 
 const westStart = cellKey(3, 4);
@@ -136,16 +136,5 @@ export const FLOOD_ROUTES = createFloodRoutes(new Set());
 export function isFloodBuildCell(col, row) {
   if (buildRows[row]?.[col] !== '.') return false;
   const key = cellKey(col, row);
-  if (reserved.has(key)) return false;
-  const { x, y } = gridPoint(col, row);
-  // Only the short off-grid portal approaches remain fixed and reserved.
-  return Object.values(approaches).every((points) => points.slice(1).every((end, i) => {
-    const start = points[i];
-    const dx = (end.x - start.x) * artWidth;
-    const dy = (end.y - start.y) * artHeight;
-    const px = (x - start.x) * artWidth;
-    const py = (y - start.y) * artHeight;
-    const t = Math.min(1, Math.max(0, (px * dx + py * dy) / (dx * dx + dy * dy)));
-    return Math.hypot(px - t * dx, py - t * dy) >= 40;
-  }));
+  return !reserved.has(key);
 }

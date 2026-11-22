@@ -5,7 +5,7 @@ import { CROW_WAR_FIELD_SRC, CROW_WAR_PREVIEW } from './crow-war-preview.js?v=20
 import { BIRTHDAY_RUCKUS_FIELD_SRC, BIRTHDAY_RUCKUS_PREVIEW } from './birthday-ruckus-preview.js?v=20261122live1';
 import { FIVE_BRIDGES_FIELD_SRC, FIVE_BRIDGES_PREVIEW } from './five-bridges-preview.js?v=20261122live1';
 import { drawFloodWater } from './flood-water.js?v=20261122a9';
-import { FLOOD_FIELD_SRC, FLOOD_PREVIEW, FLOOD_ROUTES, FLOOD_WATER_ART_PREVIEW, createFloodRoutes, floodTowerBlockCell, isFloodBuildCell } from './flood-preview.js?v=20261122live9';
+import { FLOOD_FIELD_SRC, FLOOD_PREVIEW, FLOOD_ROUTES, FLOOD_WATER_ART_PREVIEW, createFloodRoutes, floodTowerBlockCell, isFloodBuildCell } from './flood-preview.js?v=20261122live10';
 import { SANDCASTLE_FIELD_SRC, SANDCASTLE_PREVIEW, SANDCASTLE_ROUTES, SANDCASTLE_PROPS, SANDCASTLE_PROPS_SRC, isSandcastleBuildCell, sandcastleBuildOffset } from './sandcastle-preview.js?v=20261122live1';
 import { BIRTHDAY_FIELD_SRC, BIRTHDAY_PREVIEW } from './birthday-preview.js?v=20261122live1';
 import { TURRETS, TURRET_ORDER, TURRET_MAX_HP, loadTurretSprites, loadWreckedTurretSprites, damageVsEnemy } from './turrets-data.js?v=20261118b1';
@@ -415,7 +415,7 @@ export function createTDEngine(canvas, opts) {
   function floodPlacementRoutes(extraCell) {
     const blocked = new Set(towers
       .filter((tower) => !tower.wrecked)
-      .map(({ type, col, row }) => floodTowerBlockCell(col, row, type === 'hedge')));
+      .map(({ col, row }) => floodTowerBlockCell(col, row)));
     if (extraCell != null) blocked.add(extraCell);
     const occupied = enemies.flatMap((enemy) => [
       enemy.trenchRoute?.[enemy.trenchIndex - 1]?.floodCell,
@@ -492,7 +492,7 @@ export function createTDEngine(canvas, opts) {
     if (fixedGroundRoutes) {
       if (!canBuildOnBank(hit.col, hit.row)) return { ...base, valid: false, reason: 'trench' };
       if (!FLOOD_PREVIEW) return { ...base, valid: true };
-      const previewRoutes = floodPlacementRoutes(floodTowerBlockCell(hit.col, hit.row, selectedType === 'hedge'));
+      const previewRoutes = floodPlacementRoutes(floodTowerBlockCell(hit.col, hit.row));
       if (!previewRoutes) return { ...base, valid: false, reason: 'blocks' };
       return {
         ...base,
