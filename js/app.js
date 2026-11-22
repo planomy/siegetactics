@@ -2499,7 +2499,14 @@ function mountTDEngine(canvas, mission) {
     onBattleHud(hud) {
       for (const [key, text] of Object.entries(hud)) {
         const stat = headerStats[key];
-        if (stat && stat.textContent !== text) stat.textContent = text;
+        if (!stat) continue;
+        const total = stat.querySelector('.siege-header-total');
+        if (total) {
+          const value = text.slice(text.indexOf(':') + 1).trim();
+          if (total.textContent !== value) total.textContent = value;
+        } else if (stat.textContent !== text) {
+          stat.textContent = text;
+        }
       }
     },
     trySpend: (type) => {

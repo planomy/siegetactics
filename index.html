@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="css/armory-showcase.css?v=20261118a2" />
   <link rel="stylesheet" href="css/siege-deployment.css?v=20261119b1" />
   <link rel="stylesheet" href="css/sticky-header.css?v=20261122live1" />
-  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261122live3" />
+  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261122live4" />
   <link rel="stylesheet" href="css/maths-hq-cockpit.css?v=20261112t" />
   <link rel="stylesheet" href="css/ten-topic-dashboard.css?v=20261112b3" />
   <link rel="stylesheet" href="css/game-no-instructions.css?v=20261119b1" />
@@ -191,9 +191,9 @@
     <div class="siege-header-controls" aria-label="Battle status">
       <span id="siege-header-wave">Wave 1</span>
       <span id="siege-header-time">Time</span>
-      <span class="siege-header-stat" id="siege-header-blasted">Blasted: 0</span>
-      <span class="siege-header-stat" id="siege-header-score">Score: 0</span>
-      <span class="siege-header-stat" id="siege-header-coins">Coins: 0</span>
+      <span class="siege-header-stat" id="siege-header-blasted">Blasted: <span class="siege-header-total">0</span></span>
+      <span class="siege-header-stat" id="siege-header-score">Score: <span class="siege-header-total">0</span></span>
+      <span class="siege-header-stat" id="siege-header-coins">Coins: <span class="siege-header-total">0</span></span>
       <button type="button" class="btn btn-ghost btn-sm" id="btn-speed" data-speed="1" aria-label="Battle speed: tap to speed up">1× SPEED</button>
       <button type="button" id="siege-header-peek" class="siege-header-peek" aria-controls="site-topbar" aria-expanded="false" aria-label="Show menu">
         <span aria-hidden="true">▾</span> Menu
@@ -441,6 +441,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20261122live1"></script>
+  <script type="module" src="js/app.js?v=20261122live2"></script>
 </body>
 </html>

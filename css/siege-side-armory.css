@@ -568,6 +568,11 @@ body.siege-mode .siege-header-controls {
 }
 
 .siege-header-stat {
+  color: inherit;
+  font: inherit;
+}
+
+.siege-header-total {
   color: #fff;
   font: 700 clamp(1.15rem, 2vw, 1.6rem) var(--font-body);
   font-variant-numeric: tabular-nums;
