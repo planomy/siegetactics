@@ -31,7 +31,7 @@ test('the launch card stays compact and centred, giving the shop the full right 
   assert.match(layoutCSS, /\.siege-battle-footer\s*\{[\s\S]*grid-template-columns:/);
   assert.match(layoutCSS, /\.siege-battle-footer \.siege-deploy-panel\s*\{[\s\S]*grid-column:\s*2;/);
   assert.match(layoutCSS, /\.siege-battle-footer \.siege-deploy-panel\s*\{[\s\S]*position:\s*static;/);
-  assert.match(layoutCSS, /\.siege-battle-footer \.siege-command-bar\s*\{[\s\S]*grid-column:\s*1;/);
+  assert.match(layoutCSS, /\.siege-battle-footer \.siege-command-bar\s*\{[^}]*grid-column:\s*3;[^}]*justify-content:\s*flex-end;/);
   assert.match(layoutCSS, /\.siege-loadout \.shop-bar\s*\{[\s\S]*overflow-y:\s*auto;/);
   assert.match(layoutCSS, /@media \(max-width: 959px\)/);
 });

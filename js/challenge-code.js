@@ -1,3 +1,5 @@
+import { SIEGE_MAP_IDS } from './siege-map-selection.js';
+
 /**
  * Friend challenges without accounts or a server: a short code holds a siege
  * score, an optional backyard seed, and a check value. Friends type it in and
@@ -48,21 +50,30 @@ function fromChars(chars) {
 }
 
 /**
- * @typedef {{ score: number, yardSeed: number|null }} ChallengePayload
+ * @typedef {{ score: number, yardSeed: number|null, mapId?: string }} ChallengePayload
  */
 
 /**
  * @param {number} score Siege arcade score to beat.
  * @param {number|null|undefined} [yardSeed] Shared backyard seed (omit for score-only codes).
+ * @param {string|null} [mapId] Curated battlefield ID.
  * @returns {string} e.g. "GRAN-7Q4K2AB3C" (with yard) or "GRAN-7Q4K2A" (score only)
  */
-export function makeChallengeCode(score, yardSeed) {
+export function makeChallengeCode(score, yardSeed, mapId) {
   const s = Math.max(0, Math.min(MAX_SCORE, Math.floor(score)));
+  const mapIndex = SIEGE_MAP_IDS.indexOf(mapId);
+  if (mapIndex >= 0) {
+    return `${PREFIX}${toChars(s, 4)}${toChars(mapIndex, 1)}${toChars(curatedCheck(s, mapIndex), 3)}`;
+  }
   if (yardSeed == null || !Number.isFinite(yardSeed)) {
     return `${PREFIX}${toChars(s, 4)}${toChars(checkScore(s), 2)}`;
   }
   const seed = ((Math.floor(yardSeed) % YARD_SEED_MOD) + YARD_SEED_MOD) % YARD_SEED_MOD;
   return `${PREFIX}${toChars(s, 4)}${toChars(seed, 3)}${toChars(checkScoreSeed(s, seed), 2)}`;
+}
+
+function curatedCheck(score, mapIndex) {
+  return (score * 7919 + mapIndex * 9973 + 4243) % YARD_SEED_MOD;
 }
 
 /**
@@ -107,6 +118,16 @@ export function readChallengeCode(input) {
       return null;
     }
     return { score, yardSeed: seed };
+  }
+
+  // Curated battlefield: 4 score, 1 map ID, 3 check.
+  if (clean.length === 8) {
+    const score = fromChars(clean.slice(0, 4));
+    const mapIndex = fromChars(clean.slice(4, 5));
+    const sum = fromChars(clean.slice(5));
+    const mapId = SIEGE_MAP_IDS[mapIndex];
+    if (score < 0 || !mapId || sum < 0 || curatedCheck(score, mapIndex) !== sum) return null;
+    return { score, yardSeed: null, mapId };
   }
 
   // Yard + arcade score: 4 score + 3 seed + 2 check.

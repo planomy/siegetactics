@@ -1,10 +1,11 @@
+import { currentSiegeMap, mapForSiege, previewSiegeMap, selectSiegeMap, SIEGE_MAP_IDS, TOPIC_MAPS } from './siege-map-selection.js';
 import { getMissionForDifficulty, SLICE_MISSION_ID } from './missions-data.js?v=20261114v1';
 import { balanceMission, startingSiegeCoins } from './battle-balance.js?v=20261114v1';
 import { initForge } from './forge.js';
 import { renderShopBar, updateShopBar } from './shop.js?v=20261116b1';
 import { renderArmory } from './armory.js?v=20261118b1';
 import { normalizeTurretLevels, normalizeCores, setTurretLevels, nextUpgrade, anyUpgradeReady, turretLevel, crystalsSpentOnLevels } from './turret-upgrades.js?v=20261118b1';
-import { createTDEngine } from './td-engine.js?v=20261119t18';
+import { createTDEngine } from './td-engine.js?v=20261122live1';
 import { TURRETS, TURRET_ORDER, STARTER_TURRETS } from './turrets-data.js?v=20261118b1';
 import { createAudio } from './audio.js?v=20261118w8';
 import { createMusic, STREAK_MUSIC_FROM } from './music.js?v=20261113a3';
@@ -16,11 +17,11 @@ import { SIEGE_DURATION_SEC, openingHorde } from './waves-data.js?v=20261118w8';
 import { siegePressure } from './siege-pressure.js?v=20261118w3';
 import { normalizeDaily, recordChallengeEvent, rollLuckyDrop, DAILY_CHEST_XP, DAILY_CHEST_CRYSTALS } from './daily-challenges.js?v=20261118d1';
 import { normalizeRecords, checkTrophies, trophyTitle } from './trophies.js?v=20261114h1';
-import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261119c2';
+import { makeChallengeCode, readChallengeCode } from './challenge-code.js?v=20261122live1';
 import { STORY_BEATS } from './story.js?v=20261113a1';
 import { renderStreakPill, renderDailyPill, showStreakPanel, showDailyPanel, showPop, showTrophyPop, showStory, showProfile, renderResultsExtras, ICONS } from './engagement-ui.js?v=20261119c2';
 import { DEV } from './dev.js?v=20261115y1';
-import { HEDGE } from './maze-field.js?v=20261119d3';
+import { HEDGE } from './maze-field.js?v=20261122live1';
 import { showCoachTips, closeCoach, isCoachOpen, tipTargetsPresent, TOUR_TIPS } from './coach-tips.js?v=20261118e2';
 import { keepFullscreen } from './fullscreen.js?v=20261116h';
 import { bindTipPills } from './tip-pills.js?v=20261117f1';
@@ -91,7 +92,7 @@ const SAVE_KEY = 'grannyboom.siege.v1';
 /** Dev mode plays on a fresh copy of the real save each load, so testing never changes real progress. */
 const DEV_SAVE_KEY = `${SAVE_KEY}.dev`;
 
-/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestScore: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js?v=20261114n1').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string }|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, rares: import('./rare-ships.js').RareSave, homelandClaimed: string[], levelScale?: number, pausedSets?: Record<string, any>, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
+/** @typedef {{ version: number, playerName: string, xp: number, enemyDefeated: Record<string,number>, unlockedTurrets: string[], unlockedMissions: string[], completedMissions: string[], bestKills: Record<string, number>, bestScore: Record<string, number>, bestBankedCoins: Record<string, number>, bestStars: Record<string, number>, siegesCompleted: number, granddaddySiegeTarget: number|null, granddaddySeen: boolean, grannyUnlocked: boolean, trainingGate: import('./training-gate.js?v=20261114n1').TrainingGate, topicProgress: import('./topic-progression.js?v=20261114k1').TopicProgressSave, levelMastery: import('./level-mastery.js?v=20261114k1').LevelMasterySave, mapProgress: import('./map-progress.js').MapProgressSave, turretLevels: Record<string, number>, upgradeCores: number, crystalsCollected: number, siegeRecord: import('./siege-ranks.js').SiegeRecord, streak: import('./streak.js').StreakSave, daily: import('./daily-challenges.js').DailySave|null, records: import('./trophies.js').RecordsSave, trophies: Record<string, string>, title: string|null, storySeen: number, activeChallenge: { score: number, from: string, yardSeed?: number|null, mapId?: string|null }|null, pendingSiegeTopic: string|null, lastChallengeCode: string|null, gear: import('./gear.js').GearId[], stretchCoins: number, rares: import('./rare-ships.js').RareSave, homelandClaimed: string[], levelScale?: number, pausedSets?: Record<string, any>, settings: { sound: boolean, music: boolean, difficultyLevel: import('./difficulty.js?v=20261114k1').DifficultyLevel } }} SaveData */
 
 /** @type {SaveData} */
 const defaultSave = {
@@ -112,6 +113,7 @@ const defaultSave = {
   granddaddySeen: false,
   grannyUnlocked: true,
   trainingGate: defaultTrainingGate(),
+  pendingSiegeTopic: null,
   levelMastery: defaultLevelMastery(),
   topicProgress: {},
   mapProgress: defaultMapProgress(),
@@ -159,8 +161,10 @@ let bonusChoiceFocus = null;
 let bonusBankProtected = 0;
 /** Yard seed from the siege just finished — used when replaying the same backyard. */
 let lastSiegeYardSeed = null;
+let lastSiegeMap = null;
 /** When set, the next siege rebuilds this seeded yard (mission replay). */
 let replayYardSeed = null;
+let replaySiegeMap = null;
 
 /** Tracks nuke-cache edge so the ready siren only fires once per fill. */
 let nukeCacheWasReady = false;
@@ -265,11 +269,6 @@ function setSiegeHeaderOpen(open, opts = {}) {
 
 function syncStickyHeaderOffset() {
   if (!topbarForOffset) return;
-  // Siege keeps the field king: pretend the header is 0px tall while it is tucked away.
-  if (document.body.classList.contains('siege-mode') && !siegeHeaderIsOpen()) {
-    document.documentElement.style.setProperty('--gb-sticky-header-height', '0px');
-    return;
-  }
   const height = Math.ceil(topbarForOffset.getBoundingClientRect().height);
   if (height > 0) {
     document.documentElement.style.setProperty('--gb-sticky-header-height', `${height}px`);
@@ -383,6 +382,7 @@ function loadSave() {
         score: data.activeChallenge.score,
         from: typeof data.activeChallenge.from === 'string' ? data.activeChallenge.from : '',
         yardSeed: Number.isFinite(ys) ? ys : null,
+        mapId: SIEGE_MAP_IDS.includes(data.activeChallenge.mapId) ? data.activeChallenge.mapId : null,
       };
     } else {
       data.activeChallenge = null;
@@ -902,10 +902,11 @@ function openProfile(tab) {
       save.activeChallenge = {
         score: payload.score,
         yardSeed: payload.yardSeed,
+        mapId: payload.mapId ?? null,
         from: from.slice(0, 16),
       };
       persistSave();
-      const yardNote = payload.yardSeed != null ? ' Same backyard!' : '';
+      const yardNote = payload.yardSeed != null || payload.mapId ? ' Same backyard!' : '';
       showToast(
         `Challenge accepted! Beat ${from || 'your friend'}’s score of ${payload.score.toLocaleString()} in your next siege.${yardNote}`,
         { variant: 'success' },
@@ -939,8 +940,10 @@ function recordSiegeEngagement(stats, prevBestKills) {
   }
   const yardSeed = tdEngine?.getYardLayout?.()?.seed;
   lastSiegeYardSeed = Number.isFinite(yardSeed) ? yardSeed : null;
+  lastSiegeMap = currentSiegeMap;
   replayYardSeed = null;
-  const code = makeChallengeCode(siegeScore, yardSeed ?? null);
+  replaySiegeMap = null;
+  const code = makeChallengeCode(siegeScore, yardSeed ?? null, lastSiegeMap);
   save.lastChallengeCode = code;
   persistSave();
   checkNewTrophies();
@@ -1256,6 +1259,7 @@ function awardScaledTrainingXp(baseAmount, level) {
  * @param {boolean} right
  */
 function creditTopicAnswer(topicId, level, right) {
+  if (right && Object.hasOwn(TOPIC_MAPS, topicId)) save.pendingSiegeTopic = topicId;
   const result = recordTopicAnswer(save.topicProgress, topicId, level, right, topicXpMultiplier(topicId));
   save.topicProgress = result.progress;
   persistSave();
@@ -1931,6 +1935,7 @@ function showReplayBattlePrep() {
     },
     onHome: () => {
       replayYardSeed = null;
+      replaySiegeMap = null;
       disposeTrainingAndGoHome(showHome);
     },
     showToast,
@@ -1940,6 +1945,7 @@ function showReplayBattlePrep() {
 
 function startMissionReplay() {
   replayYardSeed = lastSiegeYardSeed;
+  replaySiegeMap = lastSiegeMap;
   showReplayBattlePrep();
 }
 
@@ -2249,6 +2255,11 @@ function initSiegeScreen() {
   mountTDEngine(canvas, mission);
   selectTurret('granny-blaster');
   tdEngine?.setGoLive(false);
+  const speedButton = document.getElementById('btn-speed');
+  if (speedButton) {
+    speedButton.dataset.speed = '1';
+    speedButton.textContent = '1× SPEED';
+  }
   refreshDeploymentPanel();
   syncLaunchArrow();
   const yard = tdEngine?.getYardLayout?.();
@@ -2361,8 +2372,8 @@ function launchTestSiege() {
   showScreen('siege');
   initSiegeScreen();
   if (save.activeChallenge) {
-    const { from, score, yardSeed } = save.activeChallenge;
-    const sameYard = yardSeed != null ? ' Same backyard!' : '';
+    const { from, score, yardSeed, mapId } = save.activeChallenge;
+    const sameYard = yardSeed != null || mapId ? ' Same backyard!' : '';
     window.setTimeout(
       () =>
         showPop(
@@ -2418,7 +2429,19 @@ function mountTDEngine(canvas, mission) {
   const gearFx = gearEffects(save.gear);
   renderLeakMeter(0, (mission?.maxLeaks ?? 5) + gearFx.extraLeaks);
   const siegeYardSeed = DEV.yard ? null : (replayYardSeed ?? save.activeChallenge?.yardSeed ?? null);
+  const curatedMap = DEV.lanes || DEV.yard ? null
+    : previewSiegeMap ?? replaySiegeMap ?? (siegeYardSeed != null ? null
+      : save.activeChallenge?.mapId ?? mapForSiege(save.pendingSiegeTopic, save.siegesCompleted));
+  selectSiegeMap(curatedMap);
   replayYardSeed = null;
+  replaySiegeMap = null;
+  if (!DEV.enabled && save.pendingSiegeTopic) {
+    save.pendingSiegeTopic = null;
+    persistSave();
+  }
+  const headerStats = Object.fromEntries(
+    ['wave', 'time', 'blasted', 'score', 'coins'].map((key) => [key, document.getElementById(`siege-header-${key}`)])
+  );
   tdEngine = createTDEngine(canvas, {
     maze: !DEV.lanes,
     yardLayout: DEV.yard,
@@ -2473,6 +2496,12 @@ function mountTDEngine(canvas, mission) {
       updateNukeCachePanel();
     },
     getBudget: () => run.waveBudget,
+    onBattleHud(hud) {
+      for (const [key, text] of Object.entries(hud)) {
+        const stat = headerStats[key];
+        if (stat && stat.textContent !== text) stat.textContent = text;
+      }
+    },
     trySpend: (type) => {
       if (type !== 'hedge' && !isUnlocked(type)) {
         showToast(`Unlock that turret with ${ECONOMY.forgeXpLabel} first.`, { variant: 'shop' });
@@ -2878,6 +2907,7 @@ function bindUI() {
 
   document.getElementById('btn-results-done')?.addEventListener('click', () => {
     replayYardSeed = null;
+    replaySiegeMap = null;
     showHome();
   });
 

@@ -19,8 +19,8 @@
   <link rel="stylesheet" href="css/defence-forge.css?v=20261117c8" />
   <link rel="stylesheet" href="css/armory-showcase.css?v=20261118a2" />
   <link rel="stylesheet" href="css/siege-deployment.css?v=20261119b1" />
-  <link rel="stylesheet" href="css/sticky-header.css?v=20261119h1" />
-  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261119h1" />
+  <link rel="stylesheet" href="css/sticky-header.css?v=20261122live1" />
+  <link rel="stylesheet" href="css/siege-side-armory.css?v=20261122live1" />
   <link rel="stylesheet" href="css/maths-hq-cockpit.css?v=20261112t" />
   <link rel="stylesheet" href="css/ten-topic-dashboard.css?v=20261112b3" />
   <link rel="stylesheet" href="css/game-no-instructions.css?v=20261119b1" />
@@ -188,6 +188,17 @@
         alt="Granny Boom — Siege Tactics"
       />
     </div>
+    <div class="siege-header-controls" aria-label="Battle status">
+      <span id="siege-header-wave">Wave 1</span>
+      <span id="siege-header-time">Time</span>
+      <span id="siege-header-blasted">Blasted: 0</span>
+      <span id="siege-header-score">Score: 0</span>
+      <span id="siege-header-coins">Coins: 0</span>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-speed" data-speed="1" aria-label="Battle speed: tap to speed up">1× SPEED</button>
+      <button type="button" id="siege-header-peek" class="siege-header-peek" aria-controls="site-topbar" aria-expanded="false" aria-label="Show menu">
+        <span aria-hidden="true">▾</span> Menu
+      </button>
+    </div>
     <div class="topbar-hud">
       <div class="topbar-badges" id="topbar-badges" aria-label="Military badges earned"></div>
       <div class="topbar-stats">
@@ -231,9 +242,7 @@
       </div>
     </div>
   </header>
-  <button type="button" id="siege-header-peek" class="siege-header-peek" aria-controls="site-topbar" aria-expanded="false" aria-label="Show menu">
-    <span aria-hidden="true">▾</span> Menu
-  </button>
+
 
   <main id="app">
     <section id="screen-welcome" class="screen active">
@@ -318,12 +327,18 @@
             </div>
             <canvas id="siege-canvas" aria-label="Siege field"></canvas>
             <div id="leak-meter" class="leak-meter" aria-live="polite"></div>
-            <div class="wave-controls">
-              <button type="button" class="btn btn-ghost btn-sm" id="btn-speed" data-speed="1" aria-label="Battle speed: tap to speed up">1× SPEED</button>
-            </div>
           </div>
 
           <div class="siege-battle-footer">
+            <div class="siege-footer-spacer" aria-hidden="true"></div>
+            <section id="siege-deploy-panel" class="siege-deploy-panel" aria-label="Start or pause the siege" hidden>
+              <span class="siege-launch-wrap" id="siege-launch-wrap">
+                <button type="button" class="siege-launch-button" id="btn-launch-siege" disabled aria-label="Start the alien attack">
+                  GO!
+                </button>
+              </span>
+            </section>
+
             <div class="siege-command-bar">
               <div id="nuke-cache-panel" class="nuke-cache-panel" hidden>
                 <div class="nuke-cache-visual" id="nuke-cache-visual" style="--fill: 0%">
@@ -338,15 +353,6 @@
               </div>
               <button type="button" class="btn btn-fire-nukes" id="btn-fire-nukes" hidden disabled aria-label="Fire nukes"><span class="btn-fire-nukes-icon" aria-hidden="true">☢</span><span class="btn-fire-nukes-label">NUKE</span></button>
             </div>
-
-            <section id="siege-deploy-panel" class="siege-deploy-panel" aria-label="Start or pause the siege" hidden>
-              <span class="siege-launch-wrap" id="siege-launch-wrap">
-                <button type="button" class="siege-launch-button" id="btn-launch-siege" disabled aria-label="Start the alien attack">
-                  GO!
-                </button>
-              </span>
-            </section>
-            <div class="siege-footer-spacer" aria-hidden="true"></div>
           </div>
         </div>
 
@@ -435,6 +441,6 @@
     <button type="button" class="toast-dismiss" aria-label="Dismiss">×</button>
   </div>
 
-  <script type="module" src="js/app.js?v=20261119t21"></script>
+  <script type="module" src="js/app.js?v=20261122live1"></script>
 </body>
 </html>

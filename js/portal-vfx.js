@@ -7,10 +7,11 @@
  *   time: number,
  *   portal: { cx: number, cy: number, radius: number, socketCount?: number, inactiveSockets?: number[] },
  *   spawnPulse?: number,
+ *   surfaceTilt?: number,
  * }} opts
  */
 export function drawAlienPortalVfx(ctx, opts) {
-  const { width, height, time: t, portal, spawnPulse = 0 } = opts;
+  const { width, height, time: t, portal, spawnPulse = 0, surfaceTilt = 1 } = opts;
   if (width <= 0 || height <= 0) return;
 
   const x = width * portal.cx;
@@ -20,6 +21,10 @@ export function drawAlienPortalVfx(ctx, opts) {
   const spawnBoost = Math.max(0, 1 - spawnPulse) * 0.85;
 
   ctx.save();
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(1, surfaceTilt);
+  ctx.translate(-x, -y);
   ctx.globalCompositeOperation = 'lighter';
 
   // Spawn burst when aliens emerge
@@ -98,8 +103,8 @@ export function drawAlienPortalVfx(ctx, opts) {
   }
   ctx.stroke();
 
-  // Socket ring lights
-  const socketCount = portal.socketCount ?? 8;
+  // The new ring has its own painted socket lights.
+  const socketCount = surfaceTilt === 1 ? (portal.socketCount ?? 8) : 0;
   const inactive = new Set(portal.inactiveSockets ?? [5, 6]);
   const ringStart = -Math.PI * 0.55;
   const ringSpan = Math.PI * 1.15;
@@ -129,6 +134,9 @@ export function drawAlienPortalVfx(ctx, opts) {
     ctx.fill();
     ctx.shadowBlur = 0;
   }
+
+  ctx.restore();
+  ctx.globalCompositeOperation = 'lighter';
 
   // Rising energy motes
   for (let p = 0; p < 14; p++) {
